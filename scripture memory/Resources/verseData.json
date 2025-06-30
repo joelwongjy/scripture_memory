@@ -1,0 +1,23 @@
+[
+  {"id": 1, "title": "Christ the Center", "verse": "Therefore, if anyone is in Christ, the new creation has come: The old has gone, the new is here!", "book": "2 Corinthians", "reference": "5:17", "pack": "TMS 60", "subpack": "A1"},
+  {"id": 2,"title": "Christ the Center", "verse": "I have been crucified with Christ. It is no longer I who live, but Christ who lives in me.", "book": "Galatians", "reference": "2:20", "pack": "TMS 60", "subpack": "A2"},
+  {"id": 3,"title": "Obedience to Christ", "verse": "I appeal to you therefore, brothers, by the mercies of God, to present your bodies as a living sacrifice, holy and acceptable to God.", "book": "Romans", "reference": "12:1", "pack": "TMS 60", "subpack": "A3"},
+  {"id": 4, "title": "Obedience to Christ", "verse": "Whoever has my commandments and keeps them is the one who loves me.", "book": "John", "reference": "14:21", "pack": "TMS 60", "subpack": "A4"},
+  {"id": 5,"title": "The Word", "verse": "All Scripture is God-breathed and is useful for teaching, rebuking, correcting and training in righteousness.", "book": "2 Timothy", "reference": "3:16", "pack": "TMS 60", "subpack": "A5"},
+  {"id": 6,"title": "The Word", "verse": "This Book of the Law shall not depart from your mouth, but you shall meditate on it day and night.", "book": "Joshua", "reference": "1:8", "pack": "TMS 60", "subpack": "A6"},
+  {"id": 7,"title": "Prayer", "verse": "If you remain in me and my words remain in you, ask whatever you wish, and it will be done for you.", "book": "John", "reference": "15:7", "pack": "TMS 60", "subpack": "A7"},
+  {"id": 8,"title": "Prayer", "verse": "Do not be anxious about anything, but in every situation, by prayer and petition, with thanksgiving, present your requests to God.", "book": "Philippians", "reference": "4:6", "pack": "TMS 60", "subpack": "A8"},
+  {"id": 9, "title": "Fellowship", "verse": "For where two or three gather in my name, there am I with them.", "book": "Matthew", "reference": "18:20", "pack": "TMS 60", "subpack": "A9"},
+  {"id": 10, "title": "Fellowship", "verse": "Let us consider how we may spur one another on toward love and good deeds, not giving up meeting together.", "book": "Hebrews", "reference": "10:24", "pack": "TMS 60", "subpack": "A10"},
+  {"id": 11,"title": "Witnessing", "verse": "Come, follow me, and I will send you out to fish for people.", "book": "Matthew", "reference": "4:19", "pack": "TMS 60", "subpack": "A11"},
+  { "id": 12,"title": "Witnessing", "verse": "For I am not ashamed of the gospel, because it is the power of God that brings salvation to everyone who believes.", "book": "Romans", "reference": "1:16", "pack": "TMS 60", "subpack": "A12"},
+  {"id": 13,"title": "All Have Sinned", "verse": "For all have sinned and fall short of the glory of God.", "book": "Romans", "reference": "3:23", "pack": "TMS 60", "subpack": "B1"},
+  {"id": 14,"title": "All Have Sinned", "verse": "We all, like sheep, have gone astray, each of us has turned to our own way.", "book": "Isaiah", "reference": "53:6", "pack": "TMS 60", "subpack": "B2"},
+  {"id": 15,"title": "Sin's Penalty", "verse": "For the wages of sin is death, but the gift of God is eternal life in Christ Jesus our Lord.", "book": "Romans", "reference": "6:23", "pack": "TMS 60", "subpack": "B3"},
+  {"id": 16,"title": "Sin's Penalty", "verse": "Just as people are destined to die once, and after that to face judgment.", "book": "Hebrews", "reference": "9:27", "pack": "TMS 60", "subpack": "B4"},
+  {"id": 17,"title": "Christ Paid the Penalty", "verse": "But God demonstrates his own love for us in this: While we were still sinners, Christ died for us.", "book": "Romans", "reference": "5:8", "pack": "TMS 60", "subpack": "B5"},
+  {"id": 18,"title": "Christ Paid the Penalty", "verse": "For Christ also suffered once for sins, the righteous for the unrighteous, to bring you to God.", "book": "1 Peter", "reference": "3:18", "pack": "TMS 60", "subpack": "B6"},
+  {"id": 19,"title": "Salvation is not by Works", "verse": "For it is by grace you have been saved, through faith—and this is not from yourselves, it is the gift of God—not by works.", "book": "Ephesians", "reference": "2:8", "pack": "TMS 60", "subpack": "B7"},
+  {"id": 20,"title": "Salvation is not by Works", "verse": "He saved us, not because of righteous things we had done, but because of his mercy.", "book": "Titus", "reference": "3:5", "pack": "TMS 60", "subpack": "B8"},
+  {"id": 21,"title": "Must Receive Christ", "verse": "Yet to all who did receive him, to those who believed in his name, he gave the right to become children of God.", "book": "John", "reference": "1:12", "pack": "TMS 60", "subpack": "B9"}
+]
