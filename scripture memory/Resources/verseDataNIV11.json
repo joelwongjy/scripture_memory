@@ -1,0 +1,2293 @@
+[
+  {
+    "name": "5 Assurances",
+    "color": "#ff7f50",
+    "accentText": "5",
+    "verses": [
+      {
+        "id": 1,
+        "title": "Assurance of Salvation",
+        "verse": "And this is the testimony: God has given us eternal life, and this life is in his Son. Whoever has the Son has life; whoever does not have the Son of God does not have life.",
+        "book": "1 John",
+        "reference": "5:11-12",
+        "subpack": ""
+      },
+      {
+        "id": 2,
+        "title": "Assurance of Answered Prayer",
+        "verse": "Until now you have not asked for anything in my name. Ask and you will receive, and your joy will be complete.",
+        "book": "John",
+        "reference": "16:24",
+        "subpack": ""
+      },
+      {
+        "id": 3,
+        "title": "Assurance of Victory",
+        "verse": "No temptation has overtaken you except what is common to mankind. And God is faithful; he will not let you be tempted beyond what you can bear. But when you are tempted, he will also provide a way out so that you can endure it.",
+        "book": "1 Corinthians",
+        "reference": "10:13",
+        "subpack": ""
+      },
+      {
+        "id": 4,
+        "title": "Assurance of Forgiveness",
+        "verse": "If we confess our sins, he is faithful and just and will forgive us our sins and purify us from all unrighteousness.",
+        "book": "1 John",
+        "reference": "1:9",
+        "subpack": ""
+      },
+      {
+        "id": 5,
+        "title": "Assurance of Guidance",
+        "verse": "Trust in the Lord with all your heart and lean not on your own understanding; in all your ways submit to him, and he will make your paths straight.",
+        "book": "Proverbs",
+        "reference": "3:5-6",
+        "subpack": ""
+      }
+    ]
+  },
+  {
+    "name": "TMS Pack A - Live the New Life",
+    "color": "#c8a800",
+    "accentText": "A",
+    "verses": [
+      {
+        "id": 11,
+        "title": "Christ the Center",
+        "verse": "Therefore, if anyone is in Christ, the new creation has come: The old has gone, the new is here!",
+        "book": "2 Corinthians",
+        "reference": "5:17",
+        "subpack": "A"
+      },
+      {
+        "id": 12,
+        "title": "Christ the Center",
+        "verse": "I have been crucified with Christ and I no longer live, but Christ lives in me. The life I now live in the body, I live by faith in the Son of God, who loved me and gave himself for me.",
+        "book": "Galatians",
+        "reference": "2:20",
+        "subpack": "A"
+      },
+      {
+        "id": 13,
+        "title": "Obedience to Christ",
+        "verse": "Therefore, I urge you, brothers and sisters, in view of God's mercy, to offer your bodies as a living sacrifice, holy and pleasing to God—this is your true and proper worship.",
+        "book": "Romans",
+        "reference": "12:1",
+        "subpack": "A"
+      },
+      {
+        "id": 14,
+        "title": "Obedience to Christ",
+        "verse": "Whoever has my commands and keeps them is the one who loves me. The one who loves me will be loved by my Father, and I too will love them and show myself to them.",
+        "book": "John",
+        "reference": "14:21",
+        "subpack": "A"
+      },
+      {
+        "id": 15,
+        "title": "The Word",
+        "verse": "All Scripture is God-breathed and is useful for teaching, rebuking, correcting and training in righteousness,",
+        "book": "2 Timothy",
+        "reference": "3:16",
+        "subpack": "A"
+      },
+      {
+        "id": 16,
+        "title": "The Word",
+        "verse": "Keep this Book of the Law always on your lips; meditate on it day and night, so that you may be careful to do everything written in it. Then you will be prosperous and successful.",
+        "book": "Joshua",
+        "reference": "1:8",
+        "subpack": "A"
+      },
+      {
+        "id": 17,
+        "title": "Prayer",
+        "verse": "If you remain in me and my words remain in you, ask whatever you wish, and it will be done for you.",
+        "book": "John",
+        "reference": "15:7",
+        "subpack": "A"
+      },
+      {
+        "id": 18,
+        "title": "Prayer",
+        "verse": "Do not be anxious about anything, but in every situation, by prayer and petition, with thanksgiving, present your requests to God. And the peace of God, which transcends all understanding, will guard your hearts and your minds in Christ Jesus.",
+        "book": "Philippians",
+        "reference": "4:6-7",
+        "subpack": "A"
+      },
+      {
+        "id": 19,
+        "title": "Fellowship",
+        "verse": "For where two or three gather in my name, there am I with them.",
+        "book": "Matthew",
+        "reference": "18:20",
+        "subpack": "A"
+      },
+      {
+        "id": 20,
+        "title": "Fellowship",
+        "verse": "And let us consider how we may spur one another on toward love and good deeds, not giving up meeting together, as some are in the habit of doing, but encouraging one another—and all the more as you see the Day approaching.",
+        "book": "Hebrews",
+        "reference": "10:24-25",
+        "subpack": "A"
+      },
+      {
+        "id": 21,
+        "title": "Witnessing",
+        "verse": "\"Come, follow me,\" Jesus said, \"and I will send you out to fish for people.\"",
+        "book": "Matthew",
+        "reference": "4:19",
+        "subpack": "A"
+      },
+      {
+        "id": 22,
+        "title": "Witnessing",
+        "verse": "For I am not ashamed of the gospel, because it is the power of God that brings salvation to everyone who believes: first to the Jew, then to the Gentile.",
+        "book": "Romans",
+        "reference": "1:16",
+        "subpack": "A"
+      }
+    ]
+  },
+  {
+    "name": "TMS Pack B - Proclaim Christ",
+    "color": "#dc143c",
+    "accentText": "B",
+    "verses": [
+      {
+        "id": 31,
+        "title": "All Have Sinned",
+        "verse": "for all have sinned and fall short of the glory of God,",
+        "book": "Romans",
+        "reference": "3:23",
+        "subpack": "B"
+      },
+      {
+        "id": 32,
+        "title": "All Have Sinned",
+        "verse": "We all, like sheep, have gone astray, each of us has turned to our own way; and the Lord has laid on him the iniquity of us all.",
+        "book": "Isaiah",
+        "reference": "53:6",
+        "subpack": "B"
+      },
+      {
+        "id": 33,
+        "title": "Sin's Penalty",
+        "verse": "For the wages of sin is death, but the gift of God is eternal life in Christ Jesus our Lord.",
+        "book": "Romans",
+        "reference": "6:23",
+        "subpack": "B"
+      },
+      {
+        "id": 34,
+        "title": "Sin's Penalty",
+        "verse": "Just as people are destined to die once, and after that to face judgment,",
+        "book": "Hebrews",
+        "reference": "9:27",
+        "subpack": "B"
+      },
+      {
+        "id": 35,
+        "title": "Christ Paid the Penalty",
+        "verse": "But God demonstrates his own love for us in this: While we were still sinners, Christ died for us.",
+        "book": "Romans",
+        "reference": "5:8",
+        "subpack": "B"
+      },
+      {
+        "id": 36,
+        "title": "Christ Paid the Penalty",
+        "verse": "For Christ also suffered once for sins, the righteous for the unrighteous, to bring you to God. He was put to death in the body but made alive in the Spirit.",
+        "book": "1 Peter",
+        "reference": "3:18",
+        "subpack": "B"
+      },
+      {
+        "id": 37,
+        "title": "Salvation Not by Works",
+        "verse": "For it is by grace you have been saved, through faith—and this is not from yourselves, it is the gift of God— not by works, so that no one can boast.",
+        "book": "Ephesians",
+        "reference": "2:8-9",
+        "subpack": "B"
+      },
+      {
+        "id": 38,
+        "title": "Salvation Not by Works",
+        "verse": "he saved us, not because of righteous things we had done, but because of his mercy. He saved us through the washing of rebirth and renewal by the Holy Spirit,",
+        "book": "Titus",
+        "reference": "3:5",
+        "subpack": "B"
+      },
+      {
+        "id": 39,
+        "title": "Must Receive Christ",
+        "verse": "Yet to all who did receive him, to those who believed in his name, he gave the right to become children of God—",
+        "book": "John",
+        "reference": "1:12",
+        "subpack": "B"
+      },
+      {
+        "id": 40,
+        "title": "Must Receive Christ",
+        "verse": "Here I am! I stand at the door and knock. If anyone hears my voice and opens the door, I will come in and eat with that person, and they with me.",
+        "book": "Revelation",
+        "reference": "3:20",
+        "subpack": "B"
+      },
+      {
+        "id": 41,
+        "title": "Assurance of Salvation",
+        "verse": "I write these things to you who believe in the name of the Son of God so that you may know that you have eternal life.",
+        "book": "1 John",
+        "reference": "5:13",
+        "subpack": "B"
+      },
+      {
+        "id": 42,
+        "title": "Assurance of Salvation",
+        "verse": "\"Very truly I tell you, whoever hears my word and believes him who sent me has eternal life and will not be judged but has crossed over from death to life.\"",
+        "book": "John",
+        "reference": "5:24",
+        "subpack": "B"
+      }
+    ]
+  },
+  {
+    "name": "TMS Pack C - Rely on God's Resources",
+    "color": "#1e90ff",
+    "accentText": "C",
+    "verses": [
+      {
+        "id": 51,
+        "title": "His Spirit",
+        "verse": "Don't you know that you yourselves are God's temple and that God's Spirit dwells in your midst?",
+        "book": "1 Corinthians",
+        "reference": "3:16",
+        "subpack": "C"
+      },
+      {
+        "id": 52,
+        "title": "His Spirit",
+        "verse": "What we have received is not the spirit of the world, but the Spirit who is from God, so that we may understand what God has freely given us.",
+        "book": "1 Corinthians",
+        "reference": "2:12",
+        "subpack": "C"
+      },
+      {
+        "id": 53,
+        "title": "His Strength",
+        "verse": "So do not fear, for I am with you; do not be dismayed, for I am your God. I will strengthen you and help you; I will uphold you with my righteous right hand.",
+        "book": "Isaiah",
+        "reference": "41:10",
+        "subpack": "C"
+      },
+      {
+        "id": 54,
+        "title": "His Strength",
+        "verse": "I can do all this through him who gives me strength.",
+        "book": "Philippians",
+        "reference": "4:13",
+        "subpack": "C"
+      },
+      {
+        "id": 55,
+        "title": "His Faithfulness",
+        "verse": "Because of the Lord's great love we are not consumed, for his compassions never fail. They are new every morning; great is your faithfulness.",
+        "book": "Lamentations",
+        "reference": "3:22-23",
+        "subpack": "C"
+      },
+      {
+        "id": 56,
+        "title": "His Faithfulness",
+        "verse": "God is not human, that he should lie, not a human being, that he should change his mind. Does he speak and then not act? Does he promise and not fulfill?",
+        "book": "Numbers",
+        "reference": "23:19",
+        "subpack": "C"
+      },
+      {
+        "id": 57,
+        "title": "His Peace",
+        "verse": "You will keep in perfect peace those whose minds are steadfast, because they trust in you.",
+        "book": "Isaiah",
+        "reference": "26:3",
+        "subpack": "C"
+      },
+      {
+        "id": 58,
+        "title": "His Peace",
+        "verse": "Cast all your anxiety on him because he cares for you.",
+        "book": "1 Peter",
+        "reference": "5:7",
+        "subpack": "C"
+      },
+      {
+        "id": 59,
+        "title": "His Provision",
+        "verse": "He who did not spare his own Son, but gave him up for us all—how will he not also, along with him, graciously give us all things?",
+        "book": "Romans",
+        "reference": "8:32",
+        "subpack": "C"
+      },
+      {
+        "id": 60,
+        "title": "His Provision",
+        "verse": "And my God will meet all your needs according to the riches of his glory in Christ Jesus.",
+        "book": "Philippians",
+        "reference": "4:19",
+        "subpack": "C"
+      },
+      {
+        "id": 61,
+        "title": "His Help in Temptation",
+        "verse": "Because he himself suffered when he was tempted, he is able to help those who are being tempted.",
+        "book": "Hebrews",
+        "reference": "2:18",
+        "subpack": "C"
+      },
+      {
+        "id": 62,
+        "title": "His Help in Temptation",
+        "verse": "How can a young person stay on the path of purity? By living according to your word. I have hidden your word in my heart that I might not sin against you.",
+        "book": "Psalm",
+        "reference": "119:9, 11",
+        "subpack": "C"
+      }
+    ]
+  },
+  {
+    "name": "TMS Pack D - Be Christ's Disciple",
+    "color": "#5bbf00",
+    "accentText": "D",
+    "verses": [
+      {
+        "id": 71,
+        "title": "Put Christ First",
+        "verse": "But seek first his kingdom and his righteousness, and all these things will be given to you as well.",
+        "book": "Matthew",
+        "reference": "6:33",
+        "subpack": "D"
+      },
+      {
+        "id": 72,
+        "title": "Put Christ First",
+        "verse": "Then he said to them all: \"Whoever wants to be my disciple must deny themselves and take up their cross daily and follow me.\"",
+        "book": "Luke",
+        "reference": "9:23",
+        "subpack": "D"
+      },
+      {
+        "id": 73,
+        "title": "Separate from the World",
+        "verse": "Do not love the world or anything in the world. If anyone loves the world, love for the Father is not in them. For everything in the world—the lust of the flesh, the lust of the eyes, and the pride of life—comes not from the Father but from the world.",
+        "book": "1 John",
+        "reference": "2:15-16",
+        "subpack": "D"
+      },
+      {
+        "id": 74,
+        "title": "Separate from the World",
+        "verse": "Do not conform to the pattern of this world, but be transformed by the renewing of your mind. Then you will be able to test and approve what God's will is—his good, pleasing and perfect will.",
+        "book": "Romans",
+        "reference": "12:2",
+        "subpack": "D"
+      },
+      {
+        "id": 75,
+        "title": "Be Steadfast",
+        "verse": "Therefore, my dear brothers and sisters, stand firm. Let nothing move you. Always give yourselves fully to the work of the Lord, because you know that your labor in the Lord is not in vain.",
+        "book": "1 Corinthians",
+        "reference": "15:58",
+        "subpack": "D"
+      },
+      {
+        "id": 76,
+        "title": "Be Steadfast",
+        "verse": "Consider him who endured such opposition from sinners, so that you will not grow weary and lose heart.",
+        "book": "Hebrews",
+        "reference": "12:3",
+        "subpack": "D"
+      },
+      {
+        "id": 77,
+        "title": "Serve Others",
+        "verse": "For even the Son of Man did not come to be served, but to serve, and to give his life as a ransom for many.",
+        "book": "Mark",
+        "reference": "10:45",
+        "subpack": "D"
+      },
+      {
+        "id": 78,
+        "title": "Serve Others",
+        "verse": "For what we preach is not ourselves, but Jesus Christ as Lord, and ourselves as your servants for Jesus' sake.",
+        "book": "2 Corinthians",
+        "reference": "4:5",
+        "subpack": "D"
+      },
+      {
+        "id": 79,
+        "title": "Give Generously",
+        "verse": "Honor the Lord with your wealth, with the firstfruits of all your crops; then your barns will be filled to overflowing, and your vats will brim over with new wine.",
+        "book": "Proverbs",
+        "reference": "3:9-10",
+        "subpack": "D"
+      },
+      {
+        "id": 80,
+        "title": "Give Generously",
+        "verse": "Remember this: Whoever sows sparingly will also reap sparingly, and whoever sows generously will also reap generously. Each of you should give what you have decided in your heart to give, not reluctantly or under compulsion, for God loves a cheerful giver.",
+        "book": "2 Corinthians",
+        "reference": "9:6-7",
+        "subpack": "D"
+      },
+      {
+        "id": 81,
+        "title": "Develop World Vision",
+        "verse": "But you will receive power when the Holy Spirit comes on you; and you will be my witnesses in Jerusalem, and in all Judea and Samaria, and to the ends of the earth.",
+        "book": "Acts",
+        "reference": "1:8",
+        "subpack": "D"
+      },
+      {
+        "id": 82,
+        "title": "Develop World Vision",
+        "verse": "Therefore go and make disciples of all nations, baptizing them in the name of the Father and of the Son and of the Holy Spirit, and teaching them to obey everything I have commanded you. And surely I am with you always, to the very end of the age.",
+        "book": "Matthew",
+        "reference": "28:19-20",
+        "subpack": "D"
+      }
+    ]
+  },
+  {
+    "name": "TMS Pack E - Grow in Christlikeness",
+    "color": "#9b50bb",
+    "accentText": "E",
+    "verses": [
+      {
+        "id": 91,
+        "title": "Love",
+        "verse": "A new command I give you: Love one another. As I have loved you, so you must love one another. By this everyone will know that you are my disciples, if you love one another.",
+        "book": "John",
+        "reference": "13:34-35",
+        "subpack": "E"
+      },
+      {
+        "id": 92,
+        "title": "Love",
+        "verse": "Dear children, let us not love with words or speech but with actions and in truth.",
+        "book": "1 John",
+        "reference": "3:18",
+        "subpack": "E"
+      },
+      {
+        "id": 93,
+        "title": "Humility",
+        "verse": "Do nothing out of selfish ambition or vain conceit. Rather, in humility value others above yourselves, not looking to your own interests but each of you to the interests of the others.",
+        "book": "Philippians",
+        "reference": "2:3-4",
+        "subpack": "E"
+      },
+      {
+        "id": 94,
+        "title": "Humility",
+        "verse": "All of you, clothe yourselves with humility toward one another, because God opposes the proud but shows favor to the humble. Humble yourselves, therefore, under God's mighty hand, that he may lift you up in due time.",
+        "book": "1 Peter",
+        "reference": "5:5-6",
+        "subpack": "E"
+      },
+      {
+        "id": 95,
+        "title": "Purity",
+        "verse": "But among you there must not be even a hint of sexual immorality, or of any kind of impurity, or of greed, because these are improper for God's holy people.",
+        "book": "Ephesians",
+        "reference": "5:3",
+        "subpack": "E"
+      },
+      {
+        "id": 96,
+        "title": "Purity",
+        "verse": "Dear friends, I urge you, as foreigners and exiles, to abstain from sinful desires, which wage war against your soul.",
+        "book": "1 Peter",
+        "reference": "2:11",
+        "subpack": "E"
+      },
+      {
+        "id": 97,
+        "title": "Honesty",
+        "verse": "Do not steal. Do not lie. Do not deceive one another.",
+        "book": "Leviticus",
+        "reference": "19:11",
+        "subpack": "E"
+      },
+      {
+        "id": 98,
+        "title": "Honesty",
+        "verse": "So I strive always to keep my conscience clear before God and man.",
+        "book": "Acts",
+        "reference": "24:16",
+        "subpack": "E"
+      },
+      {
+        "id": 99,
+        "title": "Faith",
+        "verse": "And without faith it is impossible to please God, because anyone who comes to him must believe that he exists and that he rewards those who earnestly seek him.",
+        "book": "Hebrews",
+        "reference": "11:6",
+        "subpack": "E"
+      },
+      {
+        "id": 100,
+        "title": "Faith",
+        "verse": "Yet he did not waver through unbelief regarding the promise of God, but was strengthened in his faith and gave glory to God, being fully persuaded that God had the power to do what he had promised.",
+        "book": "Romans",
+        "reference": "4:20-21",
+        "subpack": "E"
+      },
+      {
+        "id": 101,
+        "title": "Good Works",
+        "verse": "Let us not become weary in doing good, for at the proper time we will reap a harvest if we do not give up. Therefore, as we have opportunity, let us do good to all people, especially to those who belong to the family of believers.",
+        "book": "Galatians",
+        "reference": "6:9-10",
+        "subpack": "E"
+      },
+      {
+        "id": 102,
+        "title": "Good Works",
+        "verse": "In the same way, let your light shine before others, that they may see your good deeds and glorify your Father in heaven.",
+        "book": "Matthew",
+        "reference": "5:16",
+        "subpack": "E"
+      }
+    ]
+  },
+  {
+    "name": "DEP 242 Pack 1 - Assurance of Salvation",
+    "color": "#0a1fbe",
+    "accentText": "",
+    "verses": [
+      {
+        "id": 2101,
+        "title": "Can be assured",
+        "verse": "Examine yourselves to see whether you are in the faith; test yourselves. Do you not realize that Christ Jesus is in you—unless, of course, you fail the test?",
+        "book": "2 Corinthians",
+        "reference": "13:5",
+        "subpack": ""
+      },
+      {
+        "id": 2102,
+        "title": "Can be assured",
+        "verse": "And this is the testimony: God has given us eternal life, and this life is in his Son. Whoever has the Son has life; whoever does not have the Son of God does not have life.",
+        "book": "1 John",
+        "reference": "5:11-12",
+        "subpack": ""
+      },
+      {
+        "id": 2103,
+        "title": "Assured of having eternal life",
+        "verse": "I write these things to you who believe in the name of the Son of God so that you may know that you have eternal life.",
+        "book": "1 John",
+        "reference": "5:13",
+        "subpack": ""
+      },
+      {
+        "id": 2104,
+        "title": "Assured of having eternal life",
+        "verse": "Very truly I tell you, the one who believes has eternal life.",
+        "book": "John",
+        "reference": "6:47",
+        "subpack": ""
+      },
+      {
+        "id": 2105,
+        "title": "Forgiveness of sin",
+        "verse": "In him we have redemption through his blood, the forgiveness of sins, in accordance with the riches of God's grace",
+        "book": "Ephesians",
+        "reference": "1:7",
+        "subpack": ""
+      },
+      {
+        "id": 2106,
+        "title": "Forgiveness of sin",
+        "verse": "Therefore, there is now no condemnation for those who are in Christ Jesus,",
+        "book": "Romans",
+        "reference": "8:1",
+        "subpack": ""
+      },
+      {
+        "id": 2107,
+        "title": "Justified",
+        "verse": "and all are justified freely by his grace through the redemption that came by Christ Jesus.",
+        "book": "Romans",
+        "reference": "3:24",
+        "subpack": ""
+      },
+      {
+        "id": 2108,
+        "title": "Justified",
+        "verse": "Therefore, since we have been justified through faith, we have peace with God through our Lord Jesus Christ,",
+        "book": "Romans",
+        "reference": "5:1",
+        "subpack": ""
+      },
+      {
+        "id": 2109,
+        "title": "Born again in Christ",
+        "verse": "Praise be to the God and Father of our Lord Jesus Christ! In his great mercy he has given us new birth into a living hope through the resurrection of Jesus Christ from the dead,",
+        "book": "1 Peter",
+        "reference": "1:3",
+        "subpack": ""
+      },
+      {
+        "id": 2110,
+        "title": "Born again in Christ",
+        "verse": "he saved us, not because of righteous things we had done, but because of his mercy. He saved us through the washing of rebirth and renewal by the Holy Spirit,",
+        "book": "Titus",
+        "reference": "3:5",
+        "subpack": ""
+      },
+      {
+        "id": 2111,
+        "title": "Being children of God",
+        "verse": "So in Christ Jesus you are all children of God through faith,",
+        "book": "Galatians",
+        "reference": "3:26",
+        "subpack": ""
+      },
+      {
+        "id": 2112,
+        "title": "Being children of God",
+        "verse": "For those who are led by the Spirit of God are the children of God.",
+        "book": "Romans",
+        "reference": "8:14",
+        "subpack": ""
+      },
+      {
+        "id": 2113,
+        "title": "Holy Spirit living in Believers",
+        "verse": "You, however, are not in the realm of the flesh but are in the realm of the Spirit, if indeed the Spirit of God lives in you. And if anyone does not have the Spirit of Christ, they do not belong to Christ.",
+        "book": "Romans",
+        "reference": "8:9",
+        "subpack": ""
+      },
+      {
+        "id": 2114,
+        "title": "Holy Spirit living in Believers",
+        "verse": "And I will ask the Father, and he will give you another advocate to help you and be with you forever— the Spirit of truth. The world cannot accept him, because it neither sees him nor knows him. But you know him, for he lives with you and will be in you.",
+        "book": "John",
+        "reference": "14:16-17",
+        "subpack": ""
+      },
+      {
+        "id": 2115,
+        "title": "Salvation never to be lost",
+        "verse": "I give them eternal life, and they shall never perish; no one will snatch them out of my hand. My Father, who has given them to me, is greater than all; no one can snatch them out of my Father's hand.",
+        "book": "John",
+        "reference": "10:28-29",
+        "subpack": ""
+      },
+      {
+        "id": 2116,
+        "title": "Salvation never to be lost",
+        "verse": "neither height nor depth, nor anything else in all creation, will be able to separate us from the love of God that is in Christ Jesus our Lord.",
+        "book": "Romans",
+        "reference": "8:39",
+        "subpack": ""
+      },
+      {
+        "id": 2117,
+        "title": "Assurance based on the Word",
+        "verse": "For you have been born again, not of perishable seed, but of imperishable, through the living and enduring word of God.",
+        "book": "1 Peter",
+        "reference": "1:23",
+        "subpack": ""
+      },
+      {
+        "id": 2118,
+        "title": "Assurance based on the Word",
+        "verse": "And you also were included in Christ when you heard the message of truth, the gospel of your salvation. When you believed, you were marked in him with a seal, the promised Holy Spirit,",
+        "book": "Ephesians",
+        "reference": "1:13",
+        "subpack": ""
+      }
+    ]
+  },
+  {
+    "name": "DEP 242 Pack 2 - Quiet Time",
+    "color": "#07c387",
+    "accentText": "",
+    "verses": [
+      {
+        "id": 2201,
+        "title": "God wants to fellowship with us",
+        "verse": "God is faithful, who has called you into fellowship with his Son, Jesus Christ our Lord.",
+        "book": "1 Corinthians",
+        "reference": "1:9",
+        "subpack": ""
+      },
+      {
+        "id": 2202,
+        "title": "God wants to fellowship with us",
+        "verse": "Yet the Lord longs to be gracious to you; therefore he will rise up to show you compassion. For the Lord is a God of justice. Blessed are all who wait for him!",
+        "book": "Isaiah",
+        "reference": "30:18",
+        "subpack": ""
+      },
+      {
+        "id": 2203,
+        "title": "God's command",
+        "verse": "Seek the Lord while he may be found; call on him while he is near.",
+        "book": "Isaiah",
+        "reference": "55:6",
+        "subpack": ""
+      },
+      {
+        "id": 2204,
+        "title": "God's command",
+        "verse": "My heart says of you, \"Seek his face!\" Your face, Lord, I will seek.",
+        "book": "Psalm",
+        "reference": "27:8",
+        "subpack": ""
+      },
+      {
+        "id": 2205,
+        "title": "Promise of blessings",
+        "verse": "\"I am the vine; you are the branches. If you remain in me and I in you, you will bear much fruit; apart from me you can do nothing.",
+        "book": "John",
+        "reference": "15:5",
+        "subpack": ""
+      },
+      {
+        "id": 2206,
+        "title": "Promise of blessings",
+        "verse": "The lions may grow weak and hungry, but those who seek the Lord lack no good thing.",
+        "book": "Psalm",
+        "reference": "34:10",
+        "subpack": ""
+      },
+      {
+        "id": 2207,
+        "title": "To discern and obey God's will",
+        "verse": "I will stand at my watch and station myself on the ramparts; I will look to see what he will say to me, and what answer I am to give to this complaint.",
+        "book": "Habakkuk",
+        "reference": "2:1",
+        "subpack": ""
+      },
+      {
+        "id": 2208,
+        "title": "To discern and obey God's will",
+        "verse": "Let the morning bring me word of your unfailing love, for I have put my trust in you. Show me the way I should go, for to you I entrust my life. Teach me to do your will, for you are my God; may your good Spirit lead me on level ground.",
+        "book": "Psalm",
+        "reference": "143:8, 10",
+        "subpack": ""
+      },
+      {
+        "id": 2209,
+        "title": "Looking on the Lord",
+        "verse": "fixing our eyes on Jesus, the pioneer and perfecter of faith. For the joy set before him he endured the cross, scorning its shame, and sat down at the right hand of the throne of God.",
+        "book": "Hebrews",
+        "reference": "12:2",
+        "subpack": ""
+      },
+      {
+        "id": 2210,
+        "title": "Looking on the Lord",
+        "verse": "Why, my soul, are you downcast? Why so disturbed within me? Put your hope in God, for I will yet praise him, my Savior and my God.",
+        "book": "Psalm",
+        "reference": "42:11",
+        "subpack": ""
+      },
+      {
+        "id": 2211,
+        "title": "Coming to the Lord with thirst",
+        "verse": "As the deer pants for streams of water, so my soul pants for you, my God.",
+        "book": "Psalm",
+        "reference": "42:1",
+        "subpack": ""
+      },
+      {
+        "id": 2212,
+        "title": "Coming to the Lord with thirst",
+        "verse": "I wait for the Lord, my whole being waits, and in his word I put my hope. I wait for the Lord more than watchmen wait for the morning, more than watchmen wait for the morning.",
+        "book": "Psalm",
+        "reference": "130:5-6",
+        "subpack": ""
+      },
+      {
+        "id": 2213,
+        "title": "Casting our burdens on the Lord",
+        "verse": "Cast your cares on the Lord and he will sustain you; he will never let the righteous be shaken.",
+        "book": "Psalm",
+        "reference": "55:22",
+        "subpack": ""
+      },
+      {
+        "id": 2214,
+        "title": "Casting our burdens on the Lord",
+        "verse": "Praise be to the Lord, to God our Savior, who daily bears our burdens.",
+        "book": "Psalm",
+        "reference": "68:19",
+        "subpack": ""
+      },
+      {
+        "id": 2215,
+        "title": "Taking refuge and rest in the Lord",
+        "verse": "If you say, \"The Lord is my refuge,\" and you make the Most High your dwelling, no harm will overtake you, no disaster will come near your tent.",
+        "book": "Psalm",
+        "reference": "91:9-10",
+        "subpack": ""
+      },
+      {
+        "id": 2216,
+        "title": "Taking refuge and rest in the Lord",
+        "verse": "\"Come to me, all you who are weary and burdened, and I will give you rest. Take my yoke upon you and learn from me, for I am gentle and humble in heart, and you will find rest for your souls.",
+        "book": "Matthew",
+        "reference": "11:28-29",
+        "subpack": ""
+      },
+      {
+        "id": 2217,
+        "title": "Meeting the Lord in the Word and prayer",
+        "verse": "I rise before dawn and cry for help; I have put my hope in your word. My eyes stay open through the watches of the night, that I may meditate on your promises.",
+        "book": "Psalm",
+        "reference": "119:147-148",
+        "subpack": ""
+      },
+      {
+        "id": 2218,
+        "title": "Meeting the Lord in the Word and prayer",
+        "verse": "In the morning, Lord, you hear my voice; in the morning I lay my requests before you and wait expectantly.",
+        "book": "Psalm",
+        "reference": "5:3",
+        "subpack": ""
+      },
+      {
+        "id": 2219,
+        "title": "Worshiping the Lord",
+        "verse": "Come, let us bow down in worship, let us kneel before the Lord our Maker;",
+        "book": "Psalm",
+        "reference": "95:6",
+        "subpack": ""
+      },
+      {
+        "id": 2220,
+        "title": "Worshiping the Lord",
+        "verse": "Through Jesus, therefore, let us continually offer to God a sacrifice of praise—the fruit of lips that openly profess his name.",
+        "book": "Hebrews",
+        "reference": "13:15",
+        "subpack": ""
+      },
+      {
+        "id": 2221,
+        "title": "Getting daily satisfaction",
+        "verse": "Satisfy us in the morning with your unfailing love, that we may sing for joy and be glad all our days.",
+        "book": "Psalm",
+        "reference": "90:14",
+        "subpack": ""
+      },
+      {
+        "id": 2222,
+        "title": "Getting daily satisfaction",
+        "verse": "for he satisfies the thirsty and fills the hungry with good things.",
+        "book": "Psalm",
+        "reference": "107:9",
+        "subpack": ""
+      },
+      {
+        "id": 2223,
+        "title": "Jesus - praying very early in the morning",
+        "verse": "Very early in the morning, while it was still dark, Jesus got up, left the house and went off to a solitary place, where he prayed.",
+        "book": "Mark",
+        "reference": "1:35",
+        "subpack": ""
+      },
+      {
+        "id": 2224,
+        "title": "Moses - personal fellowship with the Lord",
+        "verse": "The Lord would speak to Moses face to face, as one speaks to a friend. Then Moses would return to the camp, but his young aide Joshua son of Nun did not leave the tent.",
+        "book": "Exodus",
+        "reference": "33:11",
+        "subpack": ""
+      },
+      {
+        "id": 2225,
+        "title": "Daniel - giving top priority to the fellowship",
+        "verse": "Now when Daniel learned that the decree had been published, he went home to his upstairs room where the windows opened toward Jerusalem. Three times a day he got down on his knees and prayed, giving thanks to his God, just as he had done before.",
+        "book": "Daniel",
+        "reference": "6:10",
+        "subpack": ""
+      },
+      {
+        "id": 2226,
+        "title": "Disciples - understanding the Word when alone with Jesus",
+        "verse": "He did not say anything to them without using a parable. But when he was alone with his own disciples, he explained everything.",
+        "book": "Mark",
+        "reference": "4:34",
+        "subpack": ""
+      }
+    ]
+  },
+  {
+    "name": "DEP 242 Pack 3 - The Word",
+    "color": "#ce4611",
+    "accentText": "",
+    "verses": [
+      {
+        "id": 2301,
+        "title": "Inspired by God",
+        "verse": "All Scripture is God-breathed and is useful for teaching, rebuking, correcting and training in righteousness,",
+        "book": "2 Timothy",
+        "reference": "3:16",
+        "subpack": ""
+      },
+      {
+        "id": 2302,
+        "title": "Inspired by God",
+        "verse": "For prophecy never had its origin in the human will, but prophets, though human, spoke from God as they were carried along by the Holy Spirit.",
+        "book": "2 Peter",
+        "reference": "1:21",
+        "subpack": ""
+      },
+      {
+        "id": 2303,
+        "title": "Standing forever and never changing",
+        "verse": "Heaven and earth will pass away, but my words will never pass away.",
+        "book": "Matthew",
+        "reference": "24:35",
+        "subpack": ""
+      },
+      {
+        "id": 2304,
+        "title": "Standing forever and never changing",
+        "verse": "For, \"All people are like grass, and all their glory is like the flowers of the field; the grass withers and the flowers fall, but the word of the Lord endures forever.\" And this is the word that was preached to you.",
+        "book": "1 Peter",
+        "reference": "1:24-25",
+        "subpack": ""
+      },
+      {
+        "id": 2305,
+        "title": "Being the truth",
+        "verse": "Sanctify them by the truth; your word is truth.",
+        "book": "John",
+        "reference": "17:17",
+        "subpack": ""
+      },
+      {
+        "id": 2306,
+        "title": "Being the truth",
+        "verse": "Sovereign Lord, you are God! Your covenant is trustworthy, and you have promised these good things to your servant.",
+        "book": "2 Samuel",
+        "reference": "7:28",
+        "subpack": ""
+      },
+      {
+        "id": 2307,
+        "title": "Having power",
+        "verse": "\"Is not my word like fire,\" declares the Lord, \"and like a hammer that breaks a rock in pieces?\"",
+        "book": "Jeremiah",
+        "reference": "23:29",
+        "subpack": ""
+      },
+      {
+        "id": 2308,
+        "title": "Having power",
+        "verse": "for which I am suffering even to the point of being chained like a criminal. But God's word is not chained.",
+        "book": "2 Timothy",
+        "reference": "2:9",
+        "subpack": ""
+      },
+      {
+        "id": 2309,
+        "title": "Jesus also confirmed the Word",
+        "verse": "Jesus answered, \"It is written: 'Man shall not live on bread alone, but on every word that comes from the mouth of God.'\"",
+        "book": "Matthew",
+        "reference": "4:4",
+        "subpack": ""
+      },
+      {
+        "id": 2310,
+        "title": "Jesus also confirmed the Word",
+        "verse": "And beginning with Moses and all the Prophets, he explained to them what was said in all the Scriptures concerning himself.",
+        "book": "Luke",
+        "reference": "24:27",
+        "subpack": ""
+      },
+      {
+        "id": 2311,
+        "title": "Making us born again",
+        "verse": "For you have been born again, not of perishable seed, but of imperishable, through the living and enduring word of God.",
+        "book": "1 Peter",
+        "reference": "1:23",
+        "subpack": ""
+      },
+      {
+        "id": 2312,
+        "title": "Making us born again",
+        "verse": "He chose to give us birth through the word of truth, that we might be a kind of firstfruits of all he created.",
+        "book": "James",
+        "reference": "1:18",
+        "subpack": ""
+      },
+      {
+        "id": 2313,
+        "title": "Helping us grow up",
+        "verse": "Like newborn babies, crave pure spiritual milk, so that by it you may grow up in your salvation,",
+        "book": "1 Peter",
+        "reference": "2:2",
+        "subpack": ""
+      },
+      {
+        "id": 2314,
+        "title": "Helping us grow up",
+        "verse": "\"Now I commit you to God and to the word of his grace, which can build you up and give you an inheritance among all those who are sanctified.",
+        "book": "Acts",
+        "reference": "20:32",
+        "subpack": ""
+      },
+      {
+        "id": 2315,
+        "title": "Giving guidance",
+        "verse": "Your word is a lamp for my feet, a light on my path.",
+        "book": "Psalm",
+        "reference": "119:105",
+        "subpack": ""
+      },
+      {
+        "id": 2316,
+        "title": "Giving guidance",
+        "verse": "When you walk, they will guide you; when you sleep, they will watch over you; when you awake, they will speak to you. For this command is a lamp, this teaching is a light, and correction and instruction are the way to life,",
+        "book": "Proverbs",
+        "reference": "6:22-23",
+        "subpack": ""
+      },
+      {
+        "id": 2317,
+        "title": "Solving problems",
+        "verse": "He sent out his word and healed them; he rescued them from the grave.",
+        "book": "Psalm",
+        "reference": "107:20",
+        "subpack": ""
+      },
+      {
+        "id": 2318,
+        "title": "Solving problems",
+        "verse": "The centurion replied, \"Lord, I do not deserve to have you come under my roof. But just say the word, and my servant will be healed.\"",
+        "book": "Matthew",
+        "reference": "8:8",
+        "subpack": ""
+      },
+      {
+        "id": 2319,
+        "title": "Being our joy and delight",
+        "verse": "When your words came, I ate them; they were my joy and my heart's delight, for I bear your name, Lord God Almighty.",
+        "book": "Jeremiah",
+        "reference": "15:16",
+        "subpack": ""
+      },
+      {
+        "id": 2320,
+        "title": "Being our joy and delight",
+        "verse": "Your statutes are my heritage forever; they are the joy of my heart.",
+        "book": "Psalm",
+        "reference": "119:111",
+        "subpack": ""
+      },
+      {
+        "id": 2321,
+        "title": "Being spiritual weapons",
+        "verse": "Take the helmet of salvation and the sword of the Spirit, which is the word of God.",
+        "book": "Ephesians",
+        "reference": "6:17",
+        "subpack": ""
+      },
+      {
+        "id": 2322,
+        "title": "Being spiritual weapons",
+        "verse": "For the word of God is alive and active. Sharper than any double-edged sword, it penetrates even to dividing soul and spirit, joints and marrow; it judges the thoughts and attitudes of the heart.",
+        "book": "Hebrews",
+        "reference": "4:12",
+        "subpack": ""
+      },
+      {
+        "id": 2323,
+        "title": "Search the Word every day",
+        "verse": "Now the Berean Jews were of more noble character than those in Thessalonica, for they received the message with great eagerness and examined the Scriptures every day to see if what Paul said was true.",
+        "book": "Acts",
+        "reference": "17:11",
+        "subpack": ""
+      },
+      {
+        "id": 2324,
+        "title": "Meditate on the Word all day long",
+        "verse": "Oh, how I love your law! I meditate on it all day long.",
+        "book": "Psalm",
+        "reference": "119:97",
+        "subpack": ""
+      },
+      {
+        "id": 2325,
+        "title": "Obey the Word before teaching",
+        "verse": "For Ezra had devoted himself to the study and observance of the Law of the Lord, and to teaching its decrees and laws in Israel.",
+        "book": "Ezra",
+        "reference": "7:10",
+        "subpack": ""
+      },
+      {
+        "id": 2326,
+        "title": "Treasure the Word more than daily bread",
+        "verse": "I have not departed from the commands of his lips; I have treasured the words of his mouth more than my daily bread.",
+        "book": "Job",
+        "reference": "23:12",
+        "subpack": ""
+      },
+      {
+        "id": 2327,
+        "title": "Trust and obey the Word",
+        "verse": "Simon answered, \"Master, we've worked hard all night and haven't caught anything. But because you say so, I will let down the nets.\" When they had done so, they caught such a large number of fish that their nets began to break.",
+        "book": "Luke",
+        "reference": "5:5-6",
+        "subpack": ""
+      },
+      {
+        "id": 2328,
+        "title": "Hearing",
+        "verse": "Consequently, faith comes from hearing the message, and the message is heard through the word about Christ.",
+        "book": "Romans",
+        "reference": "10:17",
+        "subpack": ""
+      },
+      {
+        "id": 2329,
+        "title": "Hearing",
+        "verse": "He replied, \"Blessed rather are those who hear the word of God and obey it.\"",
+        "book": "Luke",
+        "reference": "11:28",
+        "subpack": ""
+      },
+      {
+        "id": 2330,
+        "title": "Reading",
+        "verse": "Blessed is the one who reads aloud the words of this prophecy, and blessed are those who hear it and take to heart what is written in it, because the time is near.",
+        "book": "Revelation",
+        "reference": "1:3",
+        "subpack": ""
+      },
+      {
+        "id": 2331,
+        "title": "Reading",
+        "verse": "It is to be with him, and he is to read it all the days of his life so that he may learn to revere the Lord his God and follow carefully all the words of this law and these decrees",
+        "book": "Deuteronomy",
+        "reference": "17:19",
+        "subpack": ""
+      },
+      {
+        "id": 2332,
+        "title": "Studying",
+        "verse": "Now the Berean Jews were of more noble character than those in Thessalonica, for they received the message with great eagerness and examined the Scriptures every day to see if what Paul said was true.",
+        "book": "Acts",
+        "reference": "17:11",
+        "subpack": ""
+      },
+      {
+        "id": 2333,
+        "title": "Studying",
+        "verse": "Do your best to present yourself to God as one approved, a worker who does not need to be ashamed and who correctly handles the word of truth.",
+        "book": "2 Timothy",
+        "reference": "2:15",
+        "subpack": ""
+      },
+      {
+        "id": 2334,
+        "title": "Memorizing",
+        "verse": "These commandments that I give you today are to be on your hearts.",
+        "book": "Deuteronomy",
+        "reference": "6:6",
+        "subpack": ""
+      },
+      {
+        "id": 2335,
+        "title": "Memorizing",
+        "verse": "My son, keep my words and store up my commands within you. Keep my commands and you will live; guard my teachings as the apple of your eye. Bind them on your fingers; write them on the tablet of your heart.",
+        "book": "Proverbs",
+        "reference": "7:1-3",
+        "subpack": ""
+      },
+      {
+        "id": 2336,
+        "title": "Meditating",
+        "verse": "Blessed is the one who does not walk in step with the wicked or stand in the way that sinners take or sit in the company of mockers, but whose delight is in the law of the Lord, and who meditates on his law day and night.",
+        "book": "Psalm",
+        "reference": "1:1-2",
+        "subpack": ""
+      },
+      {
+        "id": 2337,
+        "title": "Meditating",
+        "verse": "Keep this Book of the Law always on your lips; meditate on it day and night, so that you may be careful to do everything written in it. Then you will be prosperous and successful.",
+        "book": "Joshua",
+        "reference": "1:8",
+        "subpack": ""
+      }
+    ]
+  },
+  {
+    "name": "DEP 242 Pack 5 - Fellowship",
+    "color": "#00b809",
+    "accentText": "",
+    "verses": [
+      {
+        "id": 2401,
+        "title": "The Blood of Christ",
+        "verse": "But now in Christ Jesus you who once were far away have been brought near by the blood of Christ.",
+        "book": "Ephesians",
+        "reference": "2:13",
+        "subpack": ""
+      },
+      {
+        "id": 2402,
+        "title": "The Blood of Christ",
+        "verse": "and through him to reconcile to himself all things, whether things on earth or things in heaven, by making peace through his blood, shed on the cross.",
+        "book": "Colossians",
+        "reference": "1:20",
+        "subpack": ""
+      },
+      {
+        "id": 2403,
+        "title": "God - The Father, The Son, The Holy Spirit",
+        "verse": "We proclaim to you what we have seen and heard, so that you also may have fellowship with us. And our fellowship is with the Father and with his Son, Jesus Christ.",
+        "book": "1 John",
+        "reference": "1:3",
+        "subpack": ""
+      },
+      {
+        "id": 2404,
+        "title": "God - The Father, The Son, The Holy Spirit",
+        "verse": "May the grace of the Lord Jesus Christ, and the love of God, and the fellowship of the Holy Spirit be with you all.",
+        "book": "2 Corinthians",
+        "reference": "13:14",
+        "subpack": ""
+      },
+      {
+        "id": 2405,
+        "title": "Promise of being with us",
+        "verse": "For where two or three gather in my name, there am I with them.",
+        "book": "Matthew",
+        "reference": "18:20",
+        "subpack": ""
+      },
+      {
+        "id": 2406,
+        "title": "Bestowing His blessings",
+        "verse": "How good and pleasant it is when God's people live together in unity! It is like precious oil poured on the head, running down on the beard, running down on Aaron's beard, down on the collar of his robe. It is as if the dew of Hermon were falling on Mount Zion. For there the Lord bestows his blessing, even life forevermore.",
+        "book": "Psalm",
+        "reference": "133:1-3",
+        "subpack": ""
+      },
+      {
+        "id": 2407,
+        "title": "Protection against sins",
+        "verse": "But encourage one another daily, as long as it is called \"Today,\" so that none of you may be hardened by sin's deceitfulness.",
+        "book": "Hebrews",
+        "reference": "3:13",
+        "subpack": ""
+      },
+      {
+        "id": 2408,
+        "title": "Helping up each other",
+        "verse": "Two are better than one, because they have a good return for their labor: If either of them falls down, one can help the other up. But pity anyone who falls and has no one to help them up.",
+        "book": "Ecclesiastes",
+        "reference": "4:9-10",
+        "subpack": ""
+      },
+      {
+        "id": 2409,
+        "title": "Training in godly life",
+        "verse": "Flee the evil desires of youth and pursue righteousness, faith, love and peace, along with those who call on the Lord out of a pure heart.",
+        "book": "2 Timothy",
+        "reference": "2:22",
+        "subpack": ""
+      },
+      {
+        "id": 2410,
+        "title": "Developing godly character",
+        "verse": "As iron sharpens iron, so one person sharpens another. As water reflects the face, so one's life reflects the heart.",
+        "book": "Proverbs",
+        "reference": "27:17, 19",
+        "subpack": ""
+      },
+      {
+        "id": 2411,
+        "title": "Getting God's wisdom",
+        "verse": "Walk with the wise and become wise, for a companion of fools suffers harm.",
+        "book": "Proverbs",
+        "reference": "13:20",
+        "subpack": ""
+      },
+      {
+        "id": 2412,
+        "title": "Attaining maturity",
+        "verse": "until we all reach unity in the faith and in the knowledge of the Son of God and become mature, attaining to the whole measure of the fullness of Christ.",
+        "book": "Ephesians",
+        "reference": "4:13",
+        "subpack": ""
+      },
+      {
+        "id": 2413,
+        "title": "Fruitful in the ministry",
+        "verse": "They devoted themselves to the apostles' teaching and to fellowship, to the breaking of bread and to prayer. praising God and enjoying the favor of all the people. And the Lord added to their number daily those who were being saved.",
+        "book": "Acts",
+        "reference": "2:42, 47",
+        "subpack": ""
+      },
+      {
+        "id": 2414,
+        "title": "Partnering in the gospel",
+        "verse": "because of your partnership in the gospel from the first day until now, Whatever happens, conduct yourselves in a manner worthy of the gospel of Christ. Then, whether I come and see you or only hear about you in my absence, I will know that you stand firm in the one Spirit, striving together as one for the faith of the gospel",
+        "book": "Philippians",
+        "reference": "1:5, 27",
+        "subpack": ""
+      },
+      {
+        "id": 2415,
+        "title": "Spurring one another",
+        "verse": "And let us consider how we may spur one another on toward love and good deeds, not giving up meeting together, as some are in the habit of doing, but encouraging one another—and all the more as you see the Day approaching.",
+        "book": "Hebrews",
+        "reference": "10:24-25",
+        "subpack": ""
+      },
+      {
+        "id": 2416,
+        "title": "Meeting the needs",
+        "verse": "For I testify that they gave as much as they were able, and even beyond their ability. Entirely on their own, they urgently pleaded with us for the privilege of sharing in this service to the Lord's people.",
+        "book": "2 Corinthians",
+        "reference": "8:3-4",
+        "subpack": ""
+      },
+      {
+        "id": 2417,
+        "title": "Participating in the sufferings of Christ",
+        "verse": "But rejoice inasmuch as you participate in the sufferings of Christ, so that you may be overjoyed when his glory is revealed.",
+        "book": "1 Peter",
+        "reference": "4:13",
+        "subpack": ""
+      },
+      {
+        "id": 2418,
+        "title": "Carrying each other's burdens",
+        "verse": "Carry each other's burdens, and in this way you will fulfill the law of Christ.",
+        "book": "Galatians",
+        "reference": "6:2",
+        "subpack": ""
+      },
+      {
+        "id": 2419,
+        "title": "Be like-minded",
+        "verse": "Therefore if you have any encouragement from being united with Christ, if any comfort from his love, if any common sharing in the Spirit, if any tenderness and compassion, then make my joy complete by being like-minded, having the same love, being one in spirit and of one mind.",
+        "book": "Philippians",
+        "reference": "2:1-2",
+        "subpack": ""
+      },
+      {
+        "id": 2420,
+        "title": "Be humble",
+        "verse": "Do nothing out of selfish ambition or vain conceit. Rather, in humility value others above yourselves, not looking to your own interests but each of you to the interests of the others.",
+        "book": "Philippians",
+        "reference": "2:3-4",
+        "subpack": ""
+      },
+      {
+        "id": 2421,
+        "title": "Open your heart wide",
+        "verse": "We are not withholding our affection from you, but you are withholding yours from us. As a fair exchange—I speak as to my children—open wide your hearts also.",
+        "book": "2 Corinthians",
+        "reference": "6:12-13",
+        "subpack": ""
+      },
+      {
+        "id": 2422,
+        "title": "Submit to one another",
+        "verse": "Submit to one another out of reverence for Christ.",
+        "book": "Ephesians",
+        "reference": "5:21",
+        "subpack": ""
+      },
+      {
+        "id": 2423,
+        "title": "Do not compare with others",
+        "verse": "But they kept quiet because on the way they had argued about who was the greatest. Sitting down, Jesus called the Twelve and said, \"Anyone who wants to be first must be the very last, and the servant of all.\"",
+        "book": "Mark",
+        "reference": "9:34-35",
+        "subpack": ""
+      },
+      {
+        "id": 2424,
+        "title": "Let no bitter root grow up",
+        "verse": "See to it that no one falls short of the grace of God and that no bitter root grows up to cause trouble and defile many.",
+        "book": "Hebrews",
+        "reference": "12:15",
+        "subpack": ""
+      },
+      {
+        "id": 2425,
+        "title": "Part from the fruitless things",
+        "verse": "Have nothing to do with the fruitless deeds of darkness, but rather expose them.",
+        "book": "Ephesians",
+        "reference": "5:11",
+        "subpack": ""
+      },
+      {
+        "id": 2426,
+        "title": "Be available",
+        "verse": "No one serving as a soldier gets entangled in civilian affairs, but rather tries to please his commanding officer.",
+        "book": "2 Timothy",
+        "reference": "2:4",
+        "subpack": ""
+      },
+      {
+        "id": 2427,
+        "title": "In relation to believers",
+        "verse": "Therefore, if you are offering your gift at the altar and there remember that your brother or sister has something against you, leave your gift there in front of the altar. First go and be reconciled to them; then come and offer your gift.",
+        "book": "Matthew",
+        "reference": "5:23-24",
+        "subpack": ""
+      },
+      {
+        "id": 2428,
+        "title": "In relation to believers",
+        "verse": "If your brother or sister sins, go and point out their fault, just between the two of you. If they listen to you, you have won them over.",
+        "book": "Matthew",
+        "reference": "18:15",
+        "subpack": ""
+      },
+      {
+        "id": 2429,
+        "title": "In relation to God",
+        "verse": "If we confess our sins, he is faithful and just and will forgive us our sins and purify us from all unrighteousness.",
+        "book": "1 John",
+        "reference": "1:9",
+        "subpack": ""
+      },
+      {
+        "id": 2430,
+        "title": "In relation to God",
+        "verse": "Whoever conceals their sins does not prosper, but the one who confesses and renounces them finds mercy.",
+        "book": "Proverbs",
+        "reference": "28:13",
+        "subpack": ""
+      }
+    ]
+  },
+  {
+    "name": "DEP 242 Pack 6 - Witnessing",
+    "color": "#14c7cc",
+    "accentText": "",
+    "verses": [
+      {
+        "id": 2501,
+        "title": "Every Christian",
+        "verse": "But you will receive power when the Holy Spirit comes on you; and you will be my witnesses in Jerusalem, and in all Judea and Samaria, and to the ends of the earth.",
+        "book": "Acts",
+        "reference": "1:8",
+        "subpack": ""
+      },
+      {
+        "id": 2502,
+        "title": "Every Christian",
+        "verse": "All this is from God, who reconciled us to himself through Christ and gave us the ministry of reconciliation: that God was reconciling the world to himself in Christ, not counting people's sins against them. And he has committed to us the message of reconciliation.",
+        "book": "2 Corinthians",
+        "reference": "5:18-19",
+        "subpack": ""
+      },
+      {
+        "id": 2503,
+        "title": "God's command",
+        "verse": "In the presence of God and of Christ Jesus, who will judge the living and the dead, and in view of his appearing and his kingdom, I give you this charge: Preach the word; be prepared in season and out of season; correct, rebuke and encourage—with great patience and careful instruction.",
+        "book": "2 Timothy",
+        "reference": "4:1-2",
+        "subpack": ""
+      },
+      {
+        "id": 2504,
+        "title": "Love for the lost",
+        "verse": "For the Son of Man came to seek and to save the lost.",
+        "book": "Luke",
+        "reference": "19:10",
+        "subpack": ""
+      },
+      {
+        "id": 2505,
+        "title": "God's commission",
+        "verse": "On the contrary, we speak as those approved by God to be entrusted with the gospel. We are not trying to please people but God, who tests our hearts.",
+        "book": "1 Thessalonians",
+        "reference": "2:4",
+        "subpack": ""
+      },
+      {
+        "id": 2506,
+        "title": "Compelling role",
+        "verse": "For when I preach the gospel, I cannot boast, since I am compelled to preach. Woe to me if I do not preach the gospel!",
+        "book": "1 Corinthians",
+        "reference": "9:16",
+        "subpack": ""
+      },
+      {
+        "id": 2507,
+        "title": "No preaching, no believing",
+        "verse": "How, then, can they call on the one they have not believed in? And how can they believe in the one of whom they have not heard? And how can they hear without someone preaching to them?",
+        "book": "Romans",
+        "reference": "10:14",
+        "subpack": ""
+      },
+      {
+        "id": 2508,
+        "title": "God wants all people to be saved",
+        "verse": "This is good, and pleases God our Savior, who wants all people to be saved and to come to a knowledge of the truth.",
+        "book": "1 Timothy",
+        "reference": "2:3-4",
+        "subpack": ""
+      },
+      {
+        "id": 2509,
+        "title": "God's great concern for people",
+        "verse": "But the Lord said, \"You have been concerned about this plant, though you did not tend it or make it grow. It sprang up overnight and died overnight. And should I not have concern for the great city of Nineveh, in which there are more than a hundred and twenty thousand people who cannot tell their right hand from their left—and also many animals?\"",
+        "book": "Jonah",
+        "reference": "4:10-11",
+        "subpack": ""
+      },
+      {
+        "id": 2510,
+        "title": "God rejoices over one sinner's repentance",
+        "verse": "I tell you that in the same way there will be more rejoicing in heaven over one sinner who repents than over ninety-nine righteous persons who do not need to repent.",
+        "book": "Luke",
+        "reference": "15:7",
+        "subpack": ""
+      },
+      {
+        "id": 2511,
+        "title": "To have blessed fellowship in the Lord",
+        "verse": "We proclaim to you what we have seen and heard, so that you also may have fellowship with us. And our fellowship is with the Father and with his Son, Jesus Christ.",
+        "book": "1 John",
+        "reference": "1:3",
+        "subpack": ""
+      },
+      {
+        "id": 2512,
+        "title": "Promise for everlasting glory",
+        "verse": "Those who are wise will shine like the brightness of the heavens, and those who lead many to righteousness, like the stars for ever and ever.",
+        "book": "Daniel",
+        "reference": "12:3",
+        "subpack": ""
+      },
+      {
+        "id": 2513,
+        "title": "Follow Jesus first",
+        "verse": "\"Come, follow me,\" Jesus said, \"and I will send you out to fish for people.\"",
+        "book": "Matthew",
+        "reference": "4:19",
+        "subpack": ""
+      },
+      {
+        "id": 2514,
+        "title": "Live a life of good testimony",
+        "verse": "so that you may become blameless and pure, \"children of God without fault in a warped and crooked generation.\" Then you will shine among them like stars in the sky as you hold firmly to the word of life. And then I will be able to boast on the day of Christ that I did not run or labor in vain.",
+        "book": "Philippians",
+        "reference": "2:15-16",
+        "subpack": ""
+      },
+      {
+        "id": 2515,
+        "title": "Pray for people",
+        "verse": "Pray also for me, that whenever I speak, words may be given me so that I will fearlessly make known the mystery of the gospel,",
+        "book": "Ephesians",
+        "reference": "6:19",
+        "subpack": ""
+      },
+      {
+        "id": 2516,
+        "title": "Be prepared to answer",
+        "verse": "But in your hearts revere Christ as Lord. Always be prepared to give an answer to everyone who asks you to give the reason for the hope that you have. But do this with gentleness and respect,",
+        "book": "1 Peter",
+        "reference": "3:15",
+        "subpack": ""
+      },
+      {
+        "id": 2517,
+        "title": "Share your testimony",
+        "verse": "Many of the Samaritans from that town believed in him because of the woman's testimony, \"He told me everything I ever did.\"",
+        "book": "John",
+        "reference": "4:39",
+        "subpack": ""
+      },
+      {
+        "id": 2518,
+        "title": "Believe in the power of the Word",
+        "verse": "For the word of God is alive and active. Sharper than any double-edged sword, it penetrates even to dividing soul and spirit, joints and marrow; it judges the thoughts and attitudes of the heart.",
+        "book": "Hebrews",
+        "reference": "4:12",
+        "subpack": ""
+      },
+      {
+        "id": 2519,
+        "title": "The Word preached never returns in vain",
+        "verse": "so is my word that goes out from my mouth: It will not return to me empty, but will accomplish what I desire and achieve the purpose for which I sent it.",
+        "book": "Isaiah",
+        "reference": "55:11",
+        "subpack": ""
+      },
+      {
+        "id": 2520,
+        "title": "Focus on Jesus Christ when witnessing",
+        "verse": "but we preach Christ crucified: a stumbling block to Jews and foolishness to Gentiles, but to those whom God has called, both Jews and Greeks, Christ the power of God and the wisdom of God.",
+        "book": "1 Corinthians",
+        "reference": "1:23-24",
+        "subpack": ""
+      },
+      {
+        "id": 2521,
+        "title": "Witness in power and conviction",
+        "verse": "because our gospel came to you not simply with words but also with power, with the Holy Spirit and deep conviction. You know how we lived among you for your sake.",
+        "book": "1 Thessalonians",
+        "reference": "1:5",
+        "subpack": ""
+      },
+      {
+        "id": 2522,
+        "title": "Help them receive Jesus Christ",
+        "verse": "If you declare with your mouth, \"Jesus is Lord,\" and believe in your heart that God raised him from the dead, you will be saved. For it is with your heart that you believe and are justified, and it is with your mouth that you profess your faith and are saved.",
+        "book": "Romans",
+        "reference": "10:9-10",
+        "subpack": ""
+      },
+      {
+        "id": 2523,
+        "title": "Encourage them not to delay the decision",
+        "verse": "For he says, \"In the time of my favor I heard you, and in the day of salvation I helped you.\" I tell you, now is the time of God's favor, now is the day of salvation.",
+        "book": "2 Corinthians",
+        "reference": "6:2",
+        "subpack": ""
+      },
+      {
+        "id": 2524,
+        "title": "Help them be assured of their salvation",
+        "verse": "Examine yourselves to see whether you are in the faith; test yourselves. Do you not realize that Christ Jesus is in you—unless, of course, you fail the test?",
+        "book": "2 Corinthians",
+        "reference": "13:5",
+        "subpack": ""
+      },
+      {
+        "id": 2525,
+        "title": "Have an evangelical Bible Study",
+        "verse": "As was his custom, Paul went into the synagogue, and on three Sabbath days he reasoned with them from the Scriptures, explaining and proving that the Messiah had to suffer and rise from the dead. \"This Jesus I am proclaiming to you is the Messiah,\" he said.",
+        "book": "Acts",
+        "reference": "17:2-3",
+        "subpack": ""
+      },
+      {
+        "id": 2526,
+        "title": "Paul",
+        "verse": "However, I consider my life worth nothing to me; my only aim is to finish the race and complete the task the Lord Jesus has given me—the task of testifying to the good news of God's grace.",
+        "book": "Acts",
+        "reference": "20:24",
+        "subpack": ""
+      },
+      {
+        "id": 2527,
+        "title": "Philip",
+        "verse": "The Spirit told Philip, \"Go to that chariot and stay near it.\" Then Philip ran up to the chariot and heard the man reading Isaiah the prophet. \"Do you understand what you are reading?\" Philip asked.",
+        "book": "Acts",
+        "reference": "8:29-30",
+        "subpack": ""
+      },
+      {
+        "id": 2528,
+        "title": "Peter and John",
+        "verse": "As for us, we cannot help speaking about what we have seen and heard.",
+        "book": "Acts",
+        "reference": "4:20",
+        "subpack": ""
+      },
+      {
+        "id": 2529,
+        "title": "Created in His own image",
+        "verse": "So God created mankind in his own image, in the image of God he created them; male and female he created them.",
+        "book": "Genesis",
+        "reference": "1:27",
+        "subpack": ""
+      },
+      {
+        "id": 2530,
+        "title": "Separated from God by our sin",
+        "verse": "Surely the arm of the Lord is not too short to save, nor his ear too dull to hear. But your iniquities have separated you from your God; your sins have hidden his face from you, so that he will not hear.",
+        "book": "Isaiah",
+        "reference": "59:1-2",
+        "subpack": ""
+      },
+      {
+        "id": 2531,
+        "title": "Man's condition - Sinner",
+        "verse": "Therefore, just as sin entered the world through one man, and death through sin, and in this way death came to all people, because all sinned—",
+        "book": "Romans",
+        "reference": "5:12",
+        "subpack": ""
+      },
+      {
+        "id": 2532,
+        "title": "Man's condition - Sinner",
+        "verse": "for all have sinned and fall short of the glory of God,",
+        "book": "Romans",
+        "reference": "3:23",
+        "subpack": ""
+      },
+      {
+        "id": 2533,
+        "title": "Man's condition - Judgment",
+        "verse": "Just as people are destined to die once, and after that to face judgment,",
+        "book": "Hebrews",
+        "reference": "9:27",
+        "subpack": ""
+      },
+      {
+        "id": 2534,
+        "title": "Man's condition - Judgment",
+        "verse": "He will punish those who do not know God and do not obey the gospel of our Lord Jesus. They will be punished with everlasting destruction and shut out from the presence of the Lord and from the glory of his might",
+        "book": "2 Thessalonians",
+        "reference": "1:8-9",
+        "subpack": ""
+      },
+      {
+        "id": 2535,
+        "title": "Man's condition - Eternal death",
+        "verse": "For the wages of sin is death, but the gift of God is eternal life in Christ Jesus our Lord.",
+        "book": "Romans",
+        "reference": "6:23",
+        "subpack": ""
+      },
+      {
+        "id": 2536,
+        "title": "Man's condition - Eternal death",
+        "verse": "But the cowardly, the unbelieving, the vile, the murderers, the sexually immoral, those who practice magic arts, the idolaters and all liars—they will be consigned to the fiery lake of burning sulfur. This is the second death.",
+        "book": "Revelation",
+        "reference": "21:8",
+        "subpack": ""
+      },
+      {
+        "id": 2537,
+        "title": "Salvation not by ourselves - Works",
+        "verse": "For it is by grace you have been saved, through faith—and this is not from yourselves, it is the gift of God— not by works, so that no one can boast.",
+        "book": "Ephesians",
+        "reference": "2:8-9",
+        "subpack": ""
+      },
+      {
+        "id": 2538,
+        "title": "Salvation not by ourselves - Works",
+        "verse": "I do not set aside the grace of God, for if righteousness could be gained through the law, Christ died for nothing!",
+        "book": "Galatians",
+        "reference": "2:21",
+        "subpack": ""
+      },
+      {
+        "id": 2539,
+        "title": "Salvation not by ourselves - Religion",
+        "verse": "Salvation is found in no one else, for there is no other name under heaven given to mankind by which we must be saved.",
+        "book": "Acts",
+        "reference": "4:12",
+        "subpack": ""
+      },
+      {
+        "id": 2540,
+        "title": "Salvation not by ourselves - Money",
+        "verse": "For you know that it was not with perishable things such as silver or gold that you were redeemed from the empty way of life handed down to you from your ancestors,",
+        "book": "1 Peter",
+        "reference": "1:18",
+        "subpack": ""
+      },
+      {
+        "id": 2541,
+        "title": "Salvation not by ourselves - Miracles and wonders",
+        "verse": "Jews demand signs and Greeks look for wisdom, but we preach Christ crucified: a stumbling block to Jews and foolishness to Gentiles,",
+        "book": "1 Corinthians",
+        "reference": "1:22-23",
+        "subpack": ""
+      },
+      {
+        "id": 2542,
+        "title": "Salvation not by ourselves - Wisdom",
+        "verse": "For since in the wisdom of God the world through its wisdom did not know him, God was pleased through the foolishness of what was preached to save those who believe.",
+        "book": "1 Corinthians",
+        "reference": "1:21",
+        "subpack": ""
+      },
+      {
+        "id": 2543,
+        "title": "Salvation not by ourselves - Philosophy and tradition",
+        "verse": "See to it that no one takes you captive through hollow and deceptive philosophy, which depends on human tradition and the elemental spiritual forces of this world rather than on Christ.",
+        "book": "Colossians",
+        "reference": "2:8",
+        "subpack": ""
+      },
+      {
+        "id": 2544,
+        "title": "Salvation not by ourselves - Natural descent",
+        "verse": "children born not of natural descent, nor of human decision or a husband's will, but born of God.",
+        "book": "John",
+        "reference": "1:13",
+        "subpack": ""
+      },
+      {
+        "id": 2545,
+        "title": "Salvation not by ourselves - The flesh counts for nothing",
+        "verse": "Flesh gives birth to flesh, but the Spirit gives birth to spirit. You should not be surprised at my saying, 'You must be born again.'",
+        "book": "John",
+        "reference": "3:6-7",
+        "subpack": ""
+      },
+      {
+        "id": 2546,
+        "title": "Salvation not by ourselves - The flesh counts for nothing",
+        "verse": "The Spirit gives life; the flesh counts for nothing. The words I have spoken to you—they are full of the Spirit and life.",
+        "book": "John",
+        "reference": "6:63",
+        "subpack": ""
+      },
+      {
+        "id": 2547,
+        "title": "God's solution - Bridge bringing us to God",
+        "verse": "For Christ also suffered once for sins, the righteous for the unrighteous, to bring you to God. He was put to death in the body but made alive in the Spirit.",
+        "book": "1 Peter",
+        "reference": "3:18",
+        "subpack": ""
+      },
+      {
+        "id": 2548,
+        "title": "God's solution - God gave His only Son",
+        "verse": "For God so loved the world that he gave his one and only Son, that whoever believes in him shall not perish but have eternal life.",
+        "book": "John",
+        "reference": "3:16",
+        "subpack": ""
+      },
+      {
+        "id": 2549,
+        "title": "God's solution - Jesus died for our sin",
+        "verse": "But God demonstrates his own love for us in this: While we were still sinners, Christ died for us.",
+        "book": "Romans",
+        "reference": "5:8",
+        "subpack": ""
+      },
+      {
+        "id": 2550,
+        "title": "God's solution - Jesus resurrected",
+        "verse": "For what I received I passed on to you as of first importance: that Christ died for our sins according to the Scriptures, that he was buried, that he was raised on the third day according to the Scriptures,",
+        "book": "1 Corinthians",
+        "reference": "15:3-4",
+        "subpack": ""
+      },
+      {
+        "id": 2551,
+        "title": "God's solution - Forgiving us all our sins",
+        "verse": "When you were dead in your sins and in the uncircumcision of your flesh, God made you alive with Christ. He forgave us all our sins,",
+        "book": "Colossians",
+        "reference": "2:13",
+        "subpack": ""
+      },
+      {
+        "id": 2552,
+        "title": "Man must - hear and believe",
+        "verse": "\"Very truly I tell you, whoever hears my word and believes him who sent me has eternal life and will not be judged but has crossed over from death to life.\"",
+        "book": "John",
+        "reference": "5:24",
+        "subpack": ""
+      },
+      {
+        "id": 2553,
+        "title": "Man must - Receive Jesus",
+        "verse": "Yet to all who did receive him, to those who believed in his name, he gave the right to become children of God—",
+        "book": "John",
+        "reference": "1:12",
+        "subpack": ""
+      },
+      {
+        "id": 2554,
+        "title": "Man must - Receive Jesus",
+        "verse": "Here I am! I stand at the door and knock. If anyone hears my voice and opens the door, I will come in and eat with that person, and they with me.",
+        "book": "Revelation",
+        "reference": "3:20",
+        "subpack": ""
+      },
+      {
+        "id": 2555,
+        "title": "Man must - Pray to receive Jesus",
+        "verse": "If you declare with your mouth, \"Jesus is Lord,\" and believe in your heart that God raised him from the dead, you will be saved. For it is with your heart that you believe and are justified, and it is with your mouth that you profess your faith and are saved.",
+        "book": "Romans",
+        "reference": "10:9-10",
+        "subpack": ""
+      }
+    ]
+  },
+  {
+    "name": "DEP 242 Pack 7 - The Lordship of Christ",
+    "color": "#0032ff",
+    "accentText": "",
+    "verses": [
+      {
+        "id": 2601,
+        "title": "The Creator",
+        "verse": "He was with God in the beginning. Through him all things were made; without him nothing was made that has been made.",
+        "book": "John",
+        "reference": "1:2-3",
+        "subpack": ""
+      },
+      {
+        "id": 2602,
+        "title": "The Lord of all creation",
+        "verse": "For in him all things were created: things in heaven and on earth, visible and invisible, whether thrones or powers or rulers or authorities; all things have been created through him and for him. He is before all things, and in him all things hold together.",
+        "book": "Colossians",
+        "reference": "1:16-17",
+        "subpack": ""
+      },
+      {
+        "id": 2603,
+        "title": "The head of the Church",
+        "verse": "And he is the head of the body, the church; he is the beginning and the firstborn from among the dead, so that in everything he might have the supremacy.",
+        "book": "Colossians",
+        "reference": "1:18",
+        "subpack": ""
+      },
+      {
+        "id": 2604,
+        "title": "Far above all power",
+        "verse": "far above all rule and authority, power and dominion, and every name that is invoked, not only in the present age but also in the one to come.",
+        "book": "Ephesians",
+        "reference": "1:21",
+        "subpack": ""
+      },
+      {
+        "id": 2605,
+        "title": "The Lord of everyone",
+        "verse": "that at the name of Jesus every knee should bow, in heaven and on earth and under the earth, and every tongue acknowledge that Jesus Christ is Lord, to the glory of God the Father.",
+        "book": "Philippians",
+        "reference": "2:10-11",
+        "subpack": ""
+      },
+      {
+        "id": 2606,
+        "title": "The Lord of both the dead and the living",
+        "verse": "For this very reason, Christ died and returned to life so that he might be the Lord of both the dead and the living.",
+        "book": "Romans",
+        "reference": "14:9",
+        "subpack": ""
+      },
+      {
+        "id": 2607,
+        "title": "Bought with Christ's life price",
+        "verse": "Do you not know that your bodies are temples of the Holy Spirit, who is in you, whom you have received from God? You are not your own; you were bought at a price. Therefore honor God with your bodies.",
+        "book": "1 Corinthians",
+        "reference": "6:19-20",
+        "subpack": ""
+      },
+      {
+        "id": 2608,
+        "title": "Make the decision of commitment to the Lordship",
+        "verse": "And he died for all, that those who live should no longer live for themselves but for him who died for them and was raised again.",
+        "book": "2 Corinthians",
+        "reference": "5:15",
+        "subpack": ""
+      },
+      {
+        "id": 2609,
+        "title": "Satisfying all our needs",
+        "verse": "But seek first his kingdom and his righteousness, and all these things will be given to you as well.",
+        "book": "Matthew",
+        "reference": "6:33",
+        "subpack": ""
+      },
+      {
+        "id": 2610,
+        "title": "Abundant reward",
+        "verse": "\"Truly I tell you,\" Jesus replied, \"no one who has left home or brothers or sisters or mother or father or children or fields for me and the gospel will fail to receive a hundred times as much in this present age: homes, brothers, sisters, mothers, children and fields—along with persecutions—and in the age to come eternal life.\"",
+        "book": "Mark",
+        "reference": "10:29-30",
+        "subpack": ""
+      },
+      {
+        "id": 2611,
+        "title": "Giving His promise",
+        "verse": "and said, \"I swear by myself, declares the Lord, that because you have done this and have not withheld your son, your only son, I will surely bless you and make your descendants as numerous as the stars in the sky and as the sand on the seashore. Your descendants will take possession of the cities of their enemies,\"",
+        "book": "Genesis",
+        "reference": "22:16-17",
+        "subpack": ""
+      },
+      {
+        "id": 2612,
+        "title": "Accompanying us",
+        "verse": "\"And you, my son Solomon, acknowledge the God of your father, and serve him with wholehearted devotion and with a willing mind, for the Lord searches every heart and understands every desire and every thought. If you seek him, he will be found by you; but if you forsake him, he will reject you forever.\"",
+        "book": "1 Chronicles",
+        "reference": "28:9",
+        "subpack": ""
+      },
+      {
+        "id": 2613,
+        "title": "Giving His power",
+        "verse": "For the eyes of the Lord range throughout the earth to strengthen those whose hearts are fully committed to him. You have done a foolish thing, and from now on you will be at war.",
+        "book": "2 Chronicles",
+        "reference": "16:9",
+        "subpack": ""
+      },
+      {
+        "id": 2614,
+        "title": "Protecting us",
+        "verse": "\"Because he loves me,\" says the Lord, \"I will rescue him; I will protect him, for he acknowledges my name.\"",
+        "book": "Psalm",
+        "reference": "91:14",
+        "subpack": ""
+      },
+      {
+        "id": 2615,
+        "title": "Honoring us",
+        "verse": "\"Therefore the Lord, the God of Israel, declares: 'I promised that members of your family would minister before me forever.' But now the Lord declares: 'Far be it from me! Those who honor me I will honor, but those who despise me will be disdained.\"",
+        "book": "1 Samuel",
+        "reference": "2:30",
+        "subpack": ""
+      },
+      {
+        "id": 2616,
+        "title": "Self",
+        "verse": "Then he said to them all: \"Whoever wants to be my disciple must deny themselves and take up their cross daily and follow me.\"",
+        "book": "Luke",
+        "reference": "9:23",
+        "subpack": ""
+      },
+      {
+        "id": 2617,
+        "title": "Relationship with others",
+        "verse": "When the Lord takes pleasure in anyone's way, he causes their enemies to make peace with them.",
+        "book": "Proverbs",
+        "reference": "16:7",
+        "subpack": ""
+      },
+      {
+        "id": 2618,
+        "title": "Life paths",
+        "verse": "Trust in the Lord with all your heart and lean not on your own understanding; in all your ways submit to him, and he will make your paths straight.",
+        "book": "Proverbs",
+        "reference": "3:5-6",
+        "subpack": ""
+      },
+      {
+        "id": 2619,
+        "title": "Worldly desires",
+        "verse": "You were taught, with regard to your former way of life, to put off your old self, which is being corrupted by its deceitful desires; to be made new in the attitude of your minds; and to put on the new self, created to be like God in true righteousness and holiness.",
+        "book": "Ephesians",
+        "reference": "4:22-24",
+        "subpack": ""
+      },
+      {
+        "id": 2620,
+        "title": "Lusts",
+        "verse": "Flee the evil desires of youth and pursue righteousness, faith, love and peace, along with those who call on the Lord out of a pure heart.",
+        "book": "2 Timothy",
+        "reference": "2:22",
+        "subpack": ""
+      },
+      {
+        "id": 2621,
+        "title": "Possessions",
+        "verse": "For we brought nothing into the world, and we can take nothing out of it. But if we have food and clothing, we will be content with that. Those who want to get rich fall into temptation and a trap and into many foolish and harmful desires that plunge people into ruin and destruction.",
+        "book": "1 Timothy",
+        "reference": "6:7-9",
+        "subpack": ""
+      },
+      {
+        "id": 2622,
+        "title": "Time managing",
+        "verse": "Be very careful, then, how you live—not as unwise but as wise, making the most of every opportunity, because the days are evil.",
+        "book": "Ephesians",
+        "reference": "5:15-16",
+        "subpack": ""
+      },
+      {
+        "id": 2623,
+        "title": "God's calling",
+        "verse": "Without delay he called them, and they left their father Zebedee in the boat with the hired men and followed him.",
+        "book": "Mark",
+        "reference": "1:20",
+        "subpack": ""
+      },
+      {
+        "id": 2624,
+        "title": "Paul",
+        "verse": "I eagerly expect and hope that I will in no way be ashamed, but will have sufficient courage so that now as always Christ will be exalted in my body, whether by life or by death.",
+        "book": "Philippians",
+        "reference": "1:20",
+        "subpack": ""
+      },
+      {
+        "id": 2625,
+        "title": "Timothy",
+        "verse": "For everyone looks out for their own interests, not those of Jesus Christ. But you know that Timothy has proved himself, because as a son with his father he has served with me in the work of the gospel.",
+        "book": "Philippians",
+        "reference": "2:21-22",
+        "subpack": ""
+      },
+      {
+        "id": 2626,
+        "title": "Our faith fathers",
+        "verse": "Some faced jeers and flogging, and even chains and imprisonment. They were put to death by stoning; they were sawed in two; they were killed by the sword. They went about in sheepskins and goatskins, destitute, persecuted and mistreated— the world was not worthy of them. They wandered in deserts and mountains, living in caves and in holes in the ground.",
+        "book": "Hebrews",
+        "reference": "11:36-38",
+        "subpack": ""
+      }
+    ]
+  },
+  {
+    "name": "DEP 242 Pack 8 - World Vision",
+    "color": "#8900ff",
+    "accentText": "",
+    "verses": [
+      {
+        "id": 2701,
+        "title": "God's concern and promise for the world",
+        "verse": "I will make you into a great nation, and I will bless you; I will make your name great, and you will be a blessing. I will bless those who bless you, and whoever curses you I will curse; and all peoples on earth will be blessed through you.",
+        "book": "Genesis",
+        "reference": "12:2-3",
+        "subpack": ""
+      },
+      {
+        "id": 2702,
+        "title": "God's concern and promise for the world",
+        "verse": "he says: It is too small a thing for you to be my servant to restore the tribes of Jacob and bring back those of Israel I have kept. I will also make you a light for the Gentiles, that my salvation may reach to the ends of the earth.",
+        "book": "Isaiah",
+        "reference": "49:6",
+        "subpack": ""
+      },
+      {
+        "id": 2703,
+        "title": "Great Commission",
+        "verse": "Therefore go and make disciples of all nations, baptizing them in the name of the Father and of the Son and of the Holy Spirit, and teaching them to obey everything I have commanded you. And surely I am with you always, to the very end of the age.",
+        "book": "Matthew",
+        "reference": "28:19-20",
+        "subpack": ""
+      },
+      {
+        "id": 2704,
+        "title": "Great Commission",
+        "verse": "But you will receive power when the Holy Spirit comes on you; and you will be my witnesses in Jerusalem, and in all Judea and Samaria, and to the ends of the earth.",
+        "book": "Acts",
+        "reference": "1:8",
+        "subpack": ""
+      },
+      {
+        "id": 2705,
+        "title": "Commit yourself to the mission",
+        "verse": "Then I heard the voice of the Lord saying, \"Whom shall I send? And who will go for us?\" And I said, \"Here am I. Send me!\"",
+        "book": "Isaiah",
+        "reference": "6:8",
+        "subpack": ""
+      },
+      {
+        "id": 2706,
+        "title": "Commit yourself to the mission",
+        "verse": "to be a minister of Christ Jesus to the Gentiles. He gave me the priestly duty of proclaiming the gospel of God, so that the Gentiles might become an offering acceptable to God, sanctified by the Holy Spirit.",
+        "book": "Romans",
+        "reference": "15:16",
+        "subpack": ""
+      },
+      {
+        "id": 2707,
+        "title": "Pray for the world",
+        "verse": "Ask me, and I will make the nations your inheritance, the ends of the earth your possession.",
+        "book": "Psalm",
+        "reference": "2:8",
+        "subpack": ""
+      },
+      {
+        "id": 2708,
+        "title": "Pray for the world",
+        "verse": "Be exalted, O God, above the heavens; let your glory be over all the earth.",
+        "book": "Psalm",
+        "reference": "57:5",
+        "subpack": ""
+      },
+      {
+        "id": 2709,
+        "title": "Preach the gospel",
+        "verse": "in the hope of eternal life, which God, who does not lie, promised before the beginning of time, and which now at his appointed season he has brought to light through the preaching entrusted to me by the command of God our Savior,",
+        "book": "Titus",
+        "reference": "1:2-3",
+        "subpack": ""
+      },
+      {
+        "id": 2710,
+        "title": "Preach the gospel",
+        "verse": "But the Lord stood at my side and gave me strength, so that through me the message might be fully proclaimed and all the Gentiles might hear it. And I was delivered from the lion's mouth.",
+        "book": "2 Timothy",
+        "reference": "4:17",
+        "subpack": ""
+      },
+      {
+        "id": 2711,
+        "title": "Help them grow in Christ",
+        "verse": "He is the one we proclaim, admonishing and teaching everyone with all wisdom, so that we may present everyone fully mature in Christ. To this end I strenuously contend with all the energy Christ so powerfully works in me.",
+        "book": "Colossians",
+        "reference": "1:28-29",
+        "subpack": ""
+      },
+      {
+        "id": 2712,
+        "title": "Help them grow in Christ",
+        "verse": "And this is my prayer: that your love may abound more and more in knowledge and depth of insight, so that you may be able to discern what is best and may be pure and blameless for the day of Christ, filled with the fruit of righteousness that comes through Jesus Christ—to the glory and praise of God.",
+        "book": "Philippians",
+        "reference": "1:9-11",
+        "subpack": ""
+      },
+      {
+        "id": 2713,
+        "title": "Spiritual Multiplication",
+        "verse": "And the things you have heard me say in the presence of many witnesses entrust to reliable people who will also be qualified to teach others.",
+        "book": "2 Timothy",
+        "reference": "2:2",
+        "subpack": ""
+      },
+      {
+        "id": 2714,
+        "title": "Spiritual Multiplication",
+        "verse": "The least of you will become a thousand, the smallest a mighty nation. I am the Lord; in its time I will do this swiftly.",
+        "book": "Isaiah",
+        "reference": "60:22",
+        "subpack": ""
+      },
+      {
+        "id": 2715,
+        "title": "Live a simple and wholehearted life",
+        "verse": "Therefore, since we are surrounded by such a great cloud of witnesses, let us throw off everything that hinders and the sin that so easily entangles. And let us run with perseverance the race marked out for us,",
+        "book": "Hebrews",
+        "reference": "12:1",
+        "subpack": ""
+      },
+      {
+        "id": 2716,
+        "title": "Live a simple and wholehearted life",
+        "verse": "For the eyes of the Lord range throughout the earth to strengthen those whose hearts are fully committed to him. You have done a foolish thing, and from now on you will be at war.",
+        "book": "2 Chronicles",
+        "reference": "16:9",
+        "subpack": ""
+      },
+      {
+        "id": 2717,
+        "title": "Glory of the mission finish",
+        "verse": "For the earth will be filled with the knowledge of the glory of the Lord as the waters cover the sea.",
+        "book": "Habakkuk",
+        "reference": "2:14",
+        "subpack": ""
+      },
+      {
+        "id": 2718,
+        "title": "Glory of the mission finish",
+        "verse": "My name will be great among the nations, from where the sun rises to where it sets. In every place incense and pure offerings will be brought to me, because my name will be great among the nations, says the Lord Almighty.",
+        "book": "Malachi",
+        "reference": "1:11",
+        "subpack": ""
+      }
+    ]
+  }
+]

@@ -1,6 +1,7 @@
 import Foundation
 
-var packs: [Pack] = load("verseData.json")
+var packsNIV84: [Pack] = load("verseData.json")
+var packsNIV11: [Pack] = load("verseDataNIV11.json")
 
 func load<T: Decodable>(_ filename: String) -> T {
     let data: Data
