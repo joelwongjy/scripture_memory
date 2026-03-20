@@ -1,12 +1,17 @@
 import SwiftUI
 
 struct PackListView: View {
+    @AppStorage("bibleVersion") private var bibleVersion = "NIV84"
     @State private var selectedPack: Pack? = nil
+
+    private var activePacks: [Pack] {
+        bibleVersion == "NIV11" ? packsNIV11 : packsNIV84
+    }
 
     var body: some View {
         ScrollView {
             VStack(spacing: 12) {
-                ForEach(packs) { pack in
+                ForEach(activePacks) { pack in
                     Button {
                         guard !pack.verses.isEmpty else { return }
                         selectedPack = pack
@@ -262,3 +267,6 @@ struct CardButtonStyle: ButtonStyle {
         PackListView()
     }
 }
+
+// Keep a top-level alias so existing previews that reference `packs` still compile
+var packs: [Pack] { packsNIV84 }

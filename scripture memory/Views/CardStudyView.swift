@@ -16,6 +16,8 @@ struct CardStudyView: View {
     @State private var flyDirection: Int = 0
     @FocusState private var isInputFocused: Bool
     @Environment(\.dismiss) private var dismiss
+    @AppStorage("typingMode") private var typingMode = "firstLetter"
+    @AppStorage("checkMode") private var checkMode = "immediate"
 
     private var currentVerse: Verse? {
         guard !verses.isEmpty, verses.indices.contains(currentIndex) else { return nil }
@@ -356,6 +358,13 @@ struct CardStudyView: View {
 
     // MARK: - Bottom Controls
 
+    private var inputPlaceholder: String {
+        if typingMode == "fullWord" {
+            return checkMode == "submit" ? "Type the full verse, then submit..." : "Type each word, press space to check..."
+        }
+        return checkMode == "submit" ? "Type first letters, then submit..." : "Type first letter of each word..."
+    }
+
     private var bottomControls: some View {
         VStack(spacing: 12) {
             if isReviewMode {
@@ -371,30 +380,50 @@ struct CardStudyView: View {
                     .transition(.scale.combined(with: .opacity))
                     .padding(.bottom, 2)
                 } else {
-                    HStack(spacing: 10) {
-                        Image(systemName: "character.cursor.ibeam")
-                            .foregroundColor(.secondary)
-                            .font(.system(size: 16))
+                    VStack(spacing: 8) {
+                        HStack(spacing: 10) {
+                            Image(systemName: "character.cursor.ibeam")
+                                .foregroundColor(.secondary)
+                                .font(.system(size: 16))
 
-                        TextField("Type first letter of each word...", text: $inputText)
-                            .font(.system(size: 17))
-                            .focused($isInputFocused)
-                            .autocorrectionDisabled()
-                            .textInputAutocapitalization(.never)
-                            .onChange(of: inputText) { newValue in
-                                guard !newValue.isEmpty else { return }
-                                processInput(newValue)
-                                DispatchQueue.main.async { self.inputText = "" }
+                            TextField(inputPlaceholder, text: $inputText)
+                                .font(.system(size: 17))
+                                .focused($isInputFocused)
+                                .autocorrectionDisabled()
+                                .textInputAutocapitalization(.never)
+                                .onChange(of: inputText) { newValue in
+                                    guard !newValue.isEmpty else { return }
+                                    guard checkMode != "submit" else { return }
+                                    if typingMode == "firstLetter" {
+                                        processFirstLetterInput(newValue)
+                                        DispatchQueue.main.async { self.inputText = "" }
+                                    } else {
+                                        processFullWordInput(newValue)
+                                    }
+                                }
+                        }
+                        .padding(14)
+                        .background(Color(.secondarySystemGroupedBackground))
+                        .cornerRadius(12)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color(.separator).opacity(0.5), lineWidth: 0.5)
+                        )
+                        .offset(x: shakeOffset)
+
+                        if checkMode == "submit" {
+                            Button(action: handleSubmit) {
+                                Text("Submit")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundColor(.white)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 12)
+                                    .background(inputText.trimmingCharacters(in: .whitespaces).isEmpty ? Color.gray : Color.blue)
+                                    .cornerRadius(12)
                             }
+                            .disabled(inputText.trimmingCharacters(in: .whitespaces).isEmpty)
+                        }
                     }
-                    .padding(14)
-                    .background(Color(.secondarySystemGroupedBackground))
-                    .cornerRadius(12)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color(.separator).opacity(0.5), lineWidth: 0.5)
-                    )
-                    .offset(x: shakeOffset)
                     .padding(.horizontal, 24)
                 }
             }
@@ -413,7 +442,7 @@ struct CardStudyView: View {
 
     // MARK: - Input Processing
 
-    private func processInput(_ text: String) {
+    private func processFirstLetterInput(_ text: String) {
         guard let typed = text.last, let verse = currentVerse else { return }
         let words = currentWords
         let revealed = currentRevealed
@@ -430,33 +459,122 @@ struct CardStudyView: View {
             withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
                 setRevealed(verse.id, newCount)
             }
-            if newCount >= words.count {
-                let otherSection: ReviewSection = activeSection == .title ? .verse : .title
-                let otherWords: [String]
-                let otherRevealed: Int
-                switch otherSection {
-                case .title:
-                    otherWords = verse.title.components(separatedBy: " ").filter { !$0.isEmpty }
-                    otherRevealed = titleRevealedCounts[verse.id, default: 0]
-                case .verse:
-                    otherWords = verse.verse.components(separatedBy: " ").filter { !$0.isEmpty }
-                    otherRevealed = verseRevealedCounts[verse.id, default: 0]
-                }
-                if otherRevealed >= otherWords.count {
-                    haptic(.success)
-                } else {
-                    haptic(.success)
-                    withAnimation(.easeOut(duration: 0.2)) {
-                        activeSection = otherSection
-                    }
-                }
-            } else {
-                haptic(.light)
-            }
+            completeSectionIfNeeded(verse: verse, newCount: newCount, words: words)
         } else {
             haptic(.error)
             shakeAnimation()
         }
+    }
+
+    private func processFullWordInput(_ text: String) {
+        guard text.hasSuffix(" "), let verse = currentVerse else { return }
+        let typedWord = String(text.dropLast()).trimmingCharacters(in: .whitespaces)
+        guard !typedWord.isEmpty else {
+            DispatchQueue.main.async { self.inputText = "" }
+            return
+        }
+
+        let words = currentWords
+        let revealed = currentRevealed
+        guard revealed < words.count else { return }
+
+        let targetWord = words[revealed]
+        if normalizedMatch(typedWord, targetWord) {
+            let newCount = revealed + 1
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                setRevealed(verse.id, newCount)
+            }
+            DispatchQueue.main.async { self.inputText = "" }
+            completeSectionIfNeeded(verse: verse, newCount: newCount, words: words)
+        } else {
+            haptic(.error)
+            shakeAnimation()
+            DispatchQueue.main.async { self.inputText = "" }
+        }
+    }
+
+    private func handleSubmit() {
+        guard let verse = currentVerse else { return }
+        let raw = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !raw.isEmpty else { return }
+
+        let typedWords = raw.components(separatedBy: .whitespaces).filter { !$0.isEmpty }
+        let targetWords = currentWords
+        let revealed = currentRevealed
+
+        var newRevealed = revealed
+        for (i, typedWord) in typedWords.enumerated() {
+            let targetIndex = revealed + i
+            guard targetIndex < targetWords.count else { break }
+            let targetWord = targetWords[targetIndex]
+
+            let matched: Bool
+            if typingMode == "firstLetter" {
+                guard let firstChar = firstLetter(of: targetWord) else {
+                    newRevealed += 1
+                    continue
+                }
+                matched = typedWord.first?.lowercased() == String(firstChar).lowercased()
+            } else {
+                matched = normalizedMatch(typedWord, targetWord)
+            }
+
+            if matched {
+                newRevealed += 1
+            } else {
+                break
+            }
+        }
+
+        let gained = newRevealed - revealed
+        if newRevealed > revealed {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                setRevealed(verse.id, newRevealed)
+            }
+            completeSectionIfNeeded(verse: verse, newCount: newRevealed, words: targetWords)
+        }
+        if gained == 0 {
+            haptic(.error)
+            shakeAnimation()
+        } else if newRevealed < targetWords.count {
+            haptic(.light)
+        }
+        inputText = ""
+    }
+
+    private func completeSectionIfNeeded(verse: Verse, newCount: Int, words: [String]) {
+        guard newCount >= words.count else {
+            haptic(.light)
+            return
+        }
+        let otherSection: ReviewSection = activeSection == .title ? .verse : .title
+        let otherWords: [String]
+        let otherRevealed: Int
+        switch otherSection {
+        case .title:
+            otherWords = verse.title.components(separatedBy: " ").filter { !$0.isEmpty }
+            otherRevealed = titleRevealedCounts[verse.id, default: 0]
+        case .verse:
+            otherWords = verse.verse.components(separatedBy: " ").filter { !$0.isEmpty }
+            otherRevealed = verseRevealedCounts[verse.id, default: 0]
+        }
+        haptic(.success)
+        if otherRevealed < otherWords.count {
+            withAnimation(.easeOut(duration: 0.2)) {
+                activeSection = otherSection
+            }
+        }
+    }
+
+    private func normalizedMatch(_ typed: String, _ target: String) -> Bool {
+        normalize(typed) == normalize(target)
+    }
+
+    private func normalize(_ s: String) -> String {
+        s.lowercased()
+         .components(separatedBy: CharacterSet.punctuationCharacters.union(.symbols))
+         .joined()
+         .trimmingCharacters(in: .whitespaces)
     }
 
     private func setRevealed(_ verseId: Int, _ count: Int) {
