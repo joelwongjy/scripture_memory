@@ -1,13 +1,6 @@
-/*
-See the LICENSE.txt file for this sample’s licensing information.
-
-Abstract:
-Storage for model data.
-*/
-
 import Foundation
 
-var verses: [Verse] = load("verseData.json")
+var packs: [Pack] = load("verseData.json")
 
 func load<T: Decodable>(_ filename: String) -> T {
     let data: Data

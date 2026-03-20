@@ -8,7 +8,7 @@ The top-level definition of the Landmarks app.
 import SwiftUI
 
 @main
-struct LandmarksApp: App {
+struct ScriptureMemoryApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()

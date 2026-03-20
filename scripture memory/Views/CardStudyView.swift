@@ -1,0 +1,508 @@
+import SwiftUI
+
+struct CardStudyView: View {
+    let packName: String
+    let verses: [Verse]
+
+    @State private var currentIndex = 0
+    @State private var isReviewMode = false
+    @State private var titleRevealedCounts: [Int: Int] = [:]
+    @State private var verseRevealedCounts: [Int: Int] = [:]
+    @State private var activeSection: ReviewSection = .verse
+    @State private var inputText = ""
+    @State private var shakeOffset: CGFloat = 0
+    @State private var dragOffset: CGSize = .zero
+    @State private var isCardFlying = false
+    @State private var flyDirection: Int = 0
+    @FocusState private var isInputFocused: Bool
+    @Environment(\.dismiss) private var dismiss
+
+    private var currentVerse: Verse? {
+        guard !verses.isEmpty, verses.indices.contains(currentIndex) else { return nil }
+        return verses[currentIndex]
+    }
+
+    private var currentWords: [String] {
+        guard let v = currentVerse else { return [] }
+        switch activeSection {
+        case .title: return v.title.components(separatedBy: " ").filter { !$0.isEmpty }
+        case .verse: return v.verse.components(separatedBy: " ").filter { !$0.isEmpty }
+        }
+    }
+
+    private var currentRevealed: Int {
+        guard let v = currentVerse else { return 0 }
+        switch activeSection {
+        case .title: return titleRevealedCounts[v.id, default: 0]
+        case .verse: return verseRevealedCounts[v.id, default: 0]
+        }
+    }
+
+    private var isSectionComplete: Bool {
+        !currentWords.isEmpty && currentRevealed >= currentWords.count
+    }
+
+    private var isCardComplete: Bool {
+        guard let v = currentVerse else { return false }
+        let tWords = v.title.components(separatedBy: " ").filter { !$0.isEmpty }
+        let vWords = v.verse.components(separatedBy: " ").filter { !$0.isEmpty }
+        return titleRevealedCounts[v.id, default: 0] >= tWords.count
+            && verseRevealedCounts[v.id, default: 0] >= vWords.count
+    }
+
+    private var forwardProgress: CGFloat {
+        guard dragOffset.width < 0 else { return 0 }
+        return min(abs(dragOffset.width) / 150, 1.0)
+    }
+
+    private var backwardProgress: CGFloat {
+        guard dragOffset.width > 0 else { return 0 }
+        return min(dragOffset.width / 200, 1.0)
+    }
+
+    var body: some View {
+        GeometryReader { geo in
+            let cardWidth = geo.size.width - 40
+            let cardHeight = cardWidth * 3.0 / 5.0
+
+            VStack(spacing: 0) {
+                topBar
+
+                Spacer(minLength: 12)
+
+                cardStack
+                    .frame(width: cardWidth, height: cardHeight)
+                    .frame(maxWidth: .infinity)
+
+                Spacer(minLength: 12)
+
+                scrubber
+                    .padding(.horizontal, 32)
+                    .padding(.bottom, 20)
+
+                bottomControls
+            }
+        }
+        .background(Color(.systemGroupedBackground))
+        .onChange(of: isReviewMode) { reviewing in
+            if reviewing && !isCardComplete {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    isInputFocused = true
+                }
+            } else {
+                isInputFocused = false
+            }
+        }
+        .onChange(of: currentIndex) { _ in
+            inputText = ""
+            if isReviewMode && !isCardComplete {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    isInputFocused = true
+                }
+            }
+        }
+    }
+
+    // MARK: - Card Stack
+
+    private var cardStack: some View {
+        ZStack {
+            // Next+2 card (deep background)
+            if currentIndex + 2 < verses.count {
+                cardView(at: currentIndex + 2)
+                    .scaleEffect(0.90)
+                    .offset(y: 24)
+                    .zIndex(0)
+            }
+
+            // Next+1 card (rises as you swipe forward)
+            if currentIndex + 1 < verses.count {
+                cardView(at: currentIndex + 1)
+                    .scaleEffect(0.95 + 0.05 * forwardProgress)
+                    .offset(y: 12 * (1 - forwardProgress))
+                    .zIndex(1)
+            }
+
+            // Current card
+            if let verse = currentVerse {
+                let goingBack = dragOffset.width > 0
+                FlashcardView(
+                    verse: verse,
+                    cardLabel: cardLabel(for: verse),
+                    isReviewMode: isReviewMode,
+                    titleRevealedCount: titleRevealedCounts[verse.id, default: 0],
+                    verseRevealedCount: verseRevealedCounts[verse.id, default: 0],
+                    activeSection: activeSection,
+                    onSectionTap: { section in
+                        withAnimation(.easeOut(duration: 0.2)) { activeSection = section }
+                    }
+                )
+                .offset(
+                    x: goingBack ? 0 : dragOffset.width,
+                    y: goingBack ? backwardProgress * 12 : dragOffset.height * 0.1
+                )
+                .scaleEffect(goingBack ? 1.0 - backwardProgress * 0.05 : 1.0)
+                .rotationEffect(goingBack ? .zero : .degrees(Double(dragOffset.width) * 0.03))
+                .zIndex(2)
+                .gesture(swipeGesture)
+            }
+
+            // Previous card (slides in from left, ON TOP, when swiping backward)
+            if currentIndex > 0 && dragOffset.width > 0 {
+                let prevVerse = verses[currentIndex - 1]
+                FlashcardView(
+                    verse: prevVerse,
+                    cardLabel: cardLabel(for: prevVerse),
+                    isReviewMode: isReviewMode,
+                    titleRevealedCount: titleRevealedCounts[prevVerse.id, default: 0],
+                    verseRevealedCount: verseRevealedCounts[prevVerse.id, default: 0],
+                    activeSection: activeSection
+                )
+                .offset(x: dragOffset.width - 420)
+                .rotationEffect(.degrees(Double(dragOffset.width - 420) * 0.02))
+                .zIndex(3)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func cardView(at index: Int) -> some View {
+        if verses.indices.contains(index) {
+            let verse = verses[index]
+            FlashcardView(
+                verse: verse,
+                cardLabel: cardLabel(for: verse),
+                isReviewMode: isReviewMode,
+                titleRevealedCount: titleRevealedCounts[verse.id, default: 0],
+                verseRevealedCount: verseRevealedCounts[verse.id, default: 0],
+                activeSection: activeSection
+            )
+        }
+    }
+
+    private var swipeGesture: some Gesture {
+        DragGesture()
+            .onChanged { value in
+                if isCardFlying { commitSwipe() }
+                let tx = value.translation.width
+                let canGoNext = currentIndex < verses.count - 1
+                let canGoPrev = currentIndex > 0
+
+                if (tx < 0 && canGoNext) || (tx > 0 && canGoPrev) {
+                    dragOffset = value.translation
+                } else {
+                    dragOffset = CGSize(width: tx * 0.15, height: value.translation.height * 0.15)
+                }
+            }
+            .onEnded { value in
+                if isCardFlying { commitSwipe() }
+                let threshold: CGFloat = 80
+                let vx = value.predictedEndTranslation.width
+
+                if (dragOffset.width < -threshold || vx < -400) && currentIndex < verses.count - 1 {
+                    swipeForward()
+                } else if (dragOffset.width > threshold || vx > 400) && currentIndex > 0 {
+                    swipeBackward()
+                } else {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 1.0)) {
+                        dragOffset = .zero
+                    }
+                }
+            }
+    }
+
+    private func swipeForward() {
+        isCardFlying = true
+        flyDirection = -1
+        haptic(.light)
+
+        withAnimation(.easeOut(duration: 0.2)) {
+            dragOffset = CGSize(width: -600, height: dragOffset.height)
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            commitSwipe()
+        }
+    }
+
+    private func swipeBackward() {
+        isCardFlying = true
+        flyDirection = 1
+        haptic(.light)
+
+        withAnimation(.easeOut(duration: 0.2)) {
+            dragOffset = CGSize(width: 420, height: 0)
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            commitSwipe()
+        }
+    }
+
+    private func commitSwipe() {
+        guard isCardFlying else { return }
+        var t = Transaction()
+        t.disablesAnimations = true
+        withTransaction(t) {
+            if flyDirection < 0, currentIndex < verses.count - 1 {
+                currentIndex += 1
+            } else if flyDirection > 0, currentIndex > 0 {
+                currentIndex -= 1
+            }
+            dragOffset = .zero
+            isCardFlying = false
+            flyDirection = 0
+        }
+    }
+
+    // MARK: - Top Bar
+
+    private var topBar: some View {
+        HStack {
+            Button { dismiss() } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(.secondary)
+                    .frame(width: 32, height: 32)
+                    .background(Color(.tertiarySystemGroupedBackground))
+                    .clipShape(Circle())
+            }
+
+            Spacer()
+
+            VStack(spacing: 2) {
+                Text(packName)
+                    .font(.system(size: 15, weight: .semibold))
+                    .lineLimit(1)
+                Text("\(currentIndex + 1) of \(verses.count)")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.secondary)
+            }
+
+            Spacer()
+
+            if isReviewMode && (titleRevealedCounts[currentVerse?.id ?? -1, default: 0] > 0
+                || verseRevealedCounts[currentVerse?.id ?? -1, default: 0] > 0),
+               let verse = currentVerse {
+                Button {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        titleRevealedCounts[verse.id] = 0
+                        verseRevealedCounts[verse.id] = 0
+                    }
+                    haptic(.light)
+                } label: {
+                    Image(systemName: "arrow.counterclockwise")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(.secondary)
+                        .frame(width: 32, height: 32)
+                        .background(Color(.tertiarySystemGroupedBackground))
+                        .clipShape(Circle())
+                }
+            } else {
+                Color.clear.frame(width: 32, height: 32)
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 12)
+    }
+
+    // MARK: - Scrubber
+
+    private var scrubber: some View {
+        GeometryReader { geo in
+            let w = geo.size.width
+            let h = geo.size.height
+            let knobX: CGFloat = verses.count > 1
+                ? CGFloat(currentIndex) / CGFloat(verses.count - 1) * (w - 14) + 7
+                : w / 2
+            let fillW: CGFloat = max(4, w * CGFloat(currentIndex + 1) / CGFloat(max(1, verses.count)))
+
+            Capsule()
+                .fill(Color(.systemGray5))
+                .frame(height: 4)
+                .position(x: w / 2, y: h / 2)
+
+            Capsule()
+                .fill(Color.primary.opacity(0.3))
+                .frame(width: fillW, height: 4)
+                .position(x: fillW / 2, y: h / 2)
+                .animation(.spring(response: 0.3, dampingFraction: 0.8), value: currentIndex)
+
+            Circle()
+                .fill(Color.primary.opacity(0.55))
+                .frame(width: 14, height: 14)
+                .position(x: knobX, y: h / 2)
+                .animation(.spring(response: 0.3, dampingFraction: 0.8), value: currentIndex)
+        }
+        .frame(height: 20)
+        .overlay {
+            GeometryReader { geo in
+                Color.clear
+                    .contentShape(Rectangle())
+                    .gesture(
+                        DragGesture(minimumDistance: 0)
+                            .onChanged { value in
+                                let fraction = max(0, min(1, value.location.x / geo.size.width))
+                                let newIndex = Int(round(fraction * CGFloat(verses.count - 1)))
+                                if newIndex != currentIndex && verses.indices.contains(newIndex) {
+                                    currentIndex = newIndex
+                                    haptic(.light)
+                                }
+                            }
+                    )
+            }
+        }
+    }
+
+    // MARK: - Bottom Controls
+
+    private var bottomControls: some View {
+        VStack(spacing: 12) {
+            if isReviewMode {
+                if isCardComplete {
+                    HStack(spacing: 8) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(.green)
+                            .font(.system(size: 22))
+                        Text("Complete!")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundColor(.green)
+                    }
+                    .transition(.scale.combined(with: .opacity))
+                    .padding(.bottom, 2)
+                } else {
+                    HStack(spacing: 10) {
+                        Image(systemName: "character.cursor.ibeam")
+                            .foregroundColor(.secondary)
+                            .font(.system(size: 16))
+
+                        TextField("Type first letter of each word...", text: $inputText)
+                            .font(.system(size: 17))
+                            .focused($isInputFocused)
+                            .autocorrectionDisabled()
+                            .textInputAutocapitalization(.never)
+                            .onChange(of: inputText) { newValue in
+                                guard !newValue.isEmpty else { return }
+                                processInput(newValue)
+                                DispatchQueue.main.async { self.inputText = "" }
+                            }
+                    }
+                    .padding(14)
+                    .background(Color(.secondarySystemGroupedBackground))
+                    .cornerRadius(12)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color(.separator).opacity(0.5), lineWidth: 0.5)
+                    )
+                    .offset(x: shakeOffset)
+                    .padding(.horizontal, 24)
+                }
+            }
+
+            Picker("Mode", selection: $isReviewMode) {
+                Text("Read").tag(false)
+                Text("Review").tag(true)
+            }
+            .pickerStyle(.segmented)
+            .padding(.horizontal, 24)
+        }
+        .padding(.bottom, 24)
+        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: isReviewMode)
+        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: isCardComplete)
+    }
+
+    // MARK: - Input Processing
+
+    private func processInput(_ text: String) {
+        guard let typed = text.last, let verse = currentVerse else { return }
+        let words = currentWords
+        let revealed = currentRevealed
+        guard revealed < words.count else { return }
+
+        let targetWord = words[revealed]
+        guard let expected = firstLetter(of: targetWord) else {
+            setRevealed(verse.id, revealed + 1)
+            return
+        }
+
+        if typed.lowercased() == String(expected).lowercased() {
+            let newCount = revealed + 1
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                setRevealed(verse.id, newCount)
+            }
+            if newCount >= words.count {
+                let otherSection: ReviewSection = activeSection == .title ? .verse : .title
+                let otherWords: [String]
+                let otherRevealed: Int
+                switch otherSection {
+                case .title:
+                    otherWords = verse.title.components(separatedBy: " ").filter { !$0.isEmpty }
+                    otherRevealed = titleRevealedCounts[verse.id, default: 0]
+                case .verse:
+                    otherWords = verse.verse.components(separatedBy: " ").filter { !$0.isEmpty }
+                    otherRevealed = verseRevealedCounts[verse.id, default: 0]
+                }
+                if otherRevealed >= otherWords.count {
+                    haptic(.success)
+                } else {
+                    haptic(.success)
+                    withAnimation(.easeOut(duration: 0.2)) {
+                        activeSection = otherSection
+                    }
+                }
+            } else {
+                haptic(.light)
+            }
+        } else {
+            haptic(.error)
+            shakeAnimation()
+        }
+    }
+
+    private func setRevealed(_ verseId: Int, _ count: Int) {
+        switch activeSection {
+        case .title: titleRevealedCounts[verseId] = count
+        case .verse: verseRevealedCounts[verseId] = count
+        }
+    }
+
+    private func firstLetter(of word: String) -> Character? {
+        for char in word {
+            if char.isLetter || char.isNumber { return char }
+        }
+        return nil
+    }
+
+    private func cardLabel(for verse: Verse) -> String {
+        if verse.subpack.isEmpty { return packName }
+        let sub = verses.filter { $0.subpack == verse.subpack }
+        let pos = (sub.firstIndex(where: { $0.id == verse.id }) ?? 0) + 1
+        return "\(verse.subpack)-\(pos) · \(packName)"
+    }
+
+    // MARK: - Haptics
+
+    private enum HapticType { case light, success, error }
+
+    private func haptic(_ type: HapticType) {
+        switch type {
+        case .light:  UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        case .success: UINotificationFeedbackGenerator().notificationOccurred(.success)
+        case .error:  UINotificationFeedbackGenerator().notificationOccurred(.error)
+        }
+    }
+
+    private func shakeAnimation() {
+        withAnimation(.interpolatingSpring(stiffness: 600, damping: 10)) { shakeOffset = 12 }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.07) {
+            withAnimation(.interpolatingSpring(stiffness: 600, damping: 12)) { shakeOffset = -8 }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.14) {
+            withAnimation(.spring()) { shakeOffset = 0 }
+        }
+    }
+}
+
+#Preview {
+    CardStudyView(packName: "5 Assurances", verses: Array(packs.first?.verses.prefix(5) ?? []))
+}
