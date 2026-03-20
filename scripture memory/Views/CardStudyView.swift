@@ -14,10 +14,10 @@ struct CardStudyView: View {
     @State private var dragOffset: CGSize = .zero
     @State private var isCardFlying = false
     @State private var flyDirection: Int = 0
+    @State private var submitDiffs: [Int: [DiffWord]] = [:]
     @FocusState private var isInputFocused: Bool
     @Environment(\.dismiss) private var dismiss
-    @AppStorage("typingMode") private var typingMode = "firstLetter"
-    @AppStorage("checkMode") private var checkMode = "immediate"
+    @AppStorage("studyMode") private var studyMode = "firstLetter"
 
     private var currentVerse: Verse? {
         guard !verses.isEmpty, verses.indices.contains(currentIndex) else { return nil }
@@ -40,12 +40,12 @@ struct CardStudyView: View {
         }
     }
 
-    private var isSectionComplete: Bool {
-        !currentWords.isEmpty && currentRevealed >= currentWords.count
-    }
-
     private var isCardComplete: Bool {
         guard let v = currentVerse else { return false }
+        if studyMode == "submit" {
+            guard let diff = submitDiffs[v.id] else { return false }
+            return !diff.isEmpty && diff.allSatisfy { $0.kind == .correct }
+        }
         let tWords = v.title.components(separatedBy: " ").filter { !$0.isEmpty }
         let vWords = v.verse.components(separatedBy: " ").filter { !$0.isEmpty }
         return titleRevealedCounts[v.id, default: 0] >= tWords.count
@@ -109,75 +109,68 @@ struct CardStudyView: View {
 
     private var cardStack: some View {
         ZStack {
-            // Next+2 card (deep background)
             if currentIndex + 2 < verses.count {
-                cardView(at: currentIndex + 2)
-                    .scaleEffect(0.90)
-                    .offset(y: 24)
-                    .zIndex(0)
+                backgroundCard(at: currentIndex + 2)
+                    .scaleEffect(0.90).offset(y: 24).zIndex(0)
             }
-
-            // Next+1 card (rises as you swipe forward)
             if currentIndex + 1 < verses.count {
-                cardView(at: currentIndex + 1)
+                backgroundCard(at: currentIndex + 1)
                     .scaleEffect(0.95 + 0.05 * forwardProgress)
                     .offset(y: 12 * (1 - forwardProgress))
                     .zIndex(1)
             }
 
-            // Current card
             if let verse = currentVerse {
                 let goingBack = dragOffset.width > 0
-                FlashcardView(
-                    verse: verse,
-                    cardLabel: cardLabel(for: verse),
-                    isReviewMode: isReviewMode,
-                    titleRevealedCount: titleRevealedCounts[verse.id, default: 0],
-                    verseRevealedCount: verseRevealedCounts[verse.id, default: 0],
-                    activeSection: activeSection,
-                    onSectionTap: { section in
-                        withAnimation(.easeOut(duration: 0.2)) { activeSection = section }
-                    }
-                )
-                .offset(
-                    x: goingBack ? 0 : dragOffset.width,
-                    y: goingBack ? backwardProgress * 12 : dragOffset.height * 0.1
-                )
-                .scaleEffect(goingBack ? 1.0 - backwardProgress * 0.05 : 1.0)
-                .rotationEffect(goingBack ? .zero : .degrees(Double(dragOffset.width) * 0.03))
-                .zIndex(2)
-                .gesture(swipeGesture)
+                makeCard(verse: verse, interactive: true)
+                    .offset(
+                        x: goingBack ? 0 : dragOffset.width,
+                        y: goingBack ? backwardProgress * 12 : dragOffset.height * 0.1
+                    )
+                    .scaleEffect(goingBack ? 1.0 - backwardProgress * 0.05 : 1.0)
+                    .rotationEffect(goingBack ? .zero : .degrees(Double(dragOffset.width) * 0.03))
+                    .zIndex(2)
+                    .gesture(studyMode == "submit" && isReviewMode ? nil : swipeGesture)
             }
 
-            // Previous card (slides in from left, ON TOP, when swiping backward)
             if currentIndex > 0 && dragOffset.width > 0 {
                 let prevVerse = verses[currentIndex - 1]
-                FlashcardView(
-                    verse: prevVerse,
-                    cardLabel: cardLabel(for: prevVerse),
-                    isReviewMode: isReviewMode,
-                    titleRevealedCount: titleRevealedCounts[prevVerse.id, default: 0],
-                    verseRevealedCount: verseRevealedCounts[prevVerse.id, default: 0],
-                    activeSection: activeSection
-                )
-                .offset(x: dragOffset.width - 420)
-                .rotationEffect(.degrees(Double(dragOffset.width - 420) * 0.02))
-                .zIndex(3)
+                makeCard(verse: prevVerse, interactive: false)
+                    .offset(x: dragOffset.width - 420)
+                    .rotationEffect(.degrees(Double(dragOffset.width - 420) * 0.02))
+                    .zIndex(3)
             }
         }
     }
 
     @ViewBuilder
-    private func cardView(at index: Int) -> some View {
+    private func backgroundCard(at index: Int) -> some View {
         if verses.indices.contains(index) {
-            let verse = verses[index]
+            makeCard(verse: verses[index], interactive: false)
+        }
+    }
+
+    @ViewBuilder
+    private func makeCard(verse: Verse, interactive: Bool) -> some View {
+        if studyMode == "submit" && isReviewMode {
+            SubmitCardView(
+                verse: verse,
+                cardLabel: cardLabel(for: verse),
+                typedText: interactive ? $inputText : .constant(""),
+                diff: submitDiffs[verse.id],
+                isFocused: $isInputFocused
+            )
+        } else {
             FlashcardView(
                 verse: verse,
                 cardLabel: cardLabel(for: verse),
                 isReviewMode: isReviewMode,
                 titleRevealedCount: titleRevealedCounts[verse.id, default: 0],
                 verseRevealedCount: verseRevealedCounts[verse.id, default: 0],
-                activeSection: activeSection
+                activeSection: activeSection,
+                onSectionTap: interactive ? { section in
+                    withAnimation(.easeOut(duration: 0.2)) { activeSection = section }
+                } : nil
             )
         }
     }
@@ -189,7 +182,6 @@ struct CardStudyView: View {
                 let tx = value.translation.width
                 let canGoNext = currentIndex < verses.count - 1
                 let canGoPrev = currentIndex > 0
-
                 if (tx < 0 && canGoNext) || (tx > 0 && canGoPrev) {
                     dragOffset = value.translation
                 } else {
@@ -200,7 +192,6 @@ struct CardStudyView: View {
                 if isCardFlying { commitSwipe() }
                 let threshold: CGFloat = 80
                 let vx = value.predictedEndTranslation.width
-
                 if (dragOffset.width < -threshold || vx < -400) && currentIndex < verses.count - 1 {
                     swipeForward()
                 } else if (dragOffset.width > threshold || vx > 400) && currentIndex > 0 {
@@ -214,46 +205,28 @@ struct CardStudyView: View {
     }
 
     private func swipeForward() {
-        isCardFlying = true
-        flyDirection = -1
-        haptic(.light)
-
+        isCardFlying = true; flyDirection = -1; haptic(.light)
         withAnimation(.easeOut(duration: 0.2)) {
             dragOffset = CGSize(width: -600, height: dragOffset.height)
         }
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-            commitSwipe()
-        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { commitSwipe() }
     }
 
     private func swipeBackward() {
-        isCardFlying = true
-        flyDirection = 1
-        haptic(.light)
-
+        isCardFlying = true; flyDirection = 1; haptic(.light)
         withAnimation(.easeOut(duration: 0.2)) {
             dragOffset = CGSize(width: 420, height: 0)
         }
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-            commitSwipe()
-        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { commitSwipe() }
     }
 
     private func commitSwipe() {
         guard isCardFlying else { return }
-        var t = Transaction()
-        t.disablesAnimations = true
+        var t = Transaction(); t.disablesAnimations = true
         withTransaction(t) {
-            if flyDirection < 0, currentIndex < verses.count - 1 {
-                currentIndex += 1
-            } else if flyDirection > 0, currentIndex > 0 {
-                currentIndex -= 1
-            }
-            dragOffset = .zero
-            isCardFlying = false
-            flyDirection = 0
+            if flyDirection < 0, currentIndex < verses.count - 1 { currentIndex += 1 }
+            else if flyDirection > 0, currentIndex > 0 { currentIndex -= 1 }
+            dragOffset = .zero; isCardFlying = false; flyDirection = 0
         }
     }
 
@@ -283,13 +256,23 @@ struct CardStudyView: View {
 
             Spacer()
 
-            if isReviewMode && (titleRevealedCounts[currentVerse?.id ?? -1, default: 0] > 0
-                || verseRevealedCounts[currentVerse?.id ?? -1, default: 0] > 0),
-               let verse = currentVerse {
+            let canReset = isReviewMode && (
+                studyMode == "submit"
+                    ? submitDiffs[currentVerse?.id ?? -1] != nil
+                    : (titleRevealedCounts[currentVerse?.id ?? -1, default: 0] > 0
+                       || verseRevealedCounts[currentVerse?.id ?? -1, default: 0] > 0)
+            )
+
+            if canReset, let verse = currentVerse {
                 Button {
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                        titleRevealedCounts[verse.id] = 0
-                        verseRevealedCounts[verse.id] = 0
+                        if studyMode == "submit" {
+                            submitDiffs.removeValue(forKey: verse.id)
+                            inputText = ""
+                        } else {
+                            titleRevealedCounts[verse.id] = 0
+                            verseRevealedCounts[verse.id] = 0
+                        }
                     }
                     haptic(.light)
                 } label: {
@@ -319,51 +302,30 @@ struct CardStudyView: View {
                 : w / 2
             let fillW: CGFloat = max(4, w * CGFloat(currentIndex + 1) / CGFloat(max(1, verses.count)))
 
-            Capsule()
-                .fill(Color(.systemGray5))
-                .frame(height: 4)
-                .position(x: w / 2, y: h / 2)
-
-            Capsule()
-                .fill(Color.primary.opacity(0.3))
-                .frame(width: fillW, height: 4)
+            Capsule().fill(Color(.systemGray5)).frame(height: 4).position(x: w / 2, y: h / 2)
+            Capsule().fill(Color.primary.opacity(0.3)).frame(width: fillW, height: 4)
                 .position(x: fillW / 2, y: h / 2)
                 .animation(.spring(response: 0.3, dampingFraction: 0.8), value: currentIndex)
-
-            Circle()
-                .fill(Color.primary.opacity(0.55))
-                .frame(width: 14, height: 14)
+            Circle().fill(Color.primary.opacity(0.55)).frame(width: 14, height: 14)
                 .position(x: knobX, y: h / 2)
                 .animation(.spring(response: 0.3, dampingFraction: 0.8), value: currentIndex)
         }
         .frame(height: 20)
         .overlay {
             GeometryReader { geo in
-                Color.clear
-                    .contentShape(Rectangle())
-                    .gesture(
-                        DragGesture(minimumDistance: 0)
-                            .onChanged { value in
-                                let fraction = max(0, min(1, value.location.x / geo.size.width))
-                                let newIndex = Int(round(fraction * CGFloat(verses.count - 1)))
-                                if newIndex != currentIndex && verses.indices.contains(newIndex) {
-                                    currentIndex = newIndex
-                                    haptic(.light)
-                                }
-                            }
-                    )
+                Color.clear.contentShape(Rectangle())
+                    .gesture(DragGesture(minimumDistance: 0).onChanged { value in
+                        let fraction = max(0, min(1, value.location.x / geo.size.width))
+                        let newIndex = Int(round(fraction * CGFloat(verses.count - 1)))
+                        if newIndex != currentIndex && verses.indices.contains(newIndex) {
+                            currentIndex = newIndex; haptic(.light)
+                        }
+                    })
             }
         }
     }
 
     // MARK: - Bottom Controls
-
-    private var inputPlaceholder: String {
-        if typingMode == "fullWord" {
-            return checkMode == "submit" ? "Type the full verse, then submit..." : "Type each word, press space to check..."
-        }
-        return checkMode == "submit" ? "Type first letters, then submit..." : "Type first letter of each word..."
-    }
 
     private var bottomControls: some View {
         VStack(spacing: 12) {
@@ -371,60 +333,16 @@ struct CardStudyView: View {
                 if isCardComplete {
                     HStack(spacing: 8) {
                         Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(.green)
-                            .font(.system(size: 22))
+                            .foregroundColor(.green).font(.system(size: 22))
                         Text("Complete!")
-                            .font(.system(size: 17, weight: .semibold))
-                            .foregroundColor(.green)
+                            .font(.system(size: 17, weight: .semibold)).foregroundColor(.green)
                     }
                     .transition(.scale.combined(with: .opacity))
                     .padding(.bottom, 2)
+                } else if studyMode == "submit" {
+                    submitControls
                 } else {
-                    VStack(spacing: 8) {
-                        HStack(spacing: 10) {
-                            Image(systemName: "character.cursor.ibeam")
-                                .foregroundColor(.secondary)
-                                .font(.system(size: 16))
-
-                            TextField(inputPlaceholder, text: $inputText)
-                                .font(.system(size: 17))
-                                .focused($isInputFocused)
-                                .autocorrectionDisabled()
-                                .textInputAutocapitalization(.never)
-                                .onChange(of: inputText) { newValue in
-                                    guard !newValue.isEmpty else { return }
-                                    guard checkMode != "submit" else { return }
-                                    if typingMode == "firstLetter" {
-                                        processFirstLetterInput(newValue)
-                                        DispatchQueue.main.async { self.inputText = "" }
-                                    } else {
-                                        processFullWordInput(newValue)
-                                    }
-                                }
-                        }
-                        .padding(14)
-                        .background(Color(.secondarySystemGroupedBackground))
-                        .cornerRadius(12)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color(.separator).opacity(0.5), lineWidth: 0.5)
-                        )
-                        .offset(x: shakeOffset)
-
-                        if checkMode == "submit" {
-                            Button(action: handleSubmit) {
-                                Text("Submit")
-                                    .font(.system(size: 16, weight: .semibold))
-                                    .foregroundColor(.white)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 12)
-                                    .background(inputText.trimmingCharacters(in: .whitespaces).isEmpty ? Color.gray : Color.blue)
-                                    .cornerRadius(12)
-                            }
-                            .disabled(inputText.trimmingCharacters(in: .whitespaces).isEmpty)
-                        }
-                    }
-                    .padding(.horizontal, 24)
+                    immediateInputField
                 }
             }
 
@@ -440,29 +358,85 @@ struct CardStudyView: View {
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: isCardComplete)
     }
 
-    // MARK: - Input Processing
+    private var submitControls: some View {
+        let hasSubmitted = currentVerse.flatMap { submitDiffs[$0.id] } != nil
+        return Group {
+            if hasSubmitted {
+                Button { retrySubmit() } label: {
+                    Label("Try Again", systemImage: "arrow.counterclockwise")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.primary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(Color(.secondarySystemGroupedBackground))
+                        .cornerRadius(12)
+                }
+            } else {
+                Button(action: handleSubmit) {
+                    Text("Submit")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(inputText.trimmingCharacters(in: .whitespaces).isEmpty
+                                    ? Color(.systemGray3) : Color.blue)
+                        .cornerRadius(12)
+                }
+                .disabled(inputText.trimmingCharacters(in: .whitespaces).isEmpty)
+            }
+        }
+        .padding(.horizontal, 24)
+    }
+
+    private var immediateInputField: some View {
+        let placeholder = studyMode == "fullWord"
+            ? "Type each word, press space to check..."
+            : "Type first letter of each word..."
+
+        return HStack(spacing: 10) {
+            Image(systemName: "character.cursor.ibeam")
+                .foregroundColor(.secondary).font(.system(size: 16))
+
+            TextField(placeholder, text: $inputText)
+                .font(.system(size: 17))
+                .focused($isInputFocused)
+                .autocorrectionDisabled()
+                .textInputAutocapitalization(.never)
+                .onChange(of: inputText) { newValue in
+                    guard !newValue.isEmpty else { return }
+                    if studyMode == "firstLetter" {
+                        processFirstLetterInput(newValue)
+                        DispatchQueue.main.async { self.inputText = "" }
+                    } else {
+                        processFullWordInput(newValue)
+                    }
+                }
+        }
+        .padding(14)
+        .background(Color(.secondarySystemGroupedBackground))
+        .cornerRadius(12)
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(.separator).opacity(0.5), lineWidth: 0.5))
+        .offset(x: shakeOffset)
+        .padding(.horizontal, 24)
+    }
+
+    // MARK: - Input Processing (immediate modes)
 
     private func processFirstLetterInput(_ text: String) {
         guard let typed = text.last, let verse = currentVerse else { return }
         let words = currentWords
         let revealed = currentRevealed
         guard revealed < words.count else { return }
-
         let targetWord = words[revealed]
         guard let expected = firstLetter(of: targetWord) else {
-            setRevealed(verse.id, revealed + 1)
-            return
+            setRevealed(verse.id, revealed + 1); return
         }
-
         if typed.lowercased() == String(expected).lowercased() {
             let newCount = revealed + 1
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-                setRevealed(verse.id, newCount)
-            }
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) { setRevealed(verse.id, newCount) }
             completeSectionIfNeeded(verse: verse, newCount: newCount, words: words)
         } else {
-            haptic(.error)
-            shakeAnimation()
+            haptic(.error); shakeAnimation()
         }
     }
 
@@ -470,28 +444,23 @@ struct CardStudyView: View {
         guard text.hasSuffix(" "), let verse = currentVerse else { return }
         let typedWord = String(text.dropLast()).trimmingCharacters(in: .whitespaces)
         guard !typedWord.isEmpty else {
-            DispatchQueue.main.async { self.inputText = "" }
-            return
+            DispatchQueue.main.async { self.inputText = "" }; return
         }
-
         let words = currentWords
         let revealed = currentRevealed
         guard revealed < words.count else { return }
-
-        let targetWord = words[revealed]
-        if normalizedMatch(typedWord, targetWord) {
+        if normalizedMatch(typedWord, words[revealed]) {
             let newCount = revealed + 1
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-                setRevealed(verse.id, newCount)
-            }
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) { setRevealed(verse.id, newCount) }
             DispatchQueue.main.async { self.inputText = "" }
             completeSectionIfNeeded(verse: verse, newCount: newCount, words: words)
         } else {
-            haptic(.error)
-            shakeAnimation()
+            haptic(.error); shakeAnimation()
             DispatchQueue.main.async { self.inputText = "" }
         }
     }
+
+    // MARK: - Submit Mode
 
     private func handleSubmit() {
         guard let verse = currentVerse else { return }
@@ -499,54 +468,48 @@ struct CardStudyView: View {
         guard !raw.isEmpty else { return }
 
         let typedWords = raw.components(separatedBy: .whitespaces).filter { !$0.isEmpty }
-        let targetWords = currentWords
-        let revealed = currentRevealed
+        let targetWords = verse.verse.components(separatedBy: " ").filter { !$0.isEmpty }
+        var diffs: [DiffWord] = []
 
-        var newRevealed = revealed
-        for (i, typedWord) in typedWords.enumerated() {
-            let targetIndex = revealed + i
-            guard targetIndex < targetWords.count else { break }
-            let targetWord = targetWords[targetIndex]
-
-            let matched: Bool
-            if typingMode == "firstLetter" {
-                guard let firstChar = firstLetter(of: targetWord) else {
-                    newRevealed += 1
-                    continue
-                }
-                matched = typedWord.first?.lowercased() == String(firstChar).lowercased()
+        for i in 0..<max(typedWords.count, targetWords.count) {
+            if i < targetWords.count && i < typedWords.count {
+                let correct = normalizedMatch(typedWords[i], targetWords[i])
+                diffs.append(DiffWord(text: correct ? targetWords[i] : typedWords[i],
+                                      kind: correct ? .correct : .wrong))
+            } else if i < targetWords.count {
+                diffs.append(DiffWord(text: targetWords[i], kind: .missing))
             } else {
-                matched = normalizedMatch(typedWord, targetWord)
-            }
-
-            if matched {
-                newRevealed += 1
-            } else {
-                break
+                diffs.append(DiffWord(text: typedWords[i], kind: .extra))
             }
         }
 
-        let gained = newRevealed - revealed
-        if newRevealed > revealed {
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-                setRevealed(verse.id, newRevealed)
-            }
-            completeSectionIfNeeded(verse: verse, newCount: newRevealed, words: targetWords)
-        }
-        if gained == 0 {
-            haptic(.error)
-            shakeAnimation()
-        } else if newRevealed < targetWords.count {
-            haptic(.light)
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+            submitDiffs[verse.id] = diffs
         }
         inputText = ""
+
+        if diffs.allSatisfy({ $0.kind == .correct }) {
+            haptic(.success)
+        } else {
+            haptic(.error)
+        }
     }
 
-    private func completeSectionIfNeeded(verse: Verse, newCount: Int, words: [String]) {
-        guard newCount >= words.count else {
-            haptic(.light)
-            return
+    private func retrySubmit() {
+        guard let verse = currentVerse else { return }
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+            submitDiffs.removeValue(forKey: verse.id)
         }
+        inputText = ""
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            isInputFocused = true
+        }
+    }
+
+    // MARK: - Helpers
+
+    private func completeSectionIfNeeded(verse: Verse, newCount: Int, words: [String]) {
+        guard newCount >= words.count else { haptic(.light); return }
         let otherSection: ReviewSection = activeSection == .title ? .verse : .title
         let otherWords: [String]
         let otherRevealed: Int
@@ -560,9 +523,7 @@ struct CardStudyView: View {
         }
         haptic(.success)
         if otherRevealed < otherWords.count {
-            withAnimation(.easeOut(duration: 0.2)) {
-                activeSection = otherSection
-            }
+            withAnimation(.easeOut(duration: 0.2)) { activeSection = otherSection }
         }
     }
 
@@ -585,10 +546,7 @@ struct CardStudyView: View {
     }
 
     private func firstLetter(of word: String) -> Character? {
-        for char in word {
-            if char.isLetter || char.isNumber { return char }
-        }
-        return nil
+        word.first { $0.isLetter || $0.isNumber }
     }
 
     private func cardLabel(for verse: Verse) -> String {
@@ -604,9 +562,9 @@ struct CardStudyView: View {
 
     private func haptic(_ type: HapticType) {
         switch type {
-        case .light:  UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        case .light:   UIImpactFeedbackGenerator(style: .light).impactOccurred()
         case .success: UINotificationFeedbackGenerator().notificationOccurred(.success)
-        case .error:  UINotificationFeedbackGenerator().notificationOccurred(.error)
+        case .error:   UINotificationFeedbackGenerator().notificationOccurred(.error)
         }
     }
 
