@@ -137,49 +137,65 @@ struct PackCover: View {
     // MARK: TMS 60 Style
 
     private var tmsCover: some View {
-        ZStack {
-            Color(uiColor: UIColor { tc in
-                tc.userInterfaceStyle == .dark
-                    ? UIColor(white: 0.15, alpha: 1)
-                    : UIColor(red: 0.98, green: 0.97, blue: 0.95, alpha: 1)
-            })
+        VStack(spacing: 0) {
+            ZStack {
+                Color(uiColor: UIColor { tc in
+                    tc.userInterfaceStyle == .dark
+                        ? UIColor(white: 0.15, alpha: 1)
+                        : UIColor(red: 0.98, green: 0.97, blue: 0.95, alpha: 1)
+                })
 
-            VStack(spacing: 4) {
-                Text("Topical Memory System")
-                    .font(.system(size: 12, weight: .medium, design: .serif))
-                    .foregroundColor(.secondary)
-                    .tracking(1)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("주제별 성경암송")
+                        .font(.system(size: 24, weight: .medium, design: .serif))
+                        .tracking(1)
+                        .padding(.leading, 40)
+                    
 
-                Text("60")
-                    .font(.system(size: 60, weight: .black, design: .rounded))
-                    .foregroundColor(baseColor)
+                    HStack(spacing: 4) {
+                        Spacer()
+                        Text("60")
+                            .font(.system(size: 140, weight: .black, design: .monospaced))
+                            .foregroundColor(baseColor)
+                        VStack(alignment: .center, spacing: 2) {
+                            Text("개역한글판")
+                                .font(.system(size: 24, weight: .semibold))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 5)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .fill(baseColor)
+                                )
 
-                Text("TO KNOW CHRIST AND TO MAKE HIM KNOWN")
-                    .font(.system(size: 8, weight: .medium, design: .serif))
-                    .foregroundColor(.secondary)
-                    .tracking(0.8)
-            }
-
-            VStack {
-                Spacer()
-                HStack {
-                    Text("\(pack.verses.count) cards")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.secondary)
-                    Spacer()
-                    HStack(spacing: 5) {
-                        Image(systemName: "moon.fill")
-                            .foregroundColor(Color.secondary.opacity(0.4))
-                            .font(.system(size: 12))
-                        Text("THE NAVIGATORS")
-                            .font(.system(size: 12, weight: .medium, design: .serif))
-                            .foregroundColor(.secondary)
-                            .tracking(0.5)
+                            Text("구절")
+                                .font(.system(size: 80, weight: .bold, design: .monospaced))
+                                .foregroundColor(baseColor)
+                        }
+                        Spacer()
                     }
                 }
-                .padding(.horizontal, 18)
-                .padding(.bottom, 12)
+                .padding(.top, 16)
+
             }
+
+            HStack {
+                Text("TO KNOW CHRIST AND TO MAKE HIM KNOWN")
+                    .font(.system(size: 10, weight: .medium, design: .serif))
+                Spacer()
+                HStack(spacing: 5) {
+                    Text("네비게이토")
+                        .tracking(0.5)
+                    Image(systemName: "moon.fill")
+                    Text("출판사")
+                        .tracking(0.5)
+                }
+                .bold()
+                .font(.system(size: 12, weight: .medium, design: .rounded))
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(Color.green.opacity(0.15))
         }
         .aspectRatio(5.0/3.0, contentMode: .fit)
         .clipShape(RoundedRectangle(cornerRadius: 10))

@@ -47,9 +47,9 @@
     ]
   },
   {
-    "name": "TMS Pack A - Live the New Life",
-    "color": "#c8a800",
-    "accentText": "A",
+    "name": "TMS 60",
+    "color": "#1C8C44",
+    "accentText": "60",
     "verses": [
       {
         "id": 11,
@@ -146,14 +146,7 @@
         "book": "Romans",
         "reference": "1:16",
         "subpack": "A"
-      }
-    ]
-  },
-  {
-    "name": "TMS Pack B - Proclaim Christ",
-    "color": "#dc143c",
-    "accentText": "B",
-    "verses": [
+      },
       {
         "id": 31,
         "title": "All Have Sinned",
@@ -249,14 +242,7 @@
         "book": "John",
         "reference": "5:24",
         "subpack": "B"
-      }
-    ]
-  },
-  {
-    "name": "TMS Pack C - Rely on God's Resources",
-    "color": "#1e90ff",
-    "accentText": "C",
-    "verses": [
+      },
       {
         "id": 51,
         "title": "His Spirit",
@@ -352,14 +338,7 @@
         "book": "Psalm",
         "reference": "119:9, 11",
         "subpack": "C"
-      }
-    ]
-  },
-  {
-    "name": "TMS Pack D - Be Christ's Disciple",
-    "color": "#5bbf00",
-    "accentText": "D",
-    "verses": [
+      },
       {
         "id": 71,
         "title": "Put Christ First",
@@ -455,14 +434,7 @@
         "book": "Matthew",
         "reference": "28:19-20",
         "subpack": "D"
-      }
-    ]
-  },
-  {
-    "name": "TMS Pack E - Grow in Christlikeness",
-    "color": "#9b50bb",
-    "accentText": "E",
-    "verses": [
+      },
       {
         "id": 91,
         "title": "Love",
@@ -562,9 +534,9 @@
     ]
   },
   {
-    "name": "DEP 242 Pack 1 - Assurance of Salvation",
+    "name": "DEP 1: Assurance of Salvation",
     "color": "#0a1fbe",
-    "accentText": "",
+    "accentText": "1",
     "verses": [
       {
         "id": 2101,
@@ -713,9 +685,9 @@
     ]
   },
   {
-    "name": "DEP 242 Pack 2 - Quiet Time",
+    "name": "DEP 2: Quiet Time",
     "color": "#07c387",
-    "accentText": "",
+    "accentText": "2",
     "verses": [
       {
         "id": 2201,
@@ -928,9 +900,9 @@
     ]
   },
   {
-    "name": "DEP 242 Pack 3 - The Word",
+    "name": "DEP 3: The Word",
     "color": "#ce4611",
-    "accentText": "",
+    "accentText": "3",
     "verses": [
       {
         "id": 2301,
@@ -1231,9 +1203,9 @@
     ]
   },
   {
-    "name": "DEP 242 Pack 4 - Prayer",
+    "name": "DEP 4: Prayer",
     "color": "#f3a937",
-    "accentText": "",
+    "accentText": "4",
     "verses": [
       {
         "id": 2801,
@@ -1382,7 +1354,7 @@
       {
         "id": 2819,
         "title": "Pray with one accord",
-        "verse": "\u201cAgain, truly I tell you that if two of you on earth agree about anything they ask for, it will be done for them by my Father in heaven.",
+        "verse": "“Again, truly I tell you that if two of you on earth agree about anything they ask for, it will be done for them by my Father in heaven.",
         "book": "Matthew",
         "reference": "18:19",
         "subpack": ""
@@ -1390,7 +1362,7 @@
       {
         "id": 2820,
         "title": "Ask and act",
-        "verse": "\u201cAsk and it will be given to you; seek and you will find; knock and the door will be opened to you. For everyone who asks receives; the one who seeks finds; and to the one who knocks, the door will be opened.",
+        "verse": "“Ask and it will be given to you; seek and you will find; knock and the door will be opened to you. For everyone who asks receives; the one who seeks finds; and to the one who knocks, the door will be opened.",
         "book": "Matthew",
         "reference": "7:7-8",
         "subpack": ""
@@ -1406,7 +1378,7 @@
       {
         "id": 2822,
         "title": "Pray in claiming the promise",
-        "verse": "\u201cRemember the instruction you gave your servant Moses, saying, 'If you are unfaithful, I will scatter you among the nations, but if you return to me and obey my commands, then even if your exiled people are at the farthest horizon, I will gather them from there and bring them to the place I have chosen as a dwelling for my Name.'",
+        "verse": "“Remember the instruction you gave your servant Moses, saying, 'If you are unfaithful, I will scatter you among the nations, but if you return to me and obey my commands, then even if your exiled people are at the farthest horizon, I will gather them from there and bring them to the place I have chosen as a dwelling for my Name.'",
         "book": "Nehemiah",
         "reference": "1:8-9",
         "subpack": ""
@@ -1494,9 +1466,9 @@
     ]
   },
   {
-    "name": "DEP 242 Pack 5 - Fellowship",
+    "name": "DEP 5: Fellowship",
     "color": "#00b809",
-    "accentText": "",
+    "accentText": "5",
     "verses": [
       {
         "id": 2401,
@@ -1741,9 +1713,9 @@
     ]
   },
   {
-    "name": "DEP 242 Pack 6 - Witnessing",
+    "name": "DEP 6: Witnessing",
     "color": "#14c7cc",
-    "accentText": "",
+    "accentText": "6",
     "verses": [
       {
         "id": 2501,
@@ -2188,9 +2160,9 @@
     ]
   },
   {
-    "name": "DEP 242 Pack 7 - The Lordship of Christ",
+    "name": "DEP 7: The Lordship of Christ",
     "color": "#0032ff",
-    "accentText": "",
+    "accentText": "7",
     "verses": [
       {
         "id": 2601,
@@ -2403,9 +2375,9 @@
     ]
   },
   {
-    "name": "DEP 242 Pack 8 - World Vision",
+    "name": "DEP 8: World Vision",
     "color": "#8900ff",
-    "accentText": "",
+    "accentText": "8",
     "verses": [
       {
         "id": 2701,

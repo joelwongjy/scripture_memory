@@ -37,12 +37,6 @@ struct SettingsView: View {
                 .labelsHidden()
             } header: {
                 Text("Bible Version")
-            } footer: {
-                if bibleVersion == "NIV84" {
-                    Text("Includes 5 Assurances and TMS 60.")
-                } else {
-                    Text("Includes TMS Packs A–E, 5 Assurances, and DEP 242 packs.")
-                }
             }
 
             Section {
@@ -53,14 +47,23 @@ struct SettingsView: View {
                 Text("Hides all hints — no underscores or word counts shown during review.")
             }
 
-            Section("About") {
+            Section {
                 HStack {
                     Text("Version")
                     Spacer()
                     Text("1.0")
                         .foregroundColor(.secondary)
                 }
+            } header: {
+                Text("About")
             }
+                footer: {
+                Text("Made with God's ❤️ for The Navigators")
+                    .font(.system(size: 14, design: .serif))
+
+            }
+
+            
         }
         .navigationTitle("Settings")
     }

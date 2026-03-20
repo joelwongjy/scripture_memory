@@ -10,12 +10,17 @@ struct CardStudyView: View {
     @State private var verseRevealedCounts: [Int: Int] = [:]
     @State private var activeSection: ReviewSection = .verse
     @State private var inputText = ""
+    @State private var titleInput = ""
+    @State private var verseInput = ""
     @State private var shakeOffset: CGFloat = 0
     @State private var dragOffset: CGSize = .zero
     @State private var isCardFlying = false
     @State private var flyDirection: Int = 0
-    @State private var submitDiffs: [Int: [DiffWord]] = [:]
+    @State private var submitResults: [Int: SubmitResult] = [:]
+    @State private var speechTarget: SubmitField = .title
+    @StateObject private var speech = SpeechRecognizer()
     @FocusState private var isInputFocused: Bool
+    @FocusState private var submitFocus: SubmitField?
     @Environment(\.dismiss) private var dismiss
     @AppStorage("studyMode") private var studyMode = "firstLetter"
 
@@ -43,8 +48,8 @@ struct CardStudyView: View {
     private var isCardComplete: Bool {
         guard let v = currentVerse else { return false }
         if studyMode == "submit" {
-            guard let diff = submitDiffs[v.id] else { return false }
-            return !diff.isEmpty && diff.allSatisfy { $0.kind == .correct }
+            guard let result = submitResults[v.id] else { return false }
+            return result.isAllCorrect
         }
         let tWords = v.title.components(separatedBy: " ").filter { !$0.isEmpty }
         let vWords = v.verse.components(separatedBy: " ").filter { !$0.isEmpty }
@@ -89,19 +94,45 @@ struct CardStudyView: View {
         .onChange(of: isReviewMode) { reviewing in
             if reviewing && !isCardComplete {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                    isInputFocused = true
+                    if studyMode == "submit" {
+                        submitFocus = .title
+                    } else {
+                        isInputFocused = true
+                    }
                 }
             } else {
+                if speech.isListening { speech.stopListening() }
                 isInputFocused = false
+                submitFocus = nil
             }
         }
         .onChange(of: currentIndex) { _ in
+            if speech.isListening { speech.stopListening() }
             inputText = ""
+            titleInput = ""
+            verseInput = ""
             if isReviewMode && !isCardComplete {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    isInputFocused = true
+                    if studyMode == "submit" {
+                        submitFocus = .title
+                    } else {
+                        isInputFocused = true
+                    }
                 }
             }
+        }
+        .onChange(of: speech.transcript) { newValue in
+            guard speech.isListening else { return }
+            switch speechTarget {
+            case .title: titleInput = newValue
+            case .verse: verseInput = newValue
+            }
+        }
+        .onChange(of: submitFocus) { newFocus in
+            guard speech.isListening, let newFocus else { return }
+            speech.stopListening()
+            speechTarget = newFocus
+            speech.startListening()
         }
     }
 
@@ -130,7 +161,7 @@ struct CardStudyView: View {
                     .scaleEffect(goingBack ? 1.0 - backwardProgress * 0.05 : 1.0)
                     .rotationEffect(goingBack ? .zero : .degrees(Double(dragOffset.width) * 0.03))
                     .zIndex(2)
-                    .gesture(studyMode == "submit" && isReviewMode ? nil : swipeGesture)
+                    .gesture(swipeGesture)
             }
 
             if currentIndex > 0 && dragOffset.width > 0 {
@@ -156,9 +187,10 @@ struct CardStudyView: View {
             SubmitCardView(
                 verse: verse,
                 cardLabel: cardLabel(for: verse),
-                typedText: interactive ? $inputText : .constant(""),
-                diff: submitDiffs[verse.id],
-                isFocused: $isInputFocused
+                titleText: interactive ? $titleInput : .constant(""),
+                verseText: interactive ? $verseInput : .constant(""),
+                result: submitResults[verse.id],
+                focusedField: $submitFocus
             )
         } else {
             FlashcardView(
@@ -258,7 +290,7 @@ struct CardStudyView: View {
 
             let canReset = isReviewMode && (
                 studyMode == "submit"
-                    ? submitDiffs[currentVerse?.id ?? -1] != nil
+                    ? submitResults[currentVerse?.id ?? -1] != nil
                     : (titleRevealedCounts[currentVerse?.id ?? -1, default: 0] > 0
                        || verseRevealedCounts[currentVerse?.id ?? -1, default: 0] > 0)
             )
@@ -267,8 +299,9 @@ struct CardStudyView: View {
                 Button {
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                         if studyMode == "submit" {
-                            submitDiffs.removeValue(forKey: verse.id)
-                            inputText = ""
+                            submitResults.removeValue(forKey: verse.id)
+                            titleInput = ""
+                            verseInput = ""
                         } else {
                             titleRevealedCounts[verse.id] = 0
                             verseRevealedCounts[verse.id] = 0
@@ -359,7 +392,7 @@ struct CardStudyView: View {
     }
 
     private var submitControls: some View {
-        let hasSubmitted = currentVerse.flatMap { submitDiffs[$0.id] } != nil
+        let hasSubmitted = currentVerse.flatMap { submitResults[$0.id] } != nil
         return Group {
             if hasSubmitted {
                 Button { retrySubmit() } label: {
@@ -372,17 +405,30 @@ struct CardStudyView: View {
                         .cornerRadius(12)
                 }
             } else {
-                Button(action: handleSubmit) {
-                    Text("Submit")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(inputText.trimmingCharacters(in: .whitespaces).isEmpty
-                                    ? Color(.systemGray3) : Color.blue)
-                        .cornerRadius(12)
+                HStack(spacing: 10) {
+                    Button { toggleSpeech() } label: {
+                        Image(systemName: speech.isListening ? "mic.fill" : "mic")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundColor(speech.isListening ? .white : .primary)
+                            .frame(width: 48, height: 48)
+                            .background(speech.isListening ? Color.red : Color(.secondarySystemGroupedBackground))
+                            .cornerRadius(12)
+                    }
+
+                    Button(action: handleSubmit) {
+                        let isEmpty = titleInput.trimmingCharacters(in: .whitespaces).isEmpty
+                            && verseInput.trimmingCharacters(in: .whitespaces).isEmpty
+                        Text("Submit")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(isEmpty ? Color(.systemGray3) : Color.blue)
+                            .cornerRadius(12)
+                    }
+                    .disabled(titleInput.trimmingCharacters(in: .whitespaces).isEmpty
+                        && verseInput.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
-                .disabled(inputText.trimmingCharacters(in: .whitespaces).isEmpty)
             }
         }
         .padding(.horizontal, 24)
@@ -463,46 +509,93 @@ struct CardStudyView: View {
     // MARK: - Submit Mode
 
     private func handleSubmit() {
+        if speech.isListening { speech.stopListening() }
         guard let verse = currentVerse else { return }
-        let raw = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !raw.isEmpty else { return }
+        let titleRaw = titleInput.trimmingCharacters(in: .whitespacesAndNewlines)
+        let verseRaw = verseInput.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !titleRaw.isEmpty || !verseRaw.isEmpty else { return }
 
-        let typedWords = raw.components(separatedBy: .whitespaces).filter { !$0.isEmpty }
-        let targetWords = verse.verse.components(separatedBy: " ").filter { !$0.isEmpty }
-        var diffs: [DiffWord] = []
+        let typedTitleWords = titleRaw.components(separatedBy: .whitespaces).filter { !$0.isEmpty }
+        let typedVerseWords = verseRaw.components(separatedBy: .whitespaces).filter { !$0.isEmpty }
+        let targetTitleWords = verse.title.components(separatedBy: " ").filter { !$0.isEmpty }
+        let targetVerseWords = verse.verse.components(separatedBy: " ").filter { !$0.isEmpty }
 
-        for i in 0..<max(typedWords.count, targetWords.count) {
-            if i < targetWords.count && i < typedWords.count {
-                let correct = normalizedMatch(typedWords[i], targetWords[i])
-                diffs.append(DiffWord(text: correct ? targetWords[i] : typedWords[i],
-                                      kind: correct ? .correct : .wrong))
-            } else if i < targetWords.count {
-                diffs.append(DiffWord(text: targetWords[i], kind: .missing))
-            } else {
-                diffs.append(DiffWord(text: typedWords[i], kind: .extra))
-            }
-        }
+        let titleDiffs = buildDiffs(typed: typedTitleWords, target: targetTitleWords)
+        let verseDiffs = buildDiffs(typed: typedVerseWords, target: targetVerseWords)
+        let result = SubmitResult(titleDiffs: titleDiffs, verseDiffs: verseDiffs)
 
         withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
-            submitDiffs[verse.id] = diffs
+            submitResults[verse.id] = result
         }
-        inputText = ""
+        titleInput = ""
+        verseInput = ""
+        submitFocus = nil
 
-        if diffs.allSatisfy({ $0.kind == .correct }) {
+        if result.isAllCorrect {
             haptic(.success)
         } else {
             haptic(.error)
         }
     }
 
+    private func toggleSpeech() {
+        if speech.isListening {
+            speech.stopListening()
+        } else {
+            speechTarget = submitFocus ?? .title
+            speech.startListening()
+        }
+    }
+
+    private func buildDiffs(typed: [String], target: [String]) -> [DiffWord] {
+        let m = typed.count, n = target.count
+        if m == 0 { return target.map { DiffWord(text: $0, kind: .missing) } }
+        if n == 0 { return typed.map { DiffWord(text: $0, kind: .extra) } }
+
+        var dp = Array(repeating: Array(repeating: 0, count: n + 1), count: m + 1)
+        for i in 0...m { dp[i][0] = i }
+        for j in 0...n { dp[0][j] = j }
+
+        for i in 1...m {
+            for j in 1...n {
+                if normalizedMatch(typed[i - 1], target[j - 1]) {
+                    dp[i][j] = dp[i - 1][j - 1]
+                } else {
+                    dp[i][j] = 1 + min(dp[i - 1][j - 1], dp[i - 1][j], dp[i][j - 1])
+                }
+            }
+        }
+
+        var diffs: [DiffWord] = []
+        var i = m, j = n
+        while i > 0 || j > 0 {
+            if i > 0 && j > 0 && normalizedMatch(typed[i - 1], target[j - 1]) {
+                diffs.append(DiffWord(text: target[j - 1], kind: .correct))
+                i -= 1; j -= 1
+            } else if i > 0 && j > 0 && dp[i][j] == dp[i - 1][j - 1] + 1 {
+                diffs.append(DiffWord(text: typed[i - 1], kind: .wrong, correction: target[j - 1]))
+                i -= 1; j -= 1
+            } else if j > 0 && (i == 0 || dp[i][j - 1] <= dp[i - 1][j]) {
+                diffs.append(DiffWord(text: target[j - 1], kind: .missing))
+                j -= 1
+            } else {
+                diffs.append(DiffWord(text: typed[i - 1], kind: .extra))
+                i -= 1
+            }
+        }
+
+        return diffs.reversed()
+    }
+
     private func retrySubmit() {
         guard let verse = currentVerse else { return }
         withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-            submitDiffs.removeValue(forKey: verse.id)
+            submitResults.removeValue(forKey: verse.id)
         }
-        inputText = ""
+        titleInput = ""
+        verseInput = ""
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-            isInputFocused = true
+            submitFocus = .title
         }
     }
 
