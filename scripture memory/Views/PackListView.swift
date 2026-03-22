@@ -123,109 +123,72 @@ struct PackCover: View {
 
     // MARK: TMS 60 Style
 
+    /// Renders the layout once at a fixed design size then scales it uniformly to
+    /// fit whatever width the card actually occupies (full-width or 2-column grid).
     private var tmsCover: some View {
-        Group {
-            if compact {
-                tmsCoverCompact
-            } else {
-                tmsCoverFull
+        let designWidth: CGFloat  = 340
+        let designHeight: CGFloat = designWidth * 3 / 5   // matches 5:3 aspect ratio
+
+        return GeometryReader { geo in
+            let scale = geo.size.width / designWidth
+
+            VStack(spacing: 0) {
+                ZStack {
+                    Color(uiColor: UIColor { tc in
+                        tc.userInterfaceStyle == .dark
+                            ? UIColor(white: 0.15, alpha: 1)
+                            : UIColor(red: 0.98, green: 0.97, blue: 0.95, alpha: 1)
+                    })
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("주제별 성경암송")
+                            .font(.system(size: 24, weight: .medium, design: .serif))
+                            .tracking(1)
+                            .padding(.leading, 40)
+
+                        HStack(spacing: 4) {
+                            Spacer()
+                            Text("60")
+                                .font(.system(size: 140, weight: .black, design: .monospaced))
+                                .foregroundColor(baseColor)
+                            VStack(alignment: .center, spacing: 2) {
+                                Text("개역한글판")
+                                    .font(.system(size: 24, weight: .semibold))
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 10).padding(.vertical, 5)
+                                    .background(RoundedRectangle(cornerRadius: 6).fill(baseColor))
+                                Text("구절")
+                                    .font(.system(size: 80, weight: .bold, design: .monospaced))
+                                    .foregroundColor(baseColor)
+                            }
+                            Spacer()
+                        }
+                    }
+                    .padding(.top, 16)
+                }
+
+                HStack {
+                    Text("TO KNOW CHRIST AND TO MAKE HIM KNOWN")
+                        .font(.system(size: 10, weight: .medium, design: .serif))
+                    Spacer()
+                    HStack(spacing: 5) {
+                        Text("네비게이토").tracking(0.5)
+                        Image(systemName: "moon.fill")
+                        Text("출판사").tracking(0.5)
+                    }
+                    .bold()
+                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                }
+                .padding(.horizontal, 16).padding(.vertical, 10)
+                .background(Color.green.opacity(0.15))
             }
+            // Render at design size, then scale uniformly to actual width.
+            .frame(width: designWidth, height: designHeight)
+            .scaleEffect(scale, anchor: .topLeading)
+            // Collapse the layout frame to the actual rendered size.
+            .frame(width: geo.size.width, height: geo.size.height, alignment: .topLeading)
         }
         .packCoverStyle(border: Color(.separator).opacity(0.3), shadowOpacity: 0.08)
-    }
-
-    /// Compact 2-column variant — clean, nothing overflows.
-    private var tmsCoverCompact: some View {
-        ZStack {
-            Color(uiColor: UIColor { tc in
-                tc.userInterfaceStyle == .dark
-                    ? UIColor(white: 0.15, alpha: 1)
-                    : UIColor(red: 0.98, green: 0.97, blue: 0.95, alpha: 1)
-            })
-
-            // Large watermark "60" behind everything
-            Text("60")
-                .font(.system(size: 72, weight: .black, design: .monospaced))
-                .foregroundColor(baseColor.opacity(0.15))
-                .offset(x: 28, y: 8)
-
-            VStack(alignment: .leading, spacing: 0) {
-                Text("주제별")
-                    .font(.system(size: 11, weight: .medium, design: .serif))
-                    .foregroundColor(.secondary)
-                Text("성경암송")
-                    .font(.system(size: 13, weight: .semibold, design: .serif))
-                    .foregroundColor(.primary)
-                Spacer()
-                HStack(alignment: .lastTextBaseline, spacing: 3) {
-                    Text("60")
-                        .font(.system(size: 28, weight: .black, design: .monospaced))
-                        .foregroundColor(baseColor)
-                    Text("구절")
-                        .font(.system(size: 14, weight: .bold, design: .serif))
-                        .foregroundColor(baseColor.opacity(0.7))
-                }
-                Text("\(pack.verses.count) cards")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(.secondary)
-            }
-            .padding(12)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-        }
-    }
-
-    /// Full-width variant — the original rich layout.
-    private var tmsCoverFull: some View {
-        VStack(spacing: 0) {
-            ZStack {
-                Color(uiColor: UIColor { tc in
-                    tc.userInterfaceStyle == .dark
-                        ? UIColor(white: 0.15, alpha: 1)
-                        : UIColor(red: 0.98, green: 0.97, blue: 0.95, alpha: 1)
-                })
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("주제별 성경암송")
-                        .font(.system(size: 24, weight: .medium, design: .serif))
-                        .tracking(1)
-                        .padding(.leading, 40)
-
-                    HStack(spacing: 4) {
-                        Spacer()
-                        Text("60")
-                            .font(.system(size: 140, weight: .black, design: .monospaced))
-                            .foregroundColor(baseColor)
-                        VStack(alignment: .center, spacing: 2) {
-                            Text("개역한글판")
-                                .font(.system(size: 24, weight: .semibold))
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 10).padding(.vertical, 5)
-                                .background(RoundedRectangle(cornerRadius: 6).fill(baseColor))
-                            Text("구절")
-                                .font(.system(size: 80, weight: .bold, design: .monospaced))
-                                .foregroundColor(baseColor)
-                        }
-                        Spacer()
-                    }
-                }
-                .padding(.top, 16)
-            }
-
-            HStack {
-                Text("TO KNOW CHRIST AND TO MAKE HIM KNOWN")
-                    .font(.system(size: 10, weight: .medium, design: .serif))
-                Spacer()
-                HStack(spacing: 5) {
-                    Text("네비게이토").tracking(0.5)
-                    Image(systemName: "moon.fill")
-                    Text("출판사").tracking(0.5)
-                }
-                .bold()
-                .font(.system(size: 12, weight: .medium, design: .rounded))
-            }
-            .padding(.horizontal, 16).padding(.vertical, 10)
-            .background(Color.green.opacity(0.15))
-        }
     }
 
     // MARK: Generic Style
