@@ -30,10 +30,13 @@ struct TestSessionView: View {
         static let prevCardOffset:    CGFloat = 420
     }
 
+    let onSessionEnded: (() -> Void)?
+
     // MARK: - Init
 
-    init(session: TestSession) {
+    init(session: TestSession, onSessionEnded: (() -> Void)? = nil) {
         _vm = StateObject(wrappedValue: TestSessionViewModel(verses: session.verses))
+        self.onSessionEnded = onSessionEnded
     }
 
     // MARK: - Body
@@ -46,10 +49,12 @@ struct TestSessionView: View {
             VStack(spacing: 0) {
                 topBar
 
-                // Mistake dots
-                mistakeDots
-                    .padding(.top, 8)
-                    .padding(.bottom, 4)
+                // Mistake dots — only in Entire Verse mode
+                if studyMode == .submit {
+                    mistakeDots
+                        .padding(.top, 8)
+                        .padding(.bottom, 4)
+                }
 
                 Spacer(minLength: 12)
                 cardStack
@@ -111,8 +116,8 @@ struct TestSessionView: View {
 
                 Spacer()
 
-                // Score display
-                scoreDisplay
+                // Score display — only in Entire Verse mode
+                if studyMode == .submit { scoreDisplay }
             }
         }
         .padding(.horizontal, 20)
@@ -262,7 +267,8 @@ struct TestSessionView: View {
             let knobX = vm.verses.count > 1
                 ? CGFloat(vm.currentIndex) / CGFloat(vm.verses.count - 1) * (w - knobW)
                 : (w - knobW) / 2
-            let fillW = max(knobW / 2, w * CGFloat(vm.currentIndex + 1) / CGFloat(max(1, vm.verses.count)))
+            let progress = vm.verses.count > 1 ? CGFloat(vm.currentIndex) / CGFloat(vm.verses.count - 1) : 0
+            let fillW = knobW / 2 + progress * (w - knobW)
 
             ZStack(alignment: .leading) {
                 Capsule()
@@ -394,6 +400,7 @@ struct TestSessionView: View {
                 }
 
                 Button {
+                    onSessionEnded?()
                     dismiss()
                 } label: {
                     Text("Done")

@@ -4,10 +4,7 @@ struct PackListView: View {
     @AppStorage("bibleVersion") private var bibleVersion: BibleVersion = .niv84
     @ObservedObject private var progress = ReviewProgress.shared
 
-    @State private var selectedPack:    Pack?             = nil
-    @State private var crossPackSession: CrossPackSession? = nil
-    @State private var isSelecting      = false
-    @State private var selectedPackIds: Set<String>       = []
+    @State private var selectedPack: Pack? = nil
 
     private let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
 
@@ -18,16 +15,11 @@ struct PackListView: View {
             LazyVGrid(columns: columns, spacing: 12) {
                 ForEach(bibleVersion.packs) { pack in
                     Button {
-                        if isSelecting {
-                            toggleSelection(pack)
-                        } else {
-                            guard !pack.verses.isEmpty else { return }
-                            selectedPack = pack
-                        }
+                        guard !pack.verses.isEmpty else { return }
+                        selectedPack = pack
                     } label: {
                         PackCover(pack: pack)
                             .overlay(progressRing(for: pack), alignment: .bottomTrailing)
-                            .overlay(selectionOverlay(for: pack))
                     }
                     .buttonStyle(CardButtonStyle())
                 }
@@ -37,49 +29,15 @@ struct PackListView: View {
         }
         .background(Color(.systemGroupedBackground))
         .navigationTitle("Scripture Memory")
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button(isSelecting ? "Cancel" : "Review") {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                        isSelecting.toggle()
-                        if !isSelecting { selectedPackIds = [] }
-                    }
-                }
-                .fontWeight(isSelecting ? .regular : .semibold)
-            }
-        }
-        .safeAreaInset(edge: .bottom) {
-            if isSelecting && !selectedPackIds.isEmpty {
-                reviewBar
-            }
-        }
         .fullScreenCover(item: $selectedPack) { pack in
             NavigationStack {
                 CardStudyView(packName: pack.name, verses: pack.verses)
                     .toolbar(.hidden, for: .navigationBar)
             }
         }
-        .fullScreenCover(item: $crossPackSession) { session in
-            NavigationStack {
-                CardStudyView(packName: session.title, verses: session.verses)
-                    .toolbar(.hidden, for: .navigationBar)
-            }
-        }
     }
 
-    // MARK: - Selection
-
-    private func toggleSelection(_ pack: Pack) {
-        withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
-            if selectedPackIds.contains(pack.id) {
-                selectedPackIds.remove(pack.id)
-            } else {
-                selectedPackIds.insert(pack.id)
-            }
-        }
-    }
-
-    // MARK: - Overlays
+    // MARK: - Progress Ring
 
     @ViewBuilder
     private func progressRing(for pack: Pack) -> some View {
@@ -107,64 +65,6 @@ struct PackListView: View {
             .frame(width: 24, height: 24)
             .padding(8)
         }
-    }
-
-    @ViewBuilder
-    private func selectionOverlay(for pack: Pack) -> some View {
-        let isSelected = selectedPackIds.contains(pack.id)
-        if isSelecting {
-            ZStack(alignment: .topTrailing) {
-                // Dim unselected packs
-                if !isSelected {
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(.black.opacity(0.3))
-                }
-                // Checkmark badge
-                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 22, weight: .medium))
-                    .foregroundStyle(isSelected ? Color.blue : .white)
-                    .padding(8)
-            }
-            .animation(.easeInOut(duration: 0.15), value: isSelected)
-        }
-    }
-
-    // MARK: - Review Bar
-
-    private var reviewBar: some View {
-        let packs     = bibleVersion.packs.filter { selectedPackIds.contains($0.id) }
-        let verses    = packs.flatMap(\.verses)
-        let completed = progress.completedCount(for: verses)
-        let packLabel = packs.count == 1 ? packs[0].name : "\(packs.count) packs"
-
-        return HStack(spacing: 16) {
-            VStack(alignment: .leading, spacing: 3) {
-                Text(packLabel)
-                    .font(.system(size: 15, weight: .semibold))
-                Text("\(verses.count) cards\(completed > 0 ? "  ·  \(completed) done" : "")")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-            }
-
-            Spacer()
-
-            Button {
-                let title = packs.count == 1 ? packs[0].name : "\(packs.count) Packs"
-                crossPackSession = CrossPackSession(title: title, verses: verses.shuffled())
-                withAnimation { isSelecting = false; selectedPackIds = [] }
-            } label: {
-                Text("Start Review")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 18)
-                    .padding(.vertical, 10)
-                    .background(Color.blue, in: Capsule())
-            }
-        }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 14)
-        .background(.ultraThickMaterial)
-        .overlay(Rectangle().fill(Color(.separator).opacity(0.4)).frame(height: 0.5), alignment: .top)
     }
 }
 

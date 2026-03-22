@@ -141,7 +141,6 @@ final class TestSessionViewModel: ObservableObject {
             advance(verse: verse, sectionWords: words, revealed: revealed)
             return true
         }
-        recordMistake()
         return false
     }
 
@@ -159,7 +158,6 @@ final class TestSessionViewModel: ObservableObject {
             return true
         }
         inputText = ""
-        recordMistake()
         return false
     }
 

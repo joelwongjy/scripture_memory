@@ -282,7 +282,8 @@ struct CardStudyView: View {
             let knobX = vm.verses.count > 1
                 ? CGFloat(vm.currentIndex) / CGFloat(vm.verses.count - 1) * (w - knobW)
                 : (w - knobW) / 2
-            let fillW = max(knobW / 2, w * CGFloat(vm.currentIndex + 1) / CGFloat(max(1, vm.verses.count)))
+            let progress = vm.verses.count > 1 ? CGFloat(vm.currentIndex) / CGFloat(vm.verses.count - 1) : 0
+            let fillW = knobW / 2 + progress * (w - knobW)
 
             ZStack(alignment: .leading) {
                 // Track — glass trough
