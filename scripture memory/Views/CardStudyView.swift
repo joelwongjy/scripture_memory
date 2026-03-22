@@ -23,6 +23,7 @@ struct CardStudyView: View {
     @FocusState private var submitFocus: SubmitField?
     @Environment(\.dismiss) private var dismiss
     @AppStorage("studyMode") private var studyMode = "firstLetter"
+    @AppStorage("isVerticalScroll") private var isVerticalScroll = false
 
     private var currentVerse: Verse? {
         guard !verses.isEmpty, verses.indices.contains(currentIndex) else { return nil }
@@ -75,16 +76,21 @@ struct CardStudyView: View {
             VStack(spacing: 0) {
                 topBar
 
-                Spacer(minLength: 12)
+                if isVerticalScroll {
+                    verticalScrollCards(cardWidth: cardWidth, cardHeight: cardHeight)
+                        .frame(maxHeight: .infinity)
+                } else {
+                    Spacer(minLength: 12)
 
-                cardStack
-                    .frame(width: cardWidth, height: cardHeight)
-                    .frame(maxWidth: .infinity)
+                    cardStack
+                        .frame(width: cardWidth, height: cardHeight)
+                        .frame(maxWidth: .infinity)
 
-                Spacer(minLength: 12)
+                    Spacer(minLength: 12)
+                }
 
-                scrubber
-                    .padding(.horizontal, 32)
+                scrubberRow
+                    .padding(.horizontal, 20)
                     .padding(.bottom, 20)
 
                 bottomControls
@@ -170,6 +176,40 @@ struct CardStudyView: View {
                     .offset(x: dragOffset.width - 420)
                     .rotationEffect(.degrees(Double(dragOffset.width - 420) * 0.02))
                     .zIndex(3)
+            }
+        }
+    }
+
+    private func verticalScrollCards(cardWidth: CGFloat, cardHeight: CGFloat) -> some View {
+        ScrollViewReader { proxy in
+            ScrollView(.vertical, showsIndicators: false) {
+                LazyVStack(spacing: 20) {
+                    ForEach(Array(verses.enumerated()), id: \.offset) { index, verse in
+                        makeCard(verse: verse, interactive: index == currentIndex)
+                            .frame(width: cardWidth, height: cardHeight)
+                            .id(index)
+                            .overlay {
+                                if index != currentIndex {
+                                    Color.clear
+                                        .contentShape(Rectangle())
+                                        .onTapGesture {
+                                            haptic(.light)
+                                            currentIndex = index
+                                        }
+                                }
+                            }
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+            }
+            .onAppear {
+                proxy.scrollTo(currentIndex, anchor: .center)
+            }
+            .onChange(of: currentIndex) { newIndex in
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
+                    proxy.scrollTo(newIndex, anchor: .center)
+                }
             }
         }
     }
@@ -295,29 +335,42 @@ struct CardStudyView: View {
                        || verseRevealedCounts[currentVerse?.id ?? -1, default: 0] > 0)
             )
 
-            if canReset, let verse = currentVerse {
-                Button {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                        if studyMode == "submit" {
-                            submitResults.removeValue(forKey: verse.id)
-                            titleInput = ""
-                            verseInput = ""
-                        } else {
-                            titleRevealedCounts[verse.id] = 0
-                            verseRevealedCounts[verse.id] = 0
+            HStack(spacing: 6) {
+                if canReset, let verse = currentVerse {
+                    Button {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            if studyMode == "submit" {
+                                submitResults.removeValue(forKey: verse.id)
+                                titleInput = ""
+                                verseInput = ""
+                            } else {
+                                titleRevealedCounts[verse.id] = 0
+                                verseRevealedCounts[verse.id] = 0
+                            }
                         }
+                        haptic(.light)
+                    } label: {
+                        Image(systemName: "arrow.counterclockwise")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(.secondary)
+                            .frame(width: 32, height: 32)
+                            .background(Color(.tertiarySystemGroupedBackground))
+                            .clipShape(Circle())
                     }
-                    haptic(.light)
+                }
+
+                Button {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                        isVerticalScroll.toggle()
+                    }
                 } label: {
-                    Image(systemName: "arrow.counterclockwise")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(.secondary)
+                    Image(systemName: isVerticalScroll ? "rectangle.stack" : "list.bullet.rectangle")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundColor(isVerticalScroll ? .white : .secondary)
                         .frame(width: 32, height: 32)
-                        .background(Color(.tertiarySystemGroupedBackground))
+                        .background(isVerticalScroll ? Color.blue : Color(.tertiarySystemGroupedBackground))
                         .clipShape(Circle())
                 }
-            } else {
-                Color.clear.frame(width: 32, height: 32)
             }
         }
         .padding(.horizontal, 20)
@@ -325,6 +378,36 @@ struct CardStudyView: View {
     }
 
     // MARK: - Scrubber
+
+    private var scrubberRow: some View {
+        HStack(spacing: 10) {
+            Button {
+                guard currentIndex > 0 else { return }
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { currentIndex -= 1 }
+                haptic(.light)
+            } label: {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(currentIndex > 0 ? .primary.opacity(0.7) : .secondary.opacity(0.25))
+                    .frame(width: 28, height: 28)
+            }
+            .disabled(currentIndex == 0)
+
+            scrubber
+
+            Button {
+                guard currentIndex < verses.count - 1 else { return }
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { currentIndex += 1 }
+                haptic(.light)
+            } label: {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(currentIndex < verses.count - 1 ? .primary.opacity(0.7) : .secondary.opacity(0.25))
+                    .frame(width: 28, height: 28)
+            }
+            .disabled(currentIndex == verses.count - 1)
+        }
+    }
 
     private var scrubber: some View {
         GeometryReader { geo in
@@ -572,7 +655,8 @@ struct CardStudyView: View {
             if i > 0 && j > 0 && normalizedMatch(typed[i - 1], target[j - 1]) {
                 diffs.append(DiffWord(text: target[j - 1], kind: .correct))
                 i -= 1; j -= 1
-            } else if i > 0 && j > 0 && dp[i][j] == dp[i - 1][j - 1] + 1 {
+            } else if i > 0 && j > 0 && dp[i][j] == dp[i - 1][j - 1] + 1
+                        && (j <= i || dp[i][j] < dp[i][j - 1] + 1) {
                 diffs.append(DiffWord(text: typed[i - 1], kind: .wrong, correction: target[j - 1]))
                 i -= 1; j -= 1
             } else if j > 0 && (i == 0 || dp[i][j - 1] <= dp[i - 1][j]) {
