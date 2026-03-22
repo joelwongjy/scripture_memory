@@ -12,6 +12,14 @@ struct ContentView: View {
             }
 
             NavigationStack {
+                TestSetupView()
+            }
+            .tabItem {
+                Image(systemName: "checkmark.circle.fill")
+                Text("Review")
+            }
+
+            NavigationStack {
                 SettingsView()
             }
             .tabItem {
