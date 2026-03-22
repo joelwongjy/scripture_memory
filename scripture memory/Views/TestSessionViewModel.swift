@@ -1,8 +1,21 @@
 import SwiftUI
 
+// MARK: - Persisted Progress
+
+/// Codable snapshot of a session — written to UserDefaults on every key mutation.
+/// JSON requires string dictionary keys, so Int IDs are stringified.
+private struct SessionProgress: Codable {
+    var currentIndex:        Int
+    var mistakeCounts:       [String: Int]
+    var titleRevealedCounts: [String: Int]
+    var verseRevealedCounts: [String: Int]
+}
+
 // MARK: - Test Session View Model
 
 /// Owns all non-visual state and business logic for a scored test session.
+/// Progress is automatically persisted to UserDefaults so sessions survive
+/// dismissal and app restarts.
 @MainActor
 final class TestSessionViewModel: ObservableObject {
 
@@ -12,17 +25,18 @@ final class TestSessionViewModel: ObservableObject {
 
     init(verses: [Verse]) {
         self.verses = verses
+        restoreProgress()
     }
 
     // MARK: - Published State
 
-    @Published var currentIndex = 0
+    @Published var currentIndex  = 0
     @Published var activeSection: CardSection = .title
 
-    @Published private(set) var titleRevealedCounts: [Int: Int]    = [:]
-    @Published private(set) var verseRevealedCounts: [Int: Int]    = [:]
+    @Published private(set) var titleRevealedCounts: [Int: Int]         = [:]
+    @Published private(set) var verseRevealedCounts: [Int: Int]         = [:]
     @Published private(set) var submitResults:       [Int: SubmitResult] = [:]
-    @Published private(set) var mistakeCounts:       [Int: Int]    = [:]
+    @Published private(set) var mistakeCounts:       [Int: Int]         = [:]
 
     @Published var inputText  = ""
     @Published var titleInput = ""
@@ -58,53 +72,36 @@ final class TestSessionViewModel: ObservableObject {
         }
     }
 
-    func mistakes(for verseId: Int) -> Int {
-        min(mistakeCounts[verseId, default: 0], 5)
-    }
+    func mistakes(for verseId: Int) -> Int { min(mistakeCounts[verseId, default: 0], 5) }
+    func score(for verseId: Int) -> Int    { -mistakes(for: verseId) }
 
-    func score(for verseId: Int) -> Int {
-        -mistakes(for: verseId)
-    }
+    var sessionScore:    Int { verses.reduce(0) { $0 + score(for: $1.id) } }
+    var perfectCount:   Int { verses.filter { mistakes(for: $0.id) == 0 && isComplete($0) }.count }
+    var completedCount: Int { verses.filter { isComplete($0) }.count }
 
-    var sessionScore: Int {
-        verses.reduce(0) { $0 + score(for: $1.id) }
-    }
-
-    var perfectCount: Int {
-        verses.filter { verse in
-            let complete: Bool
-            switch studyMode {
-            case .submit:
-                complete = submitResults[verse.id]?.isAllCorrect == true
-            default:
-                complete = titleRevealedCounts[verse.id, default: 0] >= verse.titleWords.count
-                    && verseRevealedCounts[verse.id, default: 0] >= verse.verseWords.count
-            }
-            return complete && mistakes(for: verse.id) == 0
-        }.count
-    }
-
-    // Reads the current study mode from UserDefaults to stay in sync with @AppStorage in views.
     var studyMode: StudyMode {
         StudyMode(rawValue: UserDefaults.standard.string(forKey: "studyMode") ?? "") ?? .firstLetter
     }
 
     // MARK: - Navigation
 
-    func goForward()  { if currentIndex < verses.count - 1 { currentIndex += 1 } }
-    func goBackward() { if currentIndex > 0                { currentIndex -= 1 } }
-
-    func clearInputs() {
-        inputText  = ""
-        titleInput = ""
-        verseInput = ""
+    func goForward() {
+        guard currentIndex < verses.count - 1 else { return }
+        currentIndex += 1
+        saveProgress()
     }
+
+    func goBackward() {
+        guard currentIndex > 0 else { return }
+        currentIndex -= 1
+        saveProgress()
+    }
+
+    func clearInputs() { inputText = ""; titleInput = ""; verseInput = "" }
 
     // MARK: - Card Label
 
-    func cardLabel(for verse: Verse) -> String {
-        "Review"
-    }
+    func cardLabel(for verse: Verse) -> String { "Review" }
 
     // MARK: - Reveal State
 
@@ -114,14 +111,14 @@ final class TestSessionViewModel: ObservableObject {
             : verseRevealedCounts[verseId, default: 0]
     }
 
-    // MARK: - Mistake Tracking
+    // MARK: - Mistake Tracking (submit mode only)
 
     func recordMistake() {
         guard let verse = currentVerse else { return }
         let current = mistakeCounts[verse.id, default: 0]
-        if current < 5 {
-            mistakeCounts[verse.id] = current + 1
-        }
+        guard current < 5 else { return }
+        mistakeCounts[verse.id] = current + 1
+        saveProgress()
     }
 
     // MARK: - Input Processing
@@ -176,14 +173,9 @@ final class TestSessionViewModel: ObservableObject {
             submitResults[verse.id] = result
         }
 
-        // Count mistakes from diffs
-        let wrongCount   = result.titleDiffs.filter { $0.kind == .wrong   }.count
-                         + result.verseDiffs.filter { $0.kind == .wrong   }.count
-        let missingCount = result.titleDiffs.filter { $0.kind == .missing }.count
-                         + result.verseDiffs.filter { $0.kind == .missing }.count
-        let extraCount   = result.titleDiffs.filter { $0.kind == .extra   }.count
-                         + result.verseDiffs.filter { $0.kind == .extra   }.count
-        let totalMistakes = wrongCount + missingCount + extraCount
+        // Count mistakes from wrong/missing/extra diffs
+        let totalMistakes = result.titleDiffs.filter { $0.kind != .correct }.count
+                          + result.verseDiffs.filter { $0.kind != .correct }.count
         for _ in 0..<totalMistakes { recordMistake() }
 
         if result.isAllCorrect { ReviewProgress.shared.markComplete(verse.id) }
@@ -199,10 +191,68 @@ final class TestSessionViewModel: ObservableObject {
         }
         titleInput = ""
         verseInput = ""
-        // Note: mistakes are NOT reset — they are permanent
+        // Mistakes on this card are permanent (already recorded)
+    }
+
+    // MARK: - Session Reset (Try Again)
+
+    /// Resets all progress and mistake counts, then saves the clean state.
+    func resetAllProgress() {
+        var t = Transaction(); t.disablesAnimations = true
+        withTransaction(t) {
+            currentIndex        = 0
+            activeSection       = .title
+            mistakeCounts       = [:]
+            titleRevealedCounts = [:]
+            verseRevealedCounts = [:]
+            submitResults       = [:]
+            inputText  = ""
+            titleInput = ""
+            verseInput = ""
+        }
+        saveProgress()
+    }
+
+    // MARK: - Persistence
+
+    private static let progressKey = "currentSessionProgress"
+
+    /// Called when the user explicitly ends the session — wipes persisted state.
+    func clearProgress() {
+        UserDefaults.standard.removeObject(forKey: Self.progressKey)
+    }
+
+    private func saveProgress() {
+        let sp = SessionProgress(
+            currentIndex:        currentIndex,
+            mistakeCounts:       toStringKeys(mistakeCounts),
+            titleRevealedCounts: toStringKeys(titleRevealedCounts),
+            verseRevealedCounts: toStringKeys(verseRevealedCounts)
+        )
+        if let data = try? JSONEncoder().encode(sp) {
+            UserDefaults.standard.set(data, forKey: Self.progressKey)
+        }
+    }
+
+    private func restoreProgress() {
+        guard let data = UserDefaults.standard.data(forKey: Self.progressKey),
+              let sp   = try? JSONDecoder().decode(SessionProgress.self, from: data) else { return }
+        currentIndex        = min(sp.currentIndex, max(0, verses.count - 1))
+        mistakeCounts       = toIntKeys(sp.mistakeCounts)
+        titleRevealedCounts = toIntKeys(sp.titleRevealedCounts)
+        verseRevealedCounts = toIntKeys(sp.verseRevealedCounts)
     }
 
     // MARK: - Private Helpers
+
+    private func isComplete(_ verse: Verse) -> Bool {
+        switch studyMode {
+        case .submit: return submitResults[verse.id]?.isAllCorrect == true
+        default:
+            return titleRevealedCounts[verse.id, default: 0] >= verse.titleWords.count
+                && verseRevealedCounts[verse.id, default: 0] >= verse.verseWords.count
+        }
+    }
 
     private func sectionWords(_ section: CardSection, in verse: Verse) -> [String] {
         section == .title ? verse.titleWords : verse.verseWords
@@ -220,6 +270,7 @@ final class TestSessionViewModel: ObservableObject {
         withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
             setRevealed(newCount, for: verse.id, section: activeSection)
         }
+        saveProgress()
         if newCount >= sectionWords.count {
             switchSectionIfNeeded(verse: verse)
             if isCardComplete { ReviewProgress.shared.markComplete(verse.id) }
@@ -233,5 +284,13 @@ final class TestSessionViewModel: ObservableObject {
         if otherRevealed < otherWords.count {
             withAnimation(.easeOut(duration: 0.2)) { activeSection = other }
         }
+    }
+
+    private func toStringKeys(_ d: [Int: Int]) -> [String: Int] {
+        Dictionary(uniqueKeysWithValues: d.map { (String($0.key), $0.value) })
+    }
+
+    private func toIntKeys(_ d: [String: Int]) -> [Int: Int] {
+        Dictionary(uniqueKeysWithValues: d.compactMap { k, v in Int(k).map { ($0, v) } })
     }
 }

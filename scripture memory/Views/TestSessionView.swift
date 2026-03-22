@@ -101,9 +101,13 @@ struct TestSessionView: View {
                 Text("Review Session")
                     .font(.system(size: 15, weight: .semibold))
                     .lineLimit(1)
-                Text("\(vm.currentIndex + 1) / \(vm.verses.count) cards")
+                let done = vm.completedCount
+                Text(done > 0
+                     ? "\(done) of \(vm.verses.count) done"
+                     : "\(vm.verses.count) cards")
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(.secondary)
+                    .animation(.spring(response: 0.3), value: done)
             }
 
             HStack {
@@ -236,27 +240,44 @@ struct TestSessionView: View {
     // MARK: - Scrubber
 
     private var scrubberRow: some View {
-        HStack(spacing: 10) {
-            let canPrev = vm.currentIndex > 0
-            let canNext = vm.currentIndex < vm.verses.count - 1
+        VStack(spacing: 6) {
+            HStack(spacing: 10) {
+                let canPrev = vm.currentIndex > 0
+                let canNext = vm.currentIndex < vm.verses.count - 1
 
-            Button {
-                vm.goBackward(); HapticEngine.light()
-            } label: {
-                Image(systemName: "chevron.left").scrubberButtonStyle()
+                Button {
+                    isInputFocused = false
+                    submitFocus    = nil
+                    isScrubbing    = true
+                    vm.goBackward()
+                    HapticEngine.light()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { isScrubbing = false }
+                } label: {
+                    Image(systemName: "chevron.left").scrubberButtonStyle()
+                }
+                .disabled(!canPrev)
+                .opacity(canPrev ? 1 : 0.3)
+
+                scrubber
+
+                Button {
+                    isInputFocused = false
+                    submitFocus    = nil
+                    isScrubbing    = true
+                    vm.goForward()
+                    HapticEngine.light()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { isScrubbing = false }
+                } label: {
+                    Image(systemName: "chevron.right").scrubberButtonStyle()
+                }
+                .disabled(!canNext)
+                .opacity(canNext ? 1 : 0.3)
             }
-            .disabled(!canPrev)
-            .opacity(canPrev ? 1 : 0.3)
 
-            scrubber
-
-            Button {
-                vm.goForward(); HapticEngine.light()
-            } label: {
-                Image(systemName: "chevron.right").scrubberButtonStyle()
-            }
-            .disabled(!canNext)
-            .opacity(canNext ? 1 : 0.3)
+            // Position indicator
+            Text("\(vm.currentIndex + 1) / \(vm.verses.count)")
+                .font(.system(size: 11, weight: .medium, design: .monospaced))
+                .foregroundColor(.secondary)
         }
     }
 
@@ -388,7 +409,7 @@ struct TestSessionView: View {
 
             HStack(spacing: 12) {
                 Button {
-                    resetSession()
+                    vm.resetAllProgress()
                 } label: {
                     Text("Try Again")
                         .font(.system(size: 16, weight: .semibold))
@@ -400,6 +421,7 @@ struct TestSessionView: View {
                 }
 
                 Button {
+                    vm.clearProgress()
                     onSessionEnded?()
                     dismiss()
                 } label: {
@@ -585,17 +607,6 @@ struct TestSessionView: View {
         } else {
             speechTarget = submitFocus ?? .title
             speech.startListening()
-        }
-    }
-
-    // MARK: - Session Reset
-
-    private func resetSession() {
-        var t = Transaction(); t.disablesAnimations = true
-        withTransaction(t) {
-            vm.currentIndex = 0
-            vm.activeSection = .title
-            vm.clearInputs()
         }
     }
 

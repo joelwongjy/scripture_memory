@@ -2,7 +2,6 @@ import SwiftUI
 
 struct PackListView: View {
     @AppStorage("bibleVersion") private var bibleVersion: BibleVersion = .niv84
-    @ObservedObject private var progress = ReviewProgress.shared
 
     @State private var selectedPack: Pack? = nil
 
@@ -19,7 +18,6 @@ struct PackListView: View {
                         selectedPack = pack
                     } label: {
                         PackCover(pack: pack)
-                            .overlay(progressRing(for: pack), alignment: .bottomTrailing)
                     }
                     .buttonStyle(CardButtonStyle())
                 }
@@ -37,35 +35,6 @@ struct PackListView: View {
         }
     }
 
-    // MARK: - Progress Ring
-
-    @ViewBuilder
-    private func progressRing(for pack: Pack) -> some View {
-        let fraction  = progress.fraction(for: pack.verses)
-        let completed = progress.completedCount(for: pack.verses)
-        if fraction > 0 {
-            ZStack {
-                Circle()
-                    .stroke(.white.opacity(0.25), lineWidth: 2.5)
-                Circle()
-                    .trim(from: 0, to: fraction)
-                    .stroke(.white, style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
-                    .rotationEffect(.degrees(-90))
-                    .animation(.spring(response: 0.4), value: fraction)
-                if fraction >= 1 {
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 7, weight: .bold))
-                        .foregroundStyle(.white)
-                } else {
-                    Text("\(completed)")
-                        .font(.system(size: 7, weight: .bold))
-                        .foregroundStyle(.white)
-                }
-            }
-            .frame(width: 24, height: 24)
-            .padding(8)
-        }
-    }
 }
 
 // MARK: - Pack Cover
