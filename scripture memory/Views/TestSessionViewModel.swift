@@ -79,6 +79,9 @@ final class TestSessionViewModel: ObservableObject {
     var perfectCount:   Int { verses.filter { mistakes(for: $0.id) == 0 && isComplete($0) }.count }
     var completedCount: Int { verses.filter { isComplete($0) }.count }
 
+    /// Public accessor so views can colour per-verse progress dots.
+    func isVerseComplete(_ verse: Verse) -> Bool { isComplete(verse) }
+
     var studyMode: StudyMode {
         StudyMode(rawValue: UserDefaults.standard.string(forKey: "studyMode") ?? "") ?? .firstLetter
     }
@@ -220,6 +223,11 @@ final class TestSessionViewModel: ObservableObject {
     /// Called when the user explicitly ends the session — wipes persisted state.
     func clearProgress() {
         UserDefaults.standard.removeObject(forKey: Self.progressKey)
+    }
+
+    /// Called before starting a brand-new session so stale progress is never restored.
+    static func clearPersistedProgress() {
+        UserDefaults.standard.removeObject(forKey: progressKey)
     }
 
     private func saveProgress() {

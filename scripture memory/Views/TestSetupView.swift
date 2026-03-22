@@ -2,16 +2,14 @@ import SwiftUI
 
 // MARK: - List Item
 
-private enum ListItem: Identifiable {
-    case resume(TestSession)
+private enum PackListItem: Identifiable {
     case packHeader(Pack)
     case verse(Verse, packId: String)
 
     var id: String {
         switch self {
-        case .resume:               return "resume"
-        case .packHeader(let p):    return "pack_\(p.id)"
-        case .verse(let v, _):      return "verse_\(v.id)"
+        case .packHeader(let p): return "pack_\(p.id)"
+        case .verse(let v, _):  return "verse_\(v.id)"
         }
     }
 }
@@ -34,12 +32,9 @@ struct TestSetupView: View {
     private var selectedCount: Int { selectedVerseIds.count }
     private var clampedCount:  Int { max(1, min(quizCount, selectedCount)) }
 
-    // Flat list of items driven by expansion state — List diffs by ID and animates
-    private var listItems: [ListItem] {
-        var items: [ListItem] = []
-        if let session = savedSession {
-            items.append(.resume(session))
-        }
+    // Flat items for packs + their expanded verses — driven by expandedPackIds
+    private var packItems: [PackListItem] {
+        var items: [PackListItem] = []
         for pack in bibleVersion.packs {
             items.append(.packHeader(pack))
             if expandedPackIds.contains(pack.id) {
@@ -53,25 +48,31 @@ struct TestSetupView: View {
 
     var body: some View {
         List {
-            ForEach(listItems) { item in
-                switch item {
-                case .resume(let session):
+            // Resume card — separate section so it stands apart
+            if let session = savedSession {
+                Section {
                     resumeRow(session)
-                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                        .listRowBackground(Color(.systemGroupedBackground))
+                }
+            }
 
-                case .packHeader(let pack):
-                    packHeaderRow(pack)
-                        .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
-                        .listRowBackground(Color(.secondarySystemGroupedBackground))
+            // All packs in one compact section
+            Section {
+                ForEach(packItems) { item in
+                    switch item {
+                    case .packHeader(let pack):
+                        packHeaderRow(pack)
+                            .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 8))
 
-                case .verse(let verse, _):
-                    verseRow(verse)
-                        .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
+                    case .verse(let verse, _):
+                        verseRow(verse)
+                            .listRowInsets(EdgeInsets(top: 4, leading: 52, bottom: 4, trailing: 16))
+                    }
                 }
             }
         }
-        .listStyle(.plain)
+        .listStyle(.insetGrouped)
+        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: expandedPackIds)
+        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: savedSession != nil)
         .navigationTitle("Review")
         .onAppear { loadSavedSession() }
         .alert("Existing Session", isPresented: $showOverwriteAlert) {
@@ -94,14 +95,14 @@ struct TestSetupView: View {
     // MARK: - Resume Row
 
     private func resumeRow(_ session: TestSession) -> some View {
-        HStack(spacing: 14) {
+        HStack(spacing: 12) {
             Image(systemName: "play.circle.fill")
-                .font(.system(size: 28))
+                .font(.system(size: 24))
                 .foregroundColor(.blue)
 
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 1) {
                 Text("Session in Progress")
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.system(size: 14, weight: .semibold))
                 Text("\(session.verses.count) cards")
                     .font(.system(size: 12))
                     .foregroundColor(.secondary)
@@ -111,19 +112,25 @@ struct TestSetupView: View {
 
             Button { activeSession = savedSession } label: {
                 Text("Resume")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(.white)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 7)
                     .background(Color.blue, in: Capsule())
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+        .padding(.vertical, 6)
     }
 
     // MARK: - Pack Header Row
+    //
+    // Three distinct zones:
+    //   ① Checkbox button  — select/deselect all verses in this pack
+    //   ② Pack name text   — non-interactive (tapping does nothing)
+    //   ③ Chevron button   — the ONLY thing that expands/collapses
+    //
+    // Removing the auto-select-on-expand so the chevron only expands.
 
     private func packHeaderRow(_ pack: Pack) -> some View {
         let packVerseIds   = Set(pack.verses.map(\.id))
@@ -133,7 +140,7 @@ struct TestSetupView: View {
         let isExpanded     = expandedPackIds.contains(pack.id)
 
         return HStack(spacing: 0) {
-            // Checkbox — sole selection tap target
+            // ① Checkbox
             Button {
                 if allSelected {
                     for verse in pack.verses { selectedVerseIds.remove(verse.id) }
@@ -148,44 +155,40 @@ struct TestSetupView: View {
                     .foregroundColor(someSelected ? .blue : .secondary)
                     .animation(.spring(response: 0.2), value: allSelected)
                     .animation(.spring(response: 0.2), value: someSelected)
-                    .frame(width: 44, height: 52)
+                    .frame(width: 44, height: 50)
             }
             .buttonStyle(.plain)
 
-            // Pack name + chevron — sole expansion tap target
+            // ② Pack name — plain, non-tappable
+            VStack(alignment: .leading, spacing: 2) {
+                Text(pack.name)
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.primary)
+                Text(selectedInPack > 0
+                     ? "\(selectedInPack) of \(pack.verses.count) verses"
+                     : "\(pack.verses.count) verses")
+                    .font(.system(size: 12))
+                    .foregroundColor(.secondary)
+            }
+
+            Spacer()
+
+            // ③ Chevron — only expansion trigger, no selection side-effect
             Button {
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
                     if isExpanded {
                         expandedPackIds.remove(pack.id)
                     } else {
                         expandedPackIds.insert(pack.id)
-                        if packVerseIds.intersection(selectedVerseIds).isEmpty {
-                            for verse in pack.verses { selectedVerseIds.insert(verse.id) }
-                        }
                     }
                 }
             } label: {
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(pack.name)
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.primary)
-                        Text(selectedInPack > 0
-                             ? "\(selectedInPack) of \(pack.verses.count) verses"
-                             : "\(pack.verses.count) verses")
-                            .font(.system(size: 12))
-                            .foregroundColor(.secondary)
-                    }
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(.secondary)
-                        .rotationEffect(isExpanded ? .degrees(90) : .zero)
-                        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: isExpanded)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
-                .contentShape(Rectangle())
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(.secondary)
+                    .rotationEffect(isExpanded ? .degrees(90) : .zero)
+                    .animation(.spring(response: 0.3, dampingFraction: 0.8), value: isExpanded)
+                    .frame(width: 44, height: 50)
             }
             .buttonStyle(.plain)
         }
@@ -195,17 +198,15 @@ struct TestSetupView: View {
 
     private func verseRow(_ verse: Verse) -> some View {
         let isSelected = selectedVerseIds.contains(verse.id)
-        return HStack(spacing: 0) {
-            // Checkbox only
+        return HStack(spacing: 10) {
             Button {
                 if isSelected { selectedVerseIds.remove(verse.id) }
                 else          { selectedVerseIds.insert(verse.id) }
             } label: {
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 20))
+                    .font(.system(size: 19))
                     .foregroundColor(isSelected ? .blue : .secondary)
                     .animation(.spring(response: 0.2), value: isSelected)
-                    .frame(width: 44, height: 44)
             }
             .buttonStyle(.plain)
 
@@ -221,6 +222,7 @@ struct TestSetupView: View {
 
             Spacer()
         }
+        .padding(.vertical, 2)
     }
 
     // MARK: - Bottom Bar
@@ -297,6 +299,9 @@ struct TestSetupView: View {
     // MARK: - Actions
 
     private func launchNewSession() {
+        // Wipe any stale progress so the new session starts clean
+        TestSessionViewModel.clearPersistedProgress()
+
         var verses: [Verse] = []
         for pack in bibleVersion.packs {
             for verse in pack.verses where selectedVerseIds.contains(verse.id) {

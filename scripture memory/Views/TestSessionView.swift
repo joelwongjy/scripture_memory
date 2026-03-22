@@ -49,12 +49,11 @@ struct TestSessionView: View {
             VStack(spacing: 0) {
                 topBar
 
-                // Mistake dots — only in Entire Verse mode
-                if studyMode == .submit {
-                    mistakeDots
-                        .padding(.top, 8)
-                        .padding(.bottom, 4)
-                }
+                // Per-verse progress dots — always shown
+                progressDots
+                    .padding(.horizontal, 24)
+                    .padding(.top, 6)
+                    .padding(.bottom, 2)
 
                 Spacer(minLength: 12)
                 cardStack
@@ -101,13 +100,10 @@ struct TestSessionView: View {
                 Text("Review Session")
                     .font(.system(size: 15, weight: .semibold))
                     .lineLimit(1)
-                let done = vm.completedCount
-                Text(done > 0
-                     ? "\(done) of \(vm.verses.count) done"
-                     : "\(vm.verses.count) cards")
+                Text("\(vm.completedCount) / \(vm.verses.count) done")
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(.secondary)
-                    .animation(.spring(response: 0.3), value: done)
+                    .animation(.spring(response: 0.3), value: vm.completedCount)
             }
 
             HStack {
@@ -155,19 +151,42 @@ struct TestSessionView: View {
         .animation(.spring(response: 0.3, dampingFraction: 0.8), value: vm.sessionScore)
     }
 
-    // MARK: - Mistake Dots
+    // MARK: - Progress Dots
+    //
+    // One dot per verse. Size adapts so all dots fit in available width.
+    // Gray = not yet done, green = done perfect, orange/red = done with mistakes (submit only).
 
-    private var mistakeDots: some View {
-        let currentMistakes = vm.currentVerse.map { vm.mistakes(for: $0.id) } ?? 0
-        return HStack(spacing: 6) {
-            ForEach(0..<5) { i in
-                Circle()
-                    .fill(i < currentMistakes ? Color.red : Color.clear)
-                    .overlay(Circle().strokeBorder(i < currentMistakes ? Color.red : Color.secondary.opacity(0.3), lineWidth: 1.5))
-                    .frame(width: 8, height: 8)
-                    .animation(.spring(response: 0.3, dampingFraction: 0.7), value: currentMistakes)
+    private var progressDots: some View {
+        GeometryReader { geo in
+            let count   = vm.verses.count
+            let spacing = CGFloat(3)
+            let maxDot  = CGFloat(8)
+            let dotSize = min(maxDot, (geo.size.width - spacing * CGFloat(max(1, count - 1))) / CGFloat(max(1, count)))
+
+            HStack(spacing: spacing) {
+                ForEach(Array(vm.verses.enumerated()), id: \.offset) { i, verse in
+                    let done      = vm.isVerseComplete(verse)
+                    let mistakes  = studyMode == .submit ? vm.mistakes(for: verse.id) : 0
+                    let isCurrent = i == vm.currentIndex
+
+                    Circle()
+                        .fill(dotColor(done: done, mistakes: mistakes))
+                        .frame(width: dotSize, height: dotSize)
+                        .scaleEffect(isCurrent ? 1.4 : 1.0)
+                        .animation(.spring(response: 0.25, dampingFraction: 0.7), value: isCurrent)
+                        .animation(.spring(response: 0.3,  dampingFraction: 0.8), value: done)
+                }
             }
+            .frame(maxWidth: .infinity, alignment: .center)
         }
+        .frame(height: 12)
+    }
+
+    private func dotColor(done: Bool, mistakes: Int) -> Color {
+        guard done else { return Color.secondary.opacity(0.25) }
+        if mistakes == 0 { return .green }
+        if mistakes <= 2 { return .orange }
+        return .red
     }
 
     // MARK: - Card Stack
@@ -278,6 +297,7 @@ struct TestSessionView: View {
             Text("\(vm.currentIndex + 1) / \(vm.verses.count)")
                 .font(.system(size: 11, weight: .medium, design: .monospaced))
                 .foregroundColor(.secondary)
+                .padding(.top, 2)
         }
     }
 

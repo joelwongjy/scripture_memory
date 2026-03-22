@@ -20,8 +20,6 @@ struct CardStudyView: View {
     @State private var speechTarget: SubmitField = .title
     @State private var isScrubbing           = false
 
-    @ObservedObject private var progress = ReviewProgress.shared
-
     @Environment(\.dismiss) private var dismiss
 
     // MARK: - Swipe Constants
@@ -102,13 +100,12 @@ struct CardStudyView: View {
                 Text(vm.packName)
                     .font(.system(size: 15, weight: .semibold))
                     .lineLimit(1)
-                let done = progress.completedCount(for: vm.verses)
-                let subtitle = done > 0
-                    ? "\(vm.currentIndex + 1) of \(vm.verses.count)  ·  \(done) done"
-                    : "\(vm.currentIndex + 1) of \(vm.verses.count)"
-                Text(subtitle)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.secondary)
+                // Hide position counter in vertical-scroll read mode (it's meaningless there)
+                if !isVerticalScroll || vm.isReviewMode {
+                    Text("\(vm.currentIndex + 1) of \(vm.verses.count)")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.secondary)
+                }
             }
 
             HStack {
@@ -256,7 +253,12 @@ struct CardStudyView: View {
             let canNext = vm.currentIndex < vm.verses.count - 1
 
             Button {
-                vm.goBackward(); HapticEngine.light()
+                isInputFocused = false
+                submitFocus    = nil
+                isScrubbing    = true
+                vm.goBackward()
+                HapticEngine.light()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { isScrubbing = false }
             } label: {
                 Image(systemName: "chevron.left").scrubberButton()
             }
@@ -266,7 +268,12 @@ struct CardStudyView: View {
             scrubber
 
             Button {
-                vm.goForward(); HapticEngine.light()
+                isInputFocused = false
+                submitFocus    = nil
+                isScrubbing    = true
+                vm.goForward()
+                HapticEngine.light()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { isScrubbing = false }
             } label: {
                 Image(systemName: "chevron.right").scrubberButton()
             }
