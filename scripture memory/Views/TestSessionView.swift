@@ -49,11 +49,13 @@ struct TestSessionView: View {
             VStack(spacing: 0) {
                 topBar
 
-                // Per-verse progress dots — always shown
-                progressDots
-                    .padding(.horizontal, 24)
-                    .padding(.top, 6)
-                    .padding(.bottom, 2)
+                // Per-verse progress dots — only in Entire Verse (submit) mode
+                if studyMode == .submit {
+                    progressDots
+                        .padding(.horizontal, 24)
+                        .padding(.top, 6)
+                        .padding(.bottom, 2)
+                }
 
                 Spacer(minLength: 12)
                 cardStack
