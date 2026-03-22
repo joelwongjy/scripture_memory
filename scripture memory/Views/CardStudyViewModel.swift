@@ -20,7 +20,7 @@ final class CardStudyViewModel: ObservableObject {
     // MARK: - Initialisation
 
     let packName: String
-    let verses:   [Verse]
+    @Published var verses: [Verse]
 
     init(packName: String, verses: [Verse]) {
         self.packName = packName
@@ -78,6 +78,20 @@ final class CardStudyViewModel: ObservableObject {
 
     func goForward()  { if currentIndex < verses.count - 1 { currentIndex += 1 } }
     func goBackward() { if currentIndex > 0                { currentIndex -= 1 } }
+
+    func shuffle() {
+        var t = Transaction(); t.disablesAnimations = true
+        withTransaction(t) {
+            verses.shuffle()
+            currentIndex          = 0
+            titleRevealedCounts   = [:]
+            verseRevealedCounts   = [:]
+            submitResults         = [:]
+            inputText  = ""
+            titleInput = ""
+            verseInput = ""
+        }
+    }
 
     /// Clears all text inputs. Call when the user navigates to a new card.
     func clearInputs() {

@@ -46,7 +46,9 @@ struct CardStudyView: View {
             VStack(spacing: 0) {
                 topBar
 
-                if isVerticalScroll {
+                // Vertical scroll is for browsing in read mode only.
+                // Review mode always shows a single focused card.
+                if isVerticalScroll && !vm.isReviewMode {
                     verticalScrollCards(cardWidth: cardWidth, cardHeight: cardHeight)
                         .frame(maxHeight: .infinity)
                 } else {
@@ -57,11 +59,23 @@ struct CardStudyView: View {
                     Spacer(minLength: 12)
                 }
 
-                scrubberRow
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 20)
+                if !isVerticalScroll || vm.isReviewMode {
+                    scrubberRow
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 20)
+                }
 
                 bottomControls
+            }
+        }
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Done") {
+                    isInputFocused = false
+                    submitFocus    = nil
+                }
+                .fontWeight(.semibold)
             }
         }
         .background(Color(.systemGroupedBackground))
@@ -112,6 +126,9 @@ struct CardStudyView: View {
                     Button { vm.resetCurrentCard() } label: {
                         Image(systemName: "arrow.counterclockwise").topBarButton()
                     }
+                }
+                Button { vm.shuffle(); HapticEngine.light() } label: {
+                    Image(systemName: "shuffle").topBarButton()
                 }
                 Button {
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
@@ -168,7 +185,7 @@ struct CardStudyView: View {
 
     private func verticalScrollCards(cardWidth: CGFloat, cardHeight: CGFloat) -> some View {
         ScrollViewReader { proxy in
-            ScrollView(.vertical, showsIndicators: false) {
+            ScrollView(.vertical, showsIndicators: true) {
                 LazyVStack(spacing: 20) {
                     ForEach(Array(vm.verses.enumerated()), id: \.offset) { index, verse in
                         makeCard(verse: verse, interactive: index == vm.currentIndex)
@@ -208,7 +225,10 @@ struct CardStudyView: View {
 
     @ViewBuilder
     private func makeCard(verse: Verse, interactive: Bool) -> some View {
-        if studyMode == .submit && vm.isReviewMode {
+        // In submit+review, show the submit card only for the active card or if a result exists.
+        // Non-active, unsubmitted cards show in read mode to avoid orphaned text fields.
+        let hasResult = vm.submitResults[verse.id] != nil
+        if studyMode == .submit && vm.isReviewMode && (interactive || hasResult) {
             SubmitCardView(
                 verse: verse,
                 cardLabel: vm.cardLabel(for: verse),
@@ -236,15 +256,21 @@ struct CardStudyView: View {
 
     private var scrubberRow: some View {
         HStack(spacing: 10) {
+            let canPrev = vm.currentIndex > 0
+            let canNext = vm.currentIndex < vm.verses.count - 1
+
             Button {
                 vm.goBackward(); HapticEngine.light()
             } label: {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(vm.currentIndex > 0 ? .primary.opacity(0.7) : .secondary.opacity(0.25))
-                    .frame(width: 28, height: 28)
+                    .foregroundColor(canPrev ? .primary.opacity(0.7) : .secondary.opacity(0.25))
+                    .frame(width: 32, height: 32)
+                    .background(Color(.tertiarySystemGroupedBackground))
+                    .clipShape(Circle())
+                    .overlay(Circle().stroke(Color(.separator).opacity(canPrev ? 0.4 : 0.15), lineWidth: 1))
             }
-            .disabled(vm.currentIndex == 0)
+            .disabled(!canPrev)
 
             scrubber
 
@@ -253,10 +279,13 @@ struct CardStudyView: View {
             } label: {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(vm.currentIndex < vm.verses.count - 1 ? .primary.opacity(0.7) : .secondary.opacity(0.25))
-                    .frame(width: 28, height: 28)
+                    .foregroundColor(canNext ? .primary.opacity(0.7) : .secondary.opacity(0.25))
+                    .frame(width: 32, height: 32)
+                    .background(Color(.tertiarySystemGroupedBackground))
+                    .clipShape(Circle())
+                    .overlay(Circle().stroke(Color(.separator).opacity(canNext ? 0.4 : 0.15), lineWidth: 1))
             }
-            .disabled(vm.currentIndex == vm.verses.count - 1)
+            .disabled(!canNext)
         }
     }
 
