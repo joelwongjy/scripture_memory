@@ -7,9 +7,9 @@ struct TestSetupView: View {
     @State private var selectedVerseIds: Set<Int>    = []
     @State private var expandedPackIds:  Set<String> = []
     @State private var quizCount:        Int         = 15
-    @State private var activeSession:      TestSession? = nil
-    @State private var savedSession:       TestSession? = nil
-    @State private var showOverwriteAlert: Bool         = false
+    @State private var activeSession:    TestSession? = nil
+    @State private var savedSession:     TestSession? = nil
+    @State private var showOverwriteAlert = false
 
     private static let savedSessionKey = "lastTestSessionVerseIds"
 
@@ -17,25 +17,31 @@ struct TestSetupView: View {
     private var clampedCount:  Int { max(1, min(quizCount, selectedCount)) }
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Resume banner — visually separate from the list
-            if let session = savedSession, activeSession == nil {
-                resumeBanner(session)
+        List {
+            // Resume row — inside the List so it animates with native List insertion,
+            // not conditional on activeSession so it doesn't flash when tapped
+            if let session = savedSession {
+                Section {
+                    resumeRow(session)
+                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                }
             }
 
-            List {
             ForEach(bibleVersion.packs) { pack in
-                DisclosureGroup(isExpanded: expansionBinding(for: pack)) {
-                    ForEach(pack.verses) { verse in
-                        verseRow(verse)
+                Section {
+                    DisclosureGroup(isExpanded: expansionBinding(for: pack)) {
+                        ForEach(pack.verses) { verse in
+                            verseRow(verse)
+                                .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                        }
+                    } label: {
+                        packLabel(pack)
+                            .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
                     }
-                } label: {
-                    packLabel(pack)
                 }
             }
         }
         .listStyle(.insetGrouped)
-        }
         .navigationTitle("Review")
         .onAppear { loadSavedSession() }
         .alert("Existing Session", isPresented: $showOverwriteAlert) {
@@ -45,9 +51,7 @@ struct TestSetupView: View {
             Text("You have an unfinished session. Starting a new one will overwrite it.")
         }
         .safeAreaInset(edge: .bottom) {
-            if !selectedVerseIds.isEmpty {
-                bottomBar
-            }
+            if !selectedVerseIds.isEmpty { bottomBar }
         }
         .fullScreenCover(item: $activeSession) { session in
             NavigationStack {
@@ -57,12 +61,12 @@ struct TestSetupView: View {
         }
     }
 
-    // MARK: - Resume Banner
+    // MARK: - Resume Row
 
-    private func resumeBanner(_ session: TestSession) -> some View {
+    private func resumeRow(_ session: TestSession) -> some View {
         HStack(spacing: 14) {
             Image(systemName: "play.circle.fill")
-                .font(.system(size: 32))
+                .font(.system(size: 30))
                 .foregroundColor(.blue)
 
             VStack(alignment: .leading, spacing: 3) {
@@ -87,10 +91,8 @@ struct TestSetupView: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, 16)
         .padding(.vertical, 14)
-        .background(Color.blue.opacity(0.08))
-        .overlay(Rectangle().fill(Color.blue.opacity(0.15)).frame(height: 1), alignment: .bottom)
     }
 
     // MARK: - Expansion Binding
@@ -99,17 +101,17 @@ struct TestSetupView: View {
         Binding(
             get: { expandedPackIds.contains(pack.id) },
             set: { isExpanded in
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                    if isExpanded {
-                        expandedPackIds.insert(pack.id)
-                        // Auto-select all verses when expanding a pack for the first time
-                        let packIds = Set(pack.verses.map(\.id))
-                        if packIds.intersection(selectedVerseIds).isEmpty {
-                            for verse in pack.verses { selectedVerseIds.insert(verse.id) }
-                        }
-                    } else {
-                        expandedPackIds.remove(pack.id)
+                // No withAnimation — DisclosureGroup handles its own animation.
+                // External withAnimation fights List's row insertion and causes jitter.
+                if isExpanded {
+                    expandedPackIds.insert(pack.id)
+                    // Auto-select all if this pack has nothing selected yet
+                    let packIds = Set(pack.verses.map(\.id))
+                    if packIds.intersection(selectedVerseIds).isEmpty {
+                        for verse in pack.verses { selectedVerseIds.insert(verse.id) }
                     }
+                } else {
+                    expandedPackIds.remove(pack.id)
                 }
             }
         )
@@ -124,14 +126,11 @@ struct TestSetupView: View {
         let someSelected   = selectedInPack > 0
 
         return HStack(spacing: 12) {
-            // Checkbox — tap toggles select-all / deselect-all independently of expansion
             Button {
-                withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
-                    if allSelected {
-                        for verse in pack.verses { selectedVerseIds.remove(verse.id) }
-                    } else {
-                        for verse in pack.verses { selectedVerseIds.insert(verse.id) }
-                    }
+                if allSelected {
+                    for verse in pack.verses { selectedVerseIds.remove(verse.id) }
+                } else {
+                    for verse in pack.verses { selectedVerseIds.insert(verse.id) }
                 }
             } label: {
                 Image(systemName: allSelected  ? "checkmark.circle.fill"
@@ -139,8 +138,8 @@ struct TestSetupView: View {
                                  : "circle")
                     .font(.system(size: 22))
                     .foregroundColor(someSelected ? .blue : .secondary)
-                    .animation(.spring(response: 0.2), value: someSelected)
                     .animation(.spring(response: 0.2), value: allSelected)
+                    .animation(.spring(response: 0.2), value: someSelected)
             }
             .buttonStyle(.plain)
 
@@ -155,7 +154,6 @@ struct TestSetupView: View {
                     .foregroundColor(.secondary)
             }
         }
-        .padding(.vertical, 4)
     }
 
     // MARK: - Verse Row
@@ -163,19 +161,15 @@ struct TestSetupView: View {
     private func verseRow(_ verse: Verse) -> some View {
         let isSelected = selectedVerseIds.contains(verse.id)
         return HStack(spacing: 12) {
-            // Only the checkbox is the tap target
             Button {
-                withAnimation(.spring(response: 0.2, dampingFraction: 0.8)) {
-                    if isSelected { selectedVerseIds.remove(verse.id) }
-                    else          { selectedVerseIds.insert(verse.id) }
-                }
+                if isSelected { selectedVerseIds.remove(verse.id) }
+                else          { selectedVerseIds.insert(verse.id) }
             } label: {
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 20))
                     .foregroundColor(isSelected ? .blue : .secondary)
                     .animation(.spring(response: 0.2), value: isSelected)
-                    .padding(.vertical, 4)
-                    .padding(.trailing, 4)
+                    .padding(.trailing, 2)
             }
             .buttonStyle(.plain)
 
@@ -197,11 +191,9 @@ struct TestSetupView: View {
 
     private var bottomBar: some View {
         HStack(spacing: 12) {
-            // Selected count
             VStack(alignment: .leading, spacing: 1) {
                 Text("\(selectedCount)")
                     .font(.system(size: 22, weight: .bold, design: .monospaced))
-                    .foregroundColor(.primary)
                 Text("verses")
                     .font(.system(size: 11))
                     .foregroundColor(.secondary)
@@ -210,7 +202,6 @@ struct TestSetupView: View {
 
             Spacer()
 
-            // Cards-to-quiz stepper
             VStack(spacing: 4) {
                 HStack(spacing: 10) {
                     Button {
@@ -248,13 +239,9 @@ struct TestSetupView: View {
 
             Spacer()
 
-            // Start button
             Button {
-                if savedSession != nil {
-                    showOverwriteAlert = true
-                } else {
-                    launchNewSession()
-                }
+                if savedSession != nil { showOverwriteAlert = true }
+                else                   { launchNewSession() }
             } label: {
                 Text("Start")
                     .font(.system(size: 15, weight: .semibold))
@@ -280,8 +267,7 @@ struct TestSetupView: View {
                 verses.append(verse)
             }
         }
-        let shuffled = verses.shuffled()
-        let session  = TestSession(verses: Array(shuffled.prefix(clampedCount)))
+        let session = TestSession(verses: Array(verses.shuffled().prefix(clampedCount)))
         persistSession(session)
         savedSession  = session
         activeSession = session
@@ -295,8 +281,7 @@ struct TestSetupView: View {
     // MARK: - Persistence
 
     private func persistSession(_ session: TestSession) {
-        let ids = session.verses.map(\.id)
-        UserDefaults.standard.set(ids, forKey: Self.savedSessionKey)
+        UserDefaults.standard.set(session.verses.map(\.id), forKey: Self.savedSessionKey)
     }
 
     private func loadSavedSession() {
@@ -306,14 +291,10 @@ struct TestSetupView: View {
         let idSet = Set(ids)
         var byId: [Int: Verse] = [:]
         for pack in bibleVersion.packs {
-            for verse in pack.verses where idSet.contains(verse.id) {
-                byId[verse.id] = verse
-            }
+            for verse in pack.verses where idSet.contains(verse.id) { byId[verse.id] = verse }
         }
         let ordered = ids.compactMap { byId[$0] }
-        if !ordered.isEmpty {
-            savedSession = TestSession(verses: ordered)
-        }
+        if !ordered.isEmpty { savedSession = TestSession(verses: ordered) }
     }
 }
 
