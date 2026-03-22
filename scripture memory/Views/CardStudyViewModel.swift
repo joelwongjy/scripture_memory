@@ -21,17 +21,21 @@ final class CardStudyViewModel: ObservableObject {
 
     let packName: String
     @Published var verses: [Verse]
+    @Published private(set) var isShuffled = false
+
+    private let originalVerses: [Verse]
 
     init(packName: String, verses: [Verse]) {
-        self.packName = packName
-        self.verses   = verses
+        self.packName       = packName
+        self.verses         = verses
+        self.originalVerses = verses
     }
 
     // MARK: - Published State
 
     @Published var currentIndex  = 0
     @Published var isReviewMode  = false
-    @Published var activeSection: CardSection = .verse
+    @Published var activeSection: CardSection = .title
 
     @Published private(set) var titleRevealedCounts: [Int: Int]    = [:]
     @Published private(set) var verseRevealedCounts: [Int: Int]    = [:]
@@ -79,10 +83,11 @@ final class CardStudyViewModel: ObservableObject {
     func goForward()  { if currentIndex < verses.count - 1 { currentIndex += 1 } }
     func goBackward() { if currentIndex > 0                { currentIndex -= 1 } }
 
-    func shuffle() {
+    func toggleShuffle() {
         var t = Transaction(); t.disablesAnimations = true
         withTransaction(t) {
-            verses.shuffle()
+            isShuffled            = !isShuffled
+            verses                = isShuffled ? originalVerses.shuffled() : originalVerses
             currentIndex          = 0
             titleRevealedCounts   = [:]
             verseRevealedCounts   = [:]
@@ -172,6 +177,7 @@ final class CardStudyViewModel: ObservableObject {
         withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
             submitResults[verse.id] = result
         }
+        if result.isAllCorrect { ReviewProgress.shared.markComplete(verse.id) }
         titleInput = ""
         verseInput = ""
         return result
@@ -221,6 +227,7 @@ final class CardStudyViewModel: ObservableObject {
         }
         if newCount >= sectionWords.count {
             switchSectionIfNeeded(verse: verse)
+            if isCardComplete { ReviewProgress.shared.markComplete(verse.id) }
         }
     }
 

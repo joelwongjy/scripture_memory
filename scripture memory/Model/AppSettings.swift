@@ -12,14 +12,14 @@ enum StudyMode: String, CaseIterable {
         switch self {
         case .firstLetter: return "First Letter"
         case .fullWord:    return "Full Word"
-        case .submit:      return "Submit"
+        case .submit:      return "Entire Verse"
         }
     }
 
     var instructions: String {
         switch self {
         case .firstLetter: return "Type the first letter of each word to reveal it."
-        case .fullWord:    return "Type each word in full. Case and punctuation are ignored."
+        case .fullWord:    return "Type each word in full."
         case .submit:      return "Type the full verse on the card, then tap Submit to check all at once."
         }
     }

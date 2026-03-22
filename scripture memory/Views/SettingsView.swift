@@ -38,7 +38,7 @@ struct SettingsView: View {
                     Label("Hard Mode", systemImage: "eye.slash")
                 }
             } footer: {
-                Text("Hides all hints — no underscores or word counts shown during review.")
+                Text("Hides all hints — no word placeholders shown during review.")
             }
 
             Section {

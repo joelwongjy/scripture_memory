@@ -18,6 +18,9 @@ struct CardStudyView: View {
     @State private var flyDirection: Int     = 0
     @State private var shakeOffset:  CGFloat = 0
     @State private var speechTarget: SubmitField = .title
+    @State private var isScrubbing           = false
+
+    @ObservedObject private var progress = ReviewProgress.shared
 
     @Environment(\.dismiss) private var dismiss
 
@@ -68,22 +71,12 @@ struct CardStudyView: View {
                 bottomControls
             }
         }
-        .toolbar {
-            ToolbarItemGroup(placement: .keyboard) {
-                Spacer()
-                Button("Done") {
-                    isInputFocused = false
-                    submitFocus    = nil
-                }
-                .fontWeight(.semibold)
-            }
-        }
         .background(Color(.systemGroupedBackground))
         .onChange(of: vm.isReviewMode) { handleReviewModeChange($0) }
         .onChange(of: vm.currentIndex) { _ in
             vm.clearInputs()
             if speech.isListening { speech.stopListening() }
-            refocusIfNeeded()
+            if !isScrubbing { refocusIfNeeded() }
         }
         .onChange(of: speech.transcript) { text in
             guard speech.isListening else { return }
@@ -103,49 +96,52 @@ struct CardStudyView: View {
     // MARK: - Top Bar
 
     private var topBar: some View {
-        HStack {
-            Button { dismiss() } label: {
-                Image(systemName: "xmark").topBarButton()
-            }
-
-            Spacer()
-
+        ZStack {
+            // Title is always geometrically centred regardless of button count.
             VStack(spacing: 2) {
                 Text(vm.packName)
                     .font(.system(size: 15, weight: .semibold))
                     .lineLimit(1)
-                Text("\(vm.currentIndex + 1) of \(vm.verses.count)")
+                let done = progress.completedCount(for: vm.verses)
+                let subtitle = done > 0
+                    ? "\(vm.currentIndex + 1) of \(vm.verses.count)  ·  \(done) done"
+                    : "\(vm.currentIndex + 1) of \(vm.verses.count)"
+                Text(subtitle)
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(.secondary)
             }
 
-            Spacer()
+            HStack {
+                Button { dismiss() } label: {
+                    Image(systemName: "xmark").topBarButton()
+                }
 
-            HStack(spacing: 6) {
-                if vm.canReset {
-                    Button { vm.resetCurrentCard() } label: {
-                        Image(systemName: "arrow.counterclockwise").topBarButton()
+                Spacer()
+
+                HStack(spacing: 8) {
+                    if vm.canReset {
+                        Button { vm.resetCurrentCard() } label: {
+                            Image(systemName: "arrow.counterclockwise").topBarButton()
+                        }
                     }
-                }
-                Button { vm.shuffle(); HapticEngine.light() } label: {
-                    Image(systemName: "shuffle").topBarButton()
-                }
-                Button {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                        isVerticalScroll.toggle()
+                    Button { vm.toggleShuffle(); HapticEngine.light() } label: {
+                        Image(systemName: "shuffle")
+                            .topBarToggle(isOn: vm.isShuffled)
                     }
-                } label: {
-                    Image(systemName: isVerticalScroll ? "rectangle.stack" : "list.bullet.rectangle")
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundColor(isVerticalScroll ? .white : .secondary)
-                        .frame(width: 32, height: 32)
-                        .background(isVerticalScroll ? Color.blue : Color(.tertiarySystemGroupedBackground))
-                        .clipShape(Circle())
+                    Button {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                            isVerticalScroll.toggle()
+                        }
+                    } label: {
+                        Image(systemName: isVerticalScroll ? "rectangle.stack" : "list.bullet.rectangle")
+                            .topBarToggle(isOn: isVerticalScroll)
+                    }
                 }
             }
         }
         .padding(.horizontal, 20)
         .padding(.top, 12)
+        .padding(.bottom, 12)
     }
 
     // MARK: - Card Stack (horizontal swipe mode)
@@ -262,64 +258,73 @@ struct CardStudyView: View {
             Button {
                 vm.goBackward(); HapticEngine.light()
             } label: {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(canPrev ? .primary.opacity(0.7) : .secondary.opacity(0.25))
-                    .frame(width: 32, height: 32)
-                    .background(Color(.tertiarySystemGroupedBackground))
-                    .clipShape(Circle())
-                    .overlay(Circle().stroke(Color(.separator).opacity(canPrev ? 0.4 : 0.15), lineWidth: 1))
+                Image(systemName: "chevron.left").scrubberButton()
             }
             .disabled(!canPrev)
+            .opacity(canPrev ? 1 : 0.3)
 
             scrubber
 
             Button {
                 vm.goForward(); HapticEngine.light()
             } label: {
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(canNext ? .primary.opacity(0.7) : .secondary.opacity(0.25))
-                    .frame(width: 32, height: 32)
-                    .background(Color(.tertiarySystemGroupedBackground))
-                    .clipShape(Circle())
-                    .overlay(Circle().stroke(Color(.separator).opacity(canNext ? 0.4 : 0.15), lineWidth: 1))
+                Image(systemName: "chevron.right").scrubberButton()
             }
             .disabled(!canNext)
+            .opacity(canNext ? 1 : 0.3)
         }
     }
 
     private var scrubber: some View {
         GeometryReader { geo in
             let w     = geo.size.width
-            let h     = geo.size.height
+            let knobW: CGFloat = 30
             let knobX = vm.verses.count > 1
-                ? CGFloat(vm.currentIndex) / CGFloat(vm.verses.count - 1) * (w - 14) + 7
-                : w / 2
-            let fillW = max(4, w * CGFloat(vm.currentIndex + 1) / CGFloat(max(1, vm.verses.count)))
+                ? CGFloat(vm.currentIndex) / CGFloat(vm.verses.count - 1) * (w - knobW)
+                : (w - knobW) / 2
+            let fillW = max(knobW / 2, w * CGFloat(vm.currentIndex + 1) / CGFloat(max(1, vm.verses.count)))
 
-            Capsule().fill(Color(.systemGray5)).frame(height: 4).position(x: w / 2, y: h / 2)
-            Capsule().fill(Color.primary.opacity(0.3)).frame(width: fillW, height: 4)
-                .position(x: fillW / 2, y: h / 2)
-                .animation(.spring(response: 0.3, dampingFraction: 0.8), value: vm.currentIndex)
-            Circle().fill(Color.primary.opacity(0.55)).frame(width: 14, height: 14)
-                .position(x: knobX, y: h / 2)
-                .animation(.spring(response: 0.3, dampingFraction: 0.8), value: vm.currentIndex)
-        }
-        .frame(height: 20)
-        .overlay {
-            GeometryReader { geo in
-                Color.clear.contentShape(Rectangle())
-                    .gesture(DragGesture(minimumDistance: 0).onChanged { value in
-                        let fraction = max(0, min(1, value.location.x / geo.size.width))
-                        let newIndex = Int(round(fraction * CGFloat(vm.verses.count - 1)))
-                        if newIndex != vm.currentIndex && vm.verses.indices.contains(newIndex) {
-                            vm.currentIndex = newIndex
-                            HapticEngine.light()
-                        }
-                    })
+            ZStack(alignment: .leading) {
+                // Track — glass trough
+                Capsule()
+                    .fill(.ultraThinMaterial)
+                    .frame(height: 6)
+
+                // Filled portion
+                Capsule()
+                    .fill(Color.primary.opacity(0.2))
+                    .frame(width: fillW, height: 6)
+                    .animation(.spring(response: 0.3, dampingFraction: 0.8), value: vm.currentIndex)
+
+                // Glass knob
+                Circle()
+                    .fill(.ultraThinMaterial)
+                    .overlay(Circle().strokeBorder(.white.opacity(0.4), lineWidth: 0.5))
+                    .shadow(color: .black.opacity(0.18), radius: 6, x: 0, y: 3)
+                    .frame(width: knobW, height: knobW)
+                    .offset(x: knobX)
+                    .animation(.spring(response: 0.3, dampingFraction: 0.8), value: vm.currentIndex)
             }
+            .frame(maxHeight: .infinity)
+            .contentShape(Rectangle())
+            .gesture(DragGesture(minimumDistance: 0)
+                .onChanged { value in
+                    isScrubbing = true
+                    isInputFocused = false
+                    submitFocus = nil
+                    let fraction = max(0, min(1, value.location.x / w))
+                    let newIndex = Int(round(fraction * CGFloat(vm.verses.count - 1)))
+                    if newIndex != vm.currentIndex && vm.verses.indices.contains(newIndex) {
+                        vm.currentIndex = newIndex
+                        HapticEngine.light()
+                    }
+                }
+                .onEnded { _ in
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { isScrubbing = false }
+                }
+            )
         }
+        .frame(height: 44)
     }
 
     // MARK: - Bottom Controls
@@ -343,14 +348,31 @@ struct CardStudyView: View {
                 }
             }
 
-            Picker("Mode", selection: $vm.isReviewMode) {
-                Text("Read").tag(false)
-                Text("Review").tag(true)
+            if isInputFocused || submitFocus != nil {
+                Button {
+                    isInputFocused = false
+                    submitFocus    = nil
+                } label: {
+                    Text("Done")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.blue)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                        .background(Color(.secondarySystemGroupedBackground))
+                        .cornerRadius(12)
+                }
+                .padding(.horizontal, 24)
+            } else {
+                Picker("Mode", selection: $vm.isReviewMode) {
+                    Text("Read").tag(false)
+                    Text("Review").tag(true)
+                }
+                .pickerStyle(.segmented)
+                .padding(.horizontal, 24)
             }
-            .pickerStyle(.segmented)
-            .padding(.horizontal, 24)
         }
         .padding(.bottom, 24)
+        .padding(.top, 12)
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: vm.isReviewMode)
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: vm.isCardComplete)
     }
@@ -549,14 +571,40 @@ struct CardStudyView: View {
 // MARK: - View Helpers
 
 private extension Image {
-    /// Standard 32pt circular button for top-bar actions.
+    /// Neutral 36pt glass circle — top bar secondary actions (close, reset).
     func topBarButton() -> some View {
         self
-            .font(.system(size: 14, weight: .bold))
-            .foregroundColor(.secondary)
-            .frame(width: 32, height: 32)
-            .background(Color(.tertiarySystemGroupedBackground))
-            .clipShape(Circle())
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundStyle(.secondary)
+            .frame(width: 36, height: 36)
+            .background(.ultraThinMaterial, in: Circle())
+            .shadow(color: .black.opacity(0.08), radius: 6, x: 0, y: 2)
+    }
+
+    /// Toggle-aware 36pt circle — blue + glow when on, glass when off.
+    func topBarToggle(isOn: Bool) -> some View {
+        self
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundStyle(isOn ? AnyShapeStyle(.white) : AnyShapeStyle(.secondary))
+            .frame(width: 36, height: 36)
+            .background(
+                isOn ? AnyShapeStyle(Color.blue) : AnyShapeStyle(.ultraThinMaterial),
+                in: Circle()
+            )
+            .shadow(
+                color: isOn ? Color.blue.opacity(0.35) : Color.black.opacity(0.08),
+                radius: isOn ? 8 : 6, x: 0, y: 2
+            )
+    }
+
+    /// 36pt glass circle for scrubber prev/next navigation.
+    func scrubberButton() -> some View {
+        self
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundStyle(.primary.opacity(0.7))
+            .frame(width: 36, height: 36)
+            .background(.ultraThinMaterial, in: Circle())
+            .shadow(color: .black.opacity(0.08), radius: 6, x: 0, y: 2)
     }
 }
 
