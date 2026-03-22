@@ -123,72 +123,77 @@ struct PackCover: View {
 
     // MARK: TMS 60 Style
 
-    /// Renders the layout once at a fixed design size then scales it uniformly to
-    /// fit whatever width the card actually occupies (full-width or 2-column grid).
+    /// Renders the layout once at a fixed 340pt design width and scales it uniformly
+    /// to fit any actual card width. The aspect ratio is set first so the GeometryReader
+    /// overlay receives the true card dimensions.
     private var tmsCover: some View {
-        let designWidth: CGFloat  = 340
-        let designHeight: CGFloat = designWidth * 3 / 5   // matches 5:3 aspect ratio
+        let designWidth:  CGFloat = 340
+        let designHeight: CGFloat = designWidth * 3 / 5
 
-        return GeometryReader { geo in
-            let scale = geo.size.width / designWidth
+        return Color.clear
+            .aspectRatio(5.0 / 3.0, contentMode: .fit)
+            .overlay(
+                GeometryReader { geo in
+                    let scale = geo.size.width / designWidth
 
-            VStack(spacing: 0) {
-                ZStack {
-                    Color(uiColor: UIColor { tc in
-                        tc.userInterfaceStyle == .dark
-                            ? UIColor(white: 0.15, alpha: 1)
-                            : UIColor(red: 0.98, green: 0.97, blue: 0.95, alpha: 1)
-                    })
+                    VStack(spacing: 0) {
+                        ZStack {
+                            Color(uiColor: UIColor { tc in
+                                tc.userInterfaceStyle == .dark
+                                    ? UIColor(white: 0.15, alpha: 1)
+                                    : UIColor(red: 0.98, green: 0.97, blue: 0.95, alpha: 1)
+                            })
 
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("주제별 성경암송")
-                            .font(.system(size: 24, weight: .medium, design: .serif))
-                            .tracking(1)
-                            .padding(.leading, 40)
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("주제별 성경암송")
+                                    .font(.system(size: 24, weight: .medium, design: .serif))
+                                    .tracking(1)
+                                    .padding(.leading, 40)
 
-                        HStack(spacing: 4) {
-                            Spacer()
-                            Text("60")
-                                .font(.system(size: 140, weight: .black, design: .monospaced))
-                                .foregroundColor(baseColor)
-                            VStack(alignment: .center, spacing: 2) {
-                                Text("개역한글판")
-                                    .font(.system(size: 24, weight: .semibold))
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, 10).padding(.vertical, 5)
-                                    .background(RoundedRectangle(cornerRadius: 6).fill(baseColor))
-                                Text("구절")
-                                    .font(.system(size: 80, weight: .bold, design: .monospaced))
-                                    .foregroundColor(baseColor)
+                                HStack(spacing: 4) {
+                                    Spacer()
+                                    Text("60")
+                                        .font(.system(size: 140, weight: .black, design: .monospaced))
+                                        .foregroundColor(baseColor)
+                                    VStack(alignment: .center, spacing: 2) {
+                                        Text("개역한글판")
+                                            .font(.system(size: 24, weight: .semibold))
+                                            .foregroundColor(.white)
+                                            .padding(.horizontal, 10).padding(.vertical, 5)
+                                            .background(RoundedRectangle(cornerRadius: 6).fill(baseColor))
+                                        Text("구절")
+                                            .font(.system(size: 80, weight: .bold, design: .monospaced))
+                                            .foregroundColor(baseColor)
+                                    }
+                                    Spacer()
+                                }
                             }
-                            Spacer()
+                            .padding(.top, 16)
                         }
-                    }
-                    .padding(.top, 16)
-                }
 
-                HStack {
-                    Text("TO KNOW CHRIST AND TO MAKE HIM KNOWN")
-                        .font(.system(size: 10, weight: .medium, design: .serif))
-                    Spacer()
-                    HStack(spacing: 5) {
-                        Text("네비게이토").tracking(0.5)
-                        Image(systemName: "moon.fill")
-                        Text("출판사").tracking(0.5)
+                        HStack {
+                            Text("TO KNOW CHRIST AND TO MAKE HIM KNOWN")
+                                .font(.system(size: 10, weight: .medium, design: .serif))
+                            Spacer()
+                            HStack(spacing: 5) {
+                                Text("네비게이토").tracking(0.5)
+                                Image(systemName: "moon.fill")
+                                Text("출판사").tracking(0.5)
+                            }
+                            .bold()
+                            .font(.system(size: 12, weight: .medium, design: .rounded))
+                        }
+                        .padding(.horizontal, 16).padding(.vertical, 10)
+                        .background(Color.green.opacity(0.15))
                     }
-                    .bold()
-                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .frame(width: designWidth, height: designHeight)
+                    .scaleEffect(scale, anchor: .topLeading)
+                    .frame(width: geo.size.width, height: geo.size.height, alignment: .topLeading)
                 }
-                .padding(.horizontal, 16).padding(.vertical, 10)
-                .background(Color.green.opacity(0.15))
-            }
-            // Render at design size, then scale uniformly to actual width.
-            .frame(width: designWidth, height: designHeight)
-            .scaleEffect(scale, anchor: .topLeading)
-            // Collapse the layout frame to the actual rendered size.
-            .frame(width: geo.size.width, height: geo.size.height, alignment: .topLeading)
-        }
-        .packCoverStyle(border: Color(.separator).opacity(0.3), shadowOpacity: 0.08)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color(.separator).opacity(0.3), lineWidth: 0.5))
+            .shadow(color: .black.opacity(0.08), radius: 8, x: 0, y: 4)
     }
 
     // MARK: Generic Style
