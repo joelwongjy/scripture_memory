@@ -1,76 +1,46 @@
 import SwiftUI
 
 struct CardStudyView: View {
-    let packName: String
-    let verses: [Verse]
 
-    @State private var currentIndex = 0
-    @State private var isReviewMode = false
-    @State private var titleRevealedCounts: [Int: Int] = [:]
-    @State private var verseRevealedCounts: [Int: Int] = [:]
-    @State private var activeSection: ReviewSection = .verse
-    @State private var inputText = ""
-    @State private var titleInput = ""
-    @State private var verseInput = ""
-    @State private var shakeOffset: CGFloat = 0
-    @State private var dragOffset: CGSize = .zero
-    @State private var isCardFlying = false
-    @State private var flyDirection: Int = 0
-    @State private var submitResults: [Int: SubmitResult] = [:]
-    @State private var speechTarget: SubmitField = .title
-    @StateObject private var speech = SpeechRecognizer()
-    @FocusState private var isInputFocused: Bool
-    @FocusState private var submitFocus: SubmitField?
-    @Environment(\.dismiss) private var dismiss
-    @AppStorage("studyMode") private var studyMode = "firstLetter"
+    // MARK: - State
+
+    @StateObject private var vm:     CardStudyViewModel
+    @StateObject private var speech: SpeechRecognizer = SpeechRecognizer()
+
+    @AppStorage("studyMode")       private var studyMode:       StudyMode = .firstLetter
     @AppStorage("isVerticalScroll") private var isVerticalScroll = false
 
-    private var currentVerse: Verse? {
-        guard !verses.isEmpty, verses.indices.contains(currentIndex) else { return nil }
-        return verses[currentIndex]
+    @FocusState private var isInputFocused: Bool
+    @FocusState private var submitFocus:    SubmitField?
+
+    @State private var dragOffset:   CGSize  = .zero
+    @State private var isCardFlying          = false
+    @State private var flyDirection: Int     = 0
+    @State private var shakeOffset:  CGFloat = 0
+    @State private var speechTarget: SubmitField = .title
+
+    @Environment(\.dismiss) private var dismiss
+
+    // MARK: - Swipe Constants
+
+    private enum Swipe {
+        static let threshold:         CGFloat = 80
+        static let velocityThreshold: CGFloat = 400
+        static let flyWidth:          CGFloat = 600
+        static let prevCardOffset:    CGFloat = 420
     }
 
-    private var currentWords: [String] {
-        guard let v = currentVerse else { return [] }
-        switch activeSection {
-        case .title: return v.title.components(separatedBy: " ").filter { !$0.isEmpty }
-        case .verse: return v.verse.components(separatedBy: " ").filter { !$0.isEmpty }
-        }
+    // MARK: - Init
+
+    init(packName: String, verses: [Verse]) {
+        _vm = StateObject(wrappedValue: CardStudyViewModel(packName: packName, verses: verses))
     }
 
-    private var currentRevealed: Int {
-        guard let v = currentVerse else { return 0 }
-        switch activeSection {
-        case .title: return titleRevealedCounts[v.id, default: 0]
-        case .verse: return verseRevealedCounts[v.id, default: 0]
-        }
-    }
-
-    private var isCardComplete: Bool {
-        guard let v = currentVerse else { return false }
-        if studyMode == "submit" {
-            guard let result = submitResults[v.id] else { return false }
-            return result.isAllCorrect
-        }
-        let tWords = v.title.components(separatedBy: " ").filter { !$0.isEmpty }
-        let vWords = v.verse.components(separatedBy: " ").filter { !$0.isEmpty }
-        return titleRevealedCounts[v.id, default: 0] >= tWords.count
-            && verseRevealedCounts[v.id, default: 0] >= vWords.count
-    }
-
-    private var forwardProgress: CGFloat {
-        guard dragOffset.width < 0 else { return 0 }
-        return min(abs(dragOffset.width) / 150, 1.0)
-    }
-
-    private var backwardProgress: CGFloat {
-        guard dragOffset.width > 0 else { return 0 }
-        return min(dragOffset.width / 200, 1.0)
-    }
+    // MARK: - Body
 
     var body: some View {
         GeometryReader { geo in
-            let cardWidth = geo.size.width - 40
+            let cardWidth  = geo.size.width - 40
             let cardHeight = cardWidth * 3.0 / 5.0
 
             VStack(spacing: 0) {
@@ -81,11 +51,9 @@ struct CardStudyView: View {
                         .frame(maxHeight: .infinity)
                 } else {
                     Spacer(minLength: 12)
-
                     cardStack
                         .frame(width: cardWidth, height: cardHeight)
                         .frame(maxWidth: .infinity)
-
                     Spacer(minLength: 12)
                 }
 
@@ -97,41 +65,17 @@ struct CardStudyView: View {
             }
         }
         .background(Color(.systemGroupedBackground))
-        .onChange(of: isReviewMode) { reviewing in
-            if reviewing && !isCardComplete {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                    if studyMode == "submit" {
-                        submitFocus = .title
-                    } else {
-                        isInputFocused = true
-                    }
-                }
-            } else {
-                if speech.isListening { speech.stopListening() }
-                isInputFocused = false
-                submitFocus = nil
-            }
-        }
-        .onChange(of: currentIndex) { _ in
+        .onChange(of: vm.isReviewMode) { handleReviewModeChange($0) }
+        .onChange(of: vm.currentIndex) { _ in
+            vm.clearInputs()
             if speech.isListening { speech.stopListening() }
-            inputText = ""
-            titleInput = ""
-            verseInput = ""
-            if isReviewMode && !isCardComplete {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    if studyMode == "submit" {
-                        submitFocus = .title
-                    } else {
-                        isInputFocused = true
-                    }
-                }
-            }
+            refocusIfNeeded()
         }
-        .onChange(of: speech.transcript) { newValue in
+        .onChange(of: speech.transcript) { text in
             guard speech.isListening else { return }
             switch speechTarget {
-            case .title: titleInput = newValue
-            case .verse: verseInput = newValue
+            case .title: vm.titleInput = text
+            case .verse: vm.verseInput = text
             }
         }
         .onChange(of: submitFocus) { newFocus in
@@ -142,223 +86,33 @@ struct CardStudyView: View {
         }
     }
 
-    // MARK: - Card Stack
-
-    private var cardStack: some View {
-        ZStack {
-            if currentIndex + 2 < verses.count {
-                backgroundCard(at: currentIndex + 2)
-                    .scaleEffect(0.90).offset(y: 24).zIndex(0)
-            }
-            if currentIndex + 1 < verses.count {
-                backgroundCard(at: currentIndex + 1)
-                    .scaleEffect(0.95 + 0.05 * forwardProgress)
-                    .offset(y: 12 * (1 - forwardProgress))
-                    .zIndex(1)
-            }
-
-            if let verse = currentVerse {
-                let goingBack = dragOffset.width > 0
-                makeCard(verse: verse, interactive: true)
-                    .offset(
-                        x: goingBack ? 0 : dragOffset.width,
-                        y: goingBack ? backwardProgress * 12 : dragOffset.height * 0.1
-                    )
-                    .scaleEffect(goingBack ? 1.0 - backwardProgress * 0.05 : 1.0)
-                    .rotationEffect(goingBack ? .zero : .degrees(Double(dragOffset.width) * 0.03))
-                    .zIndex(2)
-                    .gesture(swipeGesture)
-            }
-
-            if currentIndex > 0 && dragOffset.width > 0 {
-                let prevVerse = verses[currentIndex - 1]
-                makeCard(verse: prevVerse, interactive: false)
-                    .offset(x: dragOffset.width - 420)
-                    .rotationEffect(.degrees(Double(dragOffset.width - 420) * 0.02))
-                    .zIndex(3)
-            }
-        }
-    }
-
-    private func verticalScrollCards(cardWidth: CGFloat, cardHeight: CGFloat) -> some View {
-        ScrollViewReader { proxy in
-            ScrollView(.vertical, showsIndicators: false) {
-                LazyVStack(spacing: 20) {
-                    ForEach(Array(verses.enumerated()), id: \.offset) { index, verse in
-                        makeCard(verse: verse, interactive: index == currentIndex)
-                            .frame(width: cardWidth, height: cardHeight)
-                            .id(index)
-                            .overlay {
-                                if index != currentIndex {
-                                    Color.clear
-                                        .contentShape(Rectangle())
-                                        .onTapGesture {
-                                            haptic(.light)
-                                            currentIndex = index
-                                        }
-                                }
-                            }
-                    }
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
-            }
-            .onAppear {
-                proxy.scrollTo(currentIndex, anchor: .center)
-            }
-            .onChange(of: currentIndex) { newIndex in
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
-                    proxy.scrollTo(newIndex, anchor: .center)
-                }
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func backgroundCard(at index: Int) -> some View {
-        if verses.indices.contains(index) {
-            makeCard(verse: verses[index], interactive: false)
-        }
-    }
-
-    @ViewBuilder
-    private func makeCard(verse: Verse, interactive: Bool) -> some View {
-        if studyMode == "submit" && isReviewMode {
-            SubmitCardView(
-                verse: verse,
-                cardLabel: cardLabel(for: verse),
-                titleText: interactive ? $titleInput : .constant(""),
-                verseText: interactive ? $verseInput : .constant(""),
-                result: submitResults[verse.id],
-                focusedField: $submitFocus
-            )
-        } else {
-            FlashcardView(
-                verse: verse,
-                cardLabel: cardLabel(for: verse),
-                isReviewMode: isReviewMode,
-                titleRevealedCount: titleRevealedCounts[verse.id, default: 0],
-                verseRevealedCount: verseRevealedCounts[verse.id, default: 0],
-                activeSection: activeSection,
-                onSectionTap: interactive ? { section in
-                    withAnimation(.easeOut(duration: 0.2)) { activeSection = section }
-                } : nil
-            )
-        }
-    }
-
-    private var swipeGesture: some Gesture {
-        DragGesture()
-            .onChanged { value in
-                if isCardFlying { commitSwipe() }
-                let tx = value.translation.width
-                let canGoNext = currentIndex < verses.count - 1
-                let canGoPrev = currentIndex > 0
-                if (tx < 0 && canGoNext) || (tx > 0 && canGoPrev) {
-                    dragOffset = value.translation
-                } else {
-                    dragOffset = CGSize(width: tx * 0.15, height: value.translation.height * 0.15)
-                }
-            }
-            .onEnded { value in
-                if isCardFlying { commitSwipe() }
-                let threshold: CGFloat = 80
-                let vx = value.predictedEndTranslation.width
-                if (dragOffset.width < -threshold || vx < -400) && currentIndex < verses.count - 1 {
-                    swipeForward()
-                } else if (dragOffset.width > threshold || vx > 400) && currentIndex > 0 {
-                    swipeBackward()
-                } else {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 1.0)) {
-                        dragOffset = .zero
-                    }
-                }
-            }
-    }
-
-    private func swipeForward() {
-        isCardFlying = true; flyDirection = -1; haptic(.light)
-        withAnimation(.easeOut(duration: 0.2)) {
-            dragOffset = CGSize(width: -600, height: dragOffset.height)
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { commitSwipe() }
-    }
-
-    private func swipeBackward() {
-        isCardFlying = true; flyDirection = 1; haptic(.light)
-        withAnimation(.easeOut(duration: 0.2)) {
-            dragOffset = CGSize(width: 420, height: 0)
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { commitSwipe() }
-    }
-
-    private func commitSwipe() {
-        guard isCardFlying else { return }
-        var t = Transaction(); t.disablesAnimations = true
-        withTransaction(t) {
-            if flyDirection < 0, currentIndex < verses.count - 1 { currentIndex += 1 }
-            else if flyDirection > 0, currentIndex > 0 { currentIndex -= 1 }
-            dragOffset = .zero; isCardFlying = false; flyDirection = 0
-        }
-    }
-
     // MARK: - Top Bar
 
     private var topBar: some View {
         HStack {
             Button { dismiss() } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundColor(.secondary)
-                    .frame(width: 32, height: 32)
-                    .background(Color(.tertiarySystemGroupedBackground))
-                    .clipShape(Circle())
+                Image(systemName: "xmark").topBarButton()
             }
 
             Spacer()
 
             VStack(spacing: 2) {
-                Text(packName)
+                Text(vm.packName)
                     .font(.system(size: 15, weight: .semibold))
                     .lineLimit(1)
-                Text("\(currentIndex + 1) of \(verses.count)")
+                Text("\(vm.currentIndex + 1) of \(vm.verses.count)")
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(.secondary)
             }
 
             Spacer()
 
-            let canReset = isReviewMode && (
-                studyMode == "submit"
-                    ? submitResults[currentVerse?.id ?? -1] != nil
-                    : (titleRevealedCounts[currentVerse?.id ?? -1, default: 0] > 0
-                       || verseRevealedCounts[currentVerse?.id ?? -1, default: 0] > 0)
-            )
-
             HStack(spacing: 6) {
-                if canReset, let verse = currentVerse {
-                    Button {
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                            if studyMode == "submit" {
-                                submitResults.removeValue(forKey: verse.id)
-                                titleInput = ""
-                                verseInput = ""
-                            } else {
-                                titleRevealedCounts[verse.id] = 0
-                                verseRevealedCounts[verse.id] = 0
-                            }
-                        }
-                        haptic(.light)
-                    } label: {
-                        Image(systemName: "arrow.counterclockwise")
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundColor(.secondary)
-                            .frame(width: 32, height: 32)
-                            .background(Color(.tertiarySystemGroupedBackground))
-                            .clipShape(Circle())
+                if vm.canReset {
+                    Button { vm.resetCurrentCard() } label: {
+                        Image(systemName: "arrow.counterclockwise").topBarButton()
                     }
                 }
-
                 Button {
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
                         isVerticalScroll.toggle()
@@ -377,54 +131,151 @@ struct CardStudyView: View {
         .padding(.top, 12)
     }
 
+    // MARK: - Card Stack (horizontal swipe mode)
+
+    private var cardStack: some View {
+        ZStack {
+            if vm.currentIndex + 2 < vm.verses.count {
+                backgroundCard(at: vm.currentIndex + 2)
+                    .scaleEffect(0.90).offset(y: 24).zIndex(0)
+            }
+            if vm.currentIndex + 1 < vm.verses.count {
+                backgroundCard(at: vm.currentIndex + 1)
+                    .scaleEffect(0.95 + 0.05 * forwardDragProgress)
+                    .offset(y: 12 * (1 - forwardDragProgress))
+                    .zIndex(1)
+            }
+            if let verse = vm.currentVerse {
+                let goingBack = dragOffset.width > 0
+                makeCard(verse: verse, interactive: true)
+                    .offset(x: goingBack ? 0 : dragOffset.width,
+                            y: goingBack ? backwardDragProgress * 12 : dragOffset.height * 0.1)
+                    .scaleEffect(goingBack ? 1.0 - backwardDragProgress * 0.05 : 1.0)
+                    .rotationEffect(goingBack ? .zero : .degrees(Double(dragOffset.width) * 0.03))
+                    .zIndex(2)
+                    .gesture(swipeGesture)
+            }
+            if vm.currentIndex > 0 && dragOffset.width > 0 {
+                makeCard(verse: vm.verses[vm.currentIndex - 1], interactive: false)
+                    .offset(x: dragOffset.width - Swipe.prevCardOffset)
+                    .rotationEffect(.degrees(Double(dragOffset.width - Swipe.prevCardOffset) * 0.02))
+                    .zIndex(3)
+            }
+        }
+    }
+
+    // MARK: - Vertical Scroll Mode
+
+    private func verticalScrollCards(cardWidth: CGFloat, cardHeight: CGFloat) -> some View {
+        ScrollViewReader { proxy in
+            ScrollView(.vertical, showsIndicators: false) {
+                LazyVStack(spacing: 20) {
+                    ForEach(Array(vm.verses.enumerated()), id: \.offset) { index, verse in
+                        makeCard(verse: verse, interactive: index == vm.currentIndex)
+                            .frame(width: cardWidth, height: cardHeight)
+                            .id(index)
+                            .overlay {
+                                if index != vm.currentIndex {
+                                    Color.clear.contentShape(Rectangle())
+                                        .onTapGesture {
+                                            HapticEngine.light()
+                                            vm.currentIndex = index
+                                        }
+                                }
+                            }
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+            }
+            .onAppear { proxy.scrollTo(vm.currentIndex, anchor: .center) }
+            .onChange(of: vm.currentIndex) { newIndex in
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
+                    proxy.scrollTo(newIndex, anchor: .center)
+                }
+            }
+        }
+    }
+
+    // MARK: - Card Builders
+
+    @ViewBuilder
+    private func backgroundCard(at index: Int) -> some View {
+        if vm.verses.indices.contains(index) {
+            makeCard(verse: vm.verses[index], interactive: false)
+        }
+    }
+
+    @ViewBuilder
+    private func makeCard(verse: Verse, interactive: Bool) -> some View {
+        if studyMode == .submit && vm.isReviewMode {
+            SubmitCardView(
+                verse: verse,
+                cardLabel: vm.cardLabel(for: verse),
+                titleText: interactive ? $vm.titleInput : .constant(""),
+                verseText: interactive ? $vm.verseInput : .constant(""),
+                result: vm.submitResults[verse.id],
+                focusedField: $submitFocus
+            )
+        } else {
+            FlashcardView(
+                verse: verse,
+                cardLabel: vm.cardLabel(for: verse),
+                isReviewMode: vm.isReviewMode,
+                titleRevealedCount: vm.revealedCount(for: verse.id, section: .title),
+                verseRevealedCount: vm.revealedCount(for: verse.id, section: .verse),
+                activeSection: vm.activeSection,
+                onSectionTap: interactive ? { section in
+                    withAnimation(.easeOut(duration: 0.2)) { vm.activeSection = section }
+                } : nil
+            )
+        }
+    }
+
     // MARK: - Scrubber
 
     private var scrubberRow: some View {
         HStack(spacing: 10) {
             Button {
-                guard currentIndex > 0 else { return }
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { currentIndex -= 1 }
-                haptic(.light)
+                vm.goBackward(); HapticEngine.light()
             } label: {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(currentIndex > 0 ? .primary.opacity(0.7) : .secondary.opacity(0.25))
+                    .foregroundColor(vm.currentIndex > 0 ? .primary.opacity(0.7) : .secondary.opacity(0.25))
                     .frame(width: 28, height: 28)
             }
-            .disabled(currentIndex == 0)
+            .disabled(vm.currentIndex == 0)
 
             scrubber
 
             Button {
-                guard currentIndex < verses.count - 1 else { return }
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { currentIndex += 1 }
-                haptic(.light)
+                vm.goForward(); HapticEngine.light()
             } label: {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(currentIndex < verses.count - 1 ? .primary.opacity(0.7) : .secondary.opacity(0.25))
+                    .foregroundColor(vm.currentIndex < vm.verses.count - 1 ? .primary.opacity(0.7) : .secondary.opacity(0.25))
                     .frame(width: 28, height: 28)
             }
-            .disabled(currentIndex == verses.count - 1)
+            .disabled(vm.currentIndex == vm.verses.count - 1)
         }
     }
 
     private var scrubber: some View {
         GeometryReader { geo in
-            let w = geo.size.width
-            let h = geo.size.height
-            let knobX: CGFloat = verses.count > 1
-                ? CGFloat(currentIndex) / CGFloat(verses.count - 1) * (w - 14) + 7
+            let w     = geo.size.width
+            let h     = geo.size.height
+            let knobX = vm.verses.count > 1
+                ? CGFloat(vm.currentIndex) / CGFloat(vm.verses.count - 1) * (w - 14) + 7
                 : w / 2
-            let fillW: CGFloat = max(4, w * CGFloat(currentIndex + 1) / CGFloat(max(1, verses.count)))
+            let fillW = max(4, w * CGFloat(vm.currentIndex + 1) / CGFloat(max(1, vm.verses.count)))
 
             Capsule().fill(Color(.systemGray5)).frame(height: 4).position(x: w / 2, y: h / 2)
             Capsule().fill(Color.primary.opacity(0.3)).frame(width: fillW, height: 4)
                 .position(x: fillW / 2, y: h / 2)
-                .animation(.spring(response: 0.3, dampingFraction: 0.8), value: currentIndex)
+                .animation(.spring(response: 0.3, dampingFraction: 0.8), value: vm.currentIndex)
             Circle().fill(Color.primary.opacity(0.55)).frame(width: 14, height: 14)
                 .position(x: knobX, y: h / 2)
-                .animation(.spring(response: 0.3, dampingFraction: 0.8), value: currentIndex)
+                .animation(.spring(response: 0.3, dampingFraction: 0.8), value: vm.currentIndex)
         }
         .frame(height: 20)
         .overlay {
@@ -432,9 +283,10 @@ struct CardStudyView: View {
                 Color.clear.contentShape(Rectangle())
                     .gesture(DragGesture(minimumDistance: 0).onChanged { value in
                         let fraction = max(0, min(1, value.location.x / geo.size.width))
-                        let newIndex = Int(round(fraction * CGFloat(verses.count - 1)))
-                        if newIndex != currentIndex && verses.indices.contains(newIndex) {
-                            currentIndex = newIndex; haptic(.light)
+                        let newIndex = Int(round(fraction * CGFloat(vm.verses.count - 1)))
+                        if newIndex != vm.currentIndex && vm.verses.indices.contains(newIndex) {
+                            vm.currentIndex = newIndex
+                            HapticEngine.light()
                         }
                     })
             }
@@ -445,8 +297,8 @@ struct CardStudyView: View {
 
     private var bottomControls: some View {
         VStack(spacing: 12) {
-            if isReviewMode {
-                if isCardComplete {
+            if vm.isReviewMode {
+                if vm.isCardComplete {
                     HStack(spacing: 8) {
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundColor(.green).font(.system(size: 22))
@@ -455,14 +307,14 @@ struct CardStudyView: View {
                     }
                     .transition(.scale.combined(with: .opacity))
                     .padding(.bottom, 2)
-                } else if studyMode == "submit" {
+                } else if studyMode == .submit {
                     submitControls
                 } else {
-                    immediateInputField
+                    inputField
                 }
             }
 
-            Picker("Mode", selection: $isReviewMode) {
+            Picker("Mode", selection: $vm.isReviewMode) {
                 Text("Read").tag(false)
                 Text("Review").tag(true)
             }
@@ -470,20 +322,20 @@ struct CardStudyView: View {
             .padding(.horizontal, 24)
         }
         .padding(.bottom, 24)
-        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: isReviewMode)
-        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: isCardComplete)
+        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: vm.isReviewMode)
+        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: vm.isCardComplete)
     }
 
+    /// Submit mode: mic + submit button before scoring, try-again after.
     private var submitControls: some View {
-        let hasSubmitted = currentVerse.flatMap { submitResults[$0.id] } != nil
+        let hasResult = vm.currentVerse.flatMap { vm.submitResults[$0.id] } != nil
         return Group {
-            if hasSubmitted {
-                Button { retrySubmit() } label: {
+            if hasResult {
+                Button { vm.retrySubmit() } label: {
                     Label("Try Again", systemImage: "arrow.counterclockwise")
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.primary)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
+                        .frame(maxWidth: .infinity).padding(.vertical, 12)
                         .background(Color(.secondarySystemGroupedBackground))
                         .cornerRadius(12)
                 }
@@ -497,47 +349,54 @@ struct CardStudyView: View {
                             .background(speech.isListening ? Color.red : Color(.secondarySystemGroupedBackground))
                             .cornerRadius(12)
                     }
-
-                    Button(action: handleSubmit) {
-                        let isEmpty = titleInput.trimmingCharacters(in: .whitespaces).isEmpty
-                            && verseInput.trimmingCharacters(in: .whitespaces).isEmpty
+                    Button {
+                        if speech.isListening { speech.stopListening() }
+                        let result = vm.handleSubmit()
+                        submitFocus = nil
+                        result?.isAllCorrect == true ? HapticEngine.success() : HapticEngine.error()
+                    } label: {
+                        let empty = vm.titleInput.trimmingCharacters(in: .whitespaces).isEmpty
+                            && vm.verseInput.trimmingCharacters(in: .whitespaces).isEmpty
                         Text("Submit")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
-                            .background(isEmpty ? Color(.systemGray3) : Color.blue)
+                            .font(.system(size: 16, weight: .semibold)).foregroundColor(.white)
+                            .frame(maxWidth: .infinity).padding(.vertical, 12)
+                            .background(empty ? Color(.systemGray3) : Color.blue)
                             .cornerRadius(12)
                     }
-                    .disabled(titleInput.trimmingCharacters(in: .whitespaces).isEmpty
-                        && verseInput.trimmingCharacters(in: .whitespaces).isEmpty)
+                    .disabled(vm.titleInput.trimmingCharacters(in: .whitespaces).isEmpty
+                        && vm.verseInput.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }
         }
         .padding(.horizontal, 24)
     }
 
-    private var immediateInputField: some View {
-        let placeholder = studyMode == "fullWord"
-            ? "Type each word, press space to check..."
-            : "Type first letter of each word..."
-
-        return HStack(spacing: 10) {
+    /// First-letter and full-word modes share this single text field.
+    private var inputField: some View {
+        HStack(spacing: 10) {
             Image(systemName: "character.cursor.ibeam")
                 .foregroundColor(.secondary).font(.system(size: 16))
 
-            TextField(placeholder, text: $inputText)
+            TextField(studyMode.inputPlaceholder, text: $vm.inputText)
                 .font(.system(size: 17))
                 .focused($isInputFocused)
                 .autocorrectionDisabled()
                 .textInputAutocapitalization(.never)
-                .onChange(of: inputText) { newValue in
+                .onChange(of: vm.inputText) { newValue in
                     guard !newValue.isEmpty else { return }
-                    if studyMode == "firstLetter" {
-                        processFirstLetterInput(newValue)
-                        DispatchQueue.main.async { self.inputText = "" }
-                    } else {
-                        processFullWordInput(newValue)
+                    switch studyMode {
+                    case .firstLetter:
+                        let correct = vm.processFirstLetterInput(newValue)
+                        DispatchQueue.main.async { vm.inputText = "" }
+                        if correct { HapticEngine.light() } else { HapticEngine.error(); shakeAnimation() }
+                    case .fullWord:
+                        if vm.processFullWordInput(newValue) {
+                            HapticEngine.light()
+                        } else if newValue.hasSuffix(" ") {
+                            HapticEngine.error(); shakeAnimation()
+                        }
+                    case .submit:
+                        break
                     }
                 }
         }
@@ -549,76 +408,91 @@ struct CardStudyView: View {
         .padding(.horizontal, 24)
     }
 
-    // MARK: - Input Processing (immediate modes)
+    // MARK: - Swipe Gesture
 
-    private func processFirstLetterInput(_ text: String) {
-        guard let typed = text.last, let verse = currentVerse else { return }
-        let words = currentWords
-        let revealed = currentRevealed
-        guard revealed < words.count else { return }
-        let targetWord = words[revealed]
-        guard let expected = firstLetter(of: targetWord) else {
-            setRevealed(verse.id, revealed + 1); return
+    private var forwardDragProgress: CGFloat {
+        guard dragOffset.width < 0 else { return 0 }
+        return min(abs(dragOffset.width) / 150, 1.0)
+    }
+
+    private var backwardDragProgress: CGFloat {
+        guard dragOffset.width > 0 else { return 0 }
+        return min(dragOffset.width / 200, 1.0)
+    }
+
+    private var swipeGesture: some Gesture {
+        DragGesture()
+            .onChanged { value in
+                if isCardFlying { commitSwipe() }
+                let tx      = value.translation.width
+                let canNext = vm.currentIndex < vm.verses.count - 1
+                let canPrev = vm.currentIndex > 0
+                if (tx < 0 && canNext) || (tx > 0 && canPrev) {
+                    dragOffset = value.translation
+                } else {
+                    dragOffset = CGSize(width: tx * 0.15, height: value.translation.height * 0.15)
+                }
+            }
+            .onEnded { value in
+                if isCardFlying { commitSwipe() }
+                let vx = value.predictedEndTranslation.width
+                if (dragOffset.width < -Swipe.threshold || vx < -Swipe.velocityThreshold),
+                   vm.currentIndex < vm.verses.count - 1 {
+                    swipeForward()
+                } else if (dragOffset.width > Swipe.threshold || vx > Swipe.velocityThreshold),
+                          vm.currentIndex > 0 {
+                    swipeBackward()
+                } else {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 1.0)) { dragOffset = .zero }
+                }
+            }
+    }
+
+    private func swipeForward() {
+        isCardFlying = true; flyDirection = -1; HapticEngine.light()
+        withAnimation(.easeOut(duration: 0.2)) {
+            dragOffset = CGSize(width: -Swipe.flyWidth, height: dragOffset.height)
         }
-        if typed.lowercased() == String(expected).lowercased() {
-            let newCount = revealed + 1
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) { setRevealed(verse.id, newCount) }
-            completeSectionIfNeeded(verse: verse, newCount: newCount, words: words)
-        } else {
-            haptic(.error); shakeAnimation()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { commitSwipe() }
+    }
+
+    private func swipeBackward() {
+        isCardFlying = true; flyDirection = 1; HapticEngine.light()
+        withAnimation(.easeOut(duration: 0.2)) {
+            dragOffset = CGSize(width: Swipe.prevCardOffset, height: 0)
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { commitSwipe() }
+    }
+
+    private func commitSwipe() {
+        guard isCardFlying else { return }
+        var t = Transaction(); t.disablesAnimations = true
+        withTransaction(t) {
+            if flyDirection < 0, vm.currentIndex < vm.verses.count - 1 { vm.currentIndex += 1 }
+            else if flyDirection > 0, vm.currentIndex > 0             { vm.currentIndex -= 1 }
+            dragOffset = .zero; isCardFlying = false; flyDirection = 0
         }
     }
 
-    private func processFullWordInput(_ text: String) {
-        guard text.hasSuffix(" "), let verse = currentVerse else { return }
-        let typedWord = String(text.dropLast()).trimmingCharacters(in: .whitespaces)
-        guard !typedWord.isEmpty else {
-            DispatchQueue.main.async { self.inputText = "" }; return
-        }
-        let words = currentWords
-        let revealed = currentRevealed
-        guard revealed < words.count else { return }
-        if normalizedMatch(typedWord, words[revealed]) {
-            let newCount = revealed + 1
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) { setRevealed(verse.id, newCount) }
-            DispatchQueue.main.async { self.inputText = "" }
-            completeSectionIfNeeded(verse: verse, newCount: newCount, words: words)
+    // MARK: - Focus & Speech
+
+    private func handleReviewModeChange(_ reviewing: Bool) {
+        if reviewing && !vm.isCardComplete {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { focusInput() }
         } else {
-            haptic(.error); shakeAnimation()
-            DispatchQueue.main.async { self.inputText = "" }
+            if speech.isListening { speech.stopListening() }
+            isInputFocused = false
+            submitFocus    = nil
         }
     }
 
-    // MARK: - Submit Mode
+    private func refocusIfNeeded() {
+        guard vm.isReviewMode && !vm.isCardComplete else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { focusInput() }
+    }
 
-    private func handleSubmit() {
-        if speech.isListening { speech.stopListening() }
-        guard let verse = currentVerse else { return }
-        let titleRaw = titleInput.trimmingCharacters(in: .whitespacesAndNewlines)
-        let verseRaw = verseInput.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !titleRaw.isEmpty || !verseRaw.isEmpty else { return }
-
-        let typedTitleWords = titleRaw.components(separatedBy: .whitespaces).filter { !$0.isEmpty }
-        let typedVerseWords = verseRaw.components(separatedBy: .whitespaces).filter { !$0.isEmpty }
-        let targetTitleWords = verse.title.components(separatedBy: " ").filter { !$0.isEmpty }
-        let targetVerseWords = verse.verse.components(separatedBy: " ").filter { !$0.isEmpty }
-
-        let titleDiffs = buildDiffs(typed: typedTitleWords, target: targetTitleWords)
-        let verseDiffs = buildDiffs(typed: typedVerseWords, target: targetVerseWords)
-        let result = SubmitResult(titleDiffs: titleDiffs, verseDiffs: verseDiffs)
-
-        withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
-            submitResults[verse.id] = result
-        }
-        titleInput = ""
-        verseInput = ""
-        submitFocus = nil
-
-        if result.isAllCorrect {
-            haptic(.success)
-        } else {
-            haptic(.error)
-        }
+    private func focusInput() {
+        studyMode == .submit ? (submitFocus = .title) : (isInputFocused = true)
     }
 
     private func toggleSpeech() {
@@ -630,120 +504,7 @@ struct CardStudyView: View {
         }
     }
 
-    private func buildDiffs(typed: [String], target: [String]) -> [DiffWord] {
-        let m = typed.count, n = target.count
-        if m == 0 { return target.map { DiffWord(text: $0, kind: .missing) } }
-        if n == 0 { return typed.map { DiffWord(text: $0, kind: .extra) } }
-
-        var dp = Array(repeating: Array(repeating: 0, count: n + 1), count: m + 1)
-        for i in 0...m { dp[i][0] = i }
-        for j in 0...n { dp[0][j] = j }
-
-        for i in 1...m {
-            for j in 1...n {
-                if normalizedMatch(typed[i - 1], target[j - 1]) {
-                    dp[i][j] = dp[i - 1][j - 1]
-                } else {
-                    dp[i][j] = 1 + min(dp[i - 1][j - 1], dp[i - 1][j], dp[i][j - 1])
-                }
-            }
-        }
-
-        var diffs: [DiffWord] = []
-        var i = m, j = n
-        while i > 0 || j > 0 {
-            if i > 0 && j > 0 && normalizedMatch(typed[i - 1], target[j - 1]) {
-                diffs.append(DiffWord(text: target[j - 1], kind: .correct))
-                i -= 1; j -= 1
-            } else if i > 0 && j > 0 && dp[i][j] == dp[i - 1][j - 1] + 1
-                        && (j <= i || dp[i][j] < dp[i][j - 1] + 1) {
-                diffs.append(DiffWord(text: typed[i - 1], kind: .wrong, correction: target[j - 1]))
-                i -= 1; j -= 1
-            } else if j > 0 && (i == 0 || dp[i][j - 1] <= dp[i - 1][j]) {
-                diffs.append(DiffWord(text: target[j - 1], kind: .missing))
-                j -= 1
-            } else {
-                diffs.append(DiffWord(text: typed[i - 1], kind: .extra))
-                i -= 1
-            }
-        }
-
-        return diffs.reversed()
-    }
-
-    private func retrySubmit() {
-        guard let verse = currentVerse else { return }
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-            submitResults.removeValue(forKey: verse.id)
-        }
-        titleInput = ""
-        verseInput = ""
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-            submitFocus = .title
-        }
-    }
-
-    // MARK: - Helpers
-
-    private func completeSectionIfNeeded(verse: Verse, newCount: Int, words: [String]) {
-        guard newCount >= words.count else { haptic(.light); return }
-        let otherSection: ReviewSection = activeSection == .title ? .verse : .title
-        let otherWords: [String]
-        let otherRevealed: Int
-        switch otherSection {
-        case .title:
-            otherWords = verse.title.components(separatedBy: " ").filter { !$0.isEmpty }
-            otherRevealed = titleRevealedCounts[verse.id, default: 0]
-        case .verse:
-            otherWords = verse.verse.components(separatedBy: " ").filter { !$0.isEmpty }
-            otherRevealed = verseRevealedCounts[verse.id, default: 0]
-        }
-        haptic(.success)
-        if otherRevealed < otherWords.count {
-            withAnimation(.easeOut(duration: 0.2)) { activeSection = otherSection }
-        }
-    }
-
-    private func normalizedMatch(_ typed: String, _ target: String) -> Bool {
-        normalize(typed) == normalize(target)
-    }
-
-    private func normalize(_ s: String) -> String {
-        s.lowercased()
-         .components(separatedBy: CharacterSet.punctuationCharacters.union(.symbols))
-         .joined()
-         .trimmingCharacters(in: .whitespaces)
-    }
-
-    private func setRevealed(_ verseId: Int, _ count: Int) {
-        switch activeSection {
-        case .title: titleRevealedCounts[verseId] = count
-        case .verse: verseRevealedCounts[verseId] = count
-        }
-    }
-
-    private func firstLetter(of word: String) -> Character? {
-        word.first { $0.isLetter || $0.isNumber }
-    }
-
-    private func cardLabel(for verse: Verse) -> String {
-        if verse.subpack.isEmpty { return packName }
-        let sub = verses.filter { $0.subpack == verse.subpack }
-        let pos = (sub.firstIndex(where: { $0.id == verse.id }) ?? 0) + 1
-        return "\(verse.subpack)-\(pos) · \(packName)"
-    }
-
-    // MARK: - Haptics
-
-    private enum HapticType { case light, success, error }
-
-    private func haptic(_ type: HapticType) {
-        switch type {
-        case .light:   UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        case .success: UINotificationFeedbackGenerator().notificationOccurred(.success)
-        case .error:   UINotificationFeedbackGenerator().notificationOccurred(.error)
-        }
-    }
+    // MARK: - Shake Animation
 
     private func shakeAnimation() {
         withAnimation(.interpolatingSpring(stiffness: 600, damping: 10)) { shakeOffset = 12 }
@@ -756,6 +517,28 @@ struct CardStudyView: View {
     }
 }
 
+// MARK: - View Helpers
+
+private extension Image {
+    /// Standard 32pt circular button for top-bar actions.
+    func topBarButton() -> some View {
+        self
+            .font(.system(size: 14, weight: .bold))
+            .foregroundColor(.secondary)
+            .frame(width: 32, height: 32)
+            .background(Color(.tertiarySystemGroupedBackground))
+            .clipShape(Circle())
+    }
+}
+
+private extension StudyMode {
+    var inputPlaceholder: String {
+        self == .fullWord
+            ? "Type each word, press space to check..."
+            : "Type first letter of each word..."
+    }
+}
+
 #Preview {
-    CardStudyView(packName: "5 Assurances", verses: Array(packs.first?.verses.prefix(5) ?? []))
+    CardStudyView(packName: "5 Assurances", verses: Array(packsNIV84.first?.verses.prefix(5) ?? []))
 }
