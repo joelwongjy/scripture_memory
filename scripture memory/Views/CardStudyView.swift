@@ -63,7 +63,7 @@ struct CardStudyView: View {
                 if !isVerticalScroll || vm.isReviewMode {
                     scrubberRow
                         .padding(.horizontal, 20)
-                        .padding(.bottom, 20)
+                        .padding(.bottom, 6)   // no count label here, so add explicit gap
                 }
 
                 bottomControls
@@ -74,7 +74,11 @@ struct CardStudyView: View {
         .onChange(of: vm.currentIndex) { _ in
             vm.clearInputs()
             if speech.isListening { speech.stopListening() }
-            if !isScrubbing { refocusIfNeeded() }
+            if isScrubbing {
+                if submitFocus != nil { submitFocus = .title }
+            } else {
+                refocusIfNeeded()
+            }
         }
         .onChange(of: speech.transcript) { text in
             guard speech.isListening else { return }
@@ -121,7 +125,10 @@ struct CardStudyView: View {
                             Image(systemName: "arrow.counterclockwise").topBarButton()
                         }
                     }
-                    Button { vm.toggleShuffle(); HapticEngine.light() } label: {
+                    Button {
+                        vm.toggleShuffle()
+                        HapticEngine.light()
+                    } label: {
                         Image(systemName: "shuffle")
                             .topBarToggle(isOn: vm.isShuffled)
                     }
@@ -163,7 +170,7 @@ struct CardStudyView: View {
                     .scaleEffect(goingBack ? 1.0 - backwardDragProgress * 0.05 : 1.0)
                     .rotationEffect(goingBack ? .zero : .degrees(Double(dragOffset.width) * 0.03))
                     .zIndex(2)
-                    .gesture(swipeGesture)
+                    .simultaneousGesture(swipeGesture)
             }
             if vm.currentIndex > 0 && dragOffset.width > 0 {
                 makeCard(verse: vm.verses[vm.currentIndex - 1], interactive: false)
@@ -253,9 +260,7 @@ struct CardStudyView: View {
             let canNext = vm.currentIndex < vm.verses.count - 1
 
             Button {
-                isInputFocused = false
-                submitFocus    = nil
-                isScrubbing    = true
+                isScrubbing = true
                 vm.goBackward()
                 HapticEngine.light()
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { isScrubbing = false }
@@ -268,9 +273,7 @@ struct CardStudyView: View {
             scrubber
 
             Button {
-                isInputFocused = false
-                submitFocus    = nil
-                isScrubbing    = true
+                isScrubbing = true
                 vm.goForward()
                 HapticEngine.light()
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { isScrubbing = false }
@@ -318,8 +321,6 @@ struct CardStudyView: View {
             .gesture(DragGesture(minimumDistance: 0)
                 .onChanged { value in
                     isScrubbing = true
-                    isInputFocused = false
-                    submitFocus = nil
                     let fraction = max(0, min(1, value.location.x / w))
                     let newIndex = Int(round(fraction * CGFloat(vm.verses.count - 1)))
                     if newIndex != vm.currentIndex && vm.verses.indices.contains(newIndex) {
@@ -338,7 +339,7 @@ struct CardStudyView: View {
     // MARK: - Bottom Controls
 
     private var bottomControls: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 6) {
             if vm.isReviewMode {
                 if vm.isCardComplete {
                     HStack(spacing: 8) {
@@ -356,21 +357,7 @@ struct CardStudyView: View {
                 }
             }
 
-            if isInputFocused || submitFocus != nil {
-                Button {
-                    isInputFocused = false
-                    submitFocus    = nil
-                } label: {
-                    Text("Done")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.blue)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
-                        .background(Color(.secondarySystemGroupedBackground))
-                        .cornerRadius(12)
-                }
-                .padding(.horizontal, 24)
-            } else {
+            if !isInputFocused && submitFocus == nil {
                 Picker("Mode", selection: $vm.isReviewMode) {
                     Text("Read").tag(false)
                     Text("Review").tag(true)
@@ -380,7 +367,6 @@ struct CardStudyView: View {
             }
         }
         .padding(.bottom, 24)
-        .padding(.top, 12)
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: vm.isReviewMode)
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: vm.isCardComplete)
     }
@@ -408,22 +394,31 @@ struct CardStudyView: View {
                             .background(speech.isListening ? Color.red : Color(.secondarySystemGroupedBackground))
                             .cornerRadius(12)
                     }
+                    let isEmpty = vm.titleInput.trimmingCharacters(in: .whitespaces).isEmpty
+                              && vm.verseInput.trimmingCharacters(in: .whitespaces).isEmpty
                     Button {
                         if speech.isListening { speech.stopListening() }
                         let result = vm.handleSubmit()
                         submitFocus = nil
                         result?.isAllCorrect == true ? HapticEngine.success() : HapticEngine.error()
                     } label: {
-                        let empty = vm.titleInput.trimmingCharacters(in: .whitespaces).isEmpty
-                            && vm.verseInput.trimmingCharacters(in: .whitespaces).isEmpty
                         Text("Submit")
                             .font(.system(size: 16, weight: .semibold)).foregroundColor(.white)
                             .frame(maxWidth: .infinity).padding(.vertical, 12)
-                            .background(empty ? Color(.systemGray3) : Color.blue)
+                            .background(isEmpty ? Color(.systemGray3) : Color.blue)
                             .cornerRadius(12)
                     }
-                    .disabled(vm.titleInput.trimmingCharacters(in: .whitespaces).isEmpty
-                        && vm.verseInput.trimmingCharacters(in: .whitespaces).isEmpty)
+                    .disabled(isEmpty)
+                    if submitFocus != nil {
+                        Button { submitFocus = nil } label: {
+                            Image(systemName: "keyboard.chevron.compact.down")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundColor(.secondary)
+                                .frame(width: 48, height: 48)
+                                .background(Color(.secondarySystemGroupedBackground))
+                                .cornerRadius(12)
+                        }
+                    }
                 }
             }
         }
@@ -433,37 +428,50 @@ struct CardStudyView: View {
     /// First-letter and full-word modes share this single text field.
     private var inputField: some View {
         HStack(spacing: 10) {
-            Image(systemName: "character.cursor.ibeam")
-                .foregroundColor(.secondary).font(.system(size: 16))
+            HStack(spacing: 10) {
+                Image(systemName: "character.cursor.ibeam")
+                    .foregroundColor(.secondary).font(.system(size: 16))
 
-            TextField(studyMode.inputPlaceholder, text: $vm.inputText)
-                .font(.system(size: 17))
-                .focused($isInputFocused)
-                .autocorrectionDisabled()
-                .textInputAutocapitalization(.never)
-                .onChange(of: vm.inputText) { newValue in
-                    guard !newValue.isEmpty else { return }
-                    switch studyMode {
-                    case .firstLetter:
-                        let correct = vm.processFirstLetterInput(newValue)
-                        DispatchQueue.main.async { vm.inputText = "" }
-                        if correct { HapticEngine.light() } else { HapticEngine.error(); shakeAnimation() }
-                    case .fullWord:
-                        if vm.processFullWordInput(newValue) {
-                            HapticEngine.light()
-                        } else if newValue.hasSuffix(" ") {
-                            HapticEngine.error(); shakeAnimation()
+                TextField(studyMode.inputPlaceholder, text: $vm.inputText)
+                    .font(.system(size: 17))
+                    .focused($isInputFocused)
+                    .autocorrectionDisabled()
+                    .textInputAutocapitalization(.never)
+                    .onChange(of: vm.inputText) { newValue in
+                        guard !newValue.isEmpty else { return }
+                        switch studyMode {
+                        case .firstLetter:
+                            let correct = vm.processFirstLetterInput(newValue)
+                            DispatchQueue.main.async { vm.inputText = "" }
+                            if correct { HapticEngine.light() } else { HapticEngine.error(); shakeAnimation() }
+                        case .fullWord:
+                            if vm.processFullWordInput(newValue) {
+                                HapticEngine.light()
+                            } else if newValue.hasSuffix(" ") {
+                                HapticEngine.error(); shakeAnimation()
+                            }
+                        case .submit:
+                            break
                         }
-                    case .submit:
-                        break
                     }
+            }
+            .padding(14)
+            .background(Color(.secondarySystemGroupedBackground))
+            .cornerRadius(12)
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(.separator).opacity(0.5), lineWidth: 0.5))
+            .offset(x: shakeOffset)
+
+            if isInputFocused {
+                Button { isInputFocused = false } label: {
+                    Image(systemName: "keyboard.chevron.compact.down")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.secondary)
+                        .frame(width: 48, height: 48)
+                        .background(Color(.secondarySystemGroupedBackground))
+                        .cornerRadius(12)
                 }
+            }
         }
-        .padding(14)
-        .background(Color(.secondarySystemGroupedBackground))
-        .cornerRadius(12)
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(.separator).opacity(0.5), lineWidth: 0.5))
-        .offset(x: shakeOffset)
         .padding(.horizontal, 24)
     }
 
@@ -508,6 +516,7 @@ struct CardStudyView: View {
     }
 
     private func swipeForward() {
+        isScrubbing = true
         isCardFlying = true; flyDirection = -1; HapticEngine.light()
         withAnimation(.easeOut(duration: 0.2)) {
             dragOffset = CGSize(width: -Swipe.flyWidth, height: dragOffset.height)
@@ -516,6 +525,7 @@ struct CardStudyView: View {
     }
 
     private func swipeBackward() {
+        isScrubbing = true
         isCardFlying = true; flyDirection = 1; HapticEngine.light()
         withAnimation(.easeOut(duration: 0.2)) {
             dragOffset = CGSize(width: Swipe.prevCardOffset, height: 0)
@@ -531,6 +541,7 @@ struct CardStudyView: View {
             else if flyDirection > 0, vm.currentIndex > 0             { vm.currentIndex -= 1 }
             dragOffset = .zero; isCardFlying = false; flyDirection = 0
         }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { isScrubbing = false }
     }
 
     // MARK: - Focus & Speech

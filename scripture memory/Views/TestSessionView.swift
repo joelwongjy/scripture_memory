@@ -18,6 +18,8 @@ struct TestSessionView: View {
     @State private var shakeOffset:  CGFloat = 0
     @State private var speechTarget: SubmitField = .title
     @State private var isScrubbing           = false
+    @State private var isPeeking             = false
+    @State private var showVerseSelector     = false
 
     @Environment(\.dismiss) private var dismiss
 
@@ -57,15 +59,20 @@ struct TestSessionView: View {
                         .padding(.bottom, 2)
                 }
 
-                Spacer(minLength: 12)
-                cardStack
-                    .frame(width: cardWidth, height: cardHeight)
-                    .frame(maxWidth: .infinity)
-                Spacer(minLength: 12)
+                Spacer(minLength: 6)
+                ZStack {
+                    cardStack
+                        .frame(width: cardWidth, height: cardHeight)
+                    if isPeeking, let verse = vm.currentVerse {
+                        peekOverlay(verse: verse, width: cardWidth, height: cardHeight)
+                    }
+                }
+                .frame(width: cardWidth, height: cardHeight)
+                .frame(maxWidth: .infinity)
+                Spacer(minLength: 6)
 
                 scrubberRow
                     .padding(.horizontal, 20)
-                    .padding(.bottom, 20)
 
                 bottomControls
             }
@@ -74,7 +81,14 @@ struct TestSessionView: View {
         .onChange(of: vm.currentIndex) { _ in
             vm.clearInputs()
             if speech.isListening { speech.stopListening() }
-            if !isScrubbing { refocusIfNeeded() }
+            if isScrubbing {
+                // Don't dismiss the keyboard — just point focus at the title field
+                // of the new card. If it was already closed, leave it closed.
+                if submitFocus != nil { submitFocus = .title }
+                // isInputFocused (non-submit modes) needs no change — same TextField stays focused.
+            } else {
+                refocusIfNeeded()
+            }
         }
         .onChange(of: speech.transcript) { text in
             guard speech.isListening else { return }
@@ -118,13 +132,62 @@ struct TestSessionView: View {
 
                 Spacer()
 
-                // Score display — only in Entire Verse mode
-                if studyMode == .submit { scoreDisplay }
+                HStack(spacing: 8) {
+                    // Verse selector dropdown
+                    Button { showVerseSelector = true } label: {
+                        Image(systemName: "list.bullet").topBarButtonStyle()
+                    }
+                    // Score display — only in Entire Verse mode
+                    if studyMode == .submit { scoreDisplay }
+                }
             }
         }
         .padding(.horizontal, 20)
         .padding(.top, 12)
         .padding(.bottom, 12)
+        .sheet(isPresented: $showVerseSelector) {
+            verseSelectorSheet
+        }
+    }
+
+    // MARK: - Verse Selector Sheet
+
+    private var verseSelectorSheet: some View {
+        NavigationStack {
+            List {
+                ForEach(Array(vm.verses.enumerated()), id: \.offset) { i, verse in
+                    Button {
+                        isScrubbing    = true
+                        vm.currentIndex = i
+                        showVerseSelector = false
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { isScrubbing = false }
+                    } label: {
+                        HStack(spacing: 10) {
+                            Text("\(verse.book) \(verse.reference)")
+                                .font(.system(size: 16))
+                                .foregroundColor(i == vm.currentIndex ? .blue : .primary)
+                            Spacer()
+                            if i == vm.currentIndex {
+                                Image(systemName: "checkmark")
+                                    .font(.system(size: 11, weight: .semibold))
+                                    .foregroundColor(.blue)
+                            }
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .listStyle(.plain)
+            .navigationTitle("Jump to Verse")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { showVerseSelector = false }
+                }
+            }
+        }
+        .presentationDetents([.medium])
     }
 
     private var scoreDisplay: some View {
@@ -167,16 +230,17 @@ struct TestSessionView: View {
 
             HStack(spacing: spacing) {
                 ForEach(Array(vm.verses.enumerated()), id: \.offset) { i, verse in
-                    let done      = vm.isVerseComplete(verse)
-                    let mistakes  = studyMode == .submit ? vm.mistakes(for: verse.id) : 0
+                    let submitted = vm.hasSubmitted(verse)
+                    let correct   = vm.submitResults[verse.id]?.isAllCorrect == true
                     let isCurrent = i == vm.currentIndex
 
                     Circle()
-                        .fill(dotColor(done: done, mistakes: mistakes))
+                        .fill(dotColor(submitted: submitted, correct: correct))
                         .frame(width: dotSize, height: dotSize)
                         .scaleEffect(isCurrent ? 1.4 : 1.0)
                         .animation(.spring(response: 0.25, dampingFraction: 0.7), value: isCurrent)
-                        .animation(.spring(response: 0.3,  dampingFraction: 0.8), value: done)
+                        .animation(.spring(response: 0.3,  dampingFraction: 0.8), value: submitted)
+                        .animation(.spring(response: 0.3,  dampingFraction: 0.8), value: correct)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .center)
@@ -184,11 +248,9 @@ struct TestSessionView: View {
         .frame(height: 12)
     }
 
-    private func dotColor(done: Bool, mistakes: Int) -> Color {
-        guard done else { return Color.secondary.opacity(0.25) }
-        if mistakes == 0 { return .green }
-        if mistakes <= 2 { return .orange }
-        return .red
+    private func dotColor(submitted: Bool, correct: Bool) -> Color {
+        guard submitted else { return Color.secondary.opacity(0.25) }
+        return correct ? .green : .red
     }
 
     // MARK: - Card Stack
@@ -213,7 +275,11 @@ struct TestSessionView: View {
                     .scaleEffect(goingBack ? 1.0 - backwardDragProgress * 0.05 : 1.0)
                     .rotationEffect(goingBack ? .zero : .degrees(Double(dragOffset.width) * 0.03))
                     .zIndex(2)
-                    .gesture(swipeGesture)
+                    .simultaneousGesture(swipeGesture)
+                    .onTapGesture {
+                        guard !vm.isCardComplete && !vm.isSessionComplete else { return }
+                        focusInput()
+                    }
             }
             if vm.currentIndex > 0 && dragOffset.width > 0 {
                 makeCard(verse: vm.verses[vm.currentIndex - 1], interactive: false)
@@ -267,9 +333,7 @@ struct TestSessionView: View {
                 let canNext = vm.currentIndex < vm.verses.count - 1
 
                 Button {
-                    isInputFocused = false
-                    submitFocus    = nil
-                    isScrubbing    = true
+                    isScrubbing = true
                     vm.goBackward()
                     HapticEngine.light()
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { isScrubbing = false }
@@ -282,9 +346,7 @@ struct TestSessionView: View {
                 scrubber
 
                 Button {
-                    isInputFocused = false
-                    submitFocus    = nil
-                    isScrubbing    = true
+                    isScrubbing = true
                     vm.goForward()
                     HapticEngine.light()
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { isScrubbing = false }
@@ -299,7 +361,6 @@ struct TestSessionView: View {
             Text("\(vm.currentIndex + 1) / \(vm.verses.count)")
                 .font(.system(size: 11, weight: .medium, design: .monospaced))
                 .foregroundColor(.secondary)
-                .padding(.top, 2)
         }
     }
 
@@ -334,8 +395,6 @@ struct TestSessionView: View {
             .gesture(DragGesture(minimumDistance: 0)
                 .onChanged { value in
                     isScrubbing = true
-                    isInputFocused = false
-                    submitFocus = nil
                     let fraction = max(0, min(1, value.location.x / w))
                     let newIndex = Int(round(fraction * CGFloat(vm.verses.count - 1)))
                     if newIndex != vm.currentIndex && vm.verses.indices.contains(newIndex) {
@@ -348,7 +407,7 @@ struct TestSessionView: View {
                 }
             )
         }
-        .frame(height: 44)
+        .frame(height: 34)
     }
 
     // MARK: - Bottom Controls
@@ -360,8 +419,13 @@ struct TestSessionView: View {
             } else if vm.isCardComplete {
                 // Next button
                 Button {
+                    isScrubbing = true
                     vm.goForward()
                     HapticEngine.light()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                        isScrubbing = false
+                        refocusIfNeeded()
+                    }
                 } label: {
                     HStack(spacing: 8) {
                         Image(systemName: "checkmark.circle.fill")
@@ -385,26 +449,28 @@ struct TestSessionView: View {
                 inputField
             }
 
-            if (isInputFocused || submitFocus != nil) && !vm.isSessionComplete {
+            if !vm.isSessionComplete && vm.completedCount == vm.verses.count {
                 Button {
-                    isInputFocused = false
-                    submitFocus    = nil
+                    vm.clearProgress()
+                    onSessionEnded?()
+                    dismiss()
                 } label: {
-                    Text("Done")
+                    Text("End Session")
                         .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.blue)
+                        .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
-                        .background(Color(.secondarySystemGroupedBackground))
+                        .padding(.vertical, 12)
+                        .background(Color.blue)
                         .cornerRadius(12)
                 }
                 .padding(.horizontal, 24)
             }
         }
         .padding(.bottom, 24)
-        .padding(.top, 12)
+        .padding(.top, 6)
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: vm.isCardComplete)
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: vm.isSessionComplete)
+        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: vm.completedCount)
     }
 
     // MARK: - Session Complete Panel
@@ -462,19 +528,95 @@ struct TestSessionView: View {
         .transition(.scale.combined(with: .opacity))
     }
 
+    // MARK: - Peek
+
+    /// Card-style overlay matching the real card but with all text in secondary color.
+    private func peekOverlay(verse: Verse, width: CGFloat, height: CGFloat) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("\(verse.book) \(verse.reference)")
+                .font(.system(size: 18, weight: .bold, design: .serif))
+                .foregroundColor(.secondary)
+
+            Spacer().frame(height: 10)
+
+            Text(verse.title)
+                .font(.system(size: 16, weight: .bold, design: .serif))
+                .foregroundColor(.secondary)
+                .padding(.bottom, 6)
+
+            Text(verse.verse)
+                .font(.system(size: 15, design: .serif))
+                .lineSpacing(5)
+                .foregroundColor(.secondary)
+                .minimumScaleFactor(0.75)
+
+            Spacer(minLength: 6)
+
+            Text(vm.cardLabel(for: verse))
+                .font(.system(size: 10, weight: .medium))
+                .foregroundColor(.secondary.opacity(0.5))
+        }
+        .flashcardStyle()
+        .frame(width: width, height: height)
+        .transition(.opacity)
+        .animation(.easeInOut(duration: 0.1), value: isPeeking)
+    }
+
+    /// Compact hold-to-peek eye icon — inline with input controls.
+    private var peekIconButton: some View {
+        Image(systemName: isPeeking ? "eye.fill" : "eye")
+            .font(.system(size: 18, weight: .semibold))
+            .foregroundColor(isPeeking ? .blue : .secondary)
+            .frame(width: 48, height: 48)
+            .background(isPeeking ? Color.blue.opacity(0.12) : Color(.secondarySystemGroupedBackground))
+            .cornerRadius(12)
+            .contentShape(Rectangle())
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { _ in
+                        if !isPeeking {
+                            withAnimation(.easeInOut(duration: 0.1)) { isPeeking = true }
+                        }
+                    }
+                    .onEnded { _ in
+                        withAnimation(.easeInOut(duration: 0.1)) { isPeeking = false }
+                    }
+            )
+    }
+
     // MARK: - Submit Controls
 
     private var submitControls: some View {
         let hasResult = vm.currentVerse.flatMap { vm.submitResults[$0.id] } != nil
         return Group {
             if hasResult {
-                Button { vm.retrySubmit() } label: {
-                    Label("Try Again", systemImage: "arrow.counterclockwise")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.primary)
-                        .frame(maxWidth: .infinity).padding(.vertical, 12)
-                        .background(Color(.secondarySystemGroupedBackground))
-                        .cornerRadius(12)
+                HStack(spacing: 10) {
+                    Button { vm.retrySubmit() } label: {
+                        Label("Try Again", systemImage: "arrow.counterclockwise")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.primary)
+                            .frame(maxWidth: .infinity).padding(.vertical, 12)
+                            .background(Color(.secondarySystemGroupedBackground))
+                            .cornerRadius(12)
+                    }
+                    Button {
+                        isScrubbing = true
+                        vm.goForward()
+                        HapticEngine.light()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                            isScrubbing = false
+                            refocusIfNeeded()
+                        }
+                    } label: {
+                        Text("Next")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity).padding(.vertical, 12)
+                            .background(Color.blue)
+                            .cornerRadius(12)
+                    }
+                    .disabled(vm.currentIndex >= vm.verses.count - 1)
+                    .opacity(vm.currentIndex >= vm.verses.count - 1 ? 0.5 : 1)
                 }
             } else {
                 HStack(spacing: 10) {
@@ -486,22 +628,32 @@ struct TestSessionView: View {
                             .background(speech.isListening ? Color.red : Color(.secondarySystemGroupedBackground))
                             .cornerRadius(12)
                     }
+                    peekIconButton
+                    let isEmpty = vm.titleInput.trimmingCharacters(in: .whitespaces).isEmpty
+                              && vm.verseInput.trimmingCharacters(in: .whitespaces).isEmpty
                     Button {
                         if speech.isListening { speech.stopListening() }
                         let result = vm.handleSubmit()
                         submitFocus = nil
                         result?.isAllCorrect == true ? HapticEngine.success() : HapticEngine.error()
                     } label: {
-                        let empty = vm.titleInput.trimmingCharacters(in: .whitespaces).isEmpty
-                            && vm.verseInput.trimmingCharacters(in: .whitespaces).isEmpty
                         Text("Submit")
                             .font(.system(size: 16, weight: .semibold)).foregroundColor(.white)
                             .frame(maxWidth: .infinity).padding(.vertical, 12)
-                            .background(empty ? Color(.systemGray3) : Color.blue)
+                            .background(isEmpty ? Color(.systemGray3) : Color.blue)
                             .cornerRadius(12)
                     }
-                    .disabled(vm.titleInput.trimmingCharacters(in: .whitespaces).isEmpty
-                        && vm.verseInput.trimmingCharacters(in: .whitespaces).isEmpty)
+                    .disabled(isEmpty)
+                    if submitFocus != nil {
+                        Button { submitFocus = nil } label: {
+                            Image(systemName: "keyboard.chevron.compact.down")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundColor(.secondary)
+                                .frame(width: 48, height: 48)
+                                .background(Color(.secondarySystemGroupedBackground))
+                                .cornerRadius(12)
+                        }
+                    }
                 }
             }
         }
@@ -512,37 +664,51 @@ struct TestSessionView: View {
 
     private var inputField: some View {
         HStack(spacing: 10) {
-            Image(systemName: "character.cursor.ibeam")
-                .foregroundColor(.secondary).font(.system(size: 16))
+            HStack(spacing: 10) {
+                Image(systemName: "character.cursor.ibeam")
+                    .foregroundColor(.secondary).font(.system(size: 16))
 
-            TextField(studyMode.testInputPlaceholder, text: $vm.inputText)
-                .font(.system(size: 17))
-                .focused($isInputFocused)
-                .autocorrectionDisabled()
-                .textInputAutocapitalization(.never)
-                .onChange(of: vm.inputText) { newValue in
-                    guard !newValue.isEmpty else { return }
-                    switch studyMode {
-                    case .firstLetter:
-                        let correct = vm.processFirstLetterInput(newValue)
-                        DispatchQueue.main.async { vm.inputText = "" }
-                        if correct { HapticEngine.light() } else { HapticEngine.error(); shakeAnimation() }
-                    case .fullWord:
-                        if vm.processFullWordInput(newValue) {
-                            HapticEngine.light()
-                        } else if newValue.hasSuffix(" ") {
-                            HapticEngine.error(); shakeAnimation()
+                TextField(studyMode.testInputPlaceholder, text: $vm.inputText)
+                    .font(.system(size: 17))
+                    .focused($isInputFocused)
+                    .autocorrectionDisabled()
+                    .textInputAutocapitalization(.never)
+                    .onChange(of: vm.inputText) { newValue in
+                        guard !newValue.isEmpty else { return }
+                        switch studyMode {
+                        case .firstLetter:
+                            let correct = vm.processFirstLetterInput(newValue)
+                            DispatchQueue.main.async { vm.inputText = "" }
+                            if correct { HapticEngine.light() } else { HapticEngine.error(); shakeAnimation() }
+                        case .fullWord:
+                            if vm.processFullWordInput(newValue) {
+                                HapticEngine.light()
+                            } else if newValue.hasSuffix(" ") {
+                                HapticEngine.error(); shakeAnimation()
+                            }
+                        case .submit:
+                            break
                         }
-                    case .submit:
-                        break
                     }
+            }
+            .padding(14)
+            .background(Color(.secondarySystemGroupedBackground))
+            .cornerRadius(12)
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(.separator).opacity(0.5), lineWidth: 0.5))
+            .offset(x: shakeOffset)
+
+            peekIconButton
+            if isInputFocused {
+                Button { isInputFocused = false } label: {
+                    Image(systemName: "keyboard.chevron.compact.down")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.secondary)
+                        .frame(width: 48, height: 48)
+                        .background(Color(.secondarySystemGroupedBackground))
+                        .cornerRadius(12)
                 }
+            }
         }
-        .padding(14)
-        .background(Color(.secondarySystemGroupedBackground))
-        .cornerRadius(12)
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(.separator).opacity(0.5), lineWidth: 0.5))
-        .offset(x: shakeOffset)
         .padding(.horizontal, 24)
     }
 
@@ -587,6 +753,7 @@ struct TestSessionView: View {
     }
 
     private func swipeForward() {
+        isScrubbing = true
         isCardFlying = true; flyDirection = -1; HapticEngine.light()
         withAnimation(.easeOut(duration: 0.2)) {
             dragOffset = CGSize(width: -Swipe.flyWidth, height: dragOffset.height)
@@ -595,6 +762,7 @@ struct TestSessionView: View {
     }
 
     private func swipeBackward() {
+        isScrubbing = true
         isCardFlying = true; flyDirection = 1; HapticEngine.light()
         withAnimation(.easeOut(duration: 0.2)) {
             dragOffset = CGSize(width: Swipe.prevCardOffset, height: 0)
@@ -610,6 +778,7 @@ struct TestSessionView: View {
             else if flyDirection > 0, vm.currentIndex > 0             { vm.currentIndex -= 1 }
             dragOffset = .zero; isCardFlying = false; flyDirection = 0
         }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { isScrubbing = false }
     }
 
     // MARK: - Focus & Speech
