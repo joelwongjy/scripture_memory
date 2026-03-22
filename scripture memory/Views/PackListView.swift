@@ -28,7 +28,7 @@ struct PackListView: View {
             .padding(.vertical, 12)
         }
         .background(Color(.systemGroupedBackground))
-        .navigationTitle("Scripture Memory")
+        .navigationTitle("Packs")
         .fullScreenCover(item: $selectedPack) { pack in
             NavigationStack {
                 CardStudyView(packName: pack.name, verses: pack.verses)

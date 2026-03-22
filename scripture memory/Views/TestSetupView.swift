@@ -7,8 +7,9 @@ struct TestSetupView: View {
     @State private var selectedVerseIds: Set<Int>    = []
     @State private var expandedPackIds:  Set<String> = []
     @State private var quizCount:        Int         = 15
-    @State private var activeSession:    TestSession? = nil
-    @State private var savedSession:     TestSession? = nil
+    @State private var activeSession:      TestSession? = nil
+    @State private var savedSession:       TestSession? = nil
+    @State private var showOverwriteAlert: Bool         = false
 
     private static let savedSessionKey = "lastTestSessionVerseIds"
 
@@ -16,12 +17,13 @@ struct TestSetupView: View {
     private var clampedCount:  Int { max(1, min(quizCount, selectedCount)) }
 
     var body: some View {
-        List {
-            // Resume card — shown when a session was started but not ended
+        VStack(spacing: 0) {
+            // Resume banner — visually separate from the list
             if let session = savedSession, activeSession == nil {
-                resumeRow(session)
+                resumeBanner(session)
             }
 
+            List {
             ForEach(bibleVersion.packs) { pack in
                 DisclosureGroup(isExpanded: expansionBinding(for: pack)) {
                     ForEach(pack.verses) { verse in
@@ -33,8 +35,15 @@ struct TestSetupView: View {
             }
         }
         .listStyle(.insetGrouped)
-        .navigationTitle("New Session")
+        }
+        .navigationTitle("Review")
         .onAppear { loadSavedSession() }
+        .alert("Existing Session", isPresented: $showOverwriteAlert) {
+            Button("Keep Session", role: .cancel) { }
+            Button("Start New", role: .destructive) { launchNewSession() }
+        } message: {
+            Text("You have an unfinished session. Starting a new one will overwrite it.")
+        }
         .safeAreaInset(edge: .bottom) {
             if !selectedVerseIds.isEmpty {
                 bottomBar
@@ -48,31 +57,40 @@ struct TestSetupView: View {
         }
     }
 
-    // MARK: - Resume Row
+    // MARK: - Resume Banner
 
-    private func resumeRow(_ session: TestSession) -> some View {
-        Button { activeSession = savedSession } label: {
-            HStack(spacing: 12) {
-                Image(systemName: "play.circle.fill")
-                    .font(.system(size: 26))
-                    .foregroundColor(.blue)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Resume Session")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundColor(.primary)
-                    Text("\(session.verses.count) cards")
-                        .font(.system(size: 12))
-                        .foregroundColor(.secondary)
-                }
-                Spacer()
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 13, weight: .semibold))
+    private func resumeBanner(_ session: TestSession) -> some View {
+        HStack(spacing: 14) {
+            Image(systemName: "play.circle.fill")
+                .font(.system(size: 32))
+                .foregroundColor(.blue)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Session in Progress")
+                    .font(.system(size: 15, weight: .semibold))
+                Text("\(session.verses.count) cards")
+                    .font(.system(size: 12))
                     .foregroundColor(.secondary)
             }
-            .contentShape(Rectangle())
-            .padding(.vertical, 4)
+
+            Spacer()
+
+            Button {
+                activeSession = savedSession
+            } label: {
+                Text("Resume")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(Color.blue, in: Capsule())
+            }
+            .buttonStyle(.plain)
         }
-        .buttonStyle(.plain)
+        .padding(.horizontal, 20)
+        .padding(.vertical, 14)
+        .background(Color.blue.opacity(0.08))
+        .overlay(Rectangle().fill(Color.blue.opacity(0.15)).frame(height: 1), alignment: .bottom)
     }
 
     // MARK: - Expansion Binding
@@ -144,31 +162,35 @@ struct TestSetupView: View {
 
     private func verseRow(_ verse: Verse) -> some View {
         let isSelected = selectedVerseIds.contains(verse.id)
-        return Button {
-            withAnimation(.spring(response: 0.2, dampingFraction: 0.8)) {
-                if isSelected { selectedVerseIds.remove(verse.id) }
-                else          { selectedVerseIds.insert(verse.id) }
-            }
-        } label: {
-            HStack(spacing: 12) {
+        return HStack(spacing: 12) {
+            // Only the checkbox is the tap target
+            Button {
+                withAnimation(.spring(response: 0.2, dampingFraction: 0.8)) {
+                    if isSelected { selectedVerseIds.remove(verse.id) }
+                    else          { selectedVerseIds.insert(verse.id) }
+                }
+            } label: {
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 20))
                     .foregroundColor(isSelected ? .blue : .secondary)
                     .animation(.spring(response: 0.2), value: isSelected)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(verse.title)
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.primary)
-                        .lineLimit(1)
-                    Text(verse.reference)
-                        .font(.system(size: 12))
-                        .foregroundColor(.secondary)
-                }
-                Spacer()
+                    .padding(.vertical, 4)
+                    .padding(.trailing, 4)
             }
-            .contentShape(Rectangle())
+            .buttonStyle(.plain)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(verse.title)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+                Text("\(verse.book) \(verse.reference)")
+                    .font(.system(size: 12))
+                    .foregroundColor(.secondary)
+            }
+
+            Spacer()
         }
-        .buttonStyle(.plain)
     }
 
     // MARK: - Bottom Bar
@@ -227,7 +249,13 @@ struct TestSetupView: View {
             Spacer()
 
             // Start button
-            Button { startSession() } label: {
+            Button {
+                if savedSession != nil {
+                    showOverwriteAlert = true
+                } else {
+                    launchNewSession()
+                }
+            } label: {
                 Text("Start")
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundColor(.white)
@@ -245,7 +273,7 @@ struct TestSetupView: View {
 
     // MARK: - Actions
 
-    private func startSession() {
+    private func launchNewSession() {
         var verses: [Verse] = []
         for pack in bibleVersion.packs {
             for verse in pack.verses where selectedVerseIds.contains(verse.id) {
