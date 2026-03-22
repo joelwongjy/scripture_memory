@@ -1,17 +1,13 @@
 import SwiftUI
 
 struct PackListView: View {
-    @AppStorage("bibleVersion") private var bibleVersion = "NIV84"
+    @AppStorage("bibleVersion") private var bibleVersion: BibleVersion = .niv84
     @State private var selectedPack: Pack? = nil
-
-    private var activePacks: [Pack] {
-        bibleVersion == "NIV11" ? packsNIV11 : packsNIV84
-    }
 
     var body: some View {
         ScrollView {
             VStack(spacing: 12) {
-                ForEach(activePacks) { pack in
+                ForEach(bibleVersion.packs) { pack in
                     Button {
                         guard !pack.verses.isEmpty else { return }
                         selectedPack = pack
@@ -37,28 +33,20 @@ struct PackListView: View {
 struct PackCover: View {
     let pack: Pack
 
-    private var isDEP: Bool { pack.name.hasPrefix("DEP") }
-
-    private var baseColor: Color {
-        (Color(hex: pack.color) ?? .gray).muted
-    }
-
+    private var isDEP:        Bool  { pack.name.hasPrefix("DEP") }
+    private var baseColor:    Color { (Color(hex: pack.color) ?? .gray).muted }
     private var displayTitle: String {
-        if isDEP {
-            return pack.name
-                .replacingOccurrences(of: "DEP ", with: "")
-                .replacingOccurrences(of: ": ", with: ". ")
-        }
-        return pack.name
+        isDEP ? pack.name
+                    .replacingOccurrences(of: "DEP ", with: "")
+                    .replacingOccurrences(of: ": ",  with: ". ")
+              : pack.name
     }
 
     var body: some View {
-        if isDEP {
-            depCover
-        } else if pack.name == "TMS 60" {
-            tmsCover
-        } else {
-            genericCover
+        Group {
+            if isDEP              { depCover   }
+            else if pack.name == "TMS 60" { tmsCover   }
+            else                  { genericCover }
         }
     }
 
@@ -75,8 +63,7 @@ struct PackCover: View {
                         .foregroundColor(.white)
                     Spacer()
                 }
-                .padding(.leading, 18)
-                .padding(.top, 16)
+                .padding(.leading, 18).padding(.top, 16)
                 Spacer()
             }
 
@@ -99,8 +86,7 @@ struct PackCover: View {
                             .italic()
                             .foregroundColor(.white.opacity(0.25))
                     }
-                    .padding(.trailing, 18)
-                    .padding(.bottom, 28)
+                    .padding(.trailing, 18).padding(.bottom, 28)
                 }
             }
 
@@ -121,17 +107,10 @@ struct PackCover: View {
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(.white.opacity(0.5))
                 }
-                .padding(.horizontal, 18)
-                .padding(.bottom, 12)
+                .padding(.horizontal, 18).padding(.bottom, 12)
             }
         }
-        .aspectRatio(5.0/3.0, contentMode: .fit)
-        .clipShape(RoundedRectangle(cornerRadius: 10))
-        .overlay(
-            RoundedRectangle(cornerRadius: 10)
-                .stroke(Color.white.opacity(0.08), lineWidth: 0.5)
-        )
-        .shadow(color: .black.opacity(0.12), radius: 8, x: 0, y: 4)
+        .packCoverStyle(border: .white.opacity(0.08))
     }
 
     // MARK: TMS 60 Style
@@ -150,7 +129,6 @@ struct PackCover: View {
                         .font(.system(size: 24, weight: .medium, design: .serif))
                         .tracking(1)
                         .padding(.leading, 40)
-                    
 
                     HStack(spacing: 4) {
                         Spacer()
@@ -161,13 +139,8 @@ struct PackCover: View {
                             Text("개역한글판")
                                 .font(.system(size: 24, weight: .semibold))
                                 .foregroundColor(.white)
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 5)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 6)
-                                        .fill(baseColor)
-                                )
-
+                                .padding(.horizontal, 10).padding(.vertical, 5)
+                                .background(RoundedRectangle(cornerRadius: 6).fill(baseColor))
                             Text("구절")
                                 .font(.system(size: 80, weight: .bold, design: .monospaced))
                                 .foregroundColor(baseColor)
@@ -176,7 +149,6 @@ struct PackCover: View {
                     }
                 }
                 .padding(.top, 16)
-
             }
 
             HStack {
@@ -184,26 +156,17 @@ struct PackCover: View {
                     .font(.system(size: 10, weight: .medium, design: .serif))
                 Spacer()
                 HStack(spacing: 5) {
-                    Text("네비게이토")
-                        .tracking(0.5)
+                    Text("네비게이토").tracking(0.5)
                     Image(systemName: "moon.fill")
-                    Text("출판사")
-                        .tracking(0.5)
+                    Text("출판사").tracking(0.5)
                 }
                 .bold()
                 .font(.system(size: 12, weight: .medium, design: .rounded))
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
+            .padding(.horizontal, 16).padding(.vertical, 10)
             .background(Color.green.opacity(0.15))
         }
-        .aspectRatio(5.0/3.0, contentMode: .fit)
-        .clipShape(RoundedRectangle(cornerRadius: 10))
-        .overlay(
-            RoundedRectangle(cornerRadius: 10)
-                .stroke(Color(.separator).opacity(0.3), lineWidth: 0.5)
-        )
-        .shadow(color: .black.opacity(0.08), radius: 8, x: 0, y: 4)
+        .packCoverStyle(border: Color(.separator).opacity(0.3), shadowOpacity: 0.08)
     }
 
     // MARK: Generic Style
@@ -240,49 +203,22 @@ struct PackCover: View {
             }
             .padding(18)
         }
-        .aspectRatio(5.0/3.0, contentMode: .fit)
-        .clipShape(RoundedRectangle(cornerRadius: 10))
-        .shadow(color: .black.opacity(0.12), radius: 8, x: 0, y: 4)
+        .packCoverStyle(border: .clear)
     }
 }
 
-// MARK: - Color Helpers
+// MARK: - Pack Cover Style
 
-extension Color {
-    init?(hex: String) {
-        var h = hex.trimmingCharacters(in: .whitespacesAndNewlines)
-        if h.hasPrefix("#") { h.removeFirst() }
-        guard h.count == 6, let val = UInt64(h, radix: 16) else { return nil }
-        self.init(
-            red: Double((val >> 16) & 0xFF) / 255,
-            green: Double((val >> 8) & 0xFF) / 255,
-            blue: Double(val & 0xFF) / 255
-        )
-    }
-
-    var muted: Color {
-        let uic = UIColor(self)
-        var h: CGFloat = 0, s: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
-        uic.getHue(&h, saturation: &s, brightness: &b, alpha: &a)
-        return Color(hue: Double(h), saturation: Double(s * 0.55), brightness: Double(b * 0.7))
-    }
-}
-
-// MARK: - Button Style
-
-struct CardButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
-            .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
+private extension View {
+    func packCoverStyle(border: Color, shadowOpacity: Double = 0.12) -> some View {
+        self
+            .aspectRatio(5.0 / 3.0, contentMode: .fit)
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .overlay(RoundedRectangle(cornerRadius: 10).stroke(border, lineWidth: 0.5))
+            .shadow(color: .black.opacity(shadowOpacity), radius: 8, x: 0, y: 4)
     }
 }
 
 #Preview {
-    NavigationStack {
-        PackListView()
-    }
+    NavigationStack { PackListView() }
 }
-
-// Keep a top-level alias so existing previews that reference `packs` still compile
-var packs: [Pack] { packsNIV84 }

@@ -2,17 +2,23 @@ import Foundation
 
 struct Pack: Hashable, Codable, Identifiable {
     var id: String { name }
-    var name: String
-    var color: String
-    var accentText: String
-    var verses: [Verse]
+    let name:       String
+    let color:      String
+    let accentText: String
+    let verses:     [Verse]
 }
 
 struct Verse: Hashable, Codable, Identifiable {
-    var id: Int
-    var title: String
-    var verse: String
-    var book: String
-    var reference: String
-    var subpack: String
+    let id:        Int
+    let title:     String
+    let verse:     String
+    let book:      String
+    let reference: String
+    let subpack:   String
+
+    /// The title split into individual words.
+    var titleWords: [String] { title.wordTokens }
+
+    /// The verse body split into individual words.
+    var verseWords: [String] { verse.wordTokens }
 }

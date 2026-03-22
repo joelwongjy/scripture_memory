@@ -1,37 +1,31 @@
 import SwiftUI
 
 struct SettingsView: View {
-    @AppStorage("hardMode") private var hardMode = false
-    @AppStorage("bibleVersion") private var bibleVersion = "NIV84"
-    @AppStorage("studyMode") private var studyMode = "firstLetter"
+    @AppStorage("studyMode")    private var studyMode:    StudyMode    = .firstLetter
+    @AppStorage("bibleVersion") private var bibleVersion: BibleVersion = .niv84
+    @AppStorage("hardMode")     private var hardMode:     Bool         = false
 
     var body: some View {
         List {
             Section {
                 Picker("Study Mode", selection: $studyMode) {
-                    Text("First Letter").tag("firstLetter")
-                    Text("Full Word").tag("fullWord")
-                    Text("Submit").tag("submit")
+                    ForEach(StudyMode.allCases, id: \.self) { mode in
+                        Text(mode.displayName).tag(mode)
+                    }
                 }
                 .pickerStyle(.inline)
                 .labelsHidden()
             } header: {
                 Text("Study Mode")
             } footer: {
-                switch studyMode {
-                case "firstLetter":
-                    Text("Type the first letter of each word to reveal it.")
-                case "fullWord":
-                    Text("Type each word in full. Case and punctuation are ignored.")
-                default:
-                    Text("Type the full verse on the card, then tap Submit to check all at once.")
-                }
+                Text(studyMode.instructions)
             }
 
             Section {
                 Picker("Bible Version", selection: $bibleVersion) {
-                    Text("NIV 1984").tag("NIV84")
-                    Text("NIV 2011").tag("NIV11")
+                    ForEach(BibleVersion.allCases, id: \.self) { version in
+                        Text(version.displayName).tag(version)
+                    }
                 }
                 .pickerStyle(.inline)
                 .labelsHidden()
@@ -51,26 +45,19 @@ struct SettingsView: View {
                 HStack {
                     Text("Version")
                     Spacer()
-                    Text("1.0")
-                        .foregroundColor(.secondary)
+                    Text("1.0").foregroundColor(.secondary)
                 }
             } header: {
                 Text("About")
-            }
-                footer: {
+            } footer: {
                 Text("Made with God's ❤️ for The Navigators")
                     .font(.system(size: 14, design: .serif))
-
             }
-
-            
         }
         .navigationTitle("Settings")
     }
 }
 
 #Preview {
-    NavigationStack {
-        SettingsView()
-    }
+    NavigationStack { SettingsView() }
 }
