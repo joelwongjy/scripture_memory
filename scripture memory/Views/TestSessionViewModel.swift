@@ -268,6 +268,18 @@ final class TestSessionViewModel: ObservableObject {
         titleRevealedCounts = toIntKeys(sp.titleRevealedCounts)
         verseRevealedCounts = toIntKeys(sp.verseRevealedCounts)
         completedVerseIds   = Set(sp.completedVerseIds.compactMap { Int($0) })
+
+        // Reconstruct correct SubmitResults for previously completed verses so
+        // the diff view reappears correctly when returning to a completed card.
+        for verseId in completedVerseIds {
+            if let verse = verses.first(where: { $0.id == verseId }) {
+                submitResults[verseId] = SubmitResult(
+                    titleDiffs: verse.titleWords.map { DiffWord(text: $0, kind: .correct) },
+                    verseDiffs: verse.verseWords.map { DiffWord(text: $0, kind: .correct) }
+                )
+            }
+        }
+
         // Jump to the first incomplete card so the user picks up where they left off
         if let firstIncomplete = verses.indices.first(where: { !isComplete(verses[$0]) }) {
             currentIndex = firstIncomplete

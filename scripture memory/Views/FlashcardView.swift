@@ -11,6 +11,24 @@ struct FlashcardView: View {
 
     @AppStorage("hardMode") private var hardMode = false
 
+    // MARK: - Adaptive Typography
+
+    private var verseFontSize: CGFloat {
+        let count = verse.verseWords.count
+        if count > 55 { return 11.0 }
+        if count > 45 { return 12.0 }
+        if count > 35 { return 13.5 }
+        return 15.0
+    }
+
+    private var verseLineSpacing: CGFloat {
+        let count = verse.verseWords.count
+        if count > 55 { return 2.0 }
+        if count > 45 { return 3.0 }
+        if count > 35 { return 4.0 }
+        return 6.0
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             if isReviewMode { reviewContent } else { readContent }
@@ -33,9 +51,8 @@ struct FlashcardView: View {
                 .font(.system(size: 15))
             Spacer().frame(height: 8)
             Text(verse.verse)
-                .font(.system(size: 15, design: .serif))
-                .lineSpacing(6)
-                .minimumScaleFactor(0.7)
+                .font(.system(size: verseFontSize, design: .serif))
+                .lineSpacing(verseLineSpacing)
         }
     }
 
@@ -61,7 +78,7 @@ struct FlashcardView: View {
             sectionView(.verse,
                          words: verse.verseWords,
                          revealed: verseRevealedCount,
-                         font: .system(size: 15, design: .serif))
+                         font: .system(size: verseFontSize, design: .serif))
 
             if !hardMode && activeRevealed < activeWords.count {
                 Spacer().frame(height: 10)
@@ -88,8 +105,7 @@ struct FlashcardView: View {
                     inactiveText(section: section, words: words, revealed: revealed, font: font)
                 }
             }
-            .lineSpacing(section == .verse ? 6 : 4)
-            .minimumScaleFactor(0.7)
+            .lineSpacing(section == .verse ? verseLineSpacing : 4)
 
             if isComplete {
                 Image(systemName: "checkmark.circle.fill")

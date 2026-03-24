@@ -25,10 +25,11 @@ final class CardStudyViewModel: ObservableObject {
 
     private let originalVerses: [Verse]
 
-    init(packName: String, verses: [Verse]) {
+    init(packName: String, verses: [Verse], initialIndex: Int = 0) {
         self.packName       = packName
         self.verses         = verses
         self.originalVerses = verses
+        self.currentIndex   = initialIndex
     }
 
     // MARK: - Published State

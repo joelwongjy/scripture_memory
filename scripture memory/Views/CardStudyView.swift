@@ -33,8 +33,8 @@ struct CardStudyView: View {
 
     // MARK: - Init
 
-    init(packName: String, verses: [Verse]) {
-        _vm = StateObject(wrappedValue: CardStudyViewModel(packName: packName, verses: verses))
+    init(packName: String, verses: [Verse], initialIndex: Int = 0) {
+        _vm = StateObject(wrappedValue: CardStudyViewModel(packName: packName, verses: verses, initialIndex: initialIndex))
     }
 
     // MARK: - Body
