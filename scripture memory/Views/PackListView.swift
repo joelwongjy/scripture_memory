@@ -3,38 +3,144 @@ import SwiftUI
 struct PackListView: View {
     @AppStorage("bibleVersion") private var bibleVersion: BibleVersion = .niv84
 
-    @State private var selectedPack: Pack? = nil
+    @State private var selectedPack:   Pack?             = nil
+    @State private var searchText:     String            = ""
+    @State private var searchSelected: VerseSearchResult? = nil
 
     private let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
+
+    // MARK: - Search Result Model
+
+    struct VerseSearchResult: Identifiable {
+        var id: String { "\(pack.name)-\(verse.id)" }
+        let verse:      Verse
+        let pack:       Pack
+        let verseIndex: Int
+    }
+
+    // MARK: - Search Logic
+
+    private var searchResults: [VerseSearchResult] {
+        guard !searchText.isEmpty else { return [] }
+        let query = searchText.lowercased()
+        var results: [VerseSearchResult] = []
+        for pack in bibleVersion.packs {
+            for (index, verse) in pack.verses.enumerated() {
+                let ref = "\(verse.book) \(verse.reference)".lowercased()
+                if ref.contains(query)
+                    || verse.title.lowercased().contains(query)
+                    || verse.verse.lowercased().contains(query) {
+                    results.append(VerseSearchResult(verse: verse, pack: pack, verseIndex: index))
+                    if results.count == 25 { return results }
+                }
+            }
+        }
+        return results
+    }
 
     // MARK: - Body
 
     var body: some View {
-        ScrollView {
-            LazyVGrid(columns: columns, spacing: 12) {
-                ForEach(bibleVersion.packs) { pack in
-                    Button {
-                        guard !pack.verses.isEmpty else { return }
-                        selectedPack = pack
-                    } label: {
-                        PackCover(pack: pack)
+        Group {
+            if searchText.isEmpty {
+                ScrollView {
+                    LazyVGrid(columns: columns, spacing: 12) {
+                        ForEach(bibleVersion.packs) { pack in
+                            Button {
+                                guard !pack.verses.isEmpty else { return }
+                                selectedPack = pack
+                            } label: {
+                                PackCover(pack: pack)
+                            }
+                            .buttonStyle(CardButtonStyle())
+                        }
                     }
-                    .buttonStyle(CardButtonStyle())
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
                 }
+            } else {
+                searchResultsView
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
         }
         .background(Color(.systemGroupedBackground))
         .navigationTitle("Packs")
+        .searchable(
+            text: $searchText,
+            placement: .navigationBarDrawer(displayMode: .always),
+            prompt: "Search verses…"
+        )
         .fullScreenCover(item: $selectedPack) { pack in
             NavigationStack {
                 CardStudyView(packName: pack.name, verses: pack.verses)
                     .toolbar(.hidden, for: .navigationBar)
             }
         }
+        .fullScreenCover(item: $searchSelected) { result in
+            NavigationStack {
+                CardStudyView(
+                    packName: result.pack.name,
+                    verses: result.pack.verses,
+                    initialIndex: result.verseIndex
+                )
+                .toolbar(.hidden, for: .navigationBar)
+            }
+        }
     }
 
+    // MARK: - Search Results View
+
+    private var searchResultsView: some View {
+        ScrollView {
+            LazyVStack(spacing: 0) {
+                if searchResults.isEmpty {
+                    VStack(spacing: 8) {
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 32, weight: .light))
+                            .foregroundColor(.secondary.opacity(0.5))
+                        Text("No results for "\(searchText)"")
+                            .font(.system(size: 15))
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.top, 60)
+                    .frame(maxWidth: .infinity)
+                } else {
+                    ForEach(searchResults) { result in
+                        Button {
+                            searchSelected = result
+                        } label: {
+                            HStack(spacing: 14) {
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text("\(result.verse.book) \(result.verse.reference)")
+                                        .font(.system(size: 15, weight: .semibold))
+                                        .foregroundColor(.primary)
+                                    Text(result.verse.title)
+                                        .font(.system(size: 13))
+                                        .foregroundColor(.secondary)
+                                    Text(result.pack.name)
+                                        .font(.system(size: 11))
+                                        .foregroundColor(.secondary.opacity(0.6))
+                                }
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundColor(.secondary.opacity(0.4))
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 11)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+
+                        Divider().padding(.leading, 16)
+                    }
+                }
+            }
+            .background(Color(.systemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+        }
+    }
 }
 
 // MARK: - Pack Cover
