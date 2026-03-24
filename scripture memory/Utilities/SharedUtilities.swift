@@ -61,6 +61,46 @@ let flashcardBackground = Color(uiColor: UIColor { tc in
         : UIColor(red: 0.98, green: 0.965, blue: 0.94, alpha: 1)
 })
 
+// MARK: - Study chrome (top bar + scrubber)
+
+extension Image {
+    /// Neutral glass circle — close, list, reset, etc.
+    func studyChromeCircleButton() -> some View {
+        self
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundStyle(.secondary)
+            .frame(width: 36, height: 36)
+            .background(.ultraThinMaterial, in: Circle())
+            .shadow(color: .black.opacity(0.08), radius: 6, x: 0, y: 2)
+    }
+
+    /// Prev/next chevrons beside the verse scrubber track.
+    func studyScrubberChevronButton() -> some View {
+        self
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundStyle(.primary.opacity(0.7))
+            .frame(width: 36, height: 36)
+            .background(.ultraThinMaterial, in: Circle())
+            .shadow(color: .black.opacity(0.08), radius: 6, x: 0, y: 2)
+    }
+
+    /// Toggle controls (shuffle, layout) — blue when active.
+    func studyChromeToggle(isOn: Bool) -> some View {
+        self
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundStyle(isOn ? AnyShapeStyle(.white) : AnyShapeStyle(.secondary))
+            .frame(width: 36, height: 36)
+            .background(
+                isOn ? AnyShapeStyle(Color.blue) : AnyShapeStyle(.ultraThinMaterial),
+                in: Circle()
+            )
+            .shadow(
+                color: isOn ? Color.blue.opacity(0.35) : Color.black.opacity(0.08),
+                radius: isOn ? 8 : 6, x: 0, y: 2
+            )
+    }
+}
+
 // MARK: - Card Button Style
 
 /// Press-to-scale feedback for tappable pack cards.

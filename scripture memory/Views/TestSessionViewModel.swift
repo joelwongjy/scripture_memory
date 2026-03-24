@@ -9,8 +9,10 @@ private struct SessionProgress: Codable {
     var mistakeCounts:       [String: Int]
     var titleRevealedCounts: [String: Int]
     var verseRevealedCounts: [String: Int]
-    /// IDs of verses correctly submitted in submit mode — lets us restore completion state.
+    /// IDs of verses correctly submitted in submit mode (all correct).
     var completedVerseIds:   [String]
+    /// Full Entire Verse diff state per verse (wrong + correct attempts). Nil on older saves.
+    var submitResultsSnapshot: [String: SubmitResultPersistence.StoredResult]?
 }
 
 // MARK: - Test Session View Model
@@ -182,7 +184,9 @@ final class TestSessionViewModel: ObservableObject {
             verseDiffs: DiffEngine.buildDiffs(typed: typedVerse, target: verse.verseWords)
         )
         withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
-            submitResults[verse.id] = result
+            var next = submitResults
+            next[verse.id] = result
+            submitResults = next
         }
 
         // Count mistakes from wrong/missing/extra diffs
@@ -203,7 +207,9 @@ final class TestSessionViewModel: ObservableObject {
     func retrySubmit() {
         guard let verse = currentVerse else { return }
         withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-            submitResults.removeValue(forKey: verse.id)
+            var next = submitResults
+            next.removeValue(forKey: verse.id)
+            submitResults = next
         }
         // Reset this card's mistakes so the score reflects the new attempt
         mistakeCounts.removeValue(forKey: verse.id)
@@ -247,13 +253,22 @@ final class TestSessionViewModel: ObservableObject {
         UserDefaults.standard.removeObject(forKey: progressKey)
     }
 
+    /// Persists session state (e.g. after scrubber drag). Navigation helpers call `saveProgress` internally.
+    func persistSession() {
+        saveProgress()
+    }
+
     private func saveProgress() {
+        let snapshot = submitResults.isEmpty
+            ? nil
+            : SubmitResultPersistence.encodeToMap(submitResults)
         let sp = SessionProgress(
             currentIndex:        currentIndex,
             mistakeCounts:       toStringKeys(mistakeCounts),
             titleRevealedCounts: toStringKeys(titleRevealedCounts),
             verseRevealedCounts: toStringKeys(verseRevealedCounts),
-            completedVerseIds:   completedVerseIds.map { String($0) }
+            completedVerseIds:   completedVerseIds.map { String($0) },
+            submitResultsSnapshot: snapshot
         )
         if let data = try? JSONEncoder().encode(sp) {
             UserDefaults.standard.set(data, forKey: Self.progressKey)
@@ -269,16 +284,19 @@ final class TestSessionViewModel: ObservableObject {
         verseRevealedCounts = toIntKeys(sp.verseRevealedCounts)
         completedVerseIds   = Set(sp.completedVerseIds.compactMap { Int($0) })
 
-        // Reconstruct correct SubmitResults for previously completed verses so
-        // the diff view reappears correctly when returning to a completed card.
-        for verseId in completedVerseIds {
+        let validIds = Set(verses.map(\.id))
+        var restored = SubmitResultPersistence.decodeFromMap(sp.submitResultsSnapshot, validVerseIds: validIds)
+
+        // Older sessions only stored perfect completions — rebuild all-green diffs for those.
+        for verseId in completedVerseIds where restored[verseId] == nil {
             if let verse = verses.first(where: { $0.id == verseId }) {
-                submitResults[verseId] = SubmitResult(
+                restored[verseId] = SubmitResult(
                     titleDiffs: verse.titleWords.map { DiffWord(text: $0, kind: .correct) },
                     verseDiffs: verse.verseWords.map { DiffWord(text: $0, kind: .correct) }
                 )
             }
         }
+        submitResults = restored
 
         // Jump to the first incomplete card so the user picks up where they left off
         if let firstIncomplete = verses.indices.first(where: { !isComplete(verses[$0]) }) {

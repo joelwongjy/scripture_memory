@@ -62,11 +62,12 @@ struct PackListView: View {
                 searchResultsView
             }
         }
+        .animation(nil, value: searchText.isEmpty)
         .background(Color(.systemGroupedBackground))
         .navigationTitle("Packs")
         .searchable(
             text: $searchText,
-            placement: .navigationBarDrawer(displayMode: .always),
+            placement: .automatic,
             prompt: "Search verses…"
         )
         .fullScreenCover(item: $selectedPack) { pack in
@@ -80,7 +81,8 @@ struct PackListView: View {
                 CardStudyView(
                     packName: result.pack.name,
                     verses: result.pack.verses,
-                    initialIndex: result.verseIndex
+                    initialIndex: result.verseIndex,
+                    spotlightVerticalSearchLanding: true
                 )
                 .toolbar(.hidden, for: .navigationBar)
             }
@@ -97,41 +99,42 @@ struct PackListView: View {
                         Image(systemName: "magnifyingglass")
                             .font(.system(size: 32, weight: .light))
                             .foregroundColor(.secondary.opacity(0.5))
-                        Text("No results for "\(searchText)"")
+                        Text("No results")
                             .font(.system(size: 15))
                             .foregroundColor(.secondary)
                     }
                     .padding(.top, 60)
                     .frame(maxWidth: .infinity)
                 } else {
-                    ForEach(searchResults) { result in
-                        Button {
-                            searchSelected = result
-                        } label: {
-                            HStack(spacing: 14) {
-                                VStack(alignment: .leading, spacing: 3) {
-                                    Text("\(result.verse.book) \(result.verse.reference)")
-                                        .font(.system(size: 15, weight: .semibold))
-                                        .foregroundColor(.primary)
-                                    Text(result.verse.title)
-                                        .font(.system(size: 13))
-                                        .foregroundColor(.secondary)
-                                    Text(result.pack.name)
-                                        .font(.system(size: 11))
-                                        .foregroundColor(.secondary.opacity(0.6))
+                    ForEach(Array(searchResults.enumerated()), id: \.element.id) { _, result in
+                        VStack(spacing: 0) {
+                            Button {
+                                searchSelected = result
+                            } label: {
+                                HStack(spacing: 14) {
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        Text("\(result.verse.book) \(result.verse.reference)")
+                                            .font(.system(size: 15, weight: .semibold))
+                                            .foregroundColor(.primary)
+                                        Text(result.verse.title)
+                                            .font(.system(size: 13))
+                                            .foregroundColor(.secondary)
+                                        Text(result.pack.name)
+                                            .font(.system(size: 11))
+                                            .foregroundColor(.secondary.opacity(0.6))
+                                    }
+                                    Spacer()
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 12, weight: .medium))
+                                        .foregroundColor(.secondary.opacity(0.4))
                                 }
-                                Spacer()
-                                Image(systemName: "chevron.right")
-                                    .font(.system(size: 12, weight: .medium))
-                                    .foregroundColor(.secondary.opacity(0.4))
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 11)
+                                .contentShape(Rectangle())
                             }
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 11)
-                            .contentShape(Rectangle())
+                            .buttonStyle(.plain)
+                            Divider().padding(.leading, 16)
                         }
-                        .buttonStyle(.plain)
-
-                        Divider().padding(.leading, 16)
                     }
                 }
             }
@@ -260,57 +263,81 @@ struct PackCover: View {
     }
 
     // MARK: TMS 60 Style
+    //
+    // Same 340×204 canvas. One cream field; title + “60” row are one leading-aligned stack, centered
+    // as a whole (horizontal + vertical) so the hero isn’t left-weighted inside a wide column.
 
     private var tmsCover: some View {
-        VStack(spacing: 0) {
-            ZStack {
-                Color(uiColor: UIColor { tc in
-                    tc.userInterfaceStyle == .dark
-                        ? UIColor(white: 0.15, alpha: 1)
-                        : UIColor(red: 0.98, green: 0.97, blue: 0.95, alpha: 1)
-                })
+        // Slightly shorter footer band so title + hero can use more of the 204pt-tall canvas.
+        let footerReserve = CGFloat(36)
+        let panel = Color(red: 0.98, green: 0.97, blue: 0.95)
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("주제별 성경암송")
-                        .font(.system(size: 24, weight: .medium, design: .serif))
-                        .foregroundColor(.black)
-                        .tracking(1)
-                        .padding(.leading, 40)
+        return ZStack(alignment: .bottom) {
+            panel
 
-                    HStack(spacing: 4) {
+            VStack(spacing: 0) {
+                Spacer(minLength: 0)
+
+                HStack {
+                    Spacer(minLength: 0)
+                    VStack(alignment: .leading, spacing: 10) {
                         Spacer()
-                        Text("60")
-                            .font(.system(size: 140, weight: .black, design: .monospaced))
-                            .foregroundColor(baseColor)
-                        VStack(alignment: .center, spacing: 2) {
-                            Text("개역한글판")
-                                .font(.system(size: 24, weight: .semibold))
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 10).padding(.vertical, 5)
-                                .background(RoundedRectangle(cornerRadius: 6).fill(baseColor))
-                            Text("구절")
-                                .font(.system(size: 80, weight: .bold, design: .monospaced))
+                        Text("주제별 성경암송")
+                            .font(.system(size: 20, weight: .medium, design: .serif))
+                            .foregroundColor(.black)
+                            .tracking(0.4)
+                            .lineLimit(2)
+                            .minimumScaleFactor(0.68)
+                            .multilineTextAlignment(.leading)
+
+                        HStack(alignment: .center, spacing: 8) {
+                            Text("60")
+                                .font(.system(size: 108, weight: .black, design: .monospaced))
                                 .foregroundColor(baseColor)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.34)
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("개역한글판")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 9).padding(.vertical, 5)
+                                    .background(RoundedRectangle(cornerRadius: 5).fill(baseColor))
+                                Text("구절")
+                                    .font(.system(size: 62, weight: .bold, design: .monospaced))
+                                    .foregroundColor(baseColor)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.38)
+                            }
                         }
-                        Spacer()
                     }
+                    Spacer(minLength: 0)
                 }
-                .padding(.top, 16)
-            }
 
-            HStack {
-                Text("TO KNOW CHRIST AND TO MAKE HIM KNOWN")
-                    .font(.system(size: 10, weight: .medium, design: .serif))
-                Spacer()
-                HStack(spacing: 5) {
-                    Text("네비게이토").tracking(0.5)
-                    Image(systemName: "moon.fill")
-                    Text("출판사").tracking(0.5)
-                }
-                .bold()
-                .font(.system(size: 12, weight: .medium, design: .rounded))
+                Spacer(minLength: 0)
             }
-            .padding(.horizontal, 16).padding(.vertical, 10)
+            .padding(.horizontal, 6)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .padding(.bottom, footerReserve)
+
+            HStack(alignment: .center, spacing: 5) {
+                Text("TO KNOW CHRIST AND TO MAKE HIM KNOWN")
+                    .font(.system(size: 8.5, weight: .medium, design: .serif))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+                Spacer(minLength: 2)
+                HStack(spacing: 4) {
+                    Text("네비게이토").tracking(0.25)
+                    Image(systemName: "moon.fill")
+                        .font(.system(size: 9))
+                    Text("출판사").tracking(0.25)
+                }
+                .font(.system(size: 10, weight: .semibold, design: .rounded))
+                .fixedSize(horizontal: true, vertical: false)
+            }
+            .foregroundColor(.black.opacity(0.78))
+            .padding(.horizontal, 10)
+            .padding(.vertical, 7)
+            .frame(maxWidth: .infinity)
             .background(Color.green.opacity(0.15))
         }
     }

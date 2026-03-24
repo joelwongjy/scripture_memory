@@ -2,6 +2,11 @@ import SwiftUI
 
 struct CardStudyView: View {
 
+    // MARK: - Config
+
+    /// When true (e.g. opened from pack search), the vertical list plays a short emphasis on the landed card after scroll.
+    private let spotlightVerticalSearchLanding: Bool
+
     // MARK: - State
 
     @StateObject private var vm:     CardStudyViewModel
@@ -19,22 +24,16 @@ struct CardStudyView: View {
     @State private var shakeOffset:  CGFloat = 0
     @State private var speechTarget: SubmitField = .title
     @State private var isScrubbing           = false
+    @State private var verticalSearchLandScale: CGFloat = 1.0
 
     @Environment(\.dismiss) private var dismiss
 
-    // MARK: - Swipe Constants
-
-    private enum Swipe {
-        static let threshold:         CGFloat = 80
-        static let velocityThreshold: CGFloat = 400
-        static let flyWidth:          CGFloat = 600
-        static let prevCardOffset:    CGFloat = 420
-    }
-
     // MARK: - Init
 
-    init(packName: String, verses: [Verse], initialIndex: Int = 0) {
+    init(packName: String, verses: [Verse], initialIndex: Int = 0, spotlightVerticalSearchLanding: Bool = false) {
+        self.spotlightVerticalSearchLanding = spotlightVerticalSearchLanding
         _vm = StateObject(wrappedValue: CardStudyViewModel(packName: packName, verses: verses, initialIndex: initialIndex))
+        _verticalSearchLandScale = State(initialValue: spotlightVerticalSearchLanding ? 0.97 : 1.0)
     }
 
     // MARK: - Body
@@ -114,7 +113,7 @@ struct CardStudyView: View {
 
             HStack {
                 Button { dismiss() } label: {
-                    Image(systemName: "xmark").topBarButton()
+                    Image(systemName: "xmark").studyChromeCircleButton()
                 }
 
                 Spacer()
@@ -122,7 +121,7 @@ struct CardStudyView: View {
                 HStack(spacing: 8) {
                     if vm.canReset {
                         Button { vm.resetCurrentCard() } label: {
-                            Image(systemName: "arrow.counterclockwise").topBarButton()
+                            Image(systemName: "arrow.counterclockwise").studyChromeCircleButton()
                         }
                     }
                     Button {
@@ -130,7 +129,7 @@ struct CardStudyView: View {
                         HapticEngine.light()
                     } label: {
                         Image(systemName: "shuffle")
-                            .topBarToggle(isOn: vm.isShuffled)
+                            .studyChromeToggle(isOn: vm.isShuffled)
                     }
                     Button {
                         withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
@@ -138,7 +137,7 @@ struct CardStudyView: View {
                         }
                     } label: {
                         Image(systemName: isVerticalScroll ? "rectangle.stack" : "list.bullet.rectangle")
-                            .topBarToggle(isOn: isVerticalScroll)
+                            .studyChromeToggle(isOn: isVerticalScroll)
                     }
                 }
             }
@@ -164,7 +163,7 @@ struct CardStudyView: View {
             }
             if let verse = vm.currentVerse {
                 let goingBack = dragOffset.width > 0
-                makeCard(verse: verse, interactive: true)
+                makeCard(verse: verse, verseIndex: vm.currentIndex, interactive: true)
                     .offset(x: goingBack ? 0 : dragOffset.width,
                             y: goingBack ? backwardDragProgress * 12 : dragOffset.height * 0.1)
                     .scaleEffect(goingBack ? 1.0 - backwardDragProgress * 0.05 : 1.0)
@@ -173,9 +172,9 @@ struct CardStudyView: View {
                     .simultaneousGesture(swipeGesture)
             }
             if vm.currentIndex > 0 && dragOffset.width > 0 {
-                makeCard(verse: vm.verses[vm.currentIndex - 1], interactive: false)
-                    .offset(x: dragOffset.width - Swipe.prevCardOffset)
-                    .rotationEffect(.degrees(Double(dragOffset.width - Swipe.prevCardOffset) * 0.02))
+                makeCard(verse: vm.verses[vm.currentIndex - 1], verseIndex: vm.currentIndex - 1, interactive: false)
+                    .offset(x: dragOffset.width - CardSwipeConfig.prevCardOffset)
+                    .rotationEffect(.degrees(Double(dragOffset.width - CardSwipeConfig.prevCardOffset) * 0.02))
                     .zIndex(3)
             }
         }
@@ -188,8 +187,9 @@ struct CardStudyView: View {
             ScrollView(.vertical, showsIndicators: true) {
                 LazyVStack(spacing: 20) {
                     ForEach(Array(vm.verses.enumerated()), id: \.offset) { index, verse in
-                        makeCard(verse: verse, interactive: index == vm.currentIndex)
+                        makeCard(verse: verse, verseIndex: index, interactive: index == vm.currentIndex)
                             .frame(width: cardWidth, height: cardHeight)
+                            .scaleEffect(index == vm.currentIndex ? verticalSearchLandScale : 1.0)
                             .id(index)
                             .overlay {
                                 if index != vm.currentIndex {
@@ -205,9 +205,20 @@ struct CardStudyView: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 12)
             }
-            .onAppear { proxy.scrollTo(vm.currentIndex, anchor: .center) }
-            .onChange(of: vm.currentIndex) { newIndex in
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
+            // LazyVStack: brief yield so ids exist; one easeInOut drives scroll + search landing scale together.
+            .task {
+                await Task.yield()
+                try? await Task.sleep(for: .milliseconds(48))
+                let scrollAndLand = Animation.easeInOut(duration: 0.26)
+                withAnimation(scrollAndLand) {
+                    proxy.scrollTo(vm.currentIndex, anchor: .center)
+                    if spotlightVerticalSearchLanding, !vm.isReviewMode {
+                        verticalSearchLandScale = 1.0
+                    }
+                }
+            }
+            .onChange(of: vm.currentIndex) { _, newIndex in
+                withAnimation(.easeInOut(duration: 0.22)) {
                     proxy.scrollTo(newIndex, anchor: .center)
                 }
             }
@@ -219,34 +230,47 @@ struct CardStudyView: View {
     @ViewBuilder
     private func backgroundCard(at index: Int) -> some View {
         if vm.verses.indices.contains(index) {
-            makeCard(verse: vm.verses[index], interactive: false)
+            makeCard(verse: vm.verses[index], verseIndex: index, interactive: false)
         }
     }
 
     @ViewBuilder
-    private func makeCard(verse: Verse, interactive: Bool) -> some View {
-        // In submit+review, show the submit card only for the active card or if a result exists.
-        // Non-active, unsubmitted cards show in read mode to avoid orphaned text fields.
+    private func makeCard(verse: Verse, verseIndex: Int, interactive: Bool) -> some View {
         let hasResult = vm.submitResults[verse.id] != nil
-        if studyMode == .submit && vm.isReviewMode && (interactive || hasResult) {
+        let isBehind = verseIndex < vm.currentIndex
+        let isAhead = verseIndex > vm.currentIndex
+        let isDirectNext = verseIndex == vm.currentIndex + 1
+        let isDirectPrev = verseIndex == vm.currentIndex - 1
+
+        let showSubmitSurface = studyMode == .submit && vm.isReviewMode
+            && (interactive || (isDirectNext && !hasResult) || (isDirectPrev && !hasResult))
+
+        if showSubmitSurface {
             SubmitCardView(
                 verse: verse,
                 cardLabel: vm.cardLabel(for: verse),
                 titleText: interactive ? $vm.titleInput : .constant(""),
                 verseText: interactive ? $vm.verseInput : .constant(""),
-                result: vm.submitResults[verse.id],
+                result: interactive ? vm.submitResults[verse.id] : nil,
                 focusedField: $submitFocus
             )
+            .allowsHitTesting(interactive)
         } else {
+            // Submit + Review stack: never read mode behind the front card while peeking (full verse).
+            let forceMaskedPeek = studyMode == .submit && vm.isReviewMode && !interactive
+                && ((isAhead && (!isDirectNext || hasResult)) || isBehind)
+            let titleRev = forceMaskedPeek ? 0 : vm.revealedCount(for: verse.id, section: .title)
+            let verseRev = forceMaskedPeek ? 0 : vm.revealedCount(for: verse.id, section: .verse)
             FlashcardView(
                 verse: verse,
                 cardLabel: vm.cardLabel(for: verse),
-                isReviewMode: vm.isReviewMode,
-                titleRevealedCount: vm.revealedCount(for: verse.id, section: .title),
-                verseRevealedCount: vm.revealedCount(for: verse.id, section: .verse),
+                isReviewMode: forceMaskedPeek ? true : vm.isReviewMode,
+                titleRevealedCount: titleRev,
+                verseRevealedCount: verseRev,
                 activeSection: vm.activeSection,
-                onSectionTap: interactive ? { section in
+                onSectionTap: interactive && vm.isReviewMode ? { section in
                     withAnimation(.easeOut(duration: 0.2)) { vm.activeSection = section }
+                    DispatchQueue.main.async { focusInput() }
                 } : nil
             )
         }
@@ -255,85 +279,26 @@ struct CardStudyView: View {
     // MARK: - Scrubber
 
     private var scrubberRow: some View {
-        HStack(spacing: 10) {
-            let canPrev = vm.currentIndex > 0
-            let canNext = vm.currentIndex < vm.verses.count - 1
-
-            Button {
+        VerseScrubberRow(
+            verseCount: vm.verses.count,
+            currentIndex: $vm.currentIndex,
+            isScrubbing: $isScrubbing,
+            showPositionLabel: false,
+            trackHeight: 44,
+            onScrubIndexChange: nil,
+            onStepBack: {
                 isScrubbing = true
                 vm.goBackward()
                 HapticEngine.light()
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { isScrubbing = false }
-            } label: {
-                Image(systemName: "chevron.left").scrubberButton()
-            }
-            .disabled(!canPrev)
-            .opacity(canPrev ? 1 : 0.3)
-
-            scrubber
-
-            Button {
+            },
+            onStepForward: {
                 isScrubbing = true
                 vm.goForward()
                 HapticEngine.light()
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { isScrubbing = false }
-            } label: {
-                Image(systemName: "chevron.right").scrubberButton()
             }
-            .disabled(!canNext)
-            .opacity(canNext ? 1 : 0.3)
-        }
-    }
-
-    private var scrubber: some View {
-        GeometryReader { geo in
-            let w     = geo.size.width
-            let knobW: CGFloat = 30
-            let knobX = vm.verses.count > 1
-                ? CGFloat(vm.currentIndex) / CGFloat(vm.verses.count - 1) * (w - knobW)
-                : (w - knobW) / 2
-            let progress = vm.verses.count > 1 ? CGFloat(vm.currentIndex) / CGFloat(vm.verses.count - 1) : 0
-            let fillW = knobW / 2 + progress * (w - knobW)
-
-            ZStack(alignment: .leading) {
-                // Track — glass trough
-                Capsule()
-                    .fill(.ultraThinMaterial)
-                    .frame(height: 6)
-
-                // Filled portion
-                Capsule()
-                    .fill(Color.primary.opacity(0.2))
-                    .frame(width: fillW, height: 6)
-                    .animation(.spring(response: 0.3, dampingFraction: 0.8), value: vm.currentIndex)
-
-                // Glass knob
-                Circle()
-                    .fill(.ultraThinMaterial)
-                    .overlay(Circle().strokeBorder(.white.opacity(0.4), lineWidth: 0.5))
-                    .shadow(color: .black.opacity(0.18), radius: 6, x: 0, y: 3)
-                    .frame(width: knobW, height: knobW)
-                    .offset(x: knobX)
-                    .animation(.spring(response: 0.3, dampingFraction: 0.8), value: vm.currentIndex)
-            }
-            .frame(maxHeight: .infinity)
-            .contentShape(Rectangle())
-            .gesture(DragGesture(minimumDistance: 0)
-                .onChanged { value in
-                    isScrubbing = true
-                    let fraction = max(0, min(1, value.location.x / w))
-                    let newIndex = Int(round(fraction * CGFloat(vm.verses.count - 1)))
-                    if newIndex != vm.currentIndex && vm.verses.indices.contains(newIndex) {
-                        vm.currentIndex = newIndex
-                        HapticEngine.light()
-                    }
-                }
-                .onEnded { _ in
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { isScrubbing = false }
-                }
-            )
-        }
-        .frame(height: 44)
+        )
     }
 
     // MARK: - Bottom Controls
@@ -364,6 +329,7 @@ struct CardStudyView: View {
                 }
                 .pickerStyle(.segmented)
                 .padding(.horizontal, 24)
+                .padding(.top, 12)
             }
         }
         .padding(.bottom, 24)
@@ -478,35 +444,32 @@ struct CardStudyView: View {
     // MARK: - Swipe Gesture
 
     private var forwardDragProgress: CGFloat {
-        guard dragOffset.width < 0 else { return 0 }
-        return min(abs(dragOffset.width) / 150, 1.0)
+        CardSwipeConfig.forwardDragProgress(dragWidth: dragOffset.width)
     }
 
     private var backwardDragProgress: CGFloat {
-        guard dragOffset.width > 0 else { return 0 }
-        return min(dragOffset.width / 200, 1.0)
+        CardSwipeConfig.backwardDragProgress(dragWidth: dragOffset.width)
     }
 
     private var swipeGesture: some Gesture {
         DragGesture()
             .onChanged { value in
                 if isCardFlying { commitSwipe() }
-                let tx      = value.translation.width
                 let canNext = vm.currentIndex < vm.verses.count - 1
                 let canPrev = vm.currentIndex > 0
-                if (tx < 0 && canNext) || (tx > 0 && canPrev) {
-                    dragOffset = value.translation
-                } else {
-                    dragOffset = CGSize(width: tx * 0.15, height: value.translation.height * 0.15)
-                }
+                dragOffset = CardSwipeConfig.clampedDragTranslation(
+                    value.translation,
+                    canGoNext: canNext,
+                    canGoPrev: canPrev
+                )
             }
             .onEnded { value in
                 if isCardFlying { commitSwipe() }
                 let vx = value.predictedEndTranslation.width
-                if (dragOffset.width < -Swipe.threshold || vx < -Swipe.velocityThreshold),
+                if (dragOffset.width < -CardSwipeConfig.threshold || vx < -CardSwipeConfig.velocityThreshold),
                    vm.currentIndex < vm.verses.count - 1 {
                     swipeForward()
-                } else if (dragOffset.width > Swipe.threshold || vx > Swipe.velocityThreshold),
+                } else if (dragOffset.width > CardSwipeConfig.threshold || vx > CardSwipeConfig.velocityThreshold),
                           vm.currentIndex > 0 {
                     swipeBackward()
                 } else {
@@ -517,29 +480,39 @@ struct CardStudyView: View {
 
     private func swipeForward() {
         isScrubbing = true
-        isCardFlying = true; flyDirection = -1; HapticEngine.light()
+        isCardFlying = true
+        flyDirection = -1
+        HapticEngine.light()
         withAnimation(.easeOut(duration: 0.2)) {
-            dragOffset = CGSize(width: -Swipe.flyWidth, height: dragOffset.height)
+            dragOffset = CGSize(width: -CardSwipeConfig.flyWidth, height: dragOffset.height)
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { commitSwipe() }
     }
 
     private func swipeBackward() {
         isScrubbing = true
-        isCardFlying = true; flyDirection = 1; HapticEngine.light()
+        isCardFlying = true
+        flyDirection = 1
+        HapticEngine.light()
         withAnimation(.easeOut(duration: 0.2)) {
-            dragOffset = CGSize(width: Swipe.prevCardOffset, height: 0)
+            dragOffset = CGSize(width: CardSwipeConfig.prevCardOffset, height: 0)
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { commitSwipe() }
     }
 
     private func commitSwipe() {
         guard isCardFlying else { return }
-        var t = Transaction(); t.disablesAnimations = true
+        var t = Transaction()
+        t.disablesAnimations = true
         withTransaction(t) {
-            if flyDirection < 0, vm.currentIndex < vm.verses.count - 1 { vm.currentIndex += 1 }
-            else if flyDirection > 0, vm.currentIndex > 0             { vm.currentIndex -= 1 }
-            dragOffset = .zero; isCardFlying = false; flyDirection = 0
+            if flyDirection < 0 {
+                vm.goForward()
+            } else if flyDirection > 0 {
+                vm.goBackward()
+            }
+            dragOffset = .zero
+            isCardFlying = false
+            flyDirection = 0
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { isScrubbing = false }
     }
@@ -584,46 +557,6 @@ struct CardStudyView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.14) {
             withAnimation(.spring()) { shakeOffset = 0 }
         }
-    }
-}
-
-// MARK: - View Helpers
-
-private extension Image {
-    /// Neutral 36pt glass circle — top bar secondary actions (close, reset).
-    func topBarButton() -> some View {
-        self
-            .font(.system(size: 13, weight: .semibold))
-            .foregroundStyle(.secondary)
-            .frame(width: 36, height: 36)
-            .background(.ultraThinMaterial, in: Circle())
-            .shadow(color: .black.opacity(0.08), radius: 6, x: 0, y: 2)
-    }
-
-    /// Toggle-aware 36pt circle — blue + glow when on, glass when off.
-    func topBarToggle(isOn: Bool) -> some View {
-        self
-            .font(.system(size: 13, weight: .semibold))
-            .foregroundStyle(isOn ? AnyShapeStyle(.white) : AnyShapeStyle(.secondary))
-            .frame(width: 36, height: 36)
-            .background(
-                isOn ? AnyShapeStyle(Color.blue) : AnyShapeStyle(.ultraThinMaterial),
-                in: Circle()
-            )
-            .shadow(
-                color: isOn ? Color.blue.opacity(0.35) : Color.black.opacity(0.08),
-                radius: isOn ? 8 : 6, x: 0, y: 2
-            )
-    }
-
-    /// 36pt glass circle for scrubber prev/next navigation.
-    func scrubberButton() -> some View {
-        self
-            .font(.system(size: 13, weight: .semibold))
-            .foregroundStyle(.primary.opacity(0.7))
-            .frame(width: 36, height: 36)
-            .background(.ultraThinMaterial, in: Circle())
-            .shadow(color: .black.opacity(0.08), radius: 6, x: 0, y: 2)
     }
 }
 

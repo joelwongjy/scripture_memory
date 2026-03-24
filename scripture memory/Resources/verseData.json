@@ -939,7 +939,7 @@
       {
         "id": 114,
         "title": "Being the truth",
-        "verse": "Sanctify    them by the truth; your word is truth.",
+        "verse": "Sanctify them by the truth; your word is truth.",
         "book": "John",
         "reference": "17:17",
         "subpack": ""
@@ -1198,6 +1198,269 @@
         "verse": "Do not let this Book of the Law depart from your mouth; meditate on it day and night, so that you may be careful to do everything written in it. Then you will be prosperous and successful.",
         "book": "Joshua",
         "reference": "1:8",
+        "subpack": ""
+      }
+    ]
+  },
+  {
+    "name": "DEP 4: Prayer",
+    "color": "#f3a937",
+    "accentText": "",
+    "verses": [
+      {
+        "id": 276,
+        "title": "Cease not to pray",
+        "verse": "pray continually;",
+        "book": "1 Thessalonians",
+        "reference": "5:17",
+        "subpack": ""
+      },
+      {
+        "id": 277,
+        "title": "Devote yourself to prayer",
+        "verse": "Devote yourselves to prayer, being watchful and thankful.",
+        "book": "Colossians",
+        "reference": "4:2",
+        "subpack": ""
+      },
+      {
+        "id": 278,
+        "title": "Be alert to pray",
+        "verse": "The end of all things is near. Therefore be clear minded and self-controlled so that you can pray.",
+        "book": "1 Peter",
+        "reference": "4:7",
+        "subpack": ""
+      },
+      {
+        "id": 279,
+        "title": "Pray for everyone",
+        "verse": "I urge, then, first of all, that requests, prayers, intercession and thanksgiving be made for everyone-- for kings and all those in authority, that we may live peaceful and quiet lives in all godliness and holiness.",
+        "book": "1 Timothy",
+        "reference": "2:1-2",
+        "subpack": ""
+      },
+      {
+        "id": 280,
+        "title": "Promise to answer",
+        "verse": "And I will do whatever you ask in my name, so that the Son may bring glory to the Father. You may ask me for anything in my name, and I will do it.",
+        "book": "John",
+        "reference": "14:13-14",
+        "subpack": ""
+      },
+      {
+        "id": 281,
+        "title": "Immeasurable answer",
+        "verse": "Now to him who is able to do immeasurably more than all we ask or imagine, according to his power that is at work within us,",
+        "book": "Ephesians",
+        "reference": "3:20",
+        "subpack": ""
+      },
+      {
+        "id": 282,
+        "title": "Understanding God's will",
+        "verse": "'Call to me and I will answer you and tell you great and unsearchable things you do not know.'",
+        "book": "Jeremiah",
+        "reference": "33:3",
+        "subpack": ""
+      },
+      {
+        "id": 283,
+        "title": "Getting the wisdom from God",
+        "verse": "If any of you lacks wisdom, he should ask God, who gives generously to all without finding fault, and it will be given to him.",
+        "book": "James",
+        "reference": "1:5",
+        "subpack": ""
+      },
+      {
+        "id": 284,
+        "title": "Delivering us from fears",
+        "verse": "I sought the Lord, and he answered me; he delivered me from all my fears.",
+        "book": "Psalm",
+        "reference": "34:4",
+        "subpack": ""
+      },
+      {
+        "id": 285,
+        "title": "Delivering us from trouble",
+        "verse": "and call upon me in the day of trouble; I will deliver you, and you will honor me.",
+        "book": "Psalm",
+        "reference": "50:15",
+        "subpack": ""
+      },
+      {
+        "id": 286,
+        "title": "Giving us boldness",
+        "verse": "After they prayed, the place where they were meeting was shaken. And they were all filled with the Holy Spirit and spoke the word of God boldly.",
+        "book": "Acts",
+        "reference": "4:31",
+        "subpack": ""
+      },
+      {
+        "id": 287,
+        "title": "Giving us opportunities for the Gospel",
+        "verse": "And pray for us, too, that God may open a door for our message, so that we may proclaim the mystery of Christ, for which I am in chains.",
+        "book": "Colossians",
+        "reference": "4:3",
+        "subpack": ""
+      },
+      {
+        "id": 288,
+        "title": "Pray in the name of Jesus",
+        "verse": "Until now you have not asked for anything in my name. Ask and you will receive, and your joy will be complete.",
+        "book": "John",
+        "reference": "16:24",
+        "subpack": ""
+      },
+      {
+        "id": 289,
+        "title": "Pray in faith",
+        "verse": "If you believe, you will receive whatever you ask for in prayer.",
+        "book": "Matthew",
+        "reference": "21:22",
+        "subpack": ""
+      },
+      {
+        "id": 290,
+        "title": "Pray in the Spirit",
+        "verse": "And pray in the Spirit on all occasions with all kinds of prayers and requests. With this in mind, be alert and always keep on praying for all the saints.",
+        "book": "Ephesians",
+        "reference": "6:18",
+        "subpack": ""
+      },
+      {
+        "id": 291,
+        "title": "Pray in God's will",
+        "verse": "This is the confidence we have in approaching God: that if we ask anything according to his will, he hears us. And if we know that he hears us-whatever we ask--we know that we have what we asked of him.",
+        "book": "1 John",
+        "reference": "5:14-15",
+        "subpack": ""
+      },
+      {
+        "id": 292,
+        "title": "Confess and renounce the sin",
+        "verse": "If I had cherished sin in my heart, the Lord would not have listened;",
+        "book": "Psalm",
+        "reference": "66:18",
+        "subpack": ""
+      },
+      {
+        "id": 293,
+        "title": "Obey the Lord",
+        "verse": "and receive from him anything we ask, because we obey his commands and do what pleases him.",
+        "book": "1 John",
+        "reference": "3:22",
+        "subpack": ""
+      },
+      {
+        "id": 294,
+        "title": "Pray with one accord",
+        "verse": "Again, I tell you that if two of you on earth agree about anything you ask for, it will be done for you by my Father in heaven.",
+        "book": "Matthew",
+        "reference": "18:19",
+        "subpack": ""
+      },
+      {
+        "id": 295,
+        "title": "Ask and act",
+        "verse": "Ask and it will be given to you; seek and you will find; knock and the door will be opened to you. For everyone who asks receives; he who seeks finds; and to him who knocks, the door will be opened.",
+        "book": "Matthew",
+        "reference": "7:7-8",
+        "subpack": ""
+      },
+      {
+        "id": 296,
+        "title": "Pray with all your heart",
+        "verse": "Then you will call upon me and come and pray to me, and I will listen to you. You will seek me and find me when you seek me with all your heart.",
+        "book": "Jeremiah",
+        "reference": "29:12-13",
+        "subpack": ""
+      },
+      {
+        "id": 297,
+        "title": "Pray in claiming the promise",
+        "verse": "Remember the instruction you gave your servant Moses, saying, 'If you are unfaithful, I will scatter you among the nations, but if you return to me and obey my commands, then even if your exiled people are at the farthest horizon, I will gather them from there and bring them to the place I have chosen as a dwelling for my Name.'",
+        "book": "Nehemiah",
+        "reference": "1:8-9",
+        "subpack": ""
+      },
+      {
+        "id": 298,
+        "title": "Praying at the risk of life",
+        "verse": "Now when Daniel learned that the decree had been published, he went home to his upstairs room where the windows opened toward Jerusalem. Three times a day he got down on his knees and prayed, giving thanks to his God, just as he had done before.",
+        "book": "Daniel",
+        "reference": "6:10",
+        "subpack": ""
+      },
+      {
+        "id": 299,
+        "title": "Giving priority to prayer",
+        "verse": "Yet the news about him spread all the more, so that crowds of people came to hear him and to be healed of their sicknesses. But Jesus often withdrew to lonely places and prayed.",
+        "book": "Luke",
+        "reference": "5:15-16",
+        "subpack": ""
+      },
+      {
+        "id": 300,
+        "title": "Praying all through the night",
+        "verse": "One of those days Jesus went out to a mountainside to pray, and spent the night praying to God.",
+        "book": "Luke",
+        "reference": "6:12",
+        "subpack": ""
+      },
+      {
+        "id": 301,
+        "title": "Praying earnestly",
+        "verse": "Elijah was a man just like us. He prayed earnestly that it would not rain, and it did not rain on the land for three and a half years. Again he prayed, and the heavens gave rain, and the earth produced its crops.",
+        "book": "James",
+        "reference": "5:17-18",
+        "subpack": ""
+      },
+      {
+        "id": 302,
+        "title": "Praying in the midst of hardship",
+        "verse": "About midnight Paul and Silas were praying and singing hymns to God, and the other prisoners were listening to them.",
+        "book": "Acts",
+        "reference": "16:25",
+        "subpack": ""
+      },
+      {
+        "id": 303,
+        "title": "Praising",
+        "verse": "Yours, O LORD, is the greatness and the power and the glory and the majesty and the splendor, for everything in heaven and earth is yours. Yours, O LORD, is the kingdom; you are exalted as head over all. Wealth and honor come from you; you are the ruler of all things. In your hands are strength and power to exalt and give strength to all. Now, our God, we give you thanks, and praise your glorious name.",
+        "book": "1 Chronicles",
+        "reference": "29:11-13",
+        "subpack": ""
+      },
+      {
+        "id": 304,
+        "title": "Intercession",
+        "verse": "I urge, then, first of all, that requests, prayers, intercession and thanksgiving be made for everyone-- for kings and all those in authority, that we may live peaceful and quiet lives in all godliness and holiness.",
+        "book": "1 Timothy",
+        "reference": "2:1-2",
+        "subpack": ""
+      },
+      {
+        "id": 305,
+        "title": "Thanksgiving",
+        "verse": "give thanks in all circumstances, for this is God's will for you in Christ Jesus.",
+        "book": "1 Thessalonians",
+        "reference": "5:18",
+        "subpack": ""
+      },
+      {
+        "id": 306,
+        "title": "Confession",
+        "verse": "If we confess our sins, he is faithful and just and will forgive us our sins and purify us from all unrighteousness.",
+        "book": "1 John",
+        "reference": "1:9",
+        "subpack": ""
+      },
+      {
+        "id": 307,
+        "title": "Supplication",
+        "verse": "Do not be anxious about anything, but in everything, by prayer and petition, with thanksgiving, present your requests to God. And the peace of God, which transcends all understanding, will guard your hearts and your minds in Christ Jesus.",
+        "book": "Philippians",
+        "reference": "4:6-7",
         "subpack": ""
       }
     ]

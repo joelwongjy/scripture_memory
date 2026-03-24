@@ -12,73 +12,107 @@ struct FlashcardView: View {
     @AppStorage("hardMode") private var hardMode = false
 
     // MARK: - Adaptive Typography
+    //
+    // Word-count tiers keep long verses on-screen; `cardWidth` nudges type up on wider phones
+    // (e.g. Pro Max) where the same pt sizes read small.
 
-    private var verseFontSize: CGFloat {
-        let count = verse.verseWords.count
-        if count > 55 { return 11.0 }
-        if count > 45 { return 12.0 }
-        if count > 35 { return 13.5 }
-        return 15.0
+    /// Interpolates font size between `narrowWidth` and `wideWidth` (card inner width in pt).
+    private func scaledTypeSize(base: CGFloat, extra: CGFloat, cardWidth: CGFloat, narrow: CGFloat = 322, wide: CGFloat = 398) -> CGFloat {
+        let t = (cardWidth - narrow) / (wide - narrow)
+        let u = min(1, max(0, t))
+        return base + extra * u
     }
 
-    private var verseLineSpacing: CGFloat {
+    private func verseFontSize(cardWidth: CGFloat) -> CGFloat {
         let count = verse.verseWords.count
-        if count > 55 { return 2.0 }
-        if count > 45 { return 3.0 }
-        if count > 35 { return 4.0 }
-        return 6.0
+        let base: CGFloat
+        if count > 50 { base = 11.5 }
+        else if count > 40 { base = 12.5 }
+        else if count > 30 { base = 13.5 }
+        else { base = 15.0 }
+        // Card width ≈ screen − horizontal chrome; Pro Max ~390pt, standard ~350–360, smaller ~330.
+        let widthBonus: CGFloat
+        if cardWidth >= 382 { widthBonus = 1.5 }
+        else if cardWidth >= 358 { widthBonus = 1.0 }
+        else if cardWidth >= 346 { widthBonus = 0.5 }
+        else { widthBonus = 0 }
+        return base + widthBonus
+    }
+
+    private func verseLineSpacing(cardWidth: CGFloat) -> CGFloat {
+        let count = verse.verseWords.count
+        let base: CGFloat
+        if count > 55 { base = 2.0 }
+        else if count > 45 { base = 3.0 }
+        else if count > 35 { base = 4.0 }
+        else { base = 6.0 }
+        let bonus = cardWidth >= 382 ? 1.0 : (cardWidth >= 352 ? 0.5 : 0)
+        return base + bonus
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            if isReviewMode { reviewContent } else { readContent }
-            Spacer(minLength: 6)
-            Text(cardLabel)
-                .font(.system(size: 10, weight: .medium))
-                .foregroundColor(.secondary)
+        GeometryReader { geo in
+            let w = geo.size.width
+            VStack(alignment: .leading, spacing: 0) {
+                if isReviewMode { reviewContent(cardWidth: w) } else { readContent(cardWidth: w) }
+                Spacer(minLength: 6)
+                Text(cardLabel)
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(.secondary)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
         .flashcardStyle()
     }
 
     // MARK: - Read Mode
 
-    private var readContent: some View {
-        VStack(alignment: .leading, spacing: 0) {
+    private func readContent(cardWidth: CGFloat) -> some View {
+        let verseSize = verseFontSize(cardWidth: cardWidth)
+        let lineGap = verseLineSpacing(cardWidth: cardWidth)
+        let titleSize = scaledTypeSize(base: 15, extra: 3.5, cardWidth: cardWidth)
+        let refSize = scaledTypeSize(base: 14, extra: 3.0, cardWidth: cardWidth)
+        return VStack(alignment: .leading, spacing: 0) {
             Text(verse.title)
-                .font(.system(size: 18, weight: .bold, design: .serif))
-            Spacer().frame(height: 10)
-            Text("\(verse.book) \(verse.reference)")
-                .font(.system(size: 15))
+                .font(.system(size: titleSize, weight: .bold, design: .serif))
             Spacer().frame(height: 8)
+            Text("\(verse.book) \(verse.reference)")
+                .font(.system(size: refSize))
+            Spacer().frame(height: 6)
             Text(verse.verse)
-                .font(.system(size: verseFontSize, design: .serif))
-                .lineSpacing(verseLineSpacing)
+                .font(.system(size: verseSize, design: .serif))
+                .lineSpacing(lineGap)
         }
     }
 
     // MARK: - Review Mode
 
-    private var reviewContent: some View {
+    private func reviewContent(cardWidth: CGFloat) -> some View {
         let activeWords    = activeSection == .title ? verse.titleWords : verse.verseWords
         let activeRevealed = activeSection == .title ? titleRevealedCount : verseRevealedCount
+        let refSize = scaledTypeSize(base: 18, extra: 3.25, cardWidth: cardWidth)
+        let titleSectionSize = scaledTypeSize(base: 16, extra: 2.75, cardWidth: cardWidth)
+        let verseSize = verseFontSize(cardWidth: cardWidth)
 
         return VStack(alignment: .leading, spacing: 0) {
             Text("\(verse.book) \(verse.reference)")
-                .font(.system(size: 18, weight: .bold, design: .serif))
+                .font(.system(size: refSize, weight: .bold, design: .serif))
 
             Spacer().frame(height: 12)
 
             sectionView(.title,
                          words: verse.titleWords,
                          revealed: titleRevealedCount,
-                         font: .system(size: 16, weight: .bold, design: .serif))
+                         cardWidth: cardWidth,
+                         font: .system(size: titleSectionSize, weight: .bold, design: .serif))
 
             Spacer().frame(height: 8)
 
             sectionView(.verse,
                          words: verse.verseWords,
                          revealed: verseRevealedCount,
-                         font: .system(size: verseFontSize, design: .serif))
+                         cardWidth: cardWidth,
+                         font: .system(size: verseSize, design: .serif))
 
             if !hardMode && activeRevealed < activeWords.count {
                 Spacer().frame(height: 10)
@@ -90,9 +124,10 @@ struct FlashcardView: View {
     // MARK: - Section View
 
     @ViewBuilder
-    private func sectionView(_ section: CardSection, words: [String], revealed: Int, font: Font) -> some View {
+    private func sectionView(_ section: CardSection, words: [String], revealed: Int, cardWidth: CGFloat, font: Font) -> some View {
         let isActive   = (activeSection == section)
         let isComplete = revealed >= words.count && !words.isEmpty
+        let verseGap = verseLineSpacing(cardWidth: cardWidth)
 
         HStack(alignment: .top, spacing: 4) {
             Group {
@@ -105,7 +140,7 @@ struct FlashcardView: View {
                     inactiveText(section: section, words: words, revealed: revealed, font: font)
                 }
             }
-            .lineSpacing(section == .verse ? verseLineSpacing : 4)
+            .lineSpacing(section == .verse ? verseGap : 4)
 
             if isComplete {
                 Image(systemName: "checkmark.circle.fill")

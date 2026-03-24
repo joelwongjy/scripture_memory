@@ -23,15 +23,6 @@ struct TestSessionView: View {
 
     @Environment(\.dismiss) private var dismiss
 
-    // MARK: - Swipe Constants
-
-    private enum Swipe {
-        static let threshold:         CGFloat = 80
-        static let velocityThreshold: CGFloat = 400
-        static let flyWidth:          CGFloat = 600
-        static let prevCardOffset:    CGFloat = 420
-    }
-
     let onSessionEnded: (() -> Void)?
 
     // MARK: - Init
@@ -103,8 +94,9 @@ struct TestSessionView: View {
             speechTarget = newFocus
             speech.startListening()
         }
-        .onAppear {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { focusInput() }
+        .task {
+            try? await Task.sleep(for: .milliseconds(300))
+            focusInput()
         }
     }
 
@@ -127,7 +119,7 @@ struct TestSessionView: View {
                     if speech.isListening { speech.stopListening() }
                     dismiss()
                 } label: {
-                    Image(systemName: "xmark").topBarButtonStyle()
+                    Image(systemName: "xmark").studyChromeCircleButton()
                 }
 
                 Spacer()
@@ -135,7 +127,7 @@ struct TestSessionView: View {
                 HStack(spacing: 8) {
                     // Verse selector dropdown
                     Button { showVerseSelector = true } label: {
-                        Image(systemName: "list.bullet").topBarButtonStyle()
+                        Image(systemName: "list.bullet").studyChromeCircleButton()
                     }
                     // Score display — only in Entire Verse mode
                     if studyMode == .submit { scoreDisplay }
@@ -269,22 +261,26 @@ struct TestSessionView: View {
             }
             if let verse = vm.currentVerse {
                 let goingBack = dragOffset.width > 0
-                makeCard(verse: verse, interactive: true)
+                makeCard(verse: verse, verseIndex: vm.currentIndex, interactive: true)
                     .offset(x: goingBack ? 0 : dragOffset.width,
                             y: goingBack ? backwardDragProgress * 12 : dragOffset.height * 0.1)
                     .scaleEffect(goingBack ? 1.0 - backwardDragProgress * 0.05 : 1.0)
                     .rotationEffect(goingBack ? .zero : .degrees(Double(dragOffset.width) * 0.03))
                     .zIndex(2)
                     .simultaneousGesture(swipeGesture)
-                    .onTapGesture {
-                        guard !vm.isCardComplete && !vm.isSessionComplete else { return }
-                        focusInput()
-                    }
+                    // Simultaneous so title/verse (underscore) taps still reach FlashcardView’s section handler,
+                    // while taps elsewhere on the card still bring up the keyboard.
+                    .simultaneousGesture(
+                        TapGesture().onEnded {
+                            guard !vm.isCardComplete && !vm.isSessionComplete else { return }
+                            focusInput()
+                        }
+                    )
             }
             if vm.currentIndex > 0 && dragOffset.width > 0 {
-                makeCard(verse: vm.verses[vm.currentIndex - 1], interactive: false)
-                    .offset(x: dragOffset.width - Swipe.prevCardOffset)
-                    .rotationEffect(.degrees(Double(dragOffset.width - Swipe.prevCardOffset) * 0.02))
+                makeCard(verse: vm.verses[vm.currentIndex - 1], verseIndex: vm.currentIndex - 1, interactive: false)
+                    .offset(x: dragOffset.width - CardSwipeConfig.prevCardOffset)
+                    .rotationEffect(.degrees(Double(dragOffset.width - CardSwipeConfig.prevCardOffset) * 0.02))
                     .zIndex(3)
             }
         }
@@ -293,32 +289,50 @@ struct TestSessionView: View {
     @ViewBuilder
     private func backgroundCard(at index: Int) -> some View {
         if vm.verses.indices.contains(index) {
-            makeCard(verse: vm.verses[index], interactive: false)
+            makeCard(verse: vm.verses[index], verseIndex: index, interactive: false)
         }
     }
 
     @ViewBuilder
-    private func makeCard(verse: Verse, interactive: Bool) -> some View {
+    private func makeCard(verse: Verse, verseIndex: Int, interactive: Bool) -> some View {
         let hasResult = vm.submitResults[verse.id] != nil
-        if studyMode == .submit && (interactive || hasResult) {
+        let isBehind = verseIndex < vm.currentIndex
+        let isAhead = verseIndex > vm.currentIndex
+        let isDirectNext = verseIndex == vm.currentIndex + 1
+        let isDirectPrev = verseIndex == vm.currentIndex - 1
+
+        // Submit UI on the front card; empty submit surface on the card directly above or below
+        // (forward / back swipe) when it has no graded result yet — matches becoming current and
+        // avoids masked underscore flash. Never show a stored diff on a non-interactive card.
+        let showSubmitSurface = studyMode == .submit
+            && (interactive || (isDirectNext && !hasResult) || (isDirectPrev && !hasResult))
+
+        if showSubmitSurface {
             SubmitCardView(
                 verse: verse,
                 cardLabel: vm.cardLabel(for: verse),
                 titleText: interactive ? $vm.titleInput : .constant(""),
                 verseText: interactive ? $vm.verseInput : .constant(""),
-                result: vm.submitResults[verse.id],
+                result: interactive ? vm.submitResults[verse.id] : nil,
                 focusedField: $submitFocus
             )
+            .allowsHitTesting(interactive)
         } else {
+            // Submit stack peeks: never read mode behind the front card (full verse = answer).
+            let forceMaskedPeek = studyMode == .submit && !interactive
+                && ((isAhead && (!isDirectNext || hasResult)) || isBehind)
+            let titleRev = forceMaskedPeek ? 0 : vm.revealedCount(for: verse.id, section: .title)
+            let verseRev = forceMaskedPeek ? 0 : vm.revealedCount(for: verse.id, section: .verse)
             FlashcardView(
                 verse: verse,
                 cardLabel: vm.cardLabel(for: verse),
                 isReviewMode: true,
-                titleRevealedCount: vm.revealedCount(for: verse.id, section: .title),
-                verseRevealedCount: vm.revealedCount(for: verse.id, section: .verse),
+                titleRevealedCount: titleRev,
+                verseRevealedCount: verseRev,
                 activeSection: vm.activeSection,
                 onSectionTap: interactive ? { section in
                     withAnimation(.easeOut(duration: 0.2)) { vm.activeSection = section }
+                    DispatchQueue.main.async { focusInput() }
                 } : nil
             )
         }
@@ -327,87 +341,26 @@ struct TestSessionView: View {
     // MARK: - Scrubber
 
     private var scrubberRow: some View {
-        VStack(spacing: 6) {
-            HStack(spacing: 10) {
-                let canPrev = vm.currentIndex > 0
-                let canNext = vm.currentIndex < vm.verses.count - 1
-
-                Button {
-                    isScrubbing = true
-                    vm.goBackward()
-                    HapticEngine.light()
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { isScrubbing = false }
-                } label: {
-                    Image(systemName: "chevron.left").scrubberButtonStyle()
-                }
-                .disabled(!canPrev)
-                .opacity(canPrev ? 1 : 0.3)
-
-                scrubber
-
-                Button {
-                    isScrubbing = true
-                    vm.goForward()
-                    HapticEngine.light()
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { isScrubbing = false }
-                } label: {
-                    Image(systemName: "chevron.right").scrubberButtonStyle()
-                }
-                .disabled(!canNext)
-                .opacity(canNext ? 1 : 0.3)
+        VerseScrubberRow(
+            verseCount: vm.verses.count,
+            currentIndex: $vm.currentIndex,
+            isScrubbing: $isScrubbing,
+            showPositionLabel: true,
+            trackHeight: 34,
+            onScrubIndexChange: { vm.persistSession() },
+            onStepBack: {
+                isScrubbing = true
+                vm.goBackward()
+                HapticEngine.light()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { isScrubbing = false }
+            },
+            onStepForward: {
+                isScrubbing = true
+                vm.goForward()
+                HapticEngine.light()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { isScrubbing = false }
             }
-
-            // Position indicator
-            Text("\(vm.currentIndex + 1) / \(vm.verses.count)")
-                .font(.system(size: 11, weight: .medium, design: .monospaced))
-                .foregroundColor(.secondary)
-        }
-    }
-
-    private var scrubber: some View {
-        GeometryReader { geo in
-            let w     = geo.size.width
-            let knobW: CGFloat = 30
-            let knobX = vm.verses.count > 1
-                ? CGFloat(vm.currentIndex) / CGFloat(vm.verses.count - 1) * (w - knobW)
-                : (w - knobW) / 2
-            let progress = vm.verses.count > 1 ? CGFloat(vm.currentIndex) / CGFloat(vm.verses.count - 1) : 0
-            let fillW = knobW / 2 + progress * (w - knobW)
-
-            ZStack(alignment: .leading) {
-                Capsule()
-                    .fill(.ultraThinMaterial)
-                    .frame(height: 6)
-                Capsule()
-                    .fill(Color.primary.opacity(0.2))
-                    .frame(width: fillW, height: 6)
-                    .animation(.spring(response: 0.3, dampingFraction: 0.8), value: vm.currentIndex)
-                Circle()
-                    .fill(.ultraThinMaterial)
-                    .overlay(Circle().strokeBorder(.white.opacity(0.4), lineWidth: 0.5))
-                    .shadow(color: .black.opacity(0.18), radius: 6, x: 0, y: 3)
-                    .frame(width: knobW, height: knobW)
-                    .offset(x: knobX)
-                    .animation(.spring(response: 0.3, dampingFraction: 0.8), value: vm.currentIndex)
-            }
-            .frame(maxHeight: .infinity)
-            .contentShape(Rectangle())
-            .gesture(DragGesture(minimumDistance: 0)
-                .onChanged { value in
-                    isScrubbing = true
-                    let fraction = max(0, min(1, value.location.x / w))
-                    let newIndex = Int(round(fraction * CGFloat(vm.verses.count - 1)))
-                    if newIndex != vm.currentIndex && vm.verses.indices.contains(newIndex) {
-                        vm.currentIndex = newIndex
-                        HapticEngine.light()
-                    }
-                }
-                .onEnded { _ in
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { isScrubbing = false }
-                }
-            )
-        }
-        .frame(height: 34)
+        )
     }
 
     // MARK: - Bottom Controls
@@ -715,35 +668,32 @@ struct TestSessionView: View {
     // MARK: - Swipe Gesture
 
     private var forwardDragProgress: CGFloat {
-        guard dragOffset.width < 0 else { return 0 }
-        return min(abs(dragOffset.width) / 150, 1.0)
+        CardSwipeConfig.forwardDragProgress(dragWidth: dragOffset.width)
     }
 
     private var backwardDragProgress: CGFloat {
-        guard dragOffset.width > 0 else { return 0 }
-        return min(dragOffset.width / 200, 1.0)
+        CardSwipeConfig.backwardDragProgress(dragWidth: dragOffset.width)
     }
 
     private var swipeGesture: some Gesture {
         DragGesture()
             .onChanged { value in
                 if isCardFlying { commitSwipe() }
-                let tx      = value.translation.width
                 let canNext = vm.currentIndex < vm.verses.count - 1
                 let canPrev = vm.currentIndex > 0
-                if (tx < 0 && canNext) || (tx > 0 && canPrev) {
-                    dragOffset = value.translation
-                } else {
-                    dragOffset = CGSize(width: tx * 0.15, height: value.translation.height * 0.15)
-                }
+                dragOffset = CardSwipeConfig.clampedDragTranslation(
+                    value.translation,
+                    canGoNext: canNext,
+                    canGoPrev: canPrev
+                )
             }
             .onEnded { value in
                 if isCardFlying { commitSwipe() }
                 let vx = value.predictedEndTranslation.width
-                if (dragOffset.width < -Swipe.threshold || vx < -Swipe.velocityThreshold),
+                if (dragOffset.width < -CardSwipeConfig.threshold || vx < -CardSwipeConfig.velocityThreshold),
                    vm.currentIndex < vm.verses.count - 1 {
                     swipeForward()
-                } else if (dragOffset.width > Swipe.threshold || vx > Swipe.velocityThreshold),
+                } else if (dragOffset.width > CardSwipeConfig.threshold || vx > CardSwipeConfig.velocityThreshold),
                           vm.currentIndex > 0 {
                     swipeBackward()
                 } else {
@@ -754,29 +704,39 @@ struct TestSessionView: View {
 
     private func swipeForward() {
         isScrubbing = true
-        isCardFlying = true; flyDirection = -1; HapticEngine.light()
+        isCardFlying = true
+        flyDirection = -1
+        HapticEngine.light()
         withAnimation(.easeOut(duration: 0.2)) {
-            dragOffset = CGSize(width: -Swipe.flyWidth, height: dragOffset.height)
+            dragOffset = CGSize(width: -CardSwipeConfig.flyWidth, height: dragOffset.height)
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { commitSwipe() }
     }
 
     private func swipeBackward() {
         isScrubbing = true
-        isCardFlying = true; flyDirection = 1; HapticEngine.light()
+        isCardFlying = true
+        flyDirection = 1
+        HapticEngine.light()
         withAnimation(.easeOut(duration: 0.2)) {
-            dragOffset = CGSize(width: Swipe.prevCardOffset, height: 0)
+            dragOffset = CGSize(width: CardSwipeConfig.prevCardOffset, height: 0)
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { commitSwipe() }
     }
 
     private func commitSwipe() {
         guard isCardFlying else { return }
-        var t = Transaction(); t.disablesAnimations = true
+        var t = Transaction()
+        t.disablesAnimations = true
         withTransaction(t) {
-            if flyDirection < 0, vm.currentIndex < vm.verses.count - 1 { vm.currentIndex += 1 }
-            else if flyDirection > 0, vm.currentIndex > 0             { vm.currentIndex -= 1 }
-            dragOffset = .zero; isCardFlying = false; flyDirection = 0
+            if flyDirection < 0 {
+                vm.goForward()
+            } else if flyDirection > 0 {
+                vm.goBackward()
+            }
+            dragOffset = .zero
+            isCardFlying = false
+            flyDirection = 0
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { isScrubbing = false }
     }
@@ -811,28 +771,6 @@ struct TestSessionView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.14) {
             withAnimation(.spring()) { shakeOffset = 0 }
         }
-    }
-}
-
-// MARK: - Image Helpers (local to this file)
-
-private extension Image {
-    func topBarButtonStyle() -> some View {
-        self
-            .font(.system(size: 13, weight: .semibold))
-            .foregroundStyle(.secondary)
-            .frame(width: 36, height: 36)
-            .background(.ultraThinMaterial, in: Circle())
-            .shadow(color: .black.opacity(0.08), radius: 6, x: 0, y: 2)
-    }
-
-    func scrubberButtonStyle() -> some View {
-        self
-            .font(.system(size: 13, weight: .semibold))
-            .foregroundStyle(.primary.opacity(0.7))
-            .frame(width: 36, height: 36)
-            .background(.ultraThinMaterial, in: Circle())
-            .shadow(color: .black.opacity(0.08), radius: 6, x: 0, y: 2)
     }
 }
 
