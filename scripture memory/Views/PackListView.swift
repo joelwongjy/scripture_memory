@@ -68,7 +68,7 @@ struct PackListView: View {
         .searchable(
             text: $searchText,
             placement: .automatic,
-            prompt: "Search verses…"
+            prompt: "Search verses"
         )
         .fullScreenCover(item: $selectedPack) { pack in
             NavigationStack {
@@ -81,8 +81,7 @@ struct PackListView: View {
                 CardStudyView(
                     packName: result.pack.name,
                     verses: result.pack.verses,
-                    initialIndex: result.verseIndex,
-                    spotlightVerticalSearchLanding: true
+                    initialIndex: result.verseIndex
                 )
                 .toolbar(.hidden, for: .navigationBar)
             }
@@ -92,56 +91,64 @@ struct PackListView: View {
     // MARK: - Search Results View
 
     private var searchResultsView: some View {
-        ScrollView {
-            LazyVStack(spacing: 0) {
-                if searchResults.isEmpty {
-                    VStack(spacing: 8) {
-                        Image(systemName: "magnifyingglass")
-                            .font(.system(size: 32, weight: .light))
-                            .foregroundColor(.secondary.opacity(0.5))
-                        Text("No results")
-                            .font(.system(size: 15))
-                            .foregroundColor(.secondary)
-                    }
-                    .padding(.top, 60)
-                    .frame(maxWidth: .infinity)
-                } else {
-                    ForEach(Array(searchResults.enumerated()), id: \.element.id) { _, result in
-                        VStack(spacing: 0) {
-                            Button {
-                                searchSelected = result
-                            } label: {
-                                HStack(spacing: 14) {
-                                    VStack(alignment: .leading, spacing: 3) {
-                                        Text("\(result.verse.book) \(result.verse.reference)")
-                                            .font(.system(size: 15, weight: .semibold))
-                                            .foregroundColor(.primary)
-                                        Text(result.verse.title)
-                                            .font(.system(size: 13))
+        GeometryReader { geo in
+            ScrollView {
+                LazyVStack(spacing: 0) {
+                    if searchResults.isEmpty {
+                        VStack(spacing: 8) {
+                            Image(systemName: "magnifyingglass")
+                                .font(.system(size: 40, weight: .light))
+                                .foregroundColor(.secondary.opacity(0.5))
+                            Text("No results")
+                                .font(.system(size: 15))
+                                .foregroundColor(.secondary)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.vertical, 12)
+                    } else {
+                        ForEach(Array(searchResults.enumerated()), id: \.element.id) { _, result in
+                            VStack(spacing: 0) {
+                                Button {
+                                    searchSelected = result
+                                } label: {
+                                    HStack(spacing: 14) {
+                                        VStack(alignment: .leading, spacing: 3) {
+                                            Text("\(result.verse.book) \(result.verse.reference)")
+                                                .font(.system(size: 15, weight: .semibold))
+                                                .foregroundColor(.primary)
+                                            Text(result.verse.title)
+                                                .font(.system(size: 13, weight: .medium))
+                                                .foregroundColor(.primary.opacity(0.82))
+                                            Text(result.verse.verse)
+                                                .font(.system(size: 12))
+                                                .foregroundColor(.primary.opacity(0.68))
+                                                .lineLimit(1)
+                                                .truncationMode(.tail)
+                                                .multilineTextAlignment(.leading)
+                                            Text(result.pack.name)
+                                                .font(.system(size: 11, weight: .medium))
+                                                .foregroundColor(.primary.opacity(0.52))
+                                        }
+                                        Spacer()
+                                        Image(systemName: "chevron.right")
+                                            .font(.system(size: 12, weight: .semibold))
                                             .foregroundColor(.secondary)
-                                        Text(result.pack.name)
-                                            .font(.system(size: 11))
-                                            .foregroundColor(.secondary.opacity(0.6))
                                     }
-                                    Spacer()
-                                    Image(systemName: "chevron.right")
-                                        .font(.system(size: 12, weight: .medium))
-                                        .foregroundColor(.secondary.opacity(0.4))
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 11)
+                                    .contentShape(Rectangle())
                                 }
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 11)
-                                .contentShape(Rectangle())
+                                .buttonStyle(.plain)
+                                Divider().padding(.leading, 16)
                             }
-                            .buttonStyle(.plain)
-                            Divider().padding(.leading, 16)
                         }
                     }
                 }
+                .background(Color(.systemBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
             }
-            .background(Color(.systemBackground))
-            .clipShape(RoundedRectangle(cornerRadius: 10))
-            .padding(.horizontal, 16)
-            .padding(.top, 8)
         }
     }
 }

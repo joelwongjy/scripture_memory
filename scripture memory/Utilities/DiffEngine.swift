@@ -23,7 +23,7 @@ enum DiffEngine {
     }
 
     static func normalize(_ word: String) -> String {
-        word
+        word.trimmingQuotationDelimitersOnEnds()
             .lowercased()
             .components(separatedBy: CharacterSet.punctuationCharacters.union(.symbols))
             .joined()

@@ -2,11 +2,6 @@ import SwiftUI
 
 struct CardStudyView: View {
 
-    // MARK: - Config
-
-    /// When true (e.g. opened from pack search), the vertical list plays a short emphasis on the landed card after scroll.
-    private let spotlightVerticalSearchLanding: Bool
-
     // MARK: - State
 
     @StateObject private var vm:     CardStudyViewModel
@@ -24,16 +19,13 @@ struct CardStudyView: View {
     @State private var shakeOffset:  CGFloat = 0
     @State private var speechTarget: SubmitField = .title
     @State private var isScrubbing           = false
-    @State private var verticalSearchLandScale: CGFloat = 1.0
 
     @Environment(\.dismiss) private var dismiss
 
     // MARK: - Init
 
-    init(packName: String, verses: [Verse], initialIndex: Int = 0, spotlightVerticalSearchLanding: Bool = false) {
-        self.spotlightVerticalSearchLanding = spotlightVerticalSearchLanding
+    init(packName: String, verses: [Verse], initialIndex: Int = 0) {
         _vm = StateObject(wrappedValue: CardStudyViewModel(packName: packName, verses: verses, initialIndex: initialIndex))
-        _verticalSearchLandScale = State(initialValue: spotlightVerticalSearchLanding ? 0.97 : 1.0)
     }
 
     // MARK: - Body
@@ -62,7 +54,7 @@ struct CardStudyView: View {
                 if !isVerticalScroll || vm.isReviewMode {
                     scrubberRow
                         .padding(.horizontal, 20)
-                        .padding(.bottom, 6)   // no count label here, so add explicit gap
+                        .padding(.bottom, 6)
                 }
 
                 bottomControls
@@ -163,13 +155,18 @@ struct CardStudyView: View {
             }
             if let verse = vm.currentVerse {
                 let goingBack = dragOffset.width > 0
-                makeCard(verse: verse, verseIndex: vm.currentIndex, interactive: true)
+                let frontCard = makeCard(verse: verse, verseIndex: vm.currentIndex, interactive: true)
                     .offset(x: goingBack ? 0 : dragOffset.width,
                             y: goingBack ? backwardDragProgress * 12 : dragOffset.height * 0.1)
                     .scaleEffect(goingBack ? 1.0 - backwardDragProgress * 0.05 : 1.0)
                     .rotationEffect(goingBack ? .zero : .degrees(Double(dragOffset.width) * 0.03))
                     .zIndex(2)
-                    .simultaneousGesture(swipeGesture)
+                // Entire Verse (submit) uses TextField + TextEditor — a card-wide drag steals taps from the editor.
+                if studyMode == .submit {
+                    frontCard
+                } else {
+                    frontCard.simultaneousGesture(swipeGesture)
+                }
             }
             if vm.currentIndex > 0 && dragOffset.width > 0 {
                 makeCard(verse: vm.verses[vm.currentIndex - 1], verseIndex: vm.currentIndex - 1, interactive: false)
@@ -189,7 +186,6 @@ struct CardStudyView: View {
                     ForEach(Array(vm.verses.enumerated()), id: \.offset) { index, verse in
                         makeCard(verse: verse, verseIndex: index, interactive: index == vm.currentIndex)
                             .frame(width: cardWidth, height: cardHeight)
-                            .scaleEffect(index == vm.currentIndex ? verticalSearchLandScale : 1.0)
                             .id(index)
                             .overlay {
                                 if index != vm.currentIndex {
@@ -205,23 +201,27 @@ struct CardStudyView: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 12)
             }
-            // LazyVStack: brief yield so ids exist; one easeInOut drives scroll + search landing scale together.
-            .task {
-                await Task.yield()
-                try? await Task.sleep(for: .milliseconds(48))
-                let scrollAndLand = Animation.easeInOut(duration: 0.26)
-                withAnimation(scrollAndLand) {
-                    proxy.scrollTo(vm.currentIndex, anchor: .center)
-                    if spotlightVerticalSearchLanding, !vm.isReviewMode {
-                        verticalSearchLandScale = 1.0
-                    }
-                }
+            // LazyVStack: yield + delay so row ids exist before scrollTo. `onAppear` runs when returning
+            // from review (the scroll view is removed during review, so scroll offset would otherwise reset).
+            .onAppear {
+                Task { await scrollVerticalReadListToCurrentVerse(proxy: proxy) }
             }
             .onChange(of: vm.currentIndex) { _, newIndex in
                 withAnimation(.easeInOut(duration: 0.22)) {
                     proxy.scrollTo(newIndex, anchor: .center)
                 }
             }
+        }
+    }
+
+    /// Scrolls the vertical read list so `currentIndex` is centered (read mode / vertical list only).
+    @MainActor
+    private func scrollVerticalReadListToCurrentVerse(proxy: ScrollViewProxy) async {
+        await Task.yield()
+        try? await Task.sleep(for: .milliseconds(72))
+        let idx = vm.currentIndex
+        withAnimation(.easeInOut(duration: 0.24)) {
+            proxy.scrollTo(idx, anchor: .center)
         }
     }
 

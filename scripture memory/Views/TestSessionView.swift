@@ -64,6 +64,7 @@ struct TestSessionView: View {
 
                 scrubberRow
                     .padding(.horizontal, 20)
+                    .padding(.bottom, 6)
 
                 bottomControls
             }
@@ -261,21 +262,27 @@ struct TestSessionView: View {
             }
             if let verse = vm.currentVerse {
                 let goingBack = dragOffset.width > 0
-                makeCard(verse: verse, verseIndex: vm.currentIndex, interactive: true)
+                let frontCard = makeCard(verse: verse, verseIndex: vm.currentIndex, interactive: true)
                     .offset(x: goingBack ? 0 : dragOffset.width,
                             y: goingBack ? backwardDragProgress * 12 : dragOffset.height * 0.1)
                     .scaleEffect(goingBack ? 1.0 - backwardDragProgress * 0.05 : 1.0)
                     .rotationEffect(goingBack ? .zero : .degrees(Double(dragOffset.width) * 0.03))
                     .zIndex(2)
-                    .simultaneousGesture(swipeGesture)
-                    // Simultaneous so title/verse (underscore) taps still reach FlashcardView’s section handler,
-                    // while taps elsewhere on the card still bring up the keyboard.
-                    .simultaneousGesture(
-                        TapGesture().onEnded {
-                            guard !vm.isCardComplete && !vm.isSessionComplete else { return }
-                            focusInput()
-                        }
-                    )
+                if studyMode == .submit {
+                    // Submit card: avoid gestures that fight TextField/TextEditor (tap was forcing title focus).
+                    frontCard
+                } else {
+                    frontCard
+                        .simultaneousGesture(swipeGesture)
+                        // Simultaneous so title/verse (underscore) taps still reach FlashcardView’s section handler,
+                        // while taps elsewhere on the card still bring up the keyboard.
+                        .simultaneousGesture(
+                            TapGesture().onEnded {
+                                guard !vm.isCardComplete && !vm.isSessionComplete else { return }
+                                focusInput()
+                            }
+                        )
+                }
             }
             if vm.currentIndex > 0 && dragOffset.width > 0 {
                 makeCard(verse: vm.verses[vm.currentIndex - 1], verseIndex: vm.currentIndex - 1, interactive: false)
@@ -389,7 +396,7 @@ struct TestSessionView: View {
                     }
                     .foregroundColor(.primary)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
+                    .padding(.vertical, 14.6)
                     .background(Color(.secondarySystemGroupedBackground))
                     .cornerRadius(12)
                 }

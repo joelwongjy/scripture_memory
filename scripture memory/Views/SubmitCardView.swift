@@ -22,13 +22,17 @@ struct SubmitCardView: View {
 
             Spacer().frame(height: 10)
 
-            if let result { diffView(result) } else { inputView }
-
-            Spacer(minLength: 6)
+            // Fill space between header and footer so the verse TextEditor (and diff text) get a real height.
+            // A flexible `Spacer` here would expand and leave `inputView` at intrinsic height only (~one line).
+            Group {
+                if let result { diffView(result) } else { inputView }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
             Text(cardLabel)
                 .font(.system(size: 10, weight: .medium))
                 .foregroundColor(.secondary)
+                .padding(.top, 6)
         }
         .flashcardStyle()
     }
