@@ -138,3 +138,88 @@ struct CardButtonStyle: ButtonStyle {
             .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
     }
 }
+
+// MARK: - Peek Components
+
+/// Compact hold-to-peek eye icon — inline with input controls.
+/// Uses `DragGesture(minimumDistance: 0)` so press-down triggers reveal and release hides it.
+struct PeekEyeButton: View {
+    @Binding var isPeeking: Bool
+
+    var body: some View {
+        Image(systemName: isPeeking ? "eye.fill" : "eye")
+            .font(.system(size: 18, weight: .semibold))
+            .foregroundColor(isPeeking ? .blue : .secondary)
+            .frame(width: 48, height: 48)
+            .background(isPeeking ? Color.blue.opacity(0.12) : Color(.secondarySystemGroupedBackground))
+            .cornerRadius(12)
+            .contentShape(Rectangle())
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { _ in
+                        if !isPeeking {
+                            withAnimation(.easeInOut(duration: 0.1)) { isPeeking = true }
+                        }
+                    }
+                    .onEnded { _ in
+                        withAnimation(.easeInOut(duration: 0.1)) { isPeeking = false }
+                    }
+            )
+    }
+}
+
+/// Card-style overlay matching the real card but with all text in secondary color.
+/// Shown while the user holds a `PeekEyeButton`.
+struct PeekOverlayCard: View {
+    let verse:     Verse
+    let cardLabel: String
+    let width:     CGFloat
+    let height:    CGFloat
+    let isPeeking: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("\(verse.book) \(verse.reference)")
+                .font(.system(size: 18, weight: .bold, design: .serif))
+                .foregroundColor(.secondary)
+
+            Spacer().frame(height: 10)
+
+            Text(verse.title)
+                .font(.system(size: 16, weight: .bold, design: .serif))
+                .foregroundColor(.secondary)
+                .padding(.bottom, 6)
+
+            Text(verse.verse)
+                .font(.system(size: 15, design: .serif))
+                .lineSpacing(5)
+                .foregroundColor(.secondary)
+                .minimumScaleFactor(0.75)
+
+            Spacer(minLength: 6)
+
+            Text(cardLabel)
+                .font(.system(size: 10, weight: .medium))
+                .foregroundColor(.secondary.opacity(0.5))
+        }
+        .flashcardStyle()
+        .frame(width: width, height: height)
+        .transition(.opacity)
+        .animation(.easeInOut(duration: 0.1), value: isPeeking)
+    }
+}
+
+// MARK: - Shake Animation
+
+/// Fires a three-step horizontal shake by animating a `CGFloat` binding.
+/// Used to signal wrong input. Runs on the main actor; timings match across the app.
+@MainActor
+func triggerShake(_ offset: Binding<CGFloat>) {
+    withAnimation(.interpolatingSpring(stiffness: 600, damping: 10)) { offset.wrappedValue = 12 }
+    Task { @MainActor in
+        try? await Task.sleep(for: .milliseconds(70))
+        withAnimation(.interpolatingSpring(stiffness: 600, damping: 12)) { offset.wrappedValue = -8 }
+        try? await Task.sleep(for: .milliseconds(70))
+        withAnimation(.spring()) { offset.wrappedValue = 0 }
+    }
+}

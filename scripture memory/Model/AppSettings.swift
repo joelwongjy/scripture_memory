@@ -23,6 +23,13 @@ enum StudyMode: String, CaseIterable {
         case .submit:      return "Type the full verse on the card, then tap Submit to check all at once."
         }
     }
+
+    /// Placeholder text for the single text field used in first-letter / full-word input.
+    var inputPlaceholder: String {
+        self == .fullWord
+            ? "Type each word, press space to check..."
+            : "Type first letter of each word..."
+    }
 }
 
 // MARK: - Bible Version
