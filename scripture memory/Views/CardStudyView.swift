@@ -241,7 +241,7 @@ struct CardStudyView: View {
                 let scrollableDistance = max(scrollContentHeight - containerHeight, 1)
                 let scrollFraction: Double = Double(min(max(-scrollContentOffset / scrollableDistance, 0), 1))
                 ZStack(alignment: .trailing) {
-                    ScrollView(.vertical, showsIndicators: false) {
+                    ScrollView(.vertical, showsIndicators: true) {
                         // Eager outer VStack so the top sentinel is NEVER
                         // unmounted by LazyVStack's recycling — otherwise
                         // when the user scrolls far enough down, the
