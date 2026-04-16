@@ -237,6 +237,24 @@ struct CardStudyView: View {
                 ZStack(alignment: .trailing) {
                     ScrollView(.vertical, showsIndicators: false) {
                         LazyVStack(spacing: 20) {
+                            // Top sentinel: probes scroll offset.
+                            // A zero-height marker pinned to the top of the
+                            // content. Its minY in the scroll's coord space
+                            // is 0 at rest and goes negative as the user
+                            // scrolls down. More reliable than `.background`
+                            // on the LazyVStack itself, which can miss
+                            // updates inside lazy scroll content.
+                            Color.clear
+                                .frame(height: 0)
+                                .background(
+                                    GeometryReader { g in
+                                        Color.clear.preference(
+                                            key: ScrollContentOffsetKey.self,
+                                            value: g.frame(in: .named(Self.scrollSpace)).minY
+                                        )
+                                    }
+                                )
+
                             ForEach(Array(vm.verses.enumerated()), id: \.offset) { index, verse in
                                 makeCard(verse: verse, verseIndex: index, interactive: index == vm.currentIndex)
                                     .frame(width: cardWidth, height: cardHeight)
@@ -254,17 +272,15 @@ struct CardStudyView: View {
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
-                        // Probe the content frame in the scroll's coord space.
-                        // minY → offset (how far scrolled), height → total
-                        // content height (for computing scrollable distance).
+                        // Total content height — measured on the padded
+                        // LazyVStack itself. Stable across scroll because
+                        // it's measuring the container, not its position.
                         .background(
                             GeometryReader { g in
-                                let f = g.frame(in: .named(Self.scrollSpace))
-                                Color.clear
-                                    .preference(key: ScrollContentOffsetKey.self,
-                                                value: f.minY)
-                                    .preference(key: ScrollContentHeightKey.self,
-                                                value: f.height)
+                                Color.clear.preference(
+                                    key: ScrollContentHeightKey.self,
+                                    value: g.size.height
+                                )
                             }
                         )
                     }
