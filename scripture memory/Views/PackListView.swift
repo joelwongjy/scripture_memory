@@ -387,18 +387,6 @@ struct PackCover: View {
     }
 }
 
-// MARK: - Pack Cover Style
-
-private extension View {
-    func packCoverStyle(border: Color, shadowOpacity: Double = 0.12) -> some View {
-        self
-            .aspectRatio(5.0 / 3.0, contentMode: .fit)
-            .clipShape(RoundedRectangle(cornerRadius: 10))
-            .overlay(RoundedRectangle(cornerRadius: 10).stroke(border, lineWidth: 0.5))
-            .shadow(color: .black.opacity(shadowOpacity), radius: 8, x: 0, y: 4)
-    }
-}
-
 #Preview {
     NavigationStack { PackListView() }
 }

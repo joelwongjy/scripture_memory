@@ -55,7 +55,13 @@ struct TestSessionView: View {
                     cardStack
                         .frame(width: cardWidth, height: cardHeight)
                     if isPeeking, let verse = vm.currentVerse {
-                        peekOverlay(verse: verse, width: cardWidth, height: cardHeight)
+                        PeekOverlayCard(
+                            verse: verse,
+                            cardLabel: vm.cardLabel(for: verse),
+                            width: cardWidth,
+                            height: cardHeight,
+                            isPeeking: isPeeking
+                        )
                     }
                 }
                 .frame(width: cardWidth, height: cardHeight)
@@ -70,7 +76,7 @@ struct TestSessionView: View {
             }
         }
         .background(Color(.systemGroupedBackground))
-        .onChange(of: vm.currentIndex) { _ in
+        .onChange(of: vm.currentIndex) { _, _ in
             vm.clearInputs()
             if speech.isListening { speech.stopListening() }
             if isScrubbing {
@@ -82,14 +88,14 @@ struct TestSessionView: View {
                 refocusIfNeeded()
             }
         }
-        .onChange(of: speech.transcript) { text in
+        .onChange(of: speech.transcript) { _, text in
             guard speech.isListening else { return }
             switch speechTarget {
             case .title: vm.titleInput = text
             case .verse: vm.verseInput = text
             }
         }
-        .onChange(of: submitFocus) { newFocus in
+        .onChange(of: submitFocus) { _, newFocus in
             guard speech.isListening, let newFocus else { return }
             speech.stopListening()
             speechTarget = newFocus
@@ -488,62 +494,6 @@ struct TestSessionView: View {
         .transition(.scale.combined(with: .opacity))
     }
 
-    // MARK: - Peek
-
-    /// Card-style overlay matching the real card but with all text in secondary color.
-    private func peekOverlay(verse: Verse, width: CGFloat, height: CGFloat) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text("\(verse.book) \(verse.reference)")
-                .font(.system(size: 18, weight: .bold, design: .serif))
-                .foregroundColor(.secondary)
-
-            Spacer().frame(height: 10)
-
-            Text(verse.title)
-                .font(.system(size: 16, weight: .bold, design: .serif))
-                .foregroundColor(.secondary)
-                .padding(.bottom, 6)
-
-            Text(verse.verse)
-                .font(.system(size: 15, design: .serif))
-                .lineSpacing(5)
-                .foregroundColor(.secondary)
-                .minimumScaleFactor(0.75)
-
-            Spacer(minLength: 6)
-
-            Text(vm.cardLabel(for: verse))
-                .font(.system(size: 10, weight: .medium))
-                .foregroundColor(.secondary.opacity(0.5))
-        }
-        .flashcardStyle()
-        .frame(width: width, height: height)
-        .transition(.opacity)
-        .animation(.easeInOut(duration: 0.1), value: isPeeking)
-    }
-
-    /// Compact hold-to-peek eye icon — inline with input controls.
-    private var peekIconButton: some View {
-        Image(systemName: isPeeking ? "eye.fill" : "eye")
-            .font(.system(size: 18, weight: .semibold))
-            .foregroundColor(isPeeking ? .blue : .secondary)
-            .frame(width: 48, height: 48)
-            .background(isPeeking ? Color.blue.opacity(0.12) : Color(.secondarySystemGroupedBackground))
-            .cornerRadius(12)
-            .contentShape(Rectangle())
-            .simultaneousGesture(
-                DragGesture(minimumDistance: 0)
-                    .onChanged { _ in
-                        if !isPeeking {
-                            withAnimation(.easeInOut(duration: 0.1)) { isPeeking = true }
-                        }
-                    }
-                    .onEnded { _ in
-                        withAnimation(.easeInOut(duration: 0.1)) { isPeeking = false }
-                    }
-            )
-    }
-
     // MARK: - Submit Controls
 
     private var submitControls: some View {
@@ -588,7 +538,7 @@ struct TestSessionView: View {
                             .background(speech.isListening ? Color.red : Color(.secondarySystemGroupedBackground))
                             .cornerRadius(12)
                     }
-                    peekIconButton
+                    PeekEyeButton(isPeeking: $isPeeking)
                     let isEmpty = vm.titleInput.trimmingCharacters(in: .whitespaces).isEmpty
                               && vm.verseInput.trimmingCharacters(in: .whitespaces).isEmpty
                     Button {
@@ -628,23 +578,23 @@ struct TestSessionView: View {
                 Image(systemName: "character.cursor.ibeam")
                     .foregroundColor(.secondary).font(.system(size: 16))
 
-                TextField(studyMode.testInputPlaceholder, text: $vm.inputText)
+                TextField(studyMode.inputPlaceholder, text: $vm.inputText)
                     .font(.system(size: 17))
                     .focused($isInputFocused)
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
-                    .onChange(of: vm.inputText) { newValue in
+                    .onChange(of: vm.inputText) { _, newValue in
                         guard !newValue.isEmpty else { return }
                         switch studyMode {
                         case .firstLetter:
                             let correct = vm.processFirstLetterInput(newValue)
                             DispatchQueue.main.async { vm.inputText = "" }
-                            if correct { HapticEngine.light() } else { HapticEngine.error(); shakeAnimation() }
+                            if correct { HapticEngine.light() } else { HapticEngine.error(); triggerShake($shakeOffset) }
                         case .fullWord:
                             if vm.processFullWordInput(newValue) {
                                 HapticEngine.light()
                             } else if newValue.hasSuffix(" ") {
-                                HapticEngine.error(); shakeAnimation()
+                                HapticEngine.error(); triggerShake($shakeOffset)
                             }
                         case .submit:
                             break
@@ -657,7 +607,7 @@ struct TestSessionView: View {
             .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(.separator).opacity(0.5), lineWidth: 0.5))
             .offset(x: shakeOffset)
 
-            peekIconButton
+            PeekEyeButton(isPeeking: $isPeeking)
             if isInputFocused {
                 Button { isInputFocused = false } label: {
                     Image(systemName: "keyboard.chevron.compact.down")
@@ -768,25 +718,5 @@ struct TestSessionView: View {
         }
     }
 
-    // MARK: - Shake Animation
-
-    private func shakeAnimation() {
-        withAnimation(.interpolatingSpring(stiffness: 600, damping: 10)) { shakeOffset = 12 }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.07) {
-            withAnimation(.interpolatingSpring(stiffness: 600, damping: 12)) { shakeOffset = -8 }
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.14) {
-            withAnimation(.spring()) { shakeOffset = 0 }
-        }
-    }
 }
 
-// MARK: - StudyMode Extension
-
-private extension StudyMode {
-    var testInputPlaceholder: String {
-        self == .fullWord
-            ? "Type each word, press space to check..."
-            : "Type first letter of each word..."
-    }
-}
