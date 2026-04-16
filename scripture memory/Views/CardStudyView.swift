@@ -19,6 +19,7 @@ struct CardStudyView: View {
     @State private var shakeOffset:  CGFloat = 0
     @State private var speechTarget: SubmitField = .title
     @State private var isScrubbing           = false
+    @State private var isPeeking             = false
 
     @Environment(\.dismiss) private var dismiss
 
@@ -45,9 +46,15 @@ struct CardStudyView: View {
                         .frame(maxHeight: .infinity)
                 } else {
                     Spacer(minLength: 12)
-                    cardStack
-                        .frame(width: cardWidth, height: cardHeight)
-                        .frame(maxWidth: .infinity)
+                    ZStack {
+                        cardStack
+                            .frame(width: cardWidth, height: cardHeight)
+                        if isPeeking, let verse = vm.currentVerse {
+                            peekOverlay(verse: verse, width: cardWidth, height: cardHeight)
+                        }
+                    }
+                    .frame(width: cardWidth, height: cardHeight)
+                    .frame(maxWidth: .infinity)
                     Spacer(minLength: 12)
                 }
 
@@ -276,6 +283,62 @@ struct CardStudyView: View {
         }
     }
 
+    // MARK: - Peek
+
+    /// Card-style overlay matching the real card but with all text in secondary color.
+    private func peekOverlay(verse: Verse, width: CGFloat, height: CGFloat) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("\(verse.book) \(verse.reference)")
+                .font(.system(size: 18, weight: .bold, design: .serif))
+                .foregroundColor(.secondary)
+
+            Spacer().frame(height: 10)
+
+            Text(verse.title)
+                .font(.system(size: 16, weight: .bold, design: .serif))
+                .foregroundColor(.secondary)
+                .padding(.bottom, 6)
+
+            Text(verse.verse)
+                .font(.system(size: 15, design: .serif))
+                .lineSpacing(5)
+                .foregroundColor(.secondary)
+                .minimumScaleFactor(0.75)
+
+            Spacer(minLength: 6)
+
+            Text(vm.cardLabel(for: verse))
+                .font(.system(size: 10, weight: .medium))
+                .foregroundColor(.secondary.opacity(0.5))
+        }
+        .flashcardStyle()
+        .frame(width: width, height: height)
+        .transition(.opacity)
+        .animation(.easeInOut(duration: 0.1), value: isPeeking)
+    }
+
+    /// Compact hold-to-peek eye icon — inline with input controls.
+    private var peekIconButton: some View {
+        Image(systemName: isPeeking ? "eye.fill" : "eye")
+            .font(.system(size: 18, weight: .semibold))
+            .foregroundColor(isPeeking ? .blue : .secondary)
+            .frame(width: 48, height: 48)
+            .background(isPeeking ? Color.blue.opacity(0.12) : Color(.secondarySystemGroupedBackground))
+            .cornerRadius(12)
+            .contentShape(Rectangle())
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { _ in
+                        if !isPeeking {
+                            withAnimation(.easeInOut(duration: 0.1)) { isPeeking = true }
+                        }
+                    }
+                    .onEnded { _ in
+                        withAnimation(.easeInOut(duration: 0.1)) { isPeeking = false }
+                    }
+            )
+    }
+
     // MARK: - Scrubber
 
     private var scrubberRow: some View {
@@ -360,6 +423,7 @@ struct CardStudyView: View {
                             .background(speech.isListening ? Color.red : Color(.secondarySystemGroupedBackground))
                             .cornerRadius(12)
                     }
+                    peekIconButton
                     let isEmpty = vm.titleInput.trimmingCharacters(in: .whitespaces).isEmpty
                               && vm.verseInput.trimmingCharacters(in: .whitespaces).isEmpty
                     Button {
@@ -427,6 +491,7 @@ struct CardStudyView: View {
             .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(.separator).opacity(0.5), lineWidth: 0.5))
             .offset(x: shakeOffset)
 
+            peekIconButton
             if isInputFocused {
                 Button { isInputFocused = false } label: {
                     Image(systemName: "keyboard.chevron.compact.down")
