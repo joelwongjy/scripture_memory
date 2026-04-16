@@ -174,12 +174,9 @@ struct CardStudyView: View {
                     .scaleEffect(goingBack ? 1.0 - backwardDragProgress * 0.05 : 1.0)
                     .rotationEffect(goingBack ? .zero : .degrees(Double(dragOffset.width) * 0.03))
                     .zIndex(2)
-                // Entire Verse (submit) uses TextField + TextEditor — a card-wide drag steals taps from the editor.
-                if studyMode == .submit {
-                    frontCard
-                } else {
-                    frontCard.simultaneousGesture(swipeGesture)
-                }
+                // `simultaneousGesture` lets TextField taps and TextEditor cursor/selection still fire;
+                // the gesture itself filters out predominantly-vertical drags so editor scroll keeps working.
+                frontCard.simultaneousGesture(swipeGesture)
             }
             if vm.currentIndex > 0 && dragOffset.width > 0 {
                 makeCard(verse: vm.verses[vm.currentIndex - 1], verseIndex: vm.currentIndex - 1, interactive: false)
@@ -469,6 +466,8 @@ struct CardStudyView: View {
     private var swipeGesture: some Gesture {
         DragGesture()
             .onChanged { value in
+                // Skip predominantly-vertical drags so TextEditor scroll/selection in submit mode survives.
+                guard abs(value.translation.width) > abs(value.translation.height) else { return }
                 if isCardFlying { commitSwipe() }
                 let canNext = vm.currentIndex < vm.verses.count - 1
                 let canPrev = vm.currentIndex > 0
@@ -480,11 +479,14 @@ struct CardStudyView: View {
             }
             .onEnded { value in
                 if isCardFlying { commitSwipe() }
+                let isHorizontal = abs(value.translation.width) > abs(value.translation.height)
                 let vx = value.predictedEndTranslation.width
-                if (dragOffset.width < -CardSwipeConfig.threshold || vx < -CardSwipeConfig.velocityThreshold),
+                if isHorizontal,
+                   (dragOffset.width < -CardSwipeConfig.threshold || vx < -CardSwipeConfig.velocityThreshold),
                    vm.currentIndex < vm.verses.count - 1 {
                     swipeForward()
-                } else if (dragOffset.width > CardSwipeConfig.threshold || vx > CardSwipeConfig.velocityThreshold),
+                } else if isHorizontal,
+                          (dragOffset.width > CardSwipeConfig.threshold || vx > CardSwipeConfig.velocityThreshold),
                           vm.currentIndex > 0 {
                     swipeBackward()
                 } else {

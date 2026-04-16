@@ -274,12 +274,14 @@ struct TestSessionView: View {
                     .scaleEffect(goingBack ? 1.0 - backwardDragProgress * 0.05 : 1.0)
                     .rotationEffect(goingBack ? .zero : .degrees(Double(dragOffset.width) * 0.03))
                     .zIndex(2)
+                // Always allow swipe (the gesture filters vertical drags so editor scroll/selection still work).
+                // Card-wide tap-to-focus is gated to non-submit modes only — in submit mode it would force focus
+                // to the title field even when the user taps the verse TextEditor.
+                let swipingCard = frontCard.simultaneousGesture(swipeGesture)
                 if studyMode == .submit {
-                    // Submit card: avoid gestures that fight TextField/TextEditor (tap was forcing title focus).
-                    frontCard
+                    swipingCard
                 } else {
-                    frontCard
-                        .simultaneousGesture(swipeGesture)
+                    swipingCard
                         // Simultaneous so title/verse (underscore) taps still reach FlashcardView’s section handler,
                         // while taps elsewhere on the card still bring up the keyboard.
                         .simultaneousGesture(
@@ -635,6 +637,8 @@ struct TestSessionView: View {
     private var swipeGesture: some Gesture {
         DragGesture()
             .onChanged { value in
+                // Skip predominantly-vertical drags so TextEditor scroll/selection in submit mode survives.
+                guard abs(value.translation.width) > abs(value.translation.height) else { return }
                 if isCardFlying { commitSwipe() }
                 let canNext = vm.currentIndex < vm.verses.count - 1
                 let canPrev = vm.currentIndex > 0
@@ -646,11 +650,14 @@ struct TestSessionView: View {
             }
             .onEnded { value in
                 if isCardFlying { commitSwipe() }
+                let isHorizontal = abs(value.translation.width) > abs(value.translation.height)
                 let vx = value.predictedEndTranslation.width
-                if (dragOffset.width < -CardSwipeConfig.threshold || vx < -CardSwipeConfig.velocityThreshold),
+                if isHorizontal,
+                   (dragOffset.width < -CardSwipeConfig.threshold || vx < -CardSwipeConfig.velocityThreshold),
                    vm.currentIndex < vm.verses.count - 1 {
                     swipeForward()
-                } else if (dragOffset.width > CardSwipeConfig.threshold || vx > CardSwipeConfig.velocityThreshold),
+                } else if isHorizontal,
+                          (dragOffset.width > CardSwipeConfig.threshold || vx > CardSwipeConfig.velocityThreshold),
                           vm.currentIndex > 0 {
                     swipeBackward()
                 } else {
