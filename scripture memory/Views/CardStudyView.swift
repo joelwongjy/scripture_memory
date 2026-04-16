@@ -44,6 +44,12 @@ struct CardStudyView: View {
     /// probes can measure Y relative to the viewport.
     private static let scrollSpace = "verticalScrollCards"
 
+    /// Temporarily disabled — the fast-scroll thumb wasn't tracking user
+    /// scroll reliably (preferences inside the lazy ScrollView weren't
+    /// firing). Code is preserved below pending a proper rewrite, e.g.
+    /// using `scrollPosition(id:)` or a UIKit bridge.
+    private static let fastScrollEnabled = false
+
     init(packName: String, verses: [Verse], initialIndex: Int = 0) {
         _vm = StateObject(wrappedValue: CardStudyViewModel(packName: packName, verses: verses, initialIndex: initialIndex))
     }
@@ -236,14 +242,16 @@ struct CardStudyView: View {
                 let scrollFraction: Double = Double(min(max(-scrollContentOffset / scrollableDistance, 0), 1))
                 ZStack(alignment: .trailing) {
                     ScrollView(.vertical, showsIndicators: false) {
-                        LazyVStack(spacing: 20) {
-                            // Top sentinel: probes scroll offset.
-                            // A zero-height marker pinned to the top of the
-                            // content. Its minY in the scroll's coord space
-                            // is 0 at rest and goes negative as the user
-                            // scrolls down. More reliable than `.background`
-                            // on the LazyVStack itself, which can miss
-                            // updates inside lazy scroll content.
+                        // Eager outer VStack so the top sentinel is NEVER
+                        // unmounted by LazyVStack's recycling — otherwise
+                        // when the user scrolls far enough down, the
+                        // sentinel disappears, preferences stop firing,
+                        // and the thumb gets stuck.
+                        VStack(spacing: 0) {
+                            // Top sentinel: probes scroll offset. Zero-height
+                            // marker at the top of content. Its minY in the
+                            // scroll's coord space is 0 at rest and goes
+                            // negative as the user scrolls down.
                             Color.clear
                                 .frame(height: 0)
                                 .background(
@@ -255,34 +263,36 @@ struct CardStudyView: View {
                                     }
                                 )
 
-                            ForEach(Array(vm.verses.enumerated()), id: \.offset) { index, verse in
-                                makeCard(verse: verse, verseIndex: index, interactive: index == vm.currentIndex)
-                                    .frame(width: cardWidth, height: cardHeight)
-                                    .id(index)
-                                    .overlay {
-                                        if index != vm.currentIndex {
-                                            Color.clear.contentShape(Rectangle())
-                                                .onTapGesture {
-                                                    HapticEngine.light()
-                                                    vm.currentIndex = index
-                                                }
+                            LazyVStack(spacing: 20) {
+                                ForEach(Array(vm.verses.enumerated()), id: \.offset) { index, verse in
+                                    makeCard(verse: verse, verseIndex: index, interactive: index == vm.currentIndex)
+                                        .frame(width: cardWidth, height: cardHeight)
+                                        .id(index)
+                                        .overlay {
+                                            if index != vm.currentIndex {
+                                                Color.clear.contentShape(Rectangle())
+                                                    .onTapGesture {
+                                                        HapticEngine.light()
+                                                        vm.currentIndex = index
+                                                    }
+                                            }
                                         }
-                                    }
+                                }
                             }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            // Total content height — measured on the padded
+                            // LazyVStack. Stable across scroll because it's
+                            // measuring the container, not its position.
+                            .background(
+                                GeometryReader { g in
+                                    Color.clear.preference(
+                                        key: ScrollContentHeightKey.self,
+                                        value: g.size.height
+                                    )
+                                }
+                            )
                         }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        // Total content height — measured on the padded
-                        // LazyVStack itself. Stable across scroll because
-                        // it's measuring the container, not its position.
-                        .background(
-                            GeometryReader { g in
-                                Color.clear.preference(
-                                    key: ScrollContentHeightKey.self,
-                                    value: g.size.height
-                                )
-                            }
-                        )
                     }
                     .coordinateSpace(name: Self.scrollSpace)
                     .background(
@@ -293,7 +303,7 @@ struct CardStudyView: View {
                         }
                     )
 
-                    if vm.verses.count >= 2 {
+                    if Self.fastScrollEnabled, vm.verses.count >= 2 {
                         VerseFastScrollOverlay(
                             verseCount: vm.verses.count,
                             scrollFraction: scrollFraction,
@@ -327,10 +337,9 @@ struct CardStudyView: View {
                     }
                 }
                 .onPreferenceChange(ScrollContentOffsetKey.self) { newOffset in
-                    if abs(newOffset - scrollContentOffset) > 0.5 {
-                        scrollContentOffset = newOffset
-                        scrollActivityPulse &+= 1
-                    }
+                    guard newOffset != scrollContentOffset else { return }
+                    scrollContentOffset = newOffset
+                    scrollActivityPulse &+= 1
                 }
                 .onPreferenceChange(ScrollContentHeightKey.self) { newHeight in
                     if abs(newHeight - scrollContentHeight) > 0.5 {
