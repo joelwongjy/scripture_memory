@@ -144,14 +144,14 @@ struct FlashcardView: View {
 
             if isComplete {
                 Image(systemName: "checkmark.circle.fill")
-                    .foregroundColor(.green.opacity(0.6))
+                    .foregroundStyle(Color.green)
                     .font(.system(size: 10))
             }
         }
         .overlay(alignment: .leading) {
             if isActive && !isComplete {
                 RoundedRectangle(cornerRadius: 0.5)
-                    .fill(Color.blue.opacity(0.5))
+                    .fill(Color.blue)
                     .frame(width: 2)
                     .offset(x: -6)
             }
@@ -190,7 +190,9 @@ struct FlashcardView: View {
             } else if i == revealed {
                 return acc + Text(masked(word) + sep).foregroundColor(.blue).font(font)
             } else {
-                return acc + Text(masked(word) + sep).foregroundColor(.gray.opacity(0.28)).font(font)
+                // Semantic `.tertiary` adapts to both modes instead of the old
+                // hardcoded `.gray.opacity(0.28)`, which fell below AA in dark.
+                return acc + Text(masked(word) + sep).foregroundStyle(.tertiary).font(font)
             }
         }
     }
@@ -201,20 +203,20 @@ struct FlashcardView: View {
             return words.prefix(revealed).enumerated().reduce(Text("")) { acc, pair in
                 let (i, word) = pair
                 let sep = i < revealed - 1 ? " " : ""
-                return acc + Text(word + sep).foregroundColor(.primary.opacity(0.5)).font(font)
+                return acc + Text(word + sep).foregroundStyle(.secondary).font(font)
             }
         }
         return words.enumerated().reduce(Text("")) { acc, pair in
             let (i, word) = pair
             let sep = i < words.count - 1 ? " " : ""
-            return acc + Text(masked(word) + sep).foregroundColor(.gray.opacity(0.22)).font(font)
+            return acc + Text(masked(word) + sep).foregroundStyle(.quaternary).font(font)
         }
     }
 
     private func placeholder(for section: CardSection) -> Text {
         Text(section == .title ? "Title" : "Verse")
             .font(.system(size: 18, weight: .medium, design: .serif))
-            .foregroundColor(.gray.opacity(0.35))
+            .foregroundStyle(.tertiary)
     }
 
     private func masked(_ word: String) -> String {
@@ -229,7 +231,7 @@ struct FlashcardView: View {
                 ZStack(alignment: .leading) {
                     Capsule().fill(Color(.systemGray5))
                     Capsule()
-                        .fill(Color.blue.opacity(0.5))
+                        .fill(Color.blue)
                         .frame(width: max(4, geo.size.width * Double(revealed) / Double(max(1, total))))
                         .animation(.spring(response: 0.4, dampingFraction: 0.7), value: revealed)
                 }

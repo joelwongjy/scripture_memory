@@ -1,7 +1,23 @@
 import Foundation
 
-var packsNIV84: [Pack] = load("verseData.json")
-var packsNIV11: [Pack] = load("verseDataNIV11.json")
+var packsNIV84: [Pack] = loadPacks("verseData.json")
+var packsNIV11: [Pack] = loadPacks("verseDataNIV11.json")
+
+/// Loads a packs JSON and back-fills `Verse.packName` so `Verse.srsKey` is valid.
+func loadPacks(_ filename: String) -> [Pack] {
+    let raw: [Pack] = load(filename)
+    return raw.map { pack in
+        let withPack: [Verse] = pack.verses.map { v in
+            var w = v
+            w.packName = pack.name
+            return w
+        }
+        return Pack(name: pack.name,
+                    color: pack.color,
+                    accentText: pack.accentText,
+                    verses: withPack)
+    }
+}
 
 func load<T: Decodable>(_ filename: String) -> T {
     let data: Data

@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-		53709C082DBE80FE000BA559 /* scripture memory.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "scripture memory.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		53709C082DBE80FE000BA559 /* Scripture Memory.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Scripture Memory.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -40,7 +40,7 @@
 		53709C092DBE80FE000BA559 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				53709C082DBE80FE000BA559 /* scripture memory.app */,
+				53709C082DBE80FE000BA559 /* Scripture Memory.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -48,9 +48,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		53709C072DBE80FE000BA559 /* scripture memory */ = {
+		53709C072DBE80FE000BA559 /* Scripture Memory */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 53709C142DBE80FF000BA559 /* Build configuration list for PBXNativeTarget "scripture memory" */;
+			buildConfigurationList = 53709C142DBE80FF000BA559 /* Build configuration list for PBXNativeTarget "Scripture Memory" */;
 			buildPhases = (
 				53709C042DBE80FE000BA559 /* Sources */,
 				53709C052DBE80FE000BA559 /* Frameworks */,
@@ -63,11 +63,11 @@
 			fileSystemSynchronizedGroups = (
 				53709C0A2DBE80FE000BA559 /* scripture memory */,
 			);
-			name = "scripture memory";
+			name = "Scripture Memory";
 			packageProductDependencies = (
 			);
 			productName = "scripture memory";
-			productReference = 53709C082DBE80FE000BA559 /* scripture memory.app */;
+			productReference = 53709C082DBE80FE000BA559 /* Scripture Memory.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -85,7 +85,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 53709C032DBE80FE000BA559 /* Build configuration list for PBXProject "scripture memory" */;
+			buildConfigurationList = 53709C032DBE80FE000BA559 /* Build configuration list for PBXProject "Scripture Memory" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -99,7 +99,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				53709C072DBE80FE000BA559 /* scripture memory */,
+				53709C072DBE80FE000BA559 /* Scripture Memory */,
 			);
 		};
 /* End PBXProject section */
@@ -242,7 +242,7 @@
 		53709C152DBE80FF000BA559 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = "scripture-memory";
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = "scripture memory/scripture_memory.entitlements";
@@ -286,7 +286,7 @@
 		53709C162DBE80FF000BA559 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = "scripture-memory";
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = "scripture memory/scripture_memory.entitlements";
@@ -330,7 +330,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		53709C032DBE80FE000BA559 /* Build configuration list for PBXProject "scripture memory" */ = {
+		53709C032DBE80FE000BA559 /* Build configuration list for PBXProject "Scripture Memory" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				53709C122DBE80FF000BA559 /* Debug */,
@@ -339,7 +339,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		53709C142DBE80FF000BA559 /* Build configuration list for PBXNativeTarget "scripture memory" */ = {
+		53709C142DBE80FF000BA559 /* Build configuration list for PBXNativeTarget "Scripture Memory" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				53709C152DBE80FF000BA559 /* Debug */,

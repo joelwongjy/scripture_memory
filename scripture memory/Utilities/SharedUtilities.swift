@@ -91,39 +91,36 @@ let flashcardBackground = Color(uiColor: UIColor { tc in
 // MARK: - Study chrome (top bar + scrubber)
 
 extension Image {
-    /// Neutral glass circle — close, list, reset, etc.
+    /// Neutral circular icon button — close, list, reset, etc.
+    /// Blue icon on a solid neutral fill.
     func studyChromeCircleButton() -> some View {
         self
-            .font(.system(size: 13, weight: .semibold))
-            .foregroundStyle(.secondary)
+            .font(.system(size: 15, weight: .semibold))
+            .foregroundStyle(Color.blue)
             .frame(width: 36, height: 36)
-            .background(.ultraThinMaterial, in: Circle())
-            .shadow(color: .black.opacity(0.08), radius: 6, x: 0, y: 2)
+            .background(Color(.secondarySystemBackground), in: Circle())
     }
 
     /// Prev/next chevrons beside the verse scrubber track.
     func studyScrubberChevronButton() -> some View {
         self
-            .font(.system(size: 13, weight: .semibold))
-            .foregroundStyle(.primary.opacity(0.7))
+            .font(.system(size: 15, weight: .semibold))
+            .foregroundStyle(Color.blue)
             .frame(width: 36, height: 36)
-            .background(.ultraThinMaterial, in: Circle())
-            .shadow(color: .black.opacity(0.08), radius: 6, x: 0, y: 2)
+            .background(Color(.secondarySystemBackground), in: Circle())
     }
 
-    /// Toggle controls (shuffle, layout) — blue when active.
+    /// Toggle controls (shuffle, layout). Background flips: neutral when off,
+    /// solid blue when on. Icon goes white on the blue background so there's
+    /// no blue-on-blue visibility issue.
     func studyChromeToggle(isOn: Bool) -> some View {
         self
-            .font(.system(size: 13, weight: .semibold))
-            .foregroundStyle(isOn ? AnyShapeStyle(.white) : AnyShapeStyle(.secondary))
+            .font(.system(size: 15, weight: .semibold))
+            .foregroundStyle(isOn ? AnyShapeStyle(Color.white) : AnyShapeStyle(Color.blue))
             .frame(width: 36, height: 36)
             .background(
-                isOn ? AnyShapeStyle(Color.blue) : AnyShapeStyle(.ultraThinMaterial),
+                isOn ? AnyShapeStyle(Color.blue) : AnyShapeStyle(Color(.secondarySystemBackground)),
                 in: Circle()
-            )
-            .shadow(
-                color: isOn ? Color.blue.opacity(0.35) : Color.black.opacity(0.08),
-                radius: isOn ? 8 : 6, x: 0, y: 2
             )
     }
 }

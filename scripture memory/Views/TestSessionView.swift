@@ -21,15 +21,23 @@ struct TestSessionView: View {
     @State private var isPeeking             = false
     @State private var showVerseSelector     = false
 
+    // SRS session bookkeeping. Lets the user swipe back to an already-graded
+    // card and change the grade without compounding (regrade computes from
+    // the captured pre-grade state, not the already-advanced one).
+    @State private var sessionGrades:    [Int: SRSGrade]      = [:]
+    @State private var preGradeStates:   [Int: SRSCardState]  = [:]
+
     @Environment(\.dismiss) private var dismiss
 
     let onSessionEnded: (() -> Void)?
+    let sessionKind:    SessionKind
 
     // MARK: - Init
 
     init(session: TestSession, onSessionEnded: (() -> Void)? = nil) {
         _vm = StateObject(wrappedValue: TestSessionViewModel(verses: session.verses))
         self.onSessionEnded = onSessionEnded
+        self.sessionKind    = session.kind
     }
 
     // MARK: - Body
@@ -194,24 +202,23 @@ struct TestSessionView: View {
             if vm.isSessionComplete && vm.sessionScore == 0 {
                 Text("✓")
                     .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(.green)
+                    .foregroundStyle(Color.green)
                     .frame(width: 36, height: 36)
-                    .background(.ultraThinMaterial, in: Circle())
+                    .background(Color(.secondarySystemBackground), in: Circle())
             } else if vm.sessionScore < 0 {
                 Text("\(vm.sessionScore)")
                     .font(.system(size: 13, weight: .bold, design: .monospaced))
-                    .foregroundColor(.red)
+                    .foregroundStyle(Color.red)
                     .frame(width: 36, height: 36)
-                    .background(.ultraThinMaterial, in: Circle())
+                    .background(Color(.secondarySystemBackground), in: Circle())
             } else {
                 Text("0")
                     .font(.system(size: 13, weight: .bold, design: .monospaced))
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                     .frame(width: 36, height: 36)
-                    .background(.ultraThinMaterial, in: Circle())
+                    .background(Color(.secondarySystemBackground), in: Circle())
             }
         }
-        .shadow(color: .black.opacity(0.08), radius: 6, x: 0, y: 2)
         .animation(.spring(response: 0.3, dampingFraction: 0.8), value: vm.sessionScore)
     }
 
@@ -282,7 +289,7 @@ struct TestSessionView: View {
                     swipingCard
                 } else {
                     swipingCard
-                        // Simultaneous so title/verse (underscore) taps still reach FlashcardView’s section handler,
+                        // Simultaneous so title/verse (underscore) taps still reach FlashcardView's section handler,
                         // while taps elsewhere on the card still bring up the keyboard.
                         .simultaneousGesture(
                             TapGesture().onEnded {
@@ -296,6 +303,7 @@ struct TestSessionView: View {
                 makeCard(verse: vm.verses[vm.currentIndex - 1], verseIndex: vm.currentIndex - 1, interactive: false)
                     .offset(x: dragOffset.width - CardSwipeConfig.prevCardOffset)
                     .rotationEffect(.degrees(Double(dragOffset.width - CardSwipeConfig.prevCardOffset) * 0.02))
+                    .allowsHitTesting(false)
                     .zIndex(3)
             }
         }
@@ -346,7 +354,7 @@ struct TestSessionView: View {
                 verseRevealedCount: verseRev,
                 activeSection: vm.activeSection,
                 onSectionTap: interactive ? { section in
-                    withAnimation(.easeOut(duration: 0.2)) { vm.activeSection = section }
+                    vm.activeSection = section
                     DispatchQueue.main.async { focusInput() }
                 } : nil
             )
@@ -385,32 +393,41 @@ struct TestSessionView: View {
             if vm.isSessionComplete {
                 sessionCompletePanel
             } else if vm.isCardComplete {
-                // Next button
-                Button {
-                    isScrubbing = true
-                    vm.goForward()
-                    HapticEngine.light()
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                        isScrubbing = false
-                        refocusIfNeeded()
+                if sessionKind == .srs, let verse = vm.currentVerse {
+                    SRSGradingButtons(
+                        state:     displayState(for: verse),
+                        suggested: gradeButtonHighlight(for: verse),
+                        now:       Date(),
+                        onPick:    { gradeAndAdvance($0) }
+                    )
+                } else {
+                    // Next button
+                    Button {
+                        isScrubbing = true
+                        vm.goForward()
+                        HapticEngine.light()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                            isScrubbing = false
+                            refocusIfNeeded()
+                        }
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundColor(.green)
+                                .font(.system(size: 18))
+                            Text("Next")
+                                .font(.system(size: 16, weight: .semibold))
+                        }
+                        .foregroundColor(.primary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14.6)
+                        .background(Color(.secondarySystemGroupedBackground))
+                        .cornerRadius(12)
                     }
-                } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(.green)
-                            .font(.system(size: 18))
-                        Text("Next")
-                            .font(.system(size: 16, weight: .semibold))
-                    }
-                    .foregroundColor(.primary)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14.6)
-                    .background(Color(.secondarySystemGroupedBackground))
-                    .cornerRadius(12)
+                    .padding(.horizontal, 24)
+                    .disabled(vm.currentIndex >= vm.verses.count - 1)
+                    .opacity(vm.currentIndex >= vm.verses.count - 1 ? 0.5 : 1)
                 }
-                .padding(.horizontal, 24)
-                .disabled(vm.currentIndex >= vm.verses.count - 1)
-                .opacity(vm.currentIndex >= vm.verses.count - 1 ? 0.5 : 1)
             } else if studyMode == .submit {
                 submitControls
             } else {
@@ -502,33 +519,42 @@ struct TestSessionView: View {
         let hasResult = vm.currentVerse.flatMap { vm.submitResults[$0.id] } != nil
         return Group {
             if hasResult {
-                HStack(spacing: 10) {
-                    Button { vm.retrySubmit() } label: {
-                        Label("Try Again", systemImage: "arrow.counterclockwise")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.primary)
-                            .frame(maxWidth: .infinity).padding(.vertical, 12)
-                            .background(Color(.secondarySystemGroupedBackground))
-                            .cornerRadius(12)
-                    }
-                    Button {
-                        isScrubbing = true
-                        vm.goForward()
-                        HapticEngine.light()
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                            isScrubbing = false
-                            refocusIfNeeded()
+                if sessionKind == .srs, let verse = vm.currentVerse {
+                    SRSGradingButtons(
+                        state:     displayState(for: verse),
+                        suggested: gradeButtonHighlight(for: verse),
+                        now:       Date(),
+                        onPick:    { gradeAndAdvance($0) }
+                    )
+                } else {
+                    HStack(spacing: 10) {
+                        Button { vm.retrySubmit() } label: {
+                            Label("Try Again", systemImage: "arrow.counterclockwise")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(.primary)
+                                .frame(maxWidth: .infinity).padding(.vertical, 12)
+                                .background(Color(.secondarySystemGroupedBackground))
+                                .cornerRadius(12)
                         }
-                    } label: {
-                        Text("Next")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity).padding(.vertical, 12)
-                            .background(Color.blue)
-                            .cornerRadius(12)
+                        Button {
+                            isScrubbing = true
+                            vm.goForward()
+                            HapticEngine.light()
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                                isScrubbing = false
+                                refocusIfNeeded()
+                            }
+                        } label: {
+                            Text("Next")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity).padding(.vertical, 12)
+                                .background(Color.blue)
+                                .cornerRadius(12)
+                        }
+                        .disabled(vm.currentIndex >= vm.verses.count - 1)
+                        .opacity(vm.currentIndex >= vm.verses.count - 1 ? 0.5 : 1)
                     }
-                    .disabled(vm.currentIndex >= vm.verses.count - 1)
-                    .opacity(vm.currentIndex >= vm.verses.count - 1 ? 0.5 : 1)
                 }
             } else {
                 HStack(spacing: 10) {
@@ -602,24 +628,29 @@ struct TestSessionView: View {
                             break
                         }
                     }
+                    // Peek and dismiss live in the keyboard toolbar so touching them
+                    // never triggers UIKit's resign-on-touch-outside behaviour.
+                    .toolbar {
+                        ToolbarItemGroup(placement: .keyboard) {
+                            Button {
+                                isPeeking.toggle()
+                                if isPeeking { HapticEngine.light() }
+                            } label: {
+                                Image(systemName: isPeeking ? "eye.fill" : "eye")
+                                    .foregroundStyle(isPeeking ? AnyShapeStyle(Color.blue) : AnyShapeStyle(.secondary))
+                            }
+                            Spacer()
+                            Button { isInputFocused = false } label: {
+                                Image(systemName: "keyboard.chevron.compact.down")
+                            }
+                        }
+                    }
             }
             .padding(14)
             .background(Color(.secondarySystemGroupedBackground))
             .cornerRadius(12)
             .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(.separator).opacity(0.5), lineWidth: 0.5))
             .offset(x: shakeOffset)
-
-            PeekEyeButton(isPeeking: $isPeeking)
-            if isInputFocused {
-                Button { isInputFocused = false } label: {
-                    Image(systemName: "keyboard.chevron.compact.down")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.secondary)
-                        .frame(width: 48, height: 48)
-                        .background(Color(.secondarySystemGroupedBackground))
-                        .cornerRadius(12)
-                }
-            }
         }
         .padding(.horizontal, 24)
     }
@@ -662,6 +693,8 @@ struct TestSessionView: View {
                     swipeBackward()
                 } else {
                     withAnimation(.spring(response: 0.3, dampingFraction: 1.0)) { dragOffset = .zero }
+                    // Drag started (dismissing keyboard) but wasn't committed — restore focus.
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { refocusIfNeeded() }
                 }
             }
     }
@@ -702,6 +735,8 @@ struct TestSessionView: View {
             isCardFlying = false
             flyDirection = 0
         }
+        // Refocus immediately so the keyboard comes back before its dismiss animation finishes.
+        if !vm.isCardComplete && !vm.isSessionComplete { focusInput() }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { isScrubbing = false }
     }
 
@@ -725,5 +760,76 @@ struct TestSessionView: View {
         }
     }
 
+    // MARK: - SRS Helpers
+
+    private func currentSRSState(for verse: Verse) -> SRSCardState {
+        SRSStore.shared.state(for: verse)
+            ?? SRSCardState.newCard(key: verse.srsKey, now: Date())
+    }
+
+    /// State to feed `SRSGradingButtons` for prediction labels.
+    /// - First visit: live state from the store.
+    /// - Already graded this session: the captured pre-grade state, so the
+    ///   "1d / 4d / 12d" labels reflect what each grade WOULD do from the
+    ///   original (not the already-advanced) state.
+    private func displayState(for verse: Verse) -> SRSCardState {
+        if let prior = preGradeStates[verse.id] { return prior }
+        if sessionGrades[verse.id] != nil {
+            // Brand-new card graded this session — predictions show the
+            // fresh-card behavior the user originally saw.
+            return SRSCardState.newCard(key: verse.srsKey, now: Date())
+        }
+        return currentSRSState(for: verse)
+    }
+
+    /// Auto-suggested grade unless the user has already picked one this session,
+    /// in which case the previously-picked grade stays highlighted.
+    private func gradeButtonHighlight(for verse: Verse) -> SRSGrade {
+        sessionGrades[verse.id] ?? suggestedGradeForCurrentCard()
+    }
+
+    private func suggestedGradeForCurrentCard() -> SRSGrade {
+        guard let verse = vm.currentVerse else { return .good }
+        let isAllCorrect: Bool = (studyMode == .submit)
+            ? (vm.submitResults[verse.id]?.isAllCorrect == true)
+            : true   // Other modes only complete via correct typing.
+        return suggestedGrade(isAllCorrect: isAllCorrect, mistakes: vm.mistakes(for: verse.id))
+    }
+
+    private func gradeAndAdvance(_ grade: SRSGrade) {
+        guard let verse = vm.currentVerse else { return }
+
+        let firstGradeInSession = (sessionGrades[verse.id] == nil)
+        if firstGradeInSession {
+            // Capture pre-grade state so a later re-grade can recompute
+            // from the original (no compounding). Brand-new cards have no
+            // prior state — that case is handled in the regrade branch.
+            if let current = SRSStore.shared.state(for: verse) {
+                preGradeStates[verse.id] = current
+            }
+            SRSStore.shared.grade(verse: verse, grade: grade)
+        } else {
+            // Re-grade. Restore from captured prior state, or a fresh
+            // new-card state for cards that had no state at session start.
+            let prior = preGradeStates[verse.id]
+                ?? SRSCardState.newCard(key: verse.srsKey, now: Date())
+            SRSStore.shared.regrade(verse: verse, grade: grade, from: prior)
+        }
+        sessionGrades[verse.id] = grade
+
+        if vm.currentIndex < vm.verses.count - 1 {
+            isScrubbing = true
+            vm.goForward()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                isScrubbing = false
+                refocusIfNeeded()
+            }
+        } else {
+            // Last card — close the session.
+            vm.clearProgress()
+            onSessionEnded?()
+            dismiss()
+        }
+    }
 }
 

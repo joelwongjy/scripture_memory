@@ -12,6 +12,14 @@ struct ContentView: View {
             }
 
             NavigationStack {
+                SRSDashboardView()
+            }
+            .tabItem {
+                Image(systemName: "calendar.badge.checkmark")
+                Text("Daily")
+            }
+
+            NavigationStack {
                 TestSetupView()
             }
             .tabItem {

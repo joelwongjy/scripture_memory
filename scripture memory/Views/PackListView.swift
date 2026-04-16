@@ -67,7 +67,7 @@ struct PackListView: View {
         .navigationTitle("Packs")
         .searchable(
             text: $searchText,
-            placement: .automatic,
+            placement: .navigationBarDrawer(displayMode: .always),
             prompt: "Search verses"
         )
         .fullScreenCover(item: $selectedPack) { pack in
@@ -115,24 +115,24 @@ struct PackListView: View {
                                         VStack(alignment: .leading, spacing: 3) {
                                             Text("\(result.verse.book) \(result.verse.reference)")
                                                 .font(.system(size: 15, weight: .semibold))
-                                                .foregroundColor(.primary)
+                                                .foregroundStyle(.primary)
                                             Text(result.verse.title)
                                                 .font(.system(size: 13, weight: .medium))
-                                                .foregroundColor(.primary.opacity(0.82))
+                                                .foregroundStyle(.primary)
                                             Text(result.verse.verse)
                                                 .font(.system(size: 12))
-                                                .foregroundColor(.primary.opacity(0.68))
+                                                .foregroundStyle(.secondary)
                                                 .lineLimit(1)
                                                 .truncationMode(.tail)
                                                 .multilineTextAlignment(.leading)
                                             Text(result.pack.name)
                                                 .font(.system(size: 11, weight: .medium))
-                                                .foregroundColor(.primary.opacity(0.52))
+                                                .foregroundStyle(.tertiary)
                                         }
                                         Spacer()
                                         Image(systemName: "chevron.right")
                                             .font(.system(size: 12, weight: .semibold))
-                                            .foregroundColor(.secondary)
+                                            .foregroundStyle(.secondary)
                                     }
                                     .padding(.horizontal, 16)
                                     .padding(.vertical, 11)

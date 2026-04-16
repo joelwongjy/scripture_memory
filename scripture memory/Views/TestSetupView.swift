@@ -116,7 +116,7 @@ struct TestSetupView: View {
         return HStack(spacing: 10) {
             Image(systemName: "play.circle.fill")
                 .font(.system(size: 22))
-                .foregroundColor(.blue)
+                .foregroundStyle(Color.blue)
 
             VStack(alignment: .leading, spacing: 1) {
                 Text("Session in Progress")
@@ -176,9 +176,7 @@ struct TestSetupView: View {
                                  : someSelected ? "minus.circle.fill"
                                  : "circle")
                     .font(.system(size: 22))
-                    .foregroundColor(someSelected ? .blue : .secondary)
-                    .animation(.spring(response: 0.2), value: allSelected)
-                    .animation(.spring(response: 0.2), value: someSelected)
+                    .foregroundStyle(someSelected ? AnyShapeStyle(Color.blue) : AnyShapeStyle(.secondary))
                     .frame(width: 44, height: 50)
             }
             .buttonStyle(.plain)
@@ -211,19 +209,16 @@ struct TestSetupView: View {
 
             // ③ Chevron — only expansion trigger, no selection side-effect
             Button {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                    if isExpanded {
-                        expandedPackIds.remove(pack.id)
-                    } else {
-                        expandedPackIds.insert(pack.id)
-                    }
+                if isExpanded {
+                    expandedPackIds.remove(pack.id)
+                } else {
+                    expandedPackIds.insert(pack.id)
                 }
             } label: {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(.secondary)
                     .rotationEffect(isExpanded ? .degrees(90) : .zero)
-                    .animation(.spring(response: 0.3, dampingFraction: 0.8), value: isExpanded)
                     .frame(width: 44, height: 50)
             }
             .buttonStyle(.plain)
@@ -241,8 +236,7 @@ struct TestSetupView: View {
             HStack(spacing: 10) {
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 19))
-                    .foregroundColor(isSelected ? .blue : .secondary)
-                    .animation(.spring(response: 0.2), value: isSelected)
+                    .foregroundStyle(isSelected ? AnyShapeStyle(Color.blue) : AnyShapeStyle(.secondary))
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(verse.title)
@@ -284,8 +278,9 @@ struct TestSetupView: View {
                     } label: {
                         Image(systemName: "minus")
                             .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(Color.blue)
                             .frame(width: 32, height: 32)
-                            .background(.ultraThinMaterial, in: Circle())
+                            .background(Color(.secondarySystemBackground), in: Circle())
                     }
                     .buttonStyle(.plain)
                     .disabled(clampedCount <= 1)
@@ -300,8 +295,9 @@ struct TestSetupView: View {
                     } label: {
                         Image(systemName: "plus")
                             .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(Color.blue)
                             .frame(width: 32, height: 32)
-                            .background(.ultraThinMaterial, in: Circle())
+                            .background(Color(.secondarySystemBackground), in: Circle())
                     }
                     .buttonStyle(.plain)
                     .disabled(clampedCount >= selectedCount)
@@ -329,7 +325,7 @@ struct TestSetupView: View {
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 14)
-        .background(.ultraThickMaterial)
+        .background(Color(.systemBackground))
         .overlay(Rectangle().fill(Color(.separator).opacity(0.4)).frame(height: 0.5), alignment: .top)
     }
 

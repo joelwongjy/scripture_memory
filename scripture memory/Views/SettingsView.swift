@@ -1,9 +1,13 @@
 import SwiftUI
 
 struct SettingsView: View {
-    @AppStorage("studyMode")    private var studyMode:    StudyMode    = .firstLetter
-    @AppStorage("bibleVersion") private var bibleVersion: BibleVersion = .niv84
-    @AppStorage("hardMode")     private var hardMode:     Bool         = false
+    @AppStorage("studyMode")          private var studyMode:    StudyMode    = .firstLetter
+    @AppStorage("bibleVersion")       private var bibleVersion: BibleVersion = .niv84
+    @AppStorage("hardMode")           private var hardMode:     Bool         = false
+    @AppStorage("srs.dailyNewCap")    private var dailyNewCap:    Int        = 5
+    @AppStorage("srs.dailyReviewCap") private var dailyReviewCap: Int        = 50
+
+    @State private var showResetSRSAlert = false
 
     var body: some View {
         List {
@@ -42,11 +46,39 @@ struct SettingsView: View {
             }
 
             Section {
-                HStack {
-                    Text("Version")
-                    Spacer()
-                    Text("1.0").foregroundColor(.secondary)
+                Stepper(value: $dailyNewCap, in: 0...50) {
+                    LabeledContent("New cards / day", value: "\(dailyNewCap)")
                 }
+                Stepper(value: $dailyReviewCap, in: 0...500, step: 5) {
+                    LabeledContent("Reviews / day", value: "\(dailyReviewCap)")
+                }
+            } header: {
+                Text("Daily Review")
+            } footer: {
+                Text("New-card cap is shared across all active packs.")
+            }
+
+            Section {
+                Button(role: .destructive) {
+                    showResetSRSAlert = true
+                } label: {
+                    Text("Reset Review Progress")
+                        .frame(maxWidth: .infinity, alignment: .center)
+                }
+            } footer: {
+                Text("Clears all card scheduling. Cannot be undone.")
+            }
+            .alert("Reset review progress?", isPresented: $showResetSRSAlert) {
+                Button("Cancel", role: .cancel) { }
+                Button("Reset", role: .destructive) {
+                    SRSStore.shared.resetAll()
+                }
+            } message: {
+                Text("All intervals and ease values will be cleared.")
+            }
+
+            Section {
+                LabeledContent("Version", value: "1.0")
             } header: {
                 Text("About")
             } footer: {
