@@ -1,0 +1,19 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  srs-core-tests:
+    name: SRS core unit tests
+    runs-on: ubuntu-latest
+    # Official Swift image — gives us `swift test` on a plain Linux runner,
+    # no Xcode/simulator needed (the tested files are pure Foundation).
+    container: swift:6.0
+    steps:
+      - uses: actions/checkout@v4
+      - name: Swift version
+        run: swift --version
+      - name: Run tests
+        run: swift test

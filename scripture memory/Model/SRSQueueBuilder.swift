@@ -116,15 +116,11 @@ enum SRSQueueBuilder {
         dailyNewCap: Int,
         now: Date = Date()
     ) -> [String: Int] {
-        var remaining = globalNewRemaining(store: store, dailyNewCap: dailyNewCap, now: now)
-        var result: [String: Int] = [:]
-        for pack in orderedActivePacks {
-            guard remaining > 0 else { result[pack.name] = 0; continue }
-            let candidates = store.newCandidateCards(in: pack.name, allVerses: pack.verses).count
-            let take = min(remaining, candidates)
-            result[pack.name] = take
-            remaining -= take
+        let budget     = globalNewRemaining(store: store, dailyNewCap: dailyNewCap, now: now)
+        let candidates = orderedActivePacks.map {
+            store.newCandidateCards(in: $0.name, allVerses: $0.verses).count
         }
-        return result
+        let taken = SRSMath.dripBudget(budget, across: candidates)
+        return Dictionary(uniqueKeysWithValues: zip(orderedActivePacks.map(\.name), taken))
     }
 }
