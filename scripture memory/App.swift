@@ -1,9 +1,9 @@
-/*
-See the LICENSE.txt file for this sample’s licensing information.
-
-Abstract:
-The top-level definition of the Landmarks app.
-*/
+//
+//  App.swift
+//  Scripture Memory
+//
+//  The top-level definition of the Scripture Memory app.
+//
 
 import SwiftUI
 

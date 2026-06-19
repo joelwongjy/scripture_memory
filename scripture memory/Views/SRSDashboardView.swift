@@ -39,6 +39,19 @@ struct SRSDashboardView: View {
         SRSQueueBuilder.globalNewRemaining(store: store, dailyNewCap: dailyNewCap, now: now)
     }
 
+    /// New cards projected per active pack, with the GLOBAL cap dripped across
+    /// packs in list order. Without this, every pack independently shows the
+    /// full remaining cap (e.g. three packs each reading "2 new" when only 2
+    /// new cards will actually be served today).
+    private var projectedNewByPack: [String: Int] {
+        SRSQueueBuilder.projectedNewByPack(
+            orderedActivePacks: activePacks,
+            store: store,
+            dailyNewCap: dailyNewCap,
+            now: now
+        )
+    }
+
     var body: some View {
         ScrollView {
             VStack(spacing: Layout.sectionSpacing) {
@@ -169,9 +182,10 @@ struct SRSDashboardView: View {
                 .textCase(.uppercase)
                 .padding(.leading, 4)
 
+            let projectedNew = projectedNewByPack
             VStack(spacing: 0) {
                 ForEach(Array(packs.enumerated()), id: \.element.id) { idx, pack in
-                    packRow(pack)
+                    packRow(pack, projectedNew: projectedNew[pack.name] ?? 0)
                     if idx < packs.count - 1 {
                         Divider().padding(.leading, Layout.rowPaddingH)
                     }
@@ -184,7 +198,7 @@ struct SRSDashboardView: View {
         }
     }
 
-    private func packRow(_ pack: Pack) -> some View {
+    private func packRow(_ pack: Pack, projectedNew: Int) -> some View {
         let counts = SRSQueueBuilder.counts(
             packName: pack.name,
             allVerses: pack.verses,
@@ -192,16 +206,18 @@ struct SRSDashboardView: View {
             now: now
         )
         let active = store.isActive(pack.name)
-        let projectedNew = min(globalNewRemaining, counts.newCandidates)
+        let subtitle = packSubtitle(counts: counts, active: active, projectedNew: projectedNew)
 
         return HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(pack.name)
                     .font(.system(size: 16, weight: .medium))
                     .foregroundStyle(.primary)
-                Text(packSubtitle(counts: counts, active: active, projectedNew: projectedNew))
-                    .font(.system(size: 13))
-                    .foregroundStyle(.secondary)
+                if !subtitle.isEmpty {
+                    Text(subtitle)
+                        .font(.system(size: 13))
+                        .foregroundStyle(.secondary)
+                }
             }
 
             Spacer(minLength: 8)
@@ -224,8 +240,8 @@ struct SRSDashboardView: View {
                 return "Paused · \(counts.totalScheduled) scheduled"
             }
             return counts.newCandidates > 0
-                ? "Off · \(counts.newCandidates) verses to learn"
-                : "Off"
+                ? "\(counts.newCandidates) verses to learn"
+                : ""
         }
         let queueSize = counts.learning + counts.review + projectedNew
         if queueSize == 0 {
