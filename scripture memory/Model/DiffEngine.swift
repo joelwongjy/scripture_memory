@@ -1,8 +1,11 @@
-import UIKit
+import Foundation
 
 // MARK: - Diff Engine
 
 /// Computes word-level diffs between a typed answer and the target using edit distance.
+///
+/// Pure, Foundation-only (no UIKit) so it can be unit-tested in CI. The haptic
+/// helper that used to share this file now lives in `Utilities/HapticEngine.swift`.
 enum DiffEngine {
 
     // MARK: Public
@@ -74,13 +77,4 @@ enum DiffEngine {
         }
         return diffs.reversed()
     }
-}
-
-// MARK: - Haptic Engine
-
-/// Thin wrappers around UIKit feedback generators for consistent haptic responses.
-enum HapticEngine {
-    static func light()   { UIImpactFeedbackGenerator(style: .light).impactOccurred() }
-    static func success() { UINotificationFeedbackGenerator().notificationOccurred(.success) }
-    static func error()   { UINotificationFeedbackGenerator().notificationOccurred(.error) }
 }

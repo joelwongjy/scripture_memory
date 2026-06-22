@@ -104,4 +104,23 @@ enum SRSQueueBuilder {
     static func globalNewRemaining(store: SRSStore, dailyNewCap: Int, now: Date = Date()) -> Int {
         max(0, dailyNewCap - store.newIntroducedToday(now: now))
     }
+
+    /// Per-pack projected NEW cards for today. Drips the GLOBAL new-card cap
+    /// across `orderedActivePacks` IN ORDER — mirroring `buildAllPacksSession` —
+    /// so the per-pack numbers SUM to the global projection instead of each pack
+    /// independently claiming the full remaining cap. Keyed by pack name; packs
+    /// reached after the cap is exhausted map to 0.
+    static func projectedNewByPack(
+        orderedActivePacks: [Pack],
+        store: SRSStore,
+        dailyNewCap: Int,
+        now: Date = Date()
+    ) -> [String: Int] {
+        let budget     = globalNewRemaining(store: store, dailyNewCap: dailyNewCap, now: now)
+        let candidates = orderedActivePacks.map {
+            store.newCandidateCards(in: $0.name, allVerses: $0.verses).count
+        }
+        let taken = SRSMath.dripBudget(budget, across: candidates)
+        return Dictionary(uniqueKeysWithValues: zip(orderedActivePacks.map(\.name), taken))
+    }
 }

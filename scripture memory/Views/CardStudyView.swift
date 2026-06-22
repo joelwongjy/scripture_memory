@@ -21,48 +21,66 @@ struct CardStudyView: View {
     @State private var isScrubbing           = false
     @State private var isPeeking             = false
 
-    /// Measured height of the vertical-scroll area (populated by a
-    /// `.background(GeometryReader)` on the ScrollView — see
-    /// `verticalScrollCards`). Seed to 0; the first layout pass writes the
-    /// real value and the fast-scroll thumb renders at full track length.
-    @State private var scrollAreaHeight: CGFloat = 0
-    /// Current scroll content offset (LazyVStack's minY in scroll coord
-    /// space — negative as user scrolls down). Drives the thumb's display
-    /// position so it follows the user's finger.
-    @State private var scrollContentOffset: CGFloat = 0
-    /// Total height of the scroll content. Paired with scrollAreaHeight to
-    /// compute the max scrollable distance for mapping offset → index.
-    @State private var scrollContentHeight: CGFloat = 0
-    /// Bumped on every scroll offset change so the overlay can fade in.
-    @State private var scrollActivityPulse: Int = 0
+    /// Live continuous scroll position (0 = top, 1 = bottom) in vertical-scroll
+    /// browse mode, measured from the content's offset. Drives the fast-scroll
+    /// thumb so it tracks smoothly and reaches both ends exactly.
+    @State private var scrollFraction: Double = 0
+    private static let vScrollSpace = "verticalScrollCards"
 
     @Environment(\.dismiss) private var dismiss
 
+    /// Supplies the adjacent pack (name + verses) when the user steps past the
+    /// first/last verse — enables cross-pack "Continue Learning". `nil` for
+    /// ordinary single-pack study.
+    let adjacentPack: ((_ currentPackName: String, _ forward: Bool) -> (name: String, verses: [Verse])?)?
+
+    /// "Continue Learning" hook — after a verse is tested the card offers
+    /// **Mark as Learnt** (the only thing that marks a verse done and advances
+    /// the cursor). `nil` for ordinary single-pack study.
+    let onMarkLearnt: ((Verse) -> Void)?
+
     // MARK: - Init
 
-    /// Name used for the ScrollView's coordinate space so content-offset
-    /// probes can measure Y relative to the viewport.
-    private static let scrollSpace = "verticalScrollCards"
+    init(packName: String, verses: [Verse], initialIndex: Int = 0,
+         initialReviewMode: Bool = false,
+         adjacentPack: ((_ currentPackName: String, _ forward: Bool) -> (name: String, verses: [Verse])?)? = nil,
+         onMarkLearnt: ((Verse) -> Void)? = nil) {
+        _vm = StateObject(wrappedValue: CardStudyViewModel(packName: packName, verses: verses,
+                                                           initialIndex: initialIndex,
+                                                           initialReviewMode: initialReviewMode))
+        self.adjacentPack = adjacentPack
+        self.onMarkLearnt = onMarkLearnt
+    }
 
-    /// Temporarily disabled — the fast-scroll thumb wasn't tracking user
-    /// scroll reliably (preferences inside the lazy ScrollView weren't
-    /// firing). Code is preserved below pending a proper rewrite, e.g.
-    /// using `scrollPosition(id:)` or a UIKit bridge.
-    private static let fastScrollEnabled = false
+    // MARK: - Cross-pack stepping
 
-    init(packName: String, verses: [Verse], initialIndex: Int = 0) {
-        _vm = StateObject(wrappedValue: CardStudyViewModel(packName: packName, verses: verses, initialIndex: initialIndex))
+    private var canCrossForward:  Bool { adjacentPack?(vm.packName, true)  != nil }
+    private var canCrossBackward: Bool { adjacentPack?(vm.packName, false) != nil }
+
+    private func stepForward() {
+        if vm.currentIndex >= vm.verses.count - 1, let p = adjacentPack?(vm.packName, true) {
+            vm.loadPack(name: p.name, verses: p.verses, startAt: 0)
+        } else {
+            vm.goForward()
+        }
+    }
+    private func stepBackward() {
+        if vm.currentIndex == 0, let p = adjacentPack?(vm.packName, false) {
+            vm.loadPack(name: p.name, verses: p.verses, startAt: max(0, p.verses.count - 1))
+        } else {
+            vm.goBackward()
+        }
     }
 
     // MARK: - Body
 
     var body: some View {
         GeometryReader { geo in
-            let cardWidth  = geo.size.width - 40
+            let cardWidth  = geo.size.width - 2 * AppLayout.screenMargin
             let cardHeight = cardWidth * 3.0 / 5.0
 
             VStack(spacing: 0) {
-                topBar
+                topBar(width: geo.size.width)
 
                 // Vertical scroll is for browsing in read mode only.
                 // Review mode always shows a single focused card.
@@ -74,10 +92,11 @@ struct CardStudyView: View {
                     ZStack {
                         cardStack
                             .frame(width: cardWidth, height: cardHeight)
-                        // Peek in submit-mode renders as an OVERLAY so the
+                        // Peek renders as an OVERLAY in every mode so the
                         // SubmitCardView (and its focused TextField) stays
-                        // mounted — otherwise the keyboard dismisses.
-                        if studyMode == .submit, vm.isReviewMode, isPeeking,
+                        // mounted — otherwise the keyboard dismisses — and so
+                        // the reveal is identical across all study modes.
+                        if vm.isReviewMode, isPeeking,
                            let verse = vm.currentVerse {
                             PeekOverlayCard(
                                 verse: verse,
@@ -98,7 +117,7 @@ struct CardStudyView: View {
 
                 if !isVerticalScroll || vm.isReviewMode {
                     scrubberRow
-                        .padding(.horizontal, 20)
+                        .padding(.horizontal, AppLayout.screenMargin)
                         .padding(.bottom, 6)
                 }
 
@@ -133,9 +152,10 @@ struct CardStudyView: View {
 
     // MARK: - Top Bar
 
-    private var topBar: some View {
+    private func topBar(width: CGFloat) -> some View {
         ZStack {
-            // Title is always geometrically centred regardless of button count.
+            // Centred title, width-capped so a long pack name truncates with an
+            // ellipsis instead of sliding under the trailing buttons.
             VStack(spacing: 2) {
                 Text(vm.packName)
                     .font(.system(size: 15, weight: .semibold))
@@ -147,40 +167,63 @@ struct CardStudyView: View {
                         .foregroundColor(.secondary)
                 }
             }
+            .frame(maxWidth: max(120, width - 220))
 
             HStack {
                 Button { dismiss() } label: {
                     Image(systemName: "xmark").studyChromeCircleButton()
                 }
+                .accessibilityLabel("Close")
 
                 Spacer()
 
-                HStack(spacing: 8) {
-                    if vm.canReset {
-                        Button { vm.resetCurrentCard() } label: {
-                            Image(systemName: "arrow.counterclockwise").studyChromeCircleButton()
+                // While typing, the trailing controls become a guaranteed-visible
+                // "Done" to dismiss the keyboard (the keyboard's own toolbar item
+                // is unreliable this deep in the card stack). Otherwise: shuffle + view.
+                if isEditing {
+                    Button {
+                        isInputFocused = false
+                        submitFocus = nil
+                    } label: {
+                        Text("Done")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.accentColor)
+                    }
+                    .accessibilityLabel("Close keyboard")
+                } else {
+                    HStack(spacing: 8) {
+                        Button {
+                            vm.toggleShuffle()
+                            HapticEngine.light()
+                        } label: {
+                            Image(systemName: "shuffle")
+                                .studyChromeToggle(isOn: vm.isShuffled)
                         }
-                    }
-                    Button {
-                        vm.toggleShuffle()
-                        HapticEngine.light()
-                    } label: {
-                        Image(systemName: "shuffle")
-                            .studyChromeToggle(isOn: vm.isShuffled)
-                    }
-                    Button {
-                        isVerticalScroll.toggle()
-                    } label: {
-                        Image(systemName: isVerticalScroll ? "rectangle.stack" : "list.bullet.rectangle")
-                            .studyChromeToggle(isOn: isVerticalScroll)
+                        .accessibilityLabel("Shuffle")
+                        .accessibilityValue(vm.isShuffled ? "On" : "Off")
+                        // The list/single-card toggle only matters in Read mode —
+                        // Review always shows one focused card — so hide it there.
+                        if !vm.isReviewMode {
+                            Button {
+                                isVerticalScroll.toggle()
+                            } label: {
+                                Image(systemName: isVerticalScroll ? "rectangle.stack" : "list.bullet.rectangle")
+                                    .studyChromeToggle(isOn: isVerticalScroll)
+                            }
+                            .accessibilityLabel(isVerticalScroll ? "Switch to single card" : "Switch to list view")
+                        }
                     }
                 }
             }
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, AppLayout.screenMargin)
         .padding(.top, 12)
         .padding(.bottom, 12)
+        .animation(.easeInOut(duration: 0.18), value: isEditing)
     }
+
+    /// True whenever either text input has keyboard focus.
+    private var isEditing: Bool { isInputFocused || submitFocus != nil }
 
     // MARK: - Card Stack (horizontal swipe mode)
 
@@ -198,8 +241,9 @@ struct CardStudyView: View {
             }
             if let verse = vm.currentVerse {
                 let goingBack = dragOffset.width > 0
-                let showingPeek = isPeeking && vm.isReviewMode
-                makeCard(verse: verse, verseIndex: vm.currentIndex, interactive: true, isPeeking: showingPeek)
+                // Peek is rendered as an overlay in `body` (consistent across
+                // all modes); the underlying card never swaps for peek.
+                makeCard(verse: verse, verseIndex: vm.currentIndex, interactive: true, isPeeking: false)
                     .offset(x: goingBack ? 0 : dragOffset.width,
                             y: goingBack ? backwardDragProgress * 12 : dragOffset.height * 0.1)
                     .scaleEffect(goingBack ? 1.0 - backwardDragProgress * 0.05 : 1.0)
@@ -222,161 +266,84 @@ struct CardStudyView: View {
     // MARK: - Vertical Scroll Mode
 
     private func verticalScrollCards(cardWidth: CGFloat, cardHeight: CGFloat) -> some View {
-        // TWO height sources for robustness:
-        //  1. Outer GeometryReader fires on first layout pass — guarantees
-        //     the thumb renders immediately with a reasonable track, even
-        //     before any preference has been written.
-        //  2. `.background(GeometryReader).preference` on the ScrollView
-        //     then overrides with the true rendered height once layout
-        //     settles (handles rotation, keyboard appearance, etc.).
-        // The overlay is NEVER gated behind `scrollAreaHeight > 0` — if it
-        // hasn't arrived yet we fall back to the outer geo.
         GeometryReader { outerGeo in
             ScrollViewReader { proxy in
-                let containerHeight = max(outerGeo.size.height, scrollAreaHeight, 100)
-                // Map scroll offset → index so the thumb follows user scroll.
-                // scrollContentOffset is the content's minY in the scroll's
-                // coord space — goes from 0 (top) to negative as user scrolls
-                // down. Max |offset| = contentHeight - viewportHeight.
-                let scrollableDistance = max(scrollContentHeight - containerHeight, 1)
-                let scrollFraction: Double = Double(min(max(-scrollContentOffset / scrollableDistance, 0), 1))
                 ZStack(alignment: .trailing) {
-                    ScrollView(.vertical, showsIndicators: true) {
-                        // Eager outer VStack so the top sentinel is NEVER
-                        // unmounted by LazyVStack's recycling — otherwise
-                        // when the user scrolls far enough down, the
-                        // sentinel disappears, preferences stop firing,
-                        // and the thumb gets stuck.
-                        VStack(spacing: 0) {
-                            // Top sentinel: probes scroll offset. Zero-height
-                            // marker at the top of content. Its minY in the
-                            // scroll's coord space is 0 at rest and goes
-                            // negative as the user scrolls down.
-                            Color.clear
-                                .frame(height: 0)
-                                .background(
-                                    GeometryReader { g in
-                                        Color.clear.preference(
-                                            key: ScrollContentOffsetKey.self,
-                                            value: g.frame(in: .named(Self.scrollSpace)).minY
-                                        )
-                                    }
-                                )
-
-                            LazyVStack(spacing: 20) {
-                                ForEach(Array(vm.verses.enumerated()), id: \.offset) { index, verse in
-                                    makeCard(verse: verse, verseIndex: index, interactive: index == vm.currentIndex)
-                                        .frame(width: cardWidth, height: cardHeight)
-                                        .id(index)
-                                        .overlay {
-                                            if index != vm.currentIndex {
-                                                Color.clear.contentShape(Rectangle())
-                                                    .onTapGesture {
-                                                        HapticEngine.light()
-                                                        vm.currentIndex = index
-                                                    }
-                                            }
+                    ScrollView(.vertical, showsIndicators: false) {
+                        LazyVStack(spacing: 20) {
+                            ForEach(Array(vm.verses.enumerated()), id: \.offset) { index, verse in
+                                makeCard(verse: verse, verseIndex: index, interactive: index == vm.currentIndex)
+                                    .frame(width: cardWidth, height: cardHeight)
+                                    .id(index)
+                                    .overlay {
+                                        if index != vm.currentIndex {
+                                            Color.clear.contentShape(Rectangle())
+                                                .onTapGesture {
+                                                    HapticEngine.light()
+                                                    vm.currentIndex = index
+                                                }
                                         }
-                                }
+                                    }
                             }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
-                            // Total content height — measured on the padded
-                            // LazyVStack. Stable across scroll because it's
-                            // measuring the container, not its position.
-                            .background(
-                                GeometryReader { g in
-                                    Color.clear.preference(
-                                        key: ScrollContentHeightKey.self,
-                                        value: g.size.height
-                                    )
-                                }
-                            )
                         }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        // Continuous offset probe on the (always-present) content
+                        // background — 0 at top, grows scrolling down. Reliable,
+                        // unlike index-snapping which sticks one card from each end.
+                        .background(
+                            GeometryReader { g in
+                                Color.clear.preference(
+                                    key: VScrollMetricsKey.self,
+                                    value: VScrollMetrics(offset: -g.frame(in: .named(Self.vScrollSpace)).minY,
+                                                          contentHeight: g.size.height))
+                            }
+                        )
                     }
-                    .coordinateSpace(name: Self.scrollSpace)
-                    .background(
-                        GeometryReader { geo in
-                            Color.clear
-                                .preference(key: ScrollAreaHeightKey.self,
-                                            value: geo.size.height)
-                        }
-                    )
+                    .coordinateSpace(name: Self.vScrollSpace)
+                    .onPreferenceChange(VScrollMetricsKey.self) { m in
+                        let maxScroll = max(1, m.contentHeight - outerGeo.size.height)
+                        let f = Double(min(max(m.offset / maxScroll, 0), 1))
+                        if abs(f - scrollFraction) > 0.0001 { scrollFraction = f }
+                    }
 
-                    if Self.fastScrollEnabled, vm.verses.count >= 2 {
+                    if vm.verses.count >= 2 {
                         VerseFastScrollOverlay(
                             verseCount: vm.verses.count,
                             scrollFraction: scrollFraction,
-                            containerHeight: containerHeight,
+                            containerHeight: outerGeo.size.height,
                             isScrubbing: $isScrubbing,
-                            scrollActivityPulse: $scrollActivityPulse,
-                            labelProvider: { idx in
+                            titleProvider: { idx in
+                                vm.verses.indices.contains(idx) ? vm.verses[idx].title : ""
+                            },
+                            referenceProvider: { idx in
                                 guard vm.verses.indices.contains(idx) else { return "" }
                                 let v = vm.verses[idx]
                                 return "\(v.book) \(v.reference)"
                             },
                             onScrubTo: { newIndex in
-                                // Jump the list immediately (no animation — 1:1
-                                // drag feel) AND update currentIndex so that
-                                // switching to review mode opens the right card.
-                                var t = Transaction()
-                                t.disablesAnimations = true
-                                withTransaction(t) {
-                                    proxy.scrollTo(newIndex, anchor: .center)
-                                }
-                                if vm.currentIndex != newIndex {
-                                    vm.currentIndex = newIndex
-                                }
+                                // Jump the list immediately (no animation — 1:1 drag feel)
+                                // and update currentIndex so switching to review opens it.
+                                var t = Transaction(); t.disablesAnimations = true
+                                withTransaction(t) { proxy.scrollTo(newIndex, anchor: .center) }
+                                if vm.currentIndex != newIndex { vm.currentIndex = newIndex }
                             }
                         )
                     }
                 }
-                .onPreferenceChange(ScrollAreaHeightKey.self) { newHeight in
-                    if abs(newHeight - scrollAreaHeight) > 0.5 {
-                        scrollAreaHeight = newHeight
-                    }
-                }
-                .onPreferenceChange(ScrollContentOffsetKey.self) { newOffset in
-                    guard newOffset != scrollContentOffset else { return }
-                    scrollContentOffset = newOffset
-                    scrollActivityPulse &+= 1
-                }
-                .onPreferenceChange(ScrollContentHeightKey.self) { newHeight in
-                    if abs(newHeight - scrollContentHeight) > 0.5 {
-                        scrollContentHeight = newHeight
-                    }
-                }
-                // LazyVStack: yield + delay so row ids exist before scrollTo. `onAppear` runs when returning
-                // from review (the scroll view is removed during review, so scroll offset would otherwise reset).
                 .onAppear {
-                    Task { await scrollVerticalReadListToCurrentVerse(proxy: proxy) }
+                    Task {
+                        try? await Task.sleep(for: .milliseconds(60))
+                        proxy.scrollTo(vm.currentIndex, anchor: .center)
+                    }
                 }
                 .onChange(of: vm.currentIndex) { _, newIndex in
-                    // currentIndex is only changed by: tap-on-card, thumb drag,
-                    // or external code (initial load, review-mode transition).
-                    // Thumb drag already scrolled the list in `onScrubTo`, so
-                    // guard on isScrubbing to avoid a duplicate animated scroll
-                    // on top of the direct one the thumb just performed.
-                    if isScrubbing { return }
-                    withAnimation(.easeInOut(duration: 0.22)) {
-                        proxy.scrollTo(newIndex, anchor: .center)
-                    }
-                    // Re-flash the thumb on card-tap navigation in case the
-                    // scroll probe misses the offset change.
-                    scrollActivityPulse &+= 1
+                    // Tap-on-card or external nav — keep scroll position in sync.
+                    // Thumb drag sets isScrubbing, so skip to avoid a duplicate scroll.
+                    guard !isScrubbing else { return }
+                    withAnimation(.easeInOut(duration: 0.22)) { proxy.scrollTo(newIndex, anchor: .center) }
                 }
             }
-        }
-    }
-
-    /// Scrolls the vertical read list so `currentIndex` is centered (read mode / vertical list only).
-    @MainActor
-    private func scrollVerticalReadListToCurrentVerse(proxy: ScrollViewProxy) async {
-        await Task.yield()
-        try? await Task.sleep(for: .milliseconds(72))
-        let idx = vm.currentIndex
-        withAnimation(.easeInOut(duration: 0.24)) {
-            proxy.scrollTo(idx, anchor: .center)
         }
     }
 
@@ -447,15 +414,17 @@ struct CardStudyView: View {
             showPositionLabel: false,
             trackHeight: 44,
             onScrubIndexChange: nil,
+            canStepBeyondStart: canCrossBackward,
+            canStepBeyondEnd: canCrossForward,
             onStepBack: {
                 isScrubbing = true
-                vm.goBackward()
+                stepBackward()
                 HapticEngine.light()
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { isScrubbing = false }
             },
             onStepForward: {
                 isScrubbing = true
-                vm.goForward()
+                stepForward()
                 HapticEngine.light()
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { isScrubbing = false }
             }
@@ -467,20 +436,7 @@ struct CardStudyView: View {
     private var bottomControls: some View {
         VStack(spacing: 6) {
             if vm.isReviewMode {
-                if vm.isCardComplete {
-                    HStack(spacing: 8) {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(.green).font(.system(size: 22))
-                        Text("Complete!")
-                            .font(.system(size: 17, weight: .semibold)).foregroundColor(.green)
-                    }
-                    .transition(.scale.combined(with: .opacity))
-                    .padding(.bottom, 2)
-                } else if studyMode == .submit {
-                    submitControls
-                } else {
-                    inputField
-                }
+                cardControlBand
             }
 
             if !isInputFocused && submitFocus == nil {
@@ -489,13 +445,69 @@ struct CardStudyView: View {
                     Text("Review").tag(true)
                 }
                 .pickerStyle(.segmented)
-                .padding(.horizontal, 24)
                 .padding(.top, 12)
             }
         }
+        .padding(.horizontal, AppLayout.screenMargin)
         .padding(.bottom, 24)
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: vm.isReviewMode)
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: vm.isCardComplete)
+    }
+
+    /// Active-card controls with the always-present hold-to-peek button anchored
+    /// to the leading edge so it stays put regardless of which controls show.
+    private var cardControlBand: some View {
+        HStack(alignment: .center, spacing: StudyControlMetrics.rowSpacing) {
+            // Peeking only makes sense while the verse is still hidden — once the
+            // card is complete the full text is already shown, so drop the button.
+            if !vm.isCardComplete {
+                PeekHoldButton(isPeeking: $isPeeking)
+                    .transition(.opacity)
+            }
+            Group {
+                if vm.isCardComplete {
+                    if onMarkLearnt != nil { markLearntButton } else { completeLabel }
+                } else if studyMode == .submit {
+                    submitControls
+                } else {
+                    inputField
+                }
+            }
+            .frame(maxWidth: .infinity)
+        }
+    }
+
+    private var completeLabel: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "checkmark.circle.fill")
+                .foregroundColor(.green).font(.system(size: 22))
+                .symbolEffect(.bounce, options: .nonRepeating)
+            Text("Complete!")
+                .font(.system(size: 17, weight: .semibold)).foregroundColor(.green)
+        }
+        .frame(maxWidth: .infinity)
+        .transition(.scale.combined(with: .opacity))
+    }
+
+    /// "Continue Learning" only: the single action that marks a verse done. Marks
+    /// the current verse learnt and advances to the next (crossing packs at a
+    /// boundary). Streak/test progress is handled separately on submit.
+    private var markLearntButton: some View {
+        Button {
+            if let v = vm.currentVerse { onMarkLearnt?(v) }
+            HapticEngine.success()
+            isScrubbing = true
+            stepForward()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { isScrubbing = false }
+        } label: {
+            Label("Mark as Learnt", systemImage: "checkmark.circle.fill")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity).padding(.vertical, 12)
+                .background(Color.green)
+                .roundedRect(12)
+        }
+        .accessibilityLabel("Mark verse as learnt and continue")
     }
 
     /// Submit mode: mic + submit button before scoring, try-again after.
@@ -503,13 +515,16 @@ struct CardStudyView: View {
         let hasResult = vm.currentVerse.flatMap { vm.submitResults[$0.id] } != nil
         return Group {
             if hasResult {
-                Button { vm.retrySubmit() } label: {
-                    Label("Try Again", systemImage: "arrow.counterclockwise")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.primary)
-                        .frame(maxWidth: .infinity).padding(.vertical, 12)
-                        .background(Color(.secondarySystemGroupedBackground))
-                        .cornerRadius(12)
+                HStack(spacing: 10) {
+                    Button { vm.retrySubmit() } label: {
+                        Label("Try Again", systemImage: "arrow.counterclockwise")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.primary)
+                            .frame(maxWidth: .infinity).padding(.vertical, 12)
+                            .background(Color(.secondarySystemGroupedBackground))
+                            .roundedRect(12)
+                    }
+                    if onMarkLearnt != nil { markLearntButton }
                 }
             } else {
                 HStack(spacing: 10) {
@@ -519,9 +534,9 @@ struct CardStudyView: View {
                             .foregroundColor(speech.isListening ? .white : .primary)
                             .frame(width: 48, height: 48)
                             .background(speech.isListening ? Color.red : Color(.secondarySystemGroupedBackground))
-                            .cornerRadius(12)
+                            .roundedRect(12)
                     }
-                    peekIconButton
+                    .accessibilityLabel(speech.isListening ? "Stop dictation" : "Dictate verse")
                     let isEmpty = vm.titleInput.trimmingCharacters(in: .whitespaces).isEmpty
                               && vm.verseInput.trimmingCharacters(in: .whitespaces).isEmpty
                     Button {
@@ -533,24 +548,13 @@ struct CardStudyView: View {
                         Text("Submit")
                             .font(.system(size: 16, weight: .semibold)).foregroundColor(.white)
                             .frame(maxWidth: .infinity).padding(.vertical, 12)
-                            .background(isEmpty ? Color(.systemGray3) : Color.blue)
-                            .cornerRadius(12)
+                            .background(isEmpty ? Color(.systemGray3) : Color.accentColor)
+                            .roundedRect(12)
                     }
                     .disabled(isEmpty)
-                    if submitFocus != nil {
-                        Button { submitFocus = nil } label: {
-                            Image(systemName: "keyboard.chevron.compact.down")
-                                .font(.system(size: 18, weight: .semibold))
-                                .foregroundColor(.secondary)
-                                .frame(width: 48, height: 48)
-                                .background(Color(.secondarySystemGroupedBackground))
-                                .cornerRadius(12)
-                        }
-                    }
                 }
             }
         }
-        .padding(.horizontal, 24)
     }
 
     /// First-letter and full-word modes share this single text field.
@@ -582,59 +586,15 @@ struct CardStudyView: View {
                             break
                         }
                     }
-                    // Peek and dismiss live in the keyboard toolbar so touching them
-                    // never triggers UIKit's resign-on-touch-outside behaviour.
-                    .toolbar {
-                        ToolbarItemGroup(placement: .keyboard) {
-                            Button {
-                                isPeeking.toggle()
-                                if isPeeking { HapticEngine.light() }
-                            } label: {
-                                Image(systemName: isPeeking ? "eye.fill" : "eye")
-                                    .foregroundStyle(isPeeking ? AnyShapeStyle(Color.blue) : AnyShapeStyle(.secondary))
-                            }
-                            Spacer()
-                            Button { isInputFocused = false } label: {
-                                Image(systemName: "keyboard.chevron.compact.down")
-                            }
-                        }
-                    }
+                    // Keyboard dismissal lives in the top bar ("Done") — a single,
+                    // reliable affordance instead of a second keyboard-toolbar one.
             }
             .padding(14)
             .background(Color(.secondarySystemGroupedBackground))
-            .cornerRadius(12)
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(.separator).opacity(0.5), lineWidth: 0.5))
+            .roundedRect(12)
+            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Color(.separator).opacity(0.5), lineWidth: 0.5))
             .offset(x: shakeOffset)
         }
-        .padding(.horizontal, 24)
-    }
-
-    private var peekIconButton: some View {
-        // Wrapped in a Button (with no-op action) so iOS recognizes the touch as
-        // a tap target and does NOT resign the first responder — otherwise the
-        // keyboard dismisses on press. The DragGesture rides alongside via
-        // simultaneousGesture for press-and-hold peek behavior.
-        Button(action: {}) {
-            Image(systemName: isPeeking ? "eye.fill" : "eye")
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundColor(.primary)
-                .frame(width: 48, height: 48)
-                .background(Color(.secondarySystemGroupedBackground))
-                .cornerRadius(12)
-        }
-        .buttonStyle(.plain)
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { _ in
-                    if !isPeeking {
-                        isPeeking = true
-                        HapticEngine.light()
-                    }
-                }
-                .onEnded { _ in
-                    isPeeking = false
-                }
-        )
     }
 
     // MARK: - Swipe Gesture
@@ -710,9 +670,9 @@ struct CardStudyView: View {
         t.disablesAnimations = true
         withTransaction(t) {
             if flyDirection < 0 {
-                vm.goForward()
+                stepForward()
             } else if flyDirection > 0 {
-                vm.goBackward()
+                stepBackward()
             }
             dragOffset = .zero
             isCardFlying = false

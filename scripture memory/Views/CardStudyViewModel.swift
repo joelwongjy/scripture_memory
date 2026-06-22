@@ -19,17 +19,18 @@ final class CardStudyViewModel: ObservableObject {
 
     // MARK: - Initialisation
 
-    let packName: String
+    @Published var packName: String
     @Published var verses: [Verse]
     @Published private(set) var isShuffled = false
 
-    private let originalVerses: [Verse]
+    private var originalVerses: [Verse]
 
-    init(packName: String, verses: [Verse], initialIndex: Int = 0) {
+    init(packName: String, verses: [Verse], initialIndex: Int = 0, initialReviewMode: Bool = false) {
         self.packName       = packName
         self.verses         = verses
         self.originalVerses = verses
         self.currentIndex   = initialIndex
+        self.isReviewMode   = initialReviewMode
     }
 
     // MARK: - Published State
@@ -84,6 +85,25 @@ final class CardStudyViewModel: ObservableObject {
     func goForward()  { if currentIndex < verses.count - 1 { currentIndex += 1 } }
     func goBackward() { if currentIndex > 0                { currentIndex -= 1 } }
 
+    /// Swap to a different pack's verses in place — used by "Continue Learning"
+    /// to roll into the next/previous pack when the user steps past a boundary.
+    func loadPack(name: String, verses newVerses: [Verse], startAt index: Int) {
+        var t = Transaction(); t.disablesAnimations = true
+        withTransaction(t) {
+            packName            = name
+            verses              = newVerses
+            originalVerses      = newVerses
+            isShuffled          = false
+            currentIndex        = min(max(index, 0), max(newVerses.count - 1, 0))
+            titleRevealedCounts = [:]
+            verseRevealedCounts = [:]
+            submitResults       = [:]
+            inputText  = ""
+            titleInput = ""
+            verseInput = ""
+        }
+    }
+
     func toggleShuffle() {
         var t = Transaction(); t.disablesAnimations = true
         withTransaction(t) {
@@ -108,12 +128,15 @@ final class CardStudyViewModel: ObservableObject {
 
     // MARK: - Card Label
 
-    /// Returns the footer label for a card, e.g. `"A-1 · TMS 60"`.
+    /// Returns the footer label for a card, e.g. `"A-1 · TMS 60"`. Uses the
+    /// verse's own pack (not the session's) so cross-pack "Continue Learning"
+    /// sessions still show which pack each verse belongs to.
     func cardLabel(for verse: Verse) -> String {
-        guard !verse.subpack.isEmpty else { return packName }
-        let subpackVerses = verses.filter { $0.subpack == verse.subpack }
+        let pack = verse.packName.isEmpty ? packName : verse.packName
+        guard !verse.subpack.isEmpty else { return pack }
+        let subpackVerses = verses.filter { $0.subpack == verse.subpack && $0.packName == verse.packName }
         let position = (subpackVerses.firstIndex(where: { $0.id == verse.id }) ?? 0) + 1
-        return "\(verse.subpack)-\(position) · \(packName)"
+        return "\(verse.subpack)-\(position) · \(pack)"
     }
 
     // MARK: - Reveal State
@@ -179,6 +202,7 @@ final class CardStudyViewModel: ObservableObject {
             submitResults[verse.id] = result
         }
         if result.isAllCorrect { ReviewProgress.shared.markComplete(verse.id) }
+        StreakStore.shared.recordToday()   // submitting a verse counts toward the streak
         titleInput = ""
         verseInput = ""
         return result
@@ -228,7 +252,10 @@ final class CardStudyViewModel: ObservableObject {
         }
         if newCount >= sectionWords.count {
             switchSectionIfNeeded(verse: verse)
-            if isCardComplete { ReviewProgress.shared.markComplete(verse.id) }
+            if isCardComplete {
+                ReviewProgress.shared.markComplete(verse.id)
+                StreakStore.shared.recordToday()   // finishing a verse counts toward the streak
+            }
         }
     }
 

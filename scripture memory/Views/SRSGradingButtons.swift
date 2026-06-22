@@ -19,7 +19,6 @@ struct SRSGradingButtons: View {
                 gradeButton(grade)
             }
         }
-        .padding(.horizontal, 24)
     }
 
     private func gradeButton(_ grade: SRSGrade) -> some View {
