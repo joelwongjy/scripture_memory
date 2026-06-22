@@ -115,7 +115,7 @@ final class TestSessionViewModel: ObservableObject {
 
     // MARK: - Card Label
 
-    func cardLabel(for verse: Verse) -> String { "Review" }
+    func cardLabel(for verse: Verse) -> String { verse.packName }
 
     // MARK: - Reveal State
 
@@ -198,6 +198,7 @@ final class TestSessionViewModel: ObservableObject {
             completedVerseIds.insert(verse.id)
             ReviewProgress.shared.markComplete(verse.id)
         }
+        StreakStore.shared.recordToday()   // submitting a verse counts toward the streak
         saveProgress()
         titleInput = ""
         verseInput = ""
@@ -334,7 +335,10 @@ final class TestSessionViewModel: ObservableObject {
         saveProgress()
         if newCount >= sectionWords.count {
             switchSectionIfNeeded(verse: verse)
-            if isCardComplete { ReviewProgress.shared.markComplete(verse.id) }
+            if isCardComplete {
+                ReviewProgress.shared.markComplete(verse.id)
+                StreakStore.shared.recordToday()
+            }
         }
     }
 

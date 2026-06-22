@@ -1,40 +1,7 @@
 import SwiftUI
 
-// MARK: - String
-
-extension String {
-    /// Opening/closing marks we strip from each token’s ends so study input matches spoken/typed text
-    /// (e.g. `"Until` → `Until`, `` `Man `` → `Man`, `said,"` → `said,`). Middle apostrophes stay (`don't`).
-    fileprivate static let quotationDelimiterCharacters: Set<Character> = [
-        "\"", "'", "`",
-        "\u{2018}", "\u{2019}", "\u{201C}", "\u{201D}",
-        "\u{00AB}", "\u{00BB}", "\u{2039}", "\u{203A}",
-    ]
-
-    /// Strips `quotationDelimiterCharacters` from both ends, repeatedly.
-    func trimmingQuotationDelimitersOnEnds() -> String {
-        var t = self
-        while let c = t.first, Self.quotationDelimiterCharacters.contains(c) { t.removeFirst() }
-        while let c = t.last, Self.quotationDelimiterCharacters.contains(c) { t.removeLast() }
-        return String(t)
-    }
-
-    /// Splits into non-empty words on spaces and on `--` (em-dash style in stored text).
-    /// Single `-` is kept (e.g. `God-breathed`, `us-whatever`) so only `--` adds a word boundary.
-    var wordTokens: [String] {
-        components(separatedBy: " ")
-            .map { $0.trimmingCharacters(in: .whitespaces) }
-            .filter { !$0.isEmpty }
-            .flatMap { piece -> [String] in
-                piece
-                    .components(separatedBy: "--")
-                    .map { $0.trimmingCharacters(in: .whitespaces) }
-                    .filter { !$0.isEmpty }
-            }
-            .map { $0.trimmingQuotationDelimitersOnEnds() }
-            .filter { !$0.isEmpty }
-    }
-}
+// `String.wordTokens` / `trimmingQuotationDelimitersOnEnds()` now live in
+// Model/TextTokens.swift (Foundation-only) so they can be unit-tested.
 
 // MARK: - Color
 
@@ -70,14 +37,14 @@ extension View {
             .padding(.vertical, 16)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .background(flashcardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 10)
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
                     .stroke(Color(.separator).opacity(0.5), lineWidth: 0.5)
             )
             .shadow(color: .black.opacity(0.12), radius: 16, x: 0, y: 8)
             .shadow(color: .black.opacity(0.05), radius: 2,  x: 0, y: 1)
-            .contentShape(RoundedRectangle(cornerRadius: 10))
+            .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 }
 
@@ -91,37 +58,43 @@ let flashcardBackground = Color(uiColor: UIColor { tc in
 // MARK: - Study chrome (top bar + scrubber)
 
 extension Image {
-    /// Neutral circular icon button — close, list, reset, etc.
-    /// Blue icon on a solid neutral fill.
+    /// Neutral circular icon button — close, list, reset, etc. Accent icon on a
+    /// solid neutral fill. 36pt visual circle inside a 44pt hit target (HIG min).
     func studyChromeCircleButton() -> some View {
         self
             .font(.system(size: 15, weight: .semibold))
-            .foregroundStyle(Color.blue)
+            .foregroundStyle(Color.accentColor)
             .frame(width: 36, height: 36)
             .background(Color(.secondarySystemBackground), in: Circle())
+            .frame(width: 44, height: 44)
+            .contentShape(Rectangle())
     }
 
     /// Prev/next chevrons beside the verse scrubber track.
     func studyScrubberChevronButton() -> some View {
         self
             .font(.system(size: 15, weight: .semibold))
-            .foregroundStyle(Color.blue)
+            .foregroundStyle(Color.accentColor)
             .frame(width: 36, height: 36)
             .background(Color(.secondarySystemBackground), in: Circle())
+            .frame(width: 44, height: 44)
+            .contentShape(Rectangle())
     }
 
     /// Toggle controls (shuffle, layout). Background flips: neutral when off,
-    /// solid blue when on. Icon goes white on the blue background so there's
-    /// no blue-on-blue visibility issue.
+    /// accent when on. Icon goes white on the accent background so there's no
+    /// accent-on-accent visibility issue. 36pt visual / 44pt hit target.
     func studyChromeToggle(isOn: Bool) -> some View {
         self
             .font(.system(size: 15, weight: .semibold))
-            .foregroundStyle(isOn ? AnyShapeStyle(Color.white) : AnyShapeStyle(Color.blue))
+            .foregroundStyle(isOn ? AnyShapeStyle(Color.white) : AnyShapeStyle(Color.accentColor))
             .frame(width: 36, height: 36)
             .background(
-                isOn ? AnyShapeStyle(Color.blue) : AnyShapeStyle(Color(.secondarySystemBackground)),
+                isOn ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(Color(.secondarySystemBackground)),
                 in: Circle()
             )
+            .frame(width: 44, height: 44)
+            .contentShape(Rectangle())
     }
 }
 
@@ -138,35 +111,124 @@ struct CardButtonStyle: ButtonStyle {
 
 // MARK: - Peek Components
 
-/// Compact hold-to-peek eye icon — inline with input controls.
-/// Uses `DragGesture(minimumDistance: 0)` so press-down triggers reveal and release hides it.
-struct PeekEyeButton: View {
+/// App-wide layout constants. One canonical horizontal screen margin so every
+/// screen — pack grid, daily dashboard, settings list, and the immersive study
+/// / review screens (card, chrome, and controls) — lines up to the same edge.
+/// 16pt matches the iOS `.insetGrouped` list inset that Settings and Daily use.
+enum AppLayout {
+    static let screenMargin: CGFloat = 16
+    /// Corner radius for content cards (flashcards, pack covers).
+    static let cardRadius:    CGFloat = 10
+    /// Corner radius for grouped-list containers (Daily hero / packs panels) —
+    /// matched to the iOS 26 system `.insetGrouped` section corners so the Daily
+    /// dashboard's white panels line up with Settings / Review.
+    static let groupedRadius: CGFloat = 20
+    /// Corner radius for buttons and control chips.
+    static let controlRadius: CGFloat = 12
+}
+
+extension View {
+    /// Clips to a continuous ("squircle") rounded rectangle — the iOS-standard
+    /// corner style. Used app-wide so every card and control shares one corner
+    /// shape instead of mixing `.continuous` with the default circular style
+    /// (which made the Daily panels look subtly different from other screens).
+    func roundedRect(_ radius: CGFloat) -> some View {
+        clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
+    }
+}
+
+/// The shared 48×48 control-button metrics used across the study/review bottom
+/// bar (mic, keyboard-dismiss, peek). Centralized so every control in that row
+/// is the same size and corner radius.
+enum StudyControlMetrics {
+    static let buttonSize:   CGFloat = 48
+    static let cornerRadius: CGFloat = 12
+    static let rowSpacing:   CGFloat = 10
+}
+
+/// Single, always-present hold-to-peek control for the study/review controls.
+///
+/// One consistent control across every test/review screen and every state
+/// within them (before submit, after submit, while grading, on a finished
+/// card, in all study modes). Press and hold to reveal the full verse via the
+/// card overlay; release to hide.
+///
+/// Anchored to the leading edge of the bottom control band so it sits in the
+/// same place regardless of which state-specific controls are showing, and is
+/// visually subordinate to the centered primary action. Compact (matches the
+/// mic / keyboard-dismiss buttons). Wrapped in a `Button` (with a no-op action)
+/// so pressing it never resigns the focused text field — otherwise the keyboard
+/// would dismiss mid-review. The `DragGesture(minimumDistance: 0)` rides
+/// alongside for press-and-hold: press down reveals, release hides.
+struct PeekHoldButton: View {
     @Binding var isPeeking: Bool
 
+    /// One-time discoverability hint (icon-only press-and-hold isn't obvious).
+    @AppStorage("peekHintSeen") private var hintSeen = false
+    @State private var showHint = false
+
     var body: some View {
-        Image(systemName: isPeeking ? "eye.fill" : "eye")
-            .font(.system(size: 18, weight: .semibold))
-            .foregroundColor(isPeeking ? .blue : .secondary)
-            .frame(width: 48, height: 48)
-            .background(isPeeking ? Color.blue.opacity(0.12) : Color(.secondarySystemGroupedBackground))
-            .cornerRadius(12)
-            .contentShape(Rectangle())
-            .simultaneousGesture(
-                DragGesture(minimumDistance: 0)
-                    .onChanged { _ in
-                        if !isPeeking {
-                            withAnimation(.easeInOut(duration: 0.1)) { isPeeking = true }
-                        }
+        Button(action: {}) {
+            Image(systemName: isPeeking ? "eye.fill" : "eye")
+                .font(.system(size: 18, weight: .semibold))
+                .contentTransition(.symbolEffect(.replace))
+                .foregroundStyle(isPeeking ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.secondary))
+                .frame(width: StudyControlMetrics.buttonSize, height: StudyControlMetrics.buttonSize)
+                .background(
+                    RoundedRectangle(cornerRadius: StudyControlMetrics.cornerRadius, style: .continuous)
+                        .fill(isPeeking ? Color.accentColor.opacity(0.12) : Color(.secondarySystemGroupedBackground))
+                )
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Peek at answer")
+        .accessibilityHint("Press and hold to reveal the verse")
+        .accessibilityAddTraits(.isButton)
+        .overlay(alignment: .top) {
+            if showHint {
+                Text("Hold to peek")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(Capsule(style: .continuous).fill(Color.accentColor))
+                    .fixedSize()
+                    .offset(y: -34)
+                    .transition(.opacity.combined(with: .scale(scale: 0.9, anchor: .bottom)))
+                    .allowsHitTesting(false)
+            }
+        }
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in
+                    if !isPeeking {
+                        withAnimation(.easeInOut(duration: 0.1)) { isPeeking = true }
+                        HapticEngine.light()
+                        dismissHint()
                     }
-                    .onEnded { _ in
-                        withAnimation(.easeInOut(duration: 0.1)) { isPeeking = false }
-                    }
-            )
+                }
+                .onEnded { _ in
+                    withAnimation(.easeInOut(duration: 0.1)) { isPeeking = false }
+                }
+        )
+        .task {
+            guard !hintSeen else { return }
+            try? await Task.sleep(for: .milliseconds(700))   // let the screen settle
+            guard !hintSeen else { return }
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) { showHint = true }
+            try? await Task.sleep(for: .seconds(4))
+            dismissHint()
+        }
+    }
+
+    private func dismissHint() {
+        if showHint { withAnimation(.easeOut(duration: 0.25)) { showHint = false } }
+        hintSeen = true
     }
 }
 
 /// Card-style overlay matching the real card but with all text in secondary color.
-/// Shown while the user holds a `PeekEyeButton`.
+/// Shown while the user holds a `PeekHoldButton`.
 struct PeekOverlayCard: View {
     let verse:     Verse
     let cardLabel: String
@@ -203,6 +265,70 @@ struct PeekOverlayCard: View {
         .frame(width: width, height: height)
         .transition(.opacity)
         .animation(.easeInOut(duration: 0.1), value: isPeeking)
+    }
+}
+
+// MARK: - Verse Text Fitting
+
+/// Measure-to-fit sizing for verse body text. Replaces the old word-count
+/// heuristic: finds the largest font size whose *rendered* height fits the
+/// space the card layout actually leaves, so short verses grow to fill the card
+/// and long verses shrink just enough to never truncate.
+enum VerseFit {
+    /// Rendered height of `text` at `size` (serif) with `lineSpacing`, wrapped to `width`.
+    static func height(_ text: String, width: CGFloat, size: CGFloat,
+                       weight: UIFont.Weight = .regular, lineSpacing: CGFloat) -> CGFloat {
+        guard width > 1 else { return .greatestFiniteMagnitude }
+        var font = UIFont.systemFont(ofSize: size, weight: weight)
+        if let d = font.fontDescriptor.withDesign(.serif) { font = UIFont(descriptor: d, size: size) }
+        let para = NSMutableParagraphStyle()
+        para.lineSpacing = lineSpacing
+        let rect = (text as NSString).boundingRect(
+            with: CGSize(width: width, height: .greatestFiniteMagnitude),
+            options: [.usesLineFragmentOrigin, .usesFontLeading],
+            attributes: [.font: font, .paragraphStyle: para], context: nil)
+        return ceil(rect.height)
+    }
+
+    /// Largest font size in [minSize, maxSize] whose text fits within `width × height`.
+    /// Snaps to a 0.5pt grid. Returns `minSize` if even that overflows (so the
+    /// floor governs readability; it won't go smaller).
+    static func fontSize(_ text: String, width: CGFloat, height: CGFloat,
+                         weight: UIFont.Weight = .regular, lineSpacing: CGFloat,
+                         minSize: CGFloat, maxSize: CGFloat) -> CGFloat {
+        guard width > 1, height > 1, !text.isEmpty else { return maxSize }
+        if Self.height(text, width: width, size: maxSize, weight: weight, lineSpacing: lineSpacing) <= height { return maxSize }
+        var lo = minSize, hi = maxSize
+        for _ in 0..<12 {
+            let mid = (lo + hi) / 2
+            if Self.height(text, width: width, size: mid, weight: weight, lineSpacing: lineSpacing) <= height {
+                lo = mid
+            } else {
+                hi = mid
+            }
+        }
+        return (lo * 2).rounded(.down) / 2
+    }
+}
+
+/// Renders verse body text at the largest size that fills its allotted space
+/// without truncating. Measures its own allocated geometry, so it adapts to
+/// whatever height the surrounding card layout leaves for it.
+struct FittedVerseText: View {
+    let text:        String
+    let lineSpacing: CGFloat
+    let minSize:     CGFloat
+    let maxSize:     CGFloat
+
+    var body: some View {
+        GeometryReader { geo in
+            let size = VerseFit.fontSize(text, width: geo.size.width, height: geo.size.height,
+                                         lineSpacing: lineSpacing, minSize: minSize, maxSize: maxSize)
+            Text(text)
+                .font(.system(size: size, design: .serif))
+                .lineSpacing(lineSpacing)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        }
     }
 }
 

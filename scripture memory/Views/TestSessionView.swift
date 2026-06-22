@@ -40,11 +40,17 @@ struct TestSessionView: View {
         self.sessionKind    = session.kind
     }
 
+    /// Header title matches where the session was launched: the SRS daily flow
+    /// reads "Review", the user-picked self-test from the Quiz tab reads "Quiz".
+    private var sessionTitle: String {
+        sessionKind == .srs ? "Review" : "Quiz"
+    }
+
     // MARK: - Body
 
     var body: some View {
         GeometryReader { geo in
-            let cardWidth  = geo.size.width - 40
+            let cardWidth  = geo.size.width - 2 * AppLayout.screenMargin
             let cardHeight = cardWidth * 3.0 / 5.0
 
             VStack(spacing: 0) {
@@ -53,7 +59,7 @@ struct TestSessionView: View {
                 // Per-verse progress dots — only in Entire Verse (submit) mode
                 if studyMode == .submit {
                     progressDots
-                        .padding(.horizontal, 24)
+                        .padding(.horizontal, AppLayout.screenMargin)
                         .padding(.top, 6)
                         .padding(.bottom, 2)
                 }
@@ -70,6 +76,9 @@ struct TestSessionView: View {
                             height: cardHeight,
                             isPeeking: isPeeking
                         )
+                        .allowsHitTesting(false)
+                        .transition(.opacity)
+                        .zIndex(100)
                     }
                 }
                 .frame(width: cardWidth, height: cardHeight)
@@ -77,7 +86,7 @@ struct TestSessionView: View {
                 Spacer(minLength: 6)
 
                 scrubberRow
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, AppLayout.screenMargin)
                     .padding(.bottom, 6)
 
                 bottomControls
@@ -115,12 +124,14 @@ struct TestSessionView: View {
         }
     }
 
+    /// A text field is focused (keyboard up). Used to pin the card below the top
+    /// bar so the verse title isn't covered when the keyboard pushes content up.
     // MARK: - Top Bar
 
     private var topBar: some View {
         ZStack {
             VStack(spacing: 2) {
-                Text("Review Session")
+                Text(sessionTitle)
                     .font(.system(size: 15, weight: .semibold))
                     .lineLimit(1)
                 Text("\(vm.completedCount) / \(vm.verses.count) done")
@@ -136,22 +147,40 @@ struct TestSessionView: View {
                 } label: {
                     Image(systemName: "xmark").studyChromeCircleButton()
                 }
+                .accessibilityLabel("Close session")
 
                 Spacer()
 
-                HStack(spacing: 8) {
-                    // Verse selector dropdown
-                    Button { showVerseSelector = true } label: {
-                        Image(systemName: "list.bullet").studyChromeCircleButton()
+                // While typing, a guaranteed-visible "Done" replaces the trailing
+                // controls (the keyboard's own toolbar item is unreliable here).
+                if isInputFocused || submitFocus != nil {
+                    Button {
+                        isInputFocused = false
+                        submitFocus = nil
+                    } label: {
+                        Text("Done")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.accentColor)
                     }
-                    // Score display — only in Entire Verse mode
-                    if studyMode == .submit { scoreDisplay }
+                    .accessibilityLabel("Close keyboard")
+                } else {
+                    HStack(spacing: 8) {
+                        // Verse selector dropdown
+                        Button { showVerseSelector = true } label: {
+                            Image(systemName: "list.bullet").studyChromeCircleButton()
+                        }
+                        .accessibilityLabel("Jump to verse")
+                        // Score display — only in Entire Verse mode
+                        if studyMode == .submit { scoreDisplay }
+                    }
                 }
             }
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, AppLayout.screenMargin)
         .padding(.top, 12)
         .padding(.bottom, 12)
+        .animation(.easeInOut(duration: 0.18), value: isInputFocused)
+        .animation(.easeInOut(duration: 0.18), value: submitFocus)
         .sheet(isPresented: $showVerseSelector) {
             verseSelectorSheet
         }
@@ -172,12 +201,12 @@ struct TestSessionView: View {
                         HStack(spacing: 10) {
                             Text("\(verse.book) \(verse.reference)")
                                 .font(.system(size: 16))
-                                .foregroundColor(i == vm.currentIndex ? .blue : .primary)
+                                .foregroundColor(i == vm.currentIndex ? .accentColor : .primary)
                             Spacer()
                             if i == vm.currentIndex {
                                 Image(systemName: "checkmark")
                                     .font(.system(size: 11, weight: .semibold))
-                                    .foregroundColor(.blue)
+                                    .foregroundColor(.accentColor)
                             }
                         }
                         .contentShape(Rectangle())
@@ -227,31 +256,54 @@ struct TestSessionView: View {
     // One dot per verse. Size adapts so all dots fit in available width.
     // Gray = not yet done, green = done perfect, orange/red = done with mistakes (submit only).
 
+    /// One dot per verse for short sessions; a continuous bar once dots would
+    /// shrink below legibility (≈ sub-3pt). Both convey position/progress; the
+    /// bar additionally carries a VoiceOver value.
+    @ViewBuilder
     private var progressDots: some View {
-        GeometryReader { geo in
-            let count   = vm.verses.count
-            let spacing = CGFloat(3)
-            let maxDot  = CGFloat(8)
-            let dotSize = min(maxDot, (geo.size.width - spacing * CGFloat(max(1, count - 1))) / CGFloat(max(1, count)))
-
-            HStack(spacing: spacing) {
-                ForEach(Array(vm.verses.enumerated()), id: \.offset) { i, verse in
-                    let submitted = vm.hasSubmitted(verse)
-                    let correct   = vm.submitResults[verse.id]?.isAllCorrect == true
-                    let isCurrent = i == vm.currentIndex
-
-                    Circle()
-                        .fill(dotColor(submitted: submitted, correct: correct))
-                        .frame(width: dotSize, height: dotSize)
-                        .scaleEffect(isCurrent ? 1.4 : 1.0)
-                        .animation(.spring(response: 0.25, dampingFraction: 0.7), value: isCurrent)
-                        .animation(.spring(response: 0.3,  dampingFraction: 0.8), value: submitted)
-                        .animation(.spring(response: 0.3,  dampingFraction: 0.8), value: correct)
+        if vm.verses.count > 24 {
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Color.secondary.opacity(0.2))
+                    Capsule()
+                        .fill(Color.accentColor)
+                        .frame(width: max(6, geo.size.width * CGFloat(vm.completedCount) / CGFloat(max(1, vm.verses.count))))
+                        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: vm.completedCount)
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .center)
+            .frame(height: 6)
+            .accessibilityElement()
+            .accessibilityLabel("Session progress")
+            .accessibilityValue("\(vm.completedCount) of \(vm.verses.count) done")
+        } else {
+            GeometryReader { geo in
+                let count   = vm.verses.count
+                let spacing = CGFloat(3)
+                let maxDot  = CGFloat(8)
+                let dotSize = min(maxDot, (geo.size.width - spacing * CGFloat(max(1, count - 1))) / CGFloat(max(1, count)))
+
+                HStack(spacing: spacing) {
+                    ForEach(Array(vm.verses.enumerated()), id: \.offset) { i, verse in
+                        let submitted = vm.hasSubmitted(verse)
+                        let correct   = vm.submitResults[verse.id]?.isAllCorrect == true
+                        let isCurrent = i == vm.currentIndex
+
+                        Circle()
+                            .fill(dotColor(submitted: submitted, correct: correct))
+                            .frame(width: dotSize, height: dotSize)
+                            .scaleEffect(isCurrent ? 1.4 : 1.0)
+                            .animation(.spring(response: 0.25, dampingFraction: 0.7), value: isCurrent)
+                            .animation(.spring(response: 0.3,  dampingFraction: 0.8), value: submitted)
+                            .animation(.spring(response: 0.3,  dampingFraction: 0.8), value: correct)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .center)
+            }
+            .frame(height: 12)
+            .accessibilityElement()
+            .accessibilityLabel("Session progress")
+            .accessibilityValue("\(vm.completedCount) of \(vm.verses.count) done")
         }
-        .frame(height: 12)
     }
 
     private func dotColor(submitted: Bool, correct: Bool) -> Color {
@@ -392,46 +444,8 @@ struct TestSessionView: View {
         VStack(spacing: 12) {
             if vm.isSessionComplete {
                 sessionCompletePanel
-            } else if vm.isCardComplete {
-                if sessionKind == .srs, let verse = vm.currentVerse {
-                    SRSGradingButtons(
-                        state:     displayState(for: verse),
-                        suggested: gradeButtonHighlight(for: verse),
-                        now:       Date(),
-                        onPick:    { gradeAndAdvance($0) }
-                    )
-                } else {
-                    // Next button
-                    Button {
-                        isScrubbing = true
-                        vm.goForward()
-                        HapticEngine.light()
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                            isScrubbing = false
-                            refocusIfNeeded()
-                        }
-                    } label: {
-                        HStack(spacing: 8) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundColor(.green)
-                                .font(.system(size: 18))
-                            Text("Next")
-                                .font(.system(size: 16, weight: .semibold))
-                        }
-                        .foregroundColor(.primary)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14.6)
-                        .background(Color(.secondarySystemGroupedBackground))
-                        .cornerRadius(12)
-                    }
-                    .padding(.horizontal, 24)
-                    .disabled(vm.currentIndex >= vm.verses.count - 1)
-                    .opacity(vm.currentIndex >= vm.verses.count - 1 ? 0.5 : 1)
-                }
-            } else if studyMode == .submit {
-                submitControls
             } else {
-                inputField
+                cardControlBand
             }
 
             if !vm.isSessionComplete && vm.completedCount == vm.verses.count {
@@ -440,17 +454,14 @@ struct TestSessionView: View {
                     onSessionEnded?()
                     dismiss()
                 } label: {
-                    Text("End Session")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(Color.blue)
-                        .cornerRadius(12)
+                    Text("End Session").font(.headline).frame(maxWidth: .infinity)
                 }
-                .padding(.horizontal, 24)
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                .tint(.accentColor)
             }
         }
+        .padding(.horizontal, AppLayout.screenMargin)
         .padding(.bottom, 24)
         .padding(.top, 6)
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: vm.isCardComplete)
@@ -458,16 +469,81 @@ struct TestSessionView: View {
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: vm.completedCount)
     }
 
+    /// Active-card controls (every state except the finished-session summary),
+    /// with the always-present hold-to-peek button anchored to the leading edge
+    /// so it stays put regardless of which controls are showing.
+    private var cardControlBand: some View {
+        HStack(alignment: .center, spacing: StudyControlMetrics.rowSpacing) {
+            // Peeking only makes sense while the verse is still hidden — once the
+            // card is complete the full text is already shown, so drop the button.
+            if !vm.isCardComplete {
+                PeekHoldButton(isPeeking: $isPeeking)
+                    .transition(.opacity)
+            }
+            Group {
+                if vm.isCardComplete {
+                    if sessionKind == .srs, let verse = vm.currentVerse {
+                        SRSGradingButtons(
+                            state:     displayState(for: verse),
+                            suggested: gradeButtonHighlight(for: verse),
+                            now:       Date(),
+                            onPick:    { gradeAndAdvance($0) }
+                        )
+                    } else {
+                        nextButton
+                    }
+                } else if studyMode == .submit {
+                    submitControls
+                } else {
+                    inputField
+                }
+            }
+            .frame(maxWidth: .infinity)
+        }
+    }
+
+    private var nextButton: some View {
+        Button {
+            isScrubbing = true
+            vm.goForward()
+            HapticEngine.light()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                isScrubbing = false
+                refocusIfNeeded()
+            }
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundColor(.green)
+                    .font(.system(size: 18))
+                Text("Next")
+                    .font(.system(size: 16, weight: .semibold))
+            }
+            .foregroundColor(.primary)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 14.6)
+            .background(Color(.secondarySystemGroupedBackground))
+            .roundedRect(12)
+        }
+        .disabled(vm.currentIndex >= vm.verses.count - 1)
+        .opacity(vm.currentIndex >= vm.verses.count - 1 ? 0.5 : 1)
+    }
+
     // MARK: - Session Complete Panel
 
     private var sessionCompletePanel: some View {
         VStack(spacing: 16) {
+            Image(systemName: vm.sessionScore == 0 ? "checkmark.seal.fill" : "checkmark.circle.fill")
+                .font(.system(size: 40))
+                .foregroundStyle(vm.sessionScore == 0 ? Color.green : Color.accentColor)
+                .symbolEffect(.bounce, options: .nonRepeating)
+
             Text("Session Complete!")
                 .font(.system(size: 20, weight: .bold))
                 .foregroundColor(.primary)
 
             if vm.sessionScore == 0 {
-                Text("Perfect! 🎉")
+                Text("Perfect!")
                     .font(.system(size: 17, weight: .semibold))
                     .foregroundColor(.green)
             } else {
@@ -490,7 +566,7 @@ struct TestSessionView: View {
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
                         .background(Color(.secondarySystemGroupedBackground))
-                        .cornerRadius(12)
+                        .roundedRect(12)
                 }
 
                 Button {
@@ -503,13 +579,11 @@ struct TestSessionView: View {
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
-                        .background(Color.blue)
-                        .cornerRadius(12)
+                        .background(Color.accentColor)
+                        .roundedRect(12)
                 }
             }
-            .padding(.horizontal, 24)
         }
-        .padding(.horizontal, 24)
         .transition(.scale.combined(with: .opacity))
     }
 
@@ -534,7 +608,7 @@ struct TestSessionView: View {
                                 .foregroundColor(.primary)
                                 .frame(maxWidth: .infinity).padding(.vertical, 12)
                                 .background(Color(.secondarySystemGroupedBackground))
-                                .cornerRadius(12)
+                                .roundedRect(12)
                         }
                         Button {
                             isScrubbing = true
@@ -549,8 +623,8 @@ struct TestSessionView: View {
                                 .font(.system(size: 16, weight: .semibold))
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity).padding(.vertical, 12)
-                                .background(Color.blue)
-                                .cornerRadius(12)
+                                .background(Color.accentColor)
+                                .roundedRect(12)
                         }
                         .disabled(vm.currentIndex >= vm.verses.count - 1)
                         .opacity(vm.currentIndex >= vm.verses.count - 1 ? 0.5 : 1)
@@ -564,9 +638,9 @@ struct TestSessionView: View {
                             .foregroundColor(speech.isListening ? .white : .primary)
                             .frame(width: 48, height: 48)
                             .background(speech.isListening ? Color.red : Color(.secondarySystemGroupedBackground))
-                            .cornerRadius(12)
+                            .roundedRect(12)
                     }
-                    PeekEyeButton(isPeeking: $isPeeking)
+                    .accessibilityLabel(speech.isListening ? "Stop dictation" : "Dictate verse")
                     let isEmpty = vm.titleInput.trimmingCharacters(in: .whitespaces).isEmpty
                               && vm.verseInput.trimmingCharacters(in: .whitespaces).isEmpty
                     Button {
@@ -578,24 +652,13 @@ struct TestSessionView: View {
                         Text("Submit")
                             .font(.system(size: 16, weight: .semibold)).foregroundColor(.white)
                             .frame(maxWidth: .infinity).padding(.vertical, 12)
-                            .background(isEmpty ? Color(.systemGray3) : Color.blue)
-                            .cornerRadius(12)
+                            .background(isEmpty ? Color(.systemGray3) : Color.accentColor)
+                            .roundedRect(12)
                     }
                     .disabled(isEmpty)
-                    if submitFocus != nil {
-                        Button { submitFocus = nil } label: {
-                            Image(systemName: "keyboard.chevron.compact.down")
-                                .font(.system(size: 18, weight: .semibold))
-                                .foregroundColor(.secondary)
-                                .frame(width: 48, height: 48)
-                                .background(Color(.secondarySystemGroupedBackground))
-                                .cornerRadius(12)
-                        }
-                    }
                 }
             }
         }
-        .padding(.horizontal, 24)
     }
 
     // MARK: - Input Field
@@ -628,31 +691,15 @@ struct TestSessionView: View {
                             break
                         }
                     }
-                    // Peek and dismiss live in the keyboard toolbar so touching them
-                    // never triggers UIKit's resign-on-touch-outside behaviour.
-                    .toolbar {
-                        ToolbarItemGroup(placement: .keyboard) {
-                            Button {
-                                isPeeking.toggle()
-                                if isPeeking { HapticEngine.light() }
-                            } label: {
-                                Image(systemName: isPeeking ? "eye.fill" : "eye")
-                                    .foregroundStyle(isPeeking ? AnyShapeStyle(Color.blue) : AnyShapeStyle(.secondary))
-                            }
-                            Spacer()
-                            Button { isInputFocused = false } label: {
-                                Image(systemName: "keyboard.chevron.compact.down")
-                            }
-                        }
-                    }
+                    // Keyboard dismissal lives in the top bar ("Done") — a single,
+                    // reliable affordance instead of a second keyboard-toolbar one.
             }
             .padding(14)
             .background(Color(.secondarySystemGroupedBackground))
-            .cornerRadius(12)
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(.separator).opacity(0.5), lineWidth: 0.5))
+            .roundedRect(12)
+            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Color(.separator).opacity(0.5), lineWidth: 0.5))
             .offset(x: shakeOffset)
         }
-        .padding(.horizontal, 24)
     }
 
     // MARK: - Swipe Gesture
@@ -798,6 +845,7 @@ struct TestSessionView: View {
 
     private func gradeAndAdvance(_ grade: SRSGrade) {
         guard let verse = vm.currentVerse else { return }
+        StreakStore.shared.recordToday()   // grading a review verse counts toward the streak
 
         let firstGradeInSession = (sessionGrades[verse.id] == nil)
         if firstGradeInSession {

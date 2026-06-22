@@ -15,6 +15,11 @@ struct VerseScrubberRow: View {
     /// Called when the user drags the scrubber to a new index (e.g. persist test session).
     var onScrubIndexChange: (() -> Void)?
 
+    /// When set, the prev/next chevrons stay enabled at the very start/end so a
+    /// "Continue Learning" session can roll into the adjacent pack.
+    var canStepBeyondStart = false
+    var canStepBeyondEnd   = false
+
     let onStepBack: () -> Void
     let onStepForward: () -> Void
 
@@ -27,16 +32,20 @@ struct VerseScrubberRow: View {
                 Button(action: onStepBack) {
                     Image(systemName: "chevron.left").studyScrubberChevronButton()
                 }
-                .disabled(!canPrev)
-                .opacity(canPrev ? 1 : 0.3)
+                .disabled(!canPrev && !canStepBeyondStart)
+                .opacity(canPrev || canStepBeyondStart ? 1 : 0.3)
+                .accessibilityLabel("Previous verse")
 
                 scrubTrack
+                    .accessibilityLabel("Verse position")
+                    .accessibilityValue("\(currentIndex + 1) of \(verseCount)")
 
                 Button(action: onStepForward) {
                     Image(systemName: "chevron.right").studyScrubberChevronButton()
                 }
-                .disabled(!canNext)
-                .opacity(canNext ? 1 : 0.3)
+                .disabled(!canNext && !canStepBeyondEnd)
+                .opacity(canNext || canStepBeyondEnd ? 1 : 0.3)
+                .accessibilityLabel("Next verse")
             }
 
             if showPositionLabel {
@@ -62,7 +71,7 @@ struct VerseScrubberRow: View {
                     .fill(Color(.systemGray5))
                     .frame(height: 6)
                 Capsule()
-                    .fill(Color.blue)
+                    .fill(Color.accentColor)
                     .frame(width: fillW, height: 6)
                     .animation(.spring(response: 0.3, dampingFraction: 0.8), value: currentIndex)
                 Circle()

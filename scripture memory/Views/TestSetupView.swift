@@ -19,6 +19,7 @@ private enum PackListItem: Identifiable {
 struct TestSetupView: View {
 
     @AppStorage("bibleVersion") private var bibleVersion: BibleVersion = .niv84
+    @ObservedObject private var packPrefs = PackPreferencesStore.shared
 
     @State private var selectedVerseIds:  Set<Int>    = []
     @State private var expandedPackIds:   Set<String> = []
@@ -36,7 +37,7 @@ struct TestSetupView: View {
     // Flat items for packs + their expanded verses — driven by expandedPackIds
     private var packItems: [PackListItem] {
         var items: [PackListItem] = []
-        for pack in bibleVersion.packs {
+        for pack in packPrefs.visible(from: bibleVersion.packs) {
             items.append(.packHeader(pack))
             if expandedPackIds.contains(pack.id) {
                 for verse in pack.verses {
@@ -76,7 +77,7 @@ struct TestSetupView: View {
         .animation(.spring(response: 0.3, dampingFraction: 0.8), value: expandedPackIds)
         .animation(.spring(response: 0.3, dampingFraction: 0.8), value: savedSession != nil)
         .background(Color(.systemGroupedBackground))
-        .navigationTitle("Review")
+        .navigationTitle("Quiz")
         .onAppear {
             loadPersistedQuizCount()
             loadSavedSession()
@@ -116,7 +117,7 @@ struct TestSetupView: View {
         return HStack(spacing: 10) {
             Image(systemName: "play.circle.fill")
                 .font(.system(size: 22))
-                .foregroundStyle(Color.blue)
+                .foregroundStyle(Color.accentColor)
 
             VStack(alignment: .leading, spacing: 1) {
                 Text("Session in Progress")
@@ -176,10 +177,11 @@ struct TestSetupView: View {
                                  : someSelected ? "minus.circle.fill"
                                  : "circle")
                     .font(.system(size: 22))
-                    .foregroundStyle(someSelected ? AnyShapeStyle(Color.blue) : AnyShapeStyle(.secondary))
+                    .foregroundStyle(someSelected ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.secondary))
                     .frame(width: 44, height: 50)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(allSelected ? "Deselect all verses in \(pack.name)" : "Select all verses in \(pack.name)")
 
             // ② Pack name — tapping selects/deselects all verses (does NOT expand)
             Button {
@@ -222,6 +224,7 @@ struct TestSetupView: View {
                     .frame(width: 44, height: 50)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(isExpanded ? "Collapse \(pack.name)" : "Expand \(pack.name) to pick individual verses")
         }
     }
 
@@ -236,7 +239,7 @@ struct TestSetupView: View {
             HStack(spacing: 10) {
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 19))
-                    .foregroundStyle(isSelected ? AnyShapeStyle(Color.blue) : AnyShapeStyle(.secondary))
+                    .foregroundStyle(isSelected ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.secondary))
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(verse.title)
@@ -254,6 +257,9 @@ struct TestSetupView: View {
             .padding(.vertical, 2)
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("\(verse.title), \(verse.book) \(verse.reference)")
+        .accessibilityValue(isSelected ? "Selected" : "Not selected")
+        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
     }
 
     // MARK: - Bottom Bar
@@ -278,30 +284,33 @@ struct TestSetupView: View {
                     } label: {
                         Image(systemName: "minus")
                             .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(Color.blue)
+                            .foregroundStyle(Color.accentColor)
                             .frame(width: 32, height: 32)
                             .background(Color(.secondarySystemBackground), in: Circle())
                     }
                     .buttonStyle(.plain)
                     .disabled(clampedCount <= 1)
                     .opacity(clampedCount <= 1 ? 0.35 : 1)
+                    .accessibilityLabel("Fewer cards to quiz")
 
                     Text("\(clampedCount)")
                         .font(.system(size: 22, weight: .bold, design: .monospaced))
                         .frame(minWidth: 36)
+                        .accessibilityLabel("\(clampedCount) cards to quiz")
 
                     Button {
                         if quizCount < selectedCount { quizCount += 1 }
                     } label: {
                         Image(systemName: "plus")
                             .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(Color.blue)
+                            .foregroundStyle(Color.accentColor)
                             .frame(width: 32, height: 32)
                             .background(Color(.secondarySystemBackground), in: Circle())
                     }
                     .buttonStyle(.plain)
                     .disabled(clampedCount >= selectedCount)
                     .opacity(clampedCount >= selectedCount ? 0.35 : 1)
+                    .accessibilityLabel("More cards to quiz")
                 }
                 Text("cards to quiz")
                     .font(.system(size: 11))
@@ -314,16 +323,14 @@ struct TestSetupView: View {
                 if savedSession != nil { showOverwriteAlert = true }
                 else                   { launchNewSession() }
             } label: {
-                Text("Start")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 22)
-                    .padding(.vertical, 11)
-                    .background(Color.blue, in: Capsule())
+                Text("Start").font(.headline)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+            .buttonBorderShape(.capsule)
+            .tint(.accentColor)
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, AppLayout.screenMargin)
         .padding(.vertical, 14)
         .background(Color(.systemBackground))
         .overlay(Rectangle().fill(Color(.separator).opacity(0.4)).frame(height: 0.5), alignment: .top)

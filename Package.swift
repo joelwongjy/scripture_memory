@@ -21,6 +21,12 @@ let package = Package(
                 "SRSAlgorithm.swift",
                 "SRSCardState.swift",
                 "SRSMath.swift",
+                "DiffEngine.swift",
+                "DiffResult.swift",
+                "TextTokens.swift",
+                "ReminderPlan.swift",
+                "ScrubberMath.swift",
+                "PackArranger.swift",
             ]
         ),
         .testTarget(
