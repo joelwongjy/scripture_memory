@@ -3,8 +3,8 @@ import SwiftUI
 struct ContentView: View {
     @AppStorage("hasOnboardedLearning.v1") private var hasOnboarded = false
     @AppStorage("bibleVersion")            private var bibleVersion: BibleVersion = .niv84
-    @AppStorage("srs.dailyNewCap")         private var dailyNewCap    = 5
-    @AppStorage("srs.dailyReviewCap")      private var dailyReviewCap = 50
+    @AppStorage("srs.dailyNewCap")         private var dailyNewCap    = 1
+    @AppStorage("srs.dailyReviewCap")      private var dailyReviewCap = 5
     @ObservedObject private var learning  = LearningStore.shared
     @ObservedObject private var packPrefs = PackPreferencesStore.shared
     @Environment(\.scenePhase) private var scenePhase

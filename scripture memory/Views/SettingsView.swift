@@ -5,8 +5,8 @@ struct SettingsView: View {
     @AppStorage("studyMode")          private var studyMode:    StudyMode    = .firstLetter
     @AppStorage("bibleVersion")       private var bibleVersion: BibleVersion = .niv84
     @AppStorage("hardMode")           private var hardMode:     Bool         = false
-    @AppStorage("srs.dailyNewCap")    private var dailyNewCap:    Int        = 5
-    @AppStorage("srs.dailyReviewCap") private var dailyReviewCap: Int        = 50
+    @AppStorage("srs.dailyNewCap")    private var dailyNewCap:    Int        = 1
+    @AppStorage("srs.dailyReviewCap") private var dailyReviewCap: Int        = 5
 
     @AppStorage(NotificationManager.Keys.enabled) private var reminderEnabled = false
     @AppStorage(NotificationManager.Keys.hour)    private var reminderHour    = NotificationManager.defaultHour

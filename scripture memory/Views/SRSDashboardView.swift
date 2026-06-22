@@ -8,8 +8,8 @@ import SwiftUI
 struct SRSDashboardView: View {
 
     @AppStorage("bibleVersion")       private var bibleVersion:   BibleVersion = .niv84
-    @AppStorage("srs.dailyNewCap")    private var dailyNewCap:    Int          = 5
-    @AppStorage("srs.dailyReviewCap") private var dailyReviewCap: Int          = 50
+    @AppStorage("srs.dailyNewCap")    private var dailyNewCap:    Int          = 1
+    @AppStorage("srs.dailyReviewCap") private var dailyReviewCap: Int          = 5
 
     @ObservedObject private var store     = SRSStore.shared
     @ObservedObject private var packPrefs = PackPreferencesStore.shared
