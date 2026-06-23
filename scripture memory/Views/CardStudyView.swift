@@ -21,9 +21,6 @@ struct CardStudyView: View {
     @State private var speechTarget: SubmitField = .title
     @State private var isScrubbing           = false
     @State private var isPeeking             = false
-    /// The "Jump to current verse" pill shows its full label briefly, then collapses
-    /// to just the icon so it stops dominating the corner.
-    @State private var jumpExpanded          = true
     /// Raw vertical scroll offset of the read-mode list — lets the jump button track
     /// whether the cursor card is actually on screen, not just `currentIndex` (which
     /// only changes on tap, so scrolling away after a jump never brought it back).
@@ -114,40 +111,6 @@ struct CardStudyView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { isScrubbing = false }
     }
 
-    private func goToCurrentButton(action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: 6) {
-                Image(systemName: "bookmark.fill")
-                    .font(.system(size: jumpExpanded ? 12 : 15, weight: .bold))
-                if jumpExpanded {
-                    Text("Jump to current verse")
-                        .font(.system(size: 13, weight: .semibold))
-                        .fixedSize()
-                }
-            }
-            .foregroundStyle(.white)
-            .padding(.horizontal, jumpExpanded ? 14 : 0)
-            .padding(.vertical, jumpExpanded ? 10 : 0)
-            // Collapsed form stays a 44pt circular tap target (Apple minimum).
-            .frame(minWidth: jumpExpanded ? 0 : 44, minHeight: jumpExpanded ? 0 : 44)
-            .background(Capsule().fill(Color.accentColor))
-            .shadow(color: .black.opacity(0.22), radius: 6, x: 0, y: 3)
-        }
-        .accessibilityLabel("Jump to current verse")
-        .transition(.scale.combined(with: .opacity))
-        // Flash the full label, then shrink to the icon. `.task` restarts every time
-        // the button reappears (new view identity), so it re-expands on each show and
-        // auto-cancels if it's dismissed before the second is up.
-        .task {
-            jumpExpanded = true
-            try? await Task.sleep(for: .seconds(1))
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { jumpExpanded = false }
-        }
-    }
-
-    /// List (vertical-scroll read) variant of the jump: just move the cursor
-    /// index — the scroll view's `onChange` animates to it. No `isScrubbing`, so
-    /// that scroll actually fires (it's guarded by `!isScrubbing`).
     /// List (vertical-scroll read) visibility: show the jump shortcut whenever the
     /// cursor card's centre has scrolled out of the viewport. Cards are a fixed
     /// height here, so the centre is `topPadding + index·(card+spacing) + card/2`.
@@ -214,7 +177,7 @@ struct CardStudyView: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .overlay(alignment: .bottomTrailing) {
                             if showGoToCurrent {
-                                goToCurrentButton(action: jumpToCurrentVerse)
+                                JumpToCurrentButton(action: jumpToCurrentVerse)
                                     // Align the trailing edge with the card (and the
                                     // app's layout margin) instead of the screen edge.
                                     .padding(.trailing, AppLayout.screenMargin)
@@ -463,7 +426,7 @@ struct CardStudyView: View {
                 // button returns after you scroll away from a jump.
                 .overlay(alignment: .bottomTrailing) {
                     if showJumpInList(cardHeight: cardHeight, viewportHeight: outerGeo.size.height) {
-                        goToCurrentButton(action: {
+                        JumpToCurrentButton(action: {
                             // Scroll via the proxy directly (not by mutating currentIndex)
                             // so a re-jump still works when currentIndex is already the
                             // cursor from a previous jump.
@@ -876,6 +839,47 @@ struct CardStudyView: View {
         }
     }
 
+}
+
+// MARK: - Jump-to-current button
+
+/// The floating "Jump to current verse" shortcut: shows its full label for a
+/// second, then shrinks to just the icon. It's its own view so each appearance
+/// gets fresh `expanded` state — the collapse re-arms every time it's shown — and
+/// it fades (never scales) in, so the expanded pill is tappable immediately.
+private struct JumpToCurrentButton: View {
+    let action: () -> Void
+    @State private var expanded = true
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Image(systemName: "bookmark.fill")
+                    .font(.system(size: expanded ? 12 : 15, weight: .bold))
+                if expanded {
+                    Text("Jump to current verse")
+                        .font(.system(size: 13, weight: .semibold))
+                        .fixedSize()
+                }
+            }
+            .foregroundStyle(.white)
+            .padding(.horizontal, expanded ? 14 : 0)
+            .padding(.vertical, expanded ? 10 : 0)
+            // Collapsed form stays a 44pt circular tap target (Apple minimum).
+            .frame(minWidth: expanded ? 0 : 44, minHeight: expanded ? 0 : 44)
+            .background(Capsule().fill(Color.accentColor))
+            .shadow(color: .black.opacity(0.22), radius: 6, x: 0, y: 3)
+            .contentShape(Capsule())
+        }
+        .accessibilityLabel("Jump to current verse")
+        // Fade only — a `.scale` transition hit-tests its shrunken geometry while
+        // springing in, so the expanded pill would miss taps for its whole life.
+        .transition(.opacity)
+        .task {
+            try? await Task.sleep(for: .seconds(1))
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { expanded = false }
+        }
+    }
 }
 
 #Preview {
