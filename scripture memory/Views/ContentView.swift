@@ -87,6 +87,9 @@ struct ContentView: View {
         }
         .onChange(of: learning.learntKeys) { _, _ in syncWidget() }
         .onChange(of: learning.pinnedKey)  { _, _ in syncWidget() }
+        // Belt-and-braces: a direct signal so pinning/unpinning always re-syncs the
+        // widget, even if the onChange above is missed while the picker sheet is up.
+        .onReceive(NotificationCenter.default.publisher(for: .featuredVerseDidChange)) { _ in syncWidget() }
         .onChange(of: bibleVersion)        { _, _ in syncWidget() }
         .onChange(of: hasOnboarded)        { _, _ in syncWidget() }
         // Refresh the widget snapshot when leaving/returning — catches streak and

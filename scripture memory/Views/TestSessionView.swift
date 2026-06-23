@@ -29,7 +29,16 @@ struct TestSessionView: View {
     // card and change the grade without compounding (regrade computes from
     // the captured pre-grade state, not the already-advanced one).
     @State private var sessionGrades:    [Int: SRSGrade]      = [:]
+    /// Difficulty the user has selected (filled) for the current card but not yet
+    /// confirmed — lets them change it before committing. Reset on each new card.
+    @State private var pendingGrade:     SRSGrade?            = nil
     @State private var preGradeStates:   [Int: SRSCardState]  = [:]
+    /// Verse ids in the order they were graded — the Anki-style Undo stack. SRS
+    /// review runs forward-only; Undo pops the last grade and returns to that card.
+    @State private var gradedOrder:      [Int]                = []
+    /// Verses whose Good/Easy grade auto-advanced the learning cursor, so Undo can
+    /// put the cursor back.
+    @State private var autoLearntIds:    Set<Int>             = []
 
     @Environment(\.dismiss) private var dismiss
 
@@ -89,7 +98,10 @@ struct TestSessionView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
 
-                if vm.verses.count > 1 {
+                // Anki-style review is forward-only — you advance by grading, and
+                // Undo (top bar) reverts the last grade — so it has no scrubber.
+                // Quiz keeps free navigation.
+                if vm.verses.count > 1, sessionKind != .srs {
                     scrubberRow
                         .padding(.horizontal, AppLayout.screenMargin)
                         .padding(.bottom, 6)
@@ -101,6 +113,7 @@ struct TestSessionView: View {
         .background(Color(.systemGroupedBackground))
         .onChange(of: vm.currentIndex) { _, _ in
             vm.clearInputs()
+            pendingGrade = nil   // each card starts from its own suggested difficulty
             if speech.isListening { speech.stopListening() }
             if isScrubbing {
                 // Don't dismiss the keyboard — just point focus at the title field
@@ -160,6 +173,18 @@ struct TestSessionView: View {
                 }
                 .accessibilityLabel("Close session")
 
+                // Undo the last grade — the forward-only review's back affordance.
+                // Kept on the leading edge so it stays reachable even while the
+                // keyboard is up on the next card.
+                if sessionKind == .srs {
+                    Button { undoLastGrade() } label: {
+                        Image(systemName: "arrow.uturn.backward").studyChromeCircleButton()
+                    }
+                    .disabled(gradedOrder.isEmpty)
+                    .opacity(gradedOrder.isEmpty ? 0.3 : 1)
+                    .accessibilityLabel("Undo last rating")
+                }
+
                 Spacer()
 
                 // While typing, a guaranteed-visible "Done" replaces the trailing
@@ -176,11 +201,14 @@ struct TestSessionView: View {
                     .accessibilityLabel("Close keyboard")
                 } else {
                     HStack(spacing: 8) {
-                        // Verse selector dropdown
-                        Button { showVerseSelector = true } label: {
-                            Image(systemName: "list.bullet").studyChromeCircleButton()
+                        // Verse selector (jump anywhere) — Quiz only; SRS review is
+                        // forward-only, so free jumping doesn't belong there.
+                        if sessionKind != .srs {
+                            Button { showVerseSelector = true } label: {
+                                Image(systemName: "list.bullet").studyChromeCircleButton()
+                            }
+                            .accessibilityLabel("Jump to verse")
                         }
-                        .accessibilityLabel("Jump to verse")
                         // Score display — only in Entire Verse mode
                         if studyMode == .submit { scoreDisplay }
                     }
@@ -453,22 +481,60 @@ struct TestSessionView: View {
 
     // MARK: - Bottom Controls
 
+    /// In an SRS review the session isn't "done" until every card has been
+    /// **graded** — not merely revealed. `vm.isSessionComplete` flips true as soon
+    /// as the last card is *revealed* (first-letter / full-word) or entered
+    /// *perfectly* (submit); showing the summary then would skip the final card's
+    /// grading buttons and the card would never get scheduled. Quiz sessions have
+    /// no grading, so they keep the plain reveal-based completion.
+    private var showSessionSummary: Bool {
+        if sessionKind == .srs {
+            return vm.verses.allSatisfy { sessionGrades[$0.id] != nil }
+        }
+        return vm.isSessionComplete
+    }
+
     private var bottomControls: some View {
         VStack(spacing: 12) {
-            if vm.isSessionComplete {
+            if showSessionSummary {
                 sessionCompletePanel
             } else {
                 cardControlBand
             }
 
-            // Completing the current stopped verse here (e.g. it surfaced as a new
-            // card) lets you advance the Home cursor without leaving the session.
-            if !vm.isSessionComplete, vm.isCardComplete,
+            // Quiz (non-SRS) has no grade to key off, so completing the current
+            // stopped verse here still offers a manual "Mark as Complete". In SRS a
+            // Good/Easy grade advances the cursor automatically (see gradeAndAdvance).
+            if !showSessionSummary, sessionKind != .srs, vm.isCardComplete,
                let v = vm.currentVerse, learning.isCurrent(v) {
                 markLearntRow(for: v)
             }
 
-            if !vm.isSessionComplete && vm.completedCount == vm.verses.count {
+            // SRS: pick a difficulty above (changeable), then confirm to schedule the
+            // card and move on. Confirming the last card ends the session. Gated on
+            // `isCardAnswered` (not `isCardComplete`) so it tracks the grading selector
+            // exactly — in submit mode a *wrong* answer is answered-but-not-complete,
+            // and still needs a Confirm to commit the grade.
+            if !showSessionSummary, sessionKind == .srs, vm.isCardAnswered,
+               let verse = vm.currentVerse {
+                // `currentSelection` is nil only in first-letter mode before the user
+                // picks (no auto-suggestion) — keep Confirm disabled until they do.
+                let pick = currentSelection(for: verse)
+                Button {
+                    guard let grade = pick else { return }
+                    pendingGrade = nil
+                    gradeAndAdvance(grade)
+                } label: {
+                    Text(pick == nil ? "Pick a difficulty to continue" : "Confirm")
+                        .font(.headline).frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                .tint(.accentColor)
+                .disabled(pick == nil)
+            } else if !showSessionSummary, sessionKind != .srs,
+                      vm.completedCount == vm.verses.count {
+                // Quiz (non-SRS) has no grading, so it keeps an explicit end button.
                 Button {
                     endSession()
                 } label: {
@@ -483,6 +549,7 @@ struct TestSessionView: View {
         .padding(.bottom, 24)
         .padding(.top, 6)
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: vm.isCardComplete)
+        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: vm.isCardAnswered)
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: vm.isSessionComplete)
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: vm.completedCount)
     }
@@ -503,11 +570,11 @@ struct TestSessionView: View {
                 if vm.isCardComplete {
                     if sessionKind == .srs, let verse = vm.currentVerse {
                         SRSGradingButtons(
-                            state:       displayState(for: verse),
-                            suggested:   gradeButtonHighlight(for: verse),
-                            now:         Date(),
-                            isConfirmed: sessionGrades[verse.id] != nil,
-                            onPick:      { gradeAndAdvance($0) }
+                            state:     displayState(for: verse),
+                            suggested: suggestedGradeFor(verse),
+                            selected:  currentSelection(for: verse),
+                            now:       Date(),
+                            onPick:    { pendingGrade = $0 }
                         )
                     } else {
                         nextButton
@@ -635,11 +702,11 @@ struct TestSessionView: View {
             if hasResult {
                 if sessionKind == .srs, let verse = vm.currentVerse {
                     SRSGradingButtons(
-                        state:       displayState(for: verse),
-                        suggested:   gradeButtonHighlight(for: verse),
-                        now:         Date(),
-                        isConfirmed: sessionGrades[verse.id] != nil,
-                        onPick:      { gradeAndAdvance($0) }
+                        state:     displayState(for: verse),
+                        suggested: suggestedGradeFor(verse),
+                        selected:  currentSelection(for: verse),
+                        now:       Date(),
+                        onPick:    { pendingGrade = $0 }
                     )
                 } else {
                     HStack(spacing: 10) {
@@ -769,8 +836,11 @@ struct TestSessionView: View {
                 // Skip predominantly-vertical drags so TextEditor scroll/selection in submit mode survives.
                 guard abs(value.translation.width) > abs(value.translation.height) else { return }
                 if isCardFlying { commitSwipe() }
-                let canNext = vm.currentIndex < vm.verses.count - 1
-                let canPrev = vm.currentIndex > 0
+                // Forward-only SRS review: no swipe navigation (advance by grading,
+                // step back via Undo). Quiz keeps free swiping.
+                let swipeNav = sessionKind != .srs
+                let canNext = swipeNav && vm.currentIndex < vm.verses.count - 1
+                let canPrev = swipeNav && vm.currentIndex > 0
                 dragOffset = CardSwipeConfig.clampedDragTranslation(
                     value.translation,
                     canGoNext: canNext,
@@ -781,11 +851,12 @@ struct TestSessionView: View {
                 if isCardFlying { commitSwipe() }
                 let isHorizontal = abs(value.translation.width) > abs(value.translation.height)
                 let vx = value.predictedEndTranslation.width
-                if isHorizontal,
+                let swipeNav = sessionKind != .srs
+                if isHorizontal, swipeNav,
                    (dragOffset.width < -CardSwipeConfig.threshold || vx < -CardSwipeConfig.velocityThreshold),
                    vm.currentIndex < vm.verses.count - 1 {
                     swipeForward()
-                } else if isHorizontal,
+                } else if isHorizontal, swipeNav,
                           (dragOffset.width > CardSwipeConfig.threshold || vx > CardSwipeConfig.velocityThreshold),
                           vm.currentIndex > 0 {
                     swipeBackward()
@@ -880,23 +951,25 @@ struct TestSessionView: View {
         return currentSRSState(for: verse)
     }
 
-    /// Auto-suggested grade unless the user has already picked one this session,
-    /// in which case the previously-picked grade stays highlighted.
-    private func gradeButtonHighlight(for verse: Verse) -> SRSGrade {
-        sessionGrades[verse.id] ?? suggestedGradeForCurrentCard()
+    /// The grade currently shown as **selected** (filled) and that Confirm will
+    /// commit: the user's explicit pick, else a grade already applied this session
+    /// (regrade when scrubbing back), else the suggestion. `nil` only when nothing
+    /// is picked and there's no suggestion — first-letter mode before the user
+    /// chooses — which keeps Confirm disabled until they pick.
+    private func currentSelection(for verse: Verse) -> SRSGrade? {
+        pendingGrade ?? sessionGrades[verse.id] ?? suggestedGradeFor(verse)
     }
 
-    private func suggestedGradeForCurrentCard() -> SRSGrade {
-        guard let verse = vm.currentVerse else { return .good }
-        return suggestedGradeFor(verse)
-    }
-
-    /// Slips tolerated in the typo-prone first-letter / full-word modes before the
-    /// suggestion drops from "Good" to "Hard" — they fumble keystrokes far more than
-    /// entire-verse typing, so a couple of misses shouldn't be read as poor recall.
+    /// Slips tolerated in the typo-prone full-word mode before the suggestion drops
+    /// from "Good" to "Hard" — keystroke fumbles shouldn't be read as poor recall.
     private static let typingMistakeTolerance = 2
 
-    private func suggestedGradeFor(_ verse: Verse) -> SRSGrade {
+    /// The algorithm's recommended grade — shown with the "Suggested" tag. Returns
+    /// `nil` when there's no reliable recommendation: first-letter mode is so
+    /// keystroke-heavy that a wrong letter is common, so the mistake count is a poor
+    /// signal — we don't suggest a grade and leave the choice to the user.
+    private func suggestedGradeFor(_ verse: Verse) -> SRSGrade? {
+        guard studyMode != .firstLetter else { return nil }
         // Peeking at the answer is a failed recall — never suggest better than Again.
         if peekedVerseIds.contains(verse.id) { return .again }
 
@@ -905,10 +978,12 @@ struct TestSessionView: View {
         case .submit:
             let allCorrect = vm.submitResults[verse.id]?.isAllCorrect == true
             return suggestedGrade(isAllCorrect: allCorrect, mistakes: mistakes)
-        case .firstLetter, .fullWord:
+        case .fullWord:
             // Completion already means every word was eventually correct; only the
             // number of slips matters, with leeway before counting it as a struggle.
             return mistakes <= Self.typingMistakeTolerance ? .good : .hard
+        case .firstLetter:
+            return nil   // handled by the guard above; keeps the switch exhaustive
         }
     }
 
@@ -920,7 +995,9 @@ struct TestSessionView: View {
         if sessionKind == .srs {
             var gradedAny = false
             for verse in vm.verses where sessionGrades[verse.id] == nil && vm.isVerseComplete(verse) {
-                let grade = suggestedGradeFor(verse)
+                // First-letter mode has no auto-suggestion; default an ungraded-but-
+                // finished card to Good so ending the session still schedules it.
+                let grade = suggestedGradeFor(verse) ?? .good
                 if let prior = SRSStore.shared.state(for: verse) { preGradeStates[verse.id] = prior }
                 SRSStore.shared.grade(verse: verse, grade: grade)
                 sessionGrades[verse.id] = grade
@@ -953,7 +1030,17 @@ struct TestSessionView: View {
                 ?? SRSCardState.newCard(key: verse.srsKey, now: Date())
             SRSStore.shared.regrade(verse: verse, grade: grade, from: prior)
         }
+        if firstGradeInSession { gradedOrder.append(verse.id) }
         sessionGrades[verse.id] = grade
+
+        // Auto-advance the Home learning cursor: a solid recall (Good/Easy) of the
+        // verse you're currently learning marks it learnt and moves the cursor on —
+        // no manual "Mark as Complete" step. Again/Hard keep you on the verse.
+        // Recorded in `autoLearntIds` so Undo can put the cursor back.
+        if grade == .good || grade == .easy, learning.isCurrent(verse) {
+            learning.markLearnt(verse)
+            autoLearntIds.insert(verse.id)
+        }
 
         if vm.currentIndex < vm.verses.count - 1 {
             isScrubbing = true
@@ -968,6 +1055,37 @@ struct TestSessionView: View {
             onSessionEnded?()
             dismiss()
         }
+    }
+
+    /// Anki-style Undo: revert the most recent grade (last-in-first-out) and return
+    /// to that card so it can be re-rated. Rolls back the card's SRS schedule to its
+    /// captured pre-grade state and, if that grade had auto-advanced the learning
+    /// cursor, restores the cursor too. The card keeps its revealed/submitted state,
+    /// so the grading buttons are right there for a fresh rating.
+    private func undoLastGrade() {
+        guard let lastId = gradedOrder.last,
+              let idx = vm.verses.firstIndex(where: { $0.id == lastId }) else { return }
+        let verse = vm.verses[idx]
+
+        // A nil captured state means the card was brand-new, so revert removes its
+        // state and hands back the consumed daily-new slot.
+        let prior = preGradeStates[lastId]
+        SRSStore.shared.revert(verse: verse, to: prior, wasNewlyIntroduced: prior == nil)
+
+        if autoLearntIds.remove(lastId) != nil {
+            learning.unmarkLearnt(verse)
+        }
+
+        sessionGrades.removeValue(forKey: lastId)
+        preGradeStates.removeValue(forKey: lastId)
+        gradedOrder.removeLast()
+        pendingGrade = nil
+
+        // Return to the just-ungraded card to re-rate it.
+        isScrubbing = true
+        vm.currentIndex = idx
+        HapticEngine.light()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { isScrubbing = false }
     }
 }
 
