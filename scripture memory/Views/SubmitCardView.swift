@@ -14,6 +14,7 @@ struct SubmitCardView: View {
     @Binding var verseText: String
     let result:      SubmitResult?
     @FocusState.Binding var focusedField: SubmitField?
+    var isCurrentLearning: Bool = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -29,12 +30,29 @@ struct SubmitCardView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
-            Text(cardLabel)
-                .font(.system(size: 10, weight: .medium))
-                .foregroundColor(.secondary)
-                .padding(.top, 6)
+            HStack(spacing: 6) {
+                Text(cardLabel)
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(.secondary)
+                Spacer(minLength: 8)
+                if isCurrentLearning { currentBadge }
+            }
+            .padding(.top, 6)
         }
         .flashcardStyle()
+    }
+
+    /// "Current" chip marking the learning-cursor verse — matches FlashcardView.
+    private var currentBadge: some View {
+        HStack(spacing: 3) {
+            Image(systemName: "bookmark.fill").font(.system(size: 8, weight: .bold))
+            Text("Current").font(.system(size: 9, weight: .bold))
+        }
+        .foregroundStyle(.white)
+        .padding(.horizontal, 7)
+        .padding(.vertical, 3)
+        .background(Capsule().fill(Color.accentColor))
+        .accessibilityLabel("Current verse")
     }
 
     // MARK: - Input View

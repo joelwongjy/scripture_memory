@@ -45,9 +45,7 @@ struct PackOrganizerView: View {
                     Button("Done") { dismiss() }
                 }
             }
-            .confirmationDialog("Reset pack order?",
-                                isPresented: $showResetConfirm,
-                                titleVisibility: .visible) {
+            .alert("Reset pack order?", isPresented: $showResetConfirm) {
                 Button("Reset", role: .destructive) {
                     store.reset()
                     HapticEngine.light()
@@ -70,14 +68,9 @@ struct PackOrganizerView: View {
                         .strokeBorder(Color(.separator).opacity(0.4), lineWidth: 0.5)
                 )
 
-            VStack(alignment: .leading, spacing: 1) {
-                Text(pack.name)
-                    .font(.body)
-                    .foregroundStyle(.primary)
-                Text("\(pack.verses.count) verses")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
+            Text(pack.name)
+                .font(.body)
+                .foregroundStyle(.primary)
 
             Spacer()
 

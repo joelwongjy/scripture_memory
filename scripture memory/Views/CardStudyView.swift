@@ -6,6 +6,7 @@ struct CardStudyView: View {
 
     @StateObject private var vm:     CardStudyViewModel
     @StateObject private var speech: SpeechRecognizer = SpeechRecognizer()
+    @ObservedObject private var learning = LearningStore.shared
 
     @AppStorage("studyMode")       private var studyMode:       StudyMode = .firstLetter
     @AppStorage("isVerticalScroll") private var isVerticalScroll = false
@@ -20,6 +21,13 @@ struct CardStudyView: View {
     @State private var speechTarget: SubmitField = .title
     @State private var isScrubbing           = false
     @State private var isPeeking             = false
+    /// The "Jump to current verse" pill shows its full label briefly, then collapses
+    /// to just the icon so it stops dominating the corner.
+    @State private var jumpExpanded          = true
+    /// Raw vertical scroll offset of the read-mode list — lets the jump button track
+    /// whether the cursor card is actually on screen, not just `currentIndex` (which
+    /// only changes on tap, so scrolling away after a jump never brought it back).
+    @State private var listScrollOffset: CGFloat = 0
 
     /// Live continuous scroll position (0 = top, 1 = bottom) in vertical-scroll
     /// browse mode, measured from the content's offset. Drives the fast-scroll
@@ -72,6 +80,91 @@ struct CardStudyView: View {
         }
     }
 
+    // MARK: - Current learning verse
+
+    /// The current stopped verse's index *within the loaded pack*, if it lives here.
+    private var currentVerseIndexInPack: Int? {
+        guard let key = learning.currentKey else { return nil }
+        return vm.verses.firstIndex { $0.srsKey == key }
+    }
+
+    /// Is the card on screen the current stopped verse? Gates the Mark-as-Learnt
+    /// button so completing it *anywhere* lets you advance the cursor.
+    private var isCurrentLearningVerse: Bool {
+        guard let v = vm.currentVerse, let key = learning.currentKey else { return false }
+        return v.srsKey == key
+    }
+
+    /// Offer "Mark as Learnt" in the Continue-Learning flow (explicit hook) or
+    /// whenever the card on screen is the current stopped verse.
+    private var offersMarkLearnt: Bool { onMarkLearnt != nil || isCurrentLearningVerse }
+
+    /// Float the "Current verse" shortcut when this pack holds the current stopped
+    /// verse, we're parked on a different card, and the keyboard isn't up.
+    private var showGoToCurrent: Bool {
+        guard let i = currentVerseIndexInPack else { return false }
+        return i != vm.currentIndex && !isEditing
+    }
+
+    private func jumpToCurrentVerse() {
+        guard let i = currentVerseIndexInPack, i != vm.currentIndex else { return }
+        isScrubbing = true
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) { vm.currentIndex = i }
+        HapticEngine.light()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { isScrubbing = false }
+    }
+
+    private func goToCurrentButton(action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Image(systemName: "bookmark.fill")
+                    .font(.system(size: jumpExpanded ? 12 : 15, weight: .bold))
+                if jumpExpanded {
+                    Text("Jump to current verse")
+                        .font(.system(size: 13, weight: .semibold))
+                        .fixedSize()
+                }
+            }
+            .foregroundStyle(.white)
+            .padding(.horizontal, jumpExpanded ? 14 : 0)
+            .padding(.vertical, jumpExpanded ? 10 : 0)
+            // Collapsed form stays a 44pt circular tap target (Apple minimum).
+            .frame(minWidth: jumpExpanded ? 0 : 44, minHeight: jumpExpanded ? 0 : 44)
+            .background(Capsule().fill(Color.accentColor))
+            .shadow(color: .black.opacity(0.22), radius: 6, x: 0, y: 3)
+        }
+        .accessibilityLabel("Jump to current verse")
+        .transition(.scale.combined(with: .opacity))
+        // Flash the full label, then shrink to the icon. `.task` restarts every time
+        // the button reappears (new view identity), so it re-expands on each show and
+        // auto-cancels if it's dismissed before the second is up.
+        .task {
+            jumpExpanded = true
+            try? await Task.sleep(for: .seconds(1))
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { jumpExpanded = false }
+        }
+    }
+
+    /// List (vertical-scroll read) variant of the jump: just move the cursor
+    /// index — the scroll view's `onChange` animates to it. No `isScrubbing`, so
+    /// that scroll actually fires (it's guarded by `!isScrubbing`).
+    /// List (vertical-scroll read) visibility: show the jump shortcut whenever the
+    /// cursor card's centre has scrolled out of the viewport. Cards are a fixed
+    /// height here, so the centre is `topPadding + index·(card+spacing) + card/2`.
+    private func showJumpInList(cardHeight: CGFloat, viewportHeight: CGFloat) -> Bool {
+        guard let ci = currentVerseIndexInPack, !isEditing else { return false }
+        let cardCentre = 12 + CGFloat(ci) * (cardHeight + 20) + cardHeight / 2
+        let onScreen = cardCentre > listScrollOffset && cardCentre < listScrollOffset + viewportHeight
+        return !onScreen
+    }
+
+    /// Mark a verse complete from its read-mode card. No advance — the cursor moves
+    /// to the next unlearnt verse on its own and the on-card button hides itself.
+    private func markVerseComplete(_ verse: Verse) {
+        if let cb = onMarkLearnt { cb(verse) } else { LearningStore.shared.markLearnt(verse) }
+        HapticEngine.success()
+    }
+
     // MARK: - Body
 
     var body: some View {
@@ -88,34 +181,53 @@ struct CardStudyView: View {
                     verticalScrollCards(cardWidth: cardWidth, cardHeight: cardHeight)
                         .frame(maxHeight: .infinity)
                 } else {
-                    Spacer(minLength: 12)
-                    ZStack {
-                        cardStack
-                            .frame(width: cardWidth, height: cardHeight)
-                        // Peek renders as an OVERLAY in every mode so the
-                        // SubmitCardView (and its focused TextField) stays
-                        // mounted — otherwise the keyboard dismisses — and so
-                        // the reveal is identical across all study modes.
-                        if vm.isReviewMode, isPeeking,
-                           let verse = vm.currentVerse {
-                            PeekOverlayCard(
-                                verse: verse,
-                                cardLabel: vm.cardLabel(for: verse),
-                                width: cardWidth,
-                                height: cardHeight,
-                                isPeeking: isPeeking
-                            )
-                            .allowsHitTesting(false)
-                            .transition(.opacity)
-                            .zIndex(100)
+                    // Read mode keeps the original 5:3 card. Review mode grows the
+                    // card into the otherwise-empty vertical space (capped so it
+                    // stays card-shaped) — the masked underscores need the extra
+                    // room — and as the flexible middle it also absorbs the keyboard
+                    // inset, shrinking to fit when typing rather than overflowing.
+                    GeometryReader { area in
+                        let cardH = vm.isReviewMode
+                            ? max(cardHeight, min(cardWidth * 0.82, area.size.height - 16))
+                            : cardHeight
+                        ZStack {
+                            cardStack
+                                .frame(width: cardWidth, height: cardH)
+                            // Peek renders as an OVERLAY in every mode so the
+                            // SubmitCardView (and its focused TextField) stays
+                            // mounted — otherwise the keyboard dismisses — and so
+                            // the reveal is identical across all study modes.
+                            if vm.isReviewMode, isPeeking,
+                               let verse = vm.currentVerse {
+                                PeekOverlayCard(
+                                    verse: verse,
+                                    cardLabel: vm.cardLabel(for: verse),
+                                    width: cardWidth,
+                                    height: cardH,
+                                    isPeeking: isPeeking
+                                )
+                                .allowsHitTesting(false)
+                                .transition(.opacity)
+                                .zIndex(100)
+                            }
                         }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .overlay(alignment: .bottomTrailing) {
+                            if showGoToCurrent {
+                                goToCurrentButton(action: jumpToCurrentVerse)
+                                    // Align the trailing edge with the card (and the
+                                    // app's layout margin) instead of the screen edge.
+                                    .padding(.trailing, AppLayout.screenMargin)
+                                    .padding(.bottom, 12)
+                                    .zIndex(200)
+                            }
+                        }
+                        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: showGoToCurrent)
                     }
-                    .frame(width: cardWidth, height: cardHeight)
-                    .frame(maxWidth: .infinity)
-                    Spacer(minLength: 12)
                 }
 
-                if !isVerticalScroll || vm.isReviewMode {
+                if (!isVerticalScroll || vm.isReviewMode),
+                   vm.verses.count > 1 || canCrossBackward || canCrossForward {
                     scrubberRow
                         .padding(.horizontal, AppLayout.screenMargin)
                         .padding(.bottom, 6)
@@ -276,7 +388,9 @@ struct CardStudyView: View {
                                     .frame(width: cardWidth, height: cardHeight)
                                     .id(index)
                                     .overlay {
-                                        if index != vm.currentIndex {
+                                        // Skip the focus-tap on the cursor card so its
+                                        // on-card "Mark as Complete" button stays tappable.
+                                        if index != vm.currentIndex, !learning.isCurrent(verse) {
                                             Color.clear.contentShape(Rectangle())
                                                 .onTapGesture {
                                                     HapticEngine.light()
@@ -305,6 +419,7 @@ struct CardStudyView: View {
                         let maxScroll = max(1, m.contentHeight - outerGeo.size.height)
                         let f = Double(min(max(m.offset / maxScroll, 0), 1))
                         if abs(f - scrollFraction) > 0.0001 { scrollFraction = f }
+                        if abs(listScrollOffset - m.offset) > 0.5 { listScrollOffset = m.offset }
                     }
 
                     if vm.verses.count >= 2 {
@@ -343,6 +458,28 @@ struct CardStudyView: View {
                     guard !isScrubbing else { return }
                     withAnimation(.easeInOut(duration: 0.22)) { proxy.scrollTo(newIndex, anchor: .center) }
                 }
+                // Bottom-trailing to match the single-card view (aligned to the layout
+                // margin). Visibility tracks the cursor card's scroll position, so the
+                // button returns after you scroll away from a jump.
+                .overlay(alignment: .bottomTrailing) {
+                    if showJumpInList(cardHeight: cardHeight, viewportHeight: outerGeo.size.height) {
+                        goToCurrentButton(action: {
+                            // Scroll via the proxy directly (not by mutating currentIndex)
+                            // so a re-jump still works when currentIndex is already the
+                            // cursor from a previous jump.
+                            guard let i = currentVerseIndexInPack else { return }
+                            HapticEngine.light()
+                            isScrubbing = true
+                            if vm.currentIndex != i { vm.currentIndex = i }
+                            withAnimation(.easeInOut(duration: 0.3)) { proxy.scrollTo(i, anchor: .center) }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { isScrubbing = false }
+                        })
+                        .padding(.trailing, AppLayout.screenMargin)
+                        .padding(.bottom, 12)
+                    }
+                }
+                .animation(.spring(response: 0.35, dampingFraction: 0.8),
+                           value: showJumpInList(cardHeight: cardHeight, viewportHeight: outerGeo.size.height))
             }
         }
     }
@@ -378,7 +515,8 @@ struct CardStudyView: View {
                 titleText: interactive ? $vm.titleInput : .constant(""),
                 verseText: interactive ? $vm.verseInput : .constant(""),
                 result: interactive ? vm.submitResults[verse.id] : nil,
-                focusedField: $submitFocus
+                focusedField: $submitFocus,
+                isCurrentLearning: learning.isCurrent(verse)
             )
             .allowsHitTesting(interactive)
         } else {
@@ -399,7 +537,9 @@ struct CardStudyView: View {
                 onSectionTap: interactive && vm.isReviewMode && !isPeeking ? { section in
                     vm.activeSection = section
                     DispatchQueue.main.async { focusInput() }
-                } : nil
+                } : nil,
+                isCurrentLearning: learning.isCurrent(verse),
+                onMarkComplete: vm.isReviewMode ? nil : { markVerseComplete(verse) }
             )
         }
     }
@@ -459,14 +599,22 @@ struct CardStudyView: View {
     private var cardControlBand: some View {
         HStack(alignment: .center, spacing: StudyControlMetrics.rowSpacing) {
             // Peeking only makes sense while the verse is still hidden — once the
-            // card is complete the full text is already shown, so drop the button.
-            if !vm.isCardComplete {
+            // card is answered (revealed, or submitted right or wrong) the text is
+            // already on the card, so drop the button.
+            if !vm.isCardAnswered {
                 PeekHoldButton(isPeeking: $isPeeking)
                     .transition(.opacity)
             }
             Group {
                 if vm.isCardComplete {
-                    if onMarkLearnt != nil { markLearntButton } else { completeLabel }
+                    if offersMarkLearnt {
+                        HStack(spacing: 10) {
+                            tryAgainButton
+                            markLearntButton
+                        }
+                    } else {
+                        completeLabel
+                    }
                 } else if studyMode == .submit {
                     submitControls
                 } else {
@@ -494,20 +642,35 @@ struct CardStudyView: View {
     /// boundary). Streak/test progress is handled separately on submit.
     private var markLearntButton: some View {
         Button {
-            if let v = vm.currentVerse { onMarkLearnt?(v) }
+            if let v = vm.currentVerse {
+                if let cb = onMarkLearnt { cb(v) } else { LearningStore.shared.markLearnt(v) }
+            }
             HapticEngine.success()
             isScrubbing = true
             stepForward()
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { isScrubbing = false }
         } label: {
-            Label("Mark as Learnt", systemImage: "checkmark.circle.fill")
+            Label("Mark as Complete", systemImage: "checkmark.circle.fill")
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity).padding(.vertical, 12)
                 .background(Color.green)
                 .roundedRect(12)
         }
-        .accessibilityLabel("Mark verse as learnt and continue")
+        .accessibilityLabel("Mark verse as complete and continue")
+    }
+
+    /// Resets the current card so the user can attempt it again (clears revealed
+    /// words / submitted answer for whichever study mode is active).
+    private var tryAgainButton: some View {
+        Button { vm.resetCurrentCard() } label: {
+            Label("Try Again", systemImage: "arrow.counterclockwise")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(.primary)
+                .frame(maxWidth: .infinity).padding(.vertical, 12)
+                .background(Color(.secondarySystemGroupedBackground))
+                .roundedRect(12)
+        }
     }
 
     /// Submit mode: mic + submit button before scoring, try-again after.
@@ -524,7 +687,7 @@ struct CardStudyView: View {
                             .background(Color(.secondarySystemGroupedBackground))
                             .roundedRect(12)
                     }
-                    if onMarkLearnt != nil { markLearntButton }
+                    if offersMarkLearnt { markLearntButton }
                 }
             } else {
                 HStack(spacing: 10) {

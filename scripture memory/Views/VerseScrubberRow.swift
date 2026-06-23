@@ -24,6 +24,17 @@ struct VerseScrubberRow: View {
     let onStepForward: () -> Void
 
     var body: some View {
+        // A one-verse session has nothing to scrub to — a lone centred knob (plus
+        // a stray fill stub) just reads as broken — so collapse the control unless
+        // cross-pack stepping keeps the chevrons meaningful.
+        if verseCount <= 1 && !canStepBeyondStart && !canStepBeyondEnd {
+            EmptyView()
+        } else {
+            scrubberContent
+        }
+    }
+
+    private var scrubberContent: some View {
         VStack(spacing: showPositionLabel ? 6 : 0) {
             HStack(spacing: 10) {
                 let canPrev = currentIndex > 0
@@ -64,7 +75,9 @@ struct VerseScrubberRow: View {
                 ? CGFloat(currentIndex) / CGFloat(verseCount - 1) * (w - knobW)
                 : (w - knobW) / 2
             let progress = verseCount > 1 ? CGFloat(currentIndex) / CGFloat(verseCount - 1) : 0
-            let fillW = knobW / 2 + progress * (w - knobW)
+            // Single verse: run the fill to the centred knob instead of leaving a
+            // stray stub pinned to the left edge.
+            let fillW = verseCount > 1 ? (knobW / 2 + progress * (w - knobW)) : (knobX + knobW / 2)
 
             ZStack(alignment: .leading) {
                 Capsule()

@@ -40,7 +40,6 @@ struct LearningSetupView: View {
                         packs:        packs,
                         ordered:      ordered,
                         isOnboarding: isOnboarding,
-                        showIntroNote: isOnboarding && !showsWelcome,
                         currentKey:   learning.current(in: ordered)?.verse.srsKey,
                         onPick: { verse in
                             learning.setProgress(startingAt: verse, in: ordered)
@@ -85,13 +84,16 @@ private struct WelcomeScreen: View {
                 VStack(alignment: .leading, spacing: 30) {
                     FeatureRow(icon: "text.book.closed.fill",
                                title: "Memorize Scripture",
-                               subtitle: "Learn verses one at a time, in order, at your own pace.")
+                               subtitle: "Learn verses one at a time, in order, at your own pace.",
+                               tint: .blue)
                     FeatureRow(icon: "flame.fill",
                                title: "Build a daily streak",
-                               subtitle: "A verse a day keeps your momentum going.")
+                               subtitle: "A verse a day keeps your momentum going.",
+                               tint: .orange)
                     FeatureRow(icon: "arrow.triangle.2.circlepath",
                                title: "Reviews that stick",
-                               subtitle: "Spaced repetition brings verses back right before you'd forget.")
+                               subtitle: "Spaced repetition brings verses back right before you'd forget.",
+                               tint: .green)
                 }
                 .padding(.horizontal, 30)
                 .padding(.bottom, 24)
@@ -119,12 +121,13 @@ private struct FeatureRow: View {
     let icon: String
     let title: String
     let subtitle: String
+    var tint: Color = .accentColor
 
     var body: some View {
         HStack(alignment: .center, spacing: 16) {
             Image(systemName: icon)
                 .font(.system(size: 30))
-                .foregroundStyle(Color.accentColor)
+                .foregroundStyle(tint)
                 .frame(width: 42, alignment: .center)
             VStack(alignment: .leading, spacing: 2) {
                 Text(title).font(.headline)
@@ -144,66 +147,74 @@ private struct StartingPointScreen: View {
     let packs:   [Pack]
     let ordered: [Verse]
     var isOnboarding: Bool
-    var showIntroNote: Bool
-    var currentKey: String?
     var onPick:   (Verse) -> Void
     var onCancel: () -> Void
 
+    /// The starting point the user has tapped but not yet confirmed. Seeded from
+    /// the existing progress so re-opening shows the current pick.
+    @State private var pending: Verse?
+
+    init(packs: [Pack], ordered: [Verse], isOnboarding: Bool, currentKey: String?,
+         onPick: @escaping (Verse) -> Void, onCancel: @escaping () -> Void) {
+        self.packs        = packs
+        self.ordered      = ordered
+        self.isOnboarding = isOnboarding
+        self.onPick       = onPick
+        self.onCancel     = onCancel
+        _pending = State(initialValue: ordered.first { $0.srsKey == currentKey })
+    }
+
     var body: some View {
         List {
-            if showIntroNote {
-                Section {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("One quick thing")
-                            .font(.headline)
-                        Text("Pick the verse you're currently on so your Home screen and widget start in the right place. You can change this any time in Settings.")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding(.vertical, 4)
-                    .listRowBackground(Color.clear)
-                }
-            }
-
             Section {
                 Button {
-                    if let first = ordered.first { onPick(first) }
+                    guard let first = ordered.first else { return }
+                    pending = first
+                    HapticEngine.light()
                 } label: {
                     HStack {
                         Label("Start from the beginning", systemImage: "flag.fill")
                             .foregroundStyle(.primary)
                         Spacer()
-                        if let first = ordered.first, first.srsKey == currentKey { checkmark }
+                        if isSelected(ordered.first) { checkmark }
                     }
                 }
-            } header: {
-                Text("New here?")
             }
 
             Section {
                 ForEach(packs) { pack in
                     NavigationLink {
-                        VerseListScreen(pack: pack, currentKey: currentKey, onPick: onPick)
+                        VerseListScreen(pack: pack,
+                                        selectedKey: pending?.srsKey,
+                                        onSelect: { pending = $0 })
                     } label: {
                         HStack {
-                            Text(pack.name).foregroundStyle(.primary)
+                            Text(pack.name)
+                                .foregroundStyle(.primary)
+                                .lineLimit(1)
                             Spacer()
-                            if pack.verses.contains(where: { $0.srsKey == currentKey }) {
-                                Text("Current")
+                            // The first verse is represented by "Start from the beginning"
+                            // above (which carries its own check), so only badge a pack for
+                            // a specific, non-first verse — otherwise both would show a check.
+                            if let v = pending,
+                               v.srsKey != ordered.first?.srsKey,
+                               pack.verses.contains(where: { $0.srsKey == v.srsKey }) {
+                                Text("\(v.book) \(v.reference)")
                                     .font(.footnote.weight(.semibold))
                                     .foregroundStyle(Color.accentColor)
+                                    .lineLimit(1)
+                                checkmark
                             }
                         }
                     }
                 }
             } header: {
-                Text("Already learning? Pick where you're up to")
-            } footer: {
-                Text("Choose the exact verse you last stopped at. Everything before it is treated as already learnt.")
+                Text("Already memorizing? Pick where you stopped")
             }
         }
-        .navigationTitle("Where Are You Up To?")
+        .navigationTitle(isOnboarding ? "Your Starting Point" : "Current Verse")
         .navigationBarTitleDisplayMode(.inline)
+        .safeAreaInset(edge: .bottom, spacing: 0) { confirmBar }
         .toolbar {
             if !isOnboarding {
                 ToolbarItem(placement: .cancellationAction) {
@@ -211,6 +222,38 @@ private struct StartingPointScreen: View {
                 }
             }
         }
+    }
+
+    private var confirmBar: some View {
+        // A pinned footer bar (hairline + frosted material) rather than a bare
+        // floating button, so list rows scroll under a clear bar instead of
+        // bleeding behind the button — the standard Apple bottom-CTA pattern.
+        VStack(spacing: 0) {
+            Divider()
+            Button {
+                guard let pending else { return }
+                HapticEngine.light()
+                onPick(pending)
+            } label: {
+                Text("Confirm")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+            }
+            .controlSize(.large)
+            .buttonStyle(.borderedProminent)
+            .buttonBorderShape(.capsule)
+            .tint(.accentColor)
+            .disabled(pending == nil)
+            .padding(.horizontal, 20)
+            .padding(.top, 12)
+            .padding(.bottom, 8)
+        }
+        .background(.bar)
+    }
+
+    private func isSelected(_ verse: Verse?) -> Bool {
+        guard let verse, let pending else { return false }
+        return verse.srsKey == pending.srsKey
     }
 
     private var checkmark: some View {
@@ -222,15 +265,18 @@ private struct StartingPointScreen: View {
 
 private struct VerseListScreen: View {
     let pack: Pack
-    var currentKey: String?
-    var onPick: (Verse) -> Void
+    var selectedKey: String?
+    var onSelect: (Verse) -> Void
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         List {
             Section {
                 ForEach(pack.verses) { verse in
                     Button {
-                        onPick(verse)
+                        HapticEngine.light()
+                        onSelect(verse)
+                        dismiss()
                     } label: {
                         HStack(alignment: .top, spacing: 12) {
                             VStack(alignment: .leading, spacing: 3) {
@@ -246,7 +292,7 @@ private struct VerseListScreen: View {
                                     .lineLimit(2)
                             }
                             Spacer(minLength: 8)
-                            if verse.srsKey == currentKey {
+                            if verse.srsKey == selectedKey {
                                 Image(systemName: "checkmark")
                                     .font(.system(size: 16, weight: .semibold))
                                     .foregroundStyle(Color.accentColor)
@@ -258,7 +304,7 @@ private struct VerseListScreen: View {
                     .buttonStyle(.plain)
                 }
             } footer: {
-                Text("Tap the verse you're currently learning.")
+                Text("Tap the verse you last memorized up to.")
             }
         }
         .navigationTitle(pack.name)

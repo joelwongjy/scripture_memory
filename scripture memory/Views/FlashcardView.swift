@@ -9,6 +9,15 @@ struct FlashcardView: View {
     let activeSection:       CardSection
     var onSectionTap:        ((CardSection) -> Void)? = nil
 
+    /// Marks this card as the "current stopped verse" (the learning cursor) with a
+    /// small badge — shown wherever the verse appears: study card and test card.
+    var isCurrentLearning:   Bool = false
+
+    /// When set (read mode, on the cursor card) the badge becomes a tappable
+    /// "Mark as Complete" button so the current verse can be marked right on the
+    /// card — read mode has no test-completion event to surface it otherwise.
+    var onMarkComplete:      (() -> Void)? = nil
+
     @AppStorage("hardMode") private var hardMode = false
 
     // MARK: - Adaptive Typography
@@ -39,13 +48,59 @@ struct FlashcardView: View {
             VStack(alignment: .leading, spacing: 0) {
                 if isReviewMode { reviewContent(cardSize: geo.size) } else { readContent(cardSize: geo.size) }
                 Spacer(minLength: 16)
-                Text(cardLabel)
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(.secondary)
+                HStack(spacing: 6) {
+                    Text(cardLabel)
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(.secondary)
+                    Spacer(minLength: 8)
+                    if isCurrentLearning {
+                        if let onMarkComplete {
+                            markCompleteButton(onMarkComplete)
+                        } else {
+                            currentBadge
+                        }
+                    }
+                }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
         .flashcardStyle()
+    }
+
+    /// Green "Mark as Complete" pill — the on-card action for the current verse in
+    /// read mode. Replaces the badge (which it implies) when an action is provided.
+    private func markCompleteButton(_ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 4) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 11, weight: .bold))
+                Text("Mark as Complete")
+                    .font(.system(size: 11, weight: .bold))
+            }
+            .foregroundStyle(.white)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(Capsule().fill(Color.green))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Mark current verse as complete")
+    }
+
+    /// Small "Current" chip marking the learning-cursor verse on any flashcard —
+    /// a bookmark (distinct from the pin used for the Home spotlight) so it reads
+    /// as "this is where you stopped."
+    private var currentBadge: some View {
+        HStack(spacing: 3) {
+            Image(systemName: "bookmark.fill")
+                .font(.system(size: 8, weight: .bold))
+            Text("Current")
+                .font(.system(size: 9, weight: .bold))
+        }
+        .foregroundStyle(.white)
+        .padding(.horizontal, 7)
+        .padding(.vertical, 3)
+        .background(Capsule().fill(Color.accentColor))
+        .accessibilityLabel("Current verse")
     }
 
     // MARK: - Read Mode
@@ -85,10 +140,14 @@ struct FlashcardView: View {
         let refH    = VerseFit.height("\(verse.book) \(verse.reference)", width: cardWidth, size: refSize, weight: .bold, lineSpacing: 0)
         let titleH  = VerseFit.height(verse.title, width: cardWidth, size: titleSectionSize, weight: .bold, lineSpacing: 4)
         let showsProgress = !hardMode && activeRevealed < activeWords.count
-        let reserved = refH + 12 + titleH + 8 + (showsProgress ? 22 : 0) + 22   // +label/bottom slack
+        // Count everything below the verse so the fit target matches the space
+        // that's actually free: the progress block (spacer + bar) and the card's
+        // own bottom spacer + label. Undercounting here picks a font one step too
+        // big — which is exactly what made long verses overflow and truncate.
+        let reserved = refH + 12 + titleH + 8 + (showsProgress ? 24 : 0) + 34
         let avail = max(48, cardSize.height - reserved)
         let verseSize = VerseFit.fontSize(verse.verse, width: cardWidth, height: avail,
-                                          lineSpacing: verseGap, minSize: 11, maxSize: 14)
+                                          lineSpacing: verseGap, minSize: 10, maxSize: 16)
 
         return VStack(alignment: .leading, spacing: 0) {
             Text("\(verse.book) \(verse.reference)")
@@ -234,8 +293,11 @@ struct FlashcardView: View {
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     Capsule().fill(Color(.systemGray5))
+                    // Green (matching the completion check) so it reads as
+                    // "progress made" and doesn't blur into the blue active-section
+                    // bar / next-word accent sitting right above it.
                     Capsule()
-                        .fill(Color.accentColor)
+                        .fill(Color.green)
                         .frame(width: max(4, geo.size.width * Double(revealed) / Double(max(1, total))))
                         .animation(.spring(response: 0.4, dampingFraction: 0.7), value: revealed)
                 }

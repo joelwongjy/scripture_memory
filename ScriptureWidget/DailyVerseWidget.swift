@@ -4,48 +4,40 @@ import SwiftUI
 // MARK: - Timeline
 
 struct VerseEntry: TimelineEntry {
-    let date:      Date
-    let verse:     WidgetVerse?
-    /// True when showing the live "current learning verse" (vs a pinned one).
-    let isCurrent: Bool
-    let streak:    Int
-    let dueToday:  Int
-    let learned:   Int
-    let week:      [SharedStore.WeekDay]
+    let date:     Date
+    let verse:    WidgetVerse?
+    /// True when `verse` is a user-pinned spotlight (vs the live cursor).
+    let isPinned: Bool
+    let streak:   Int
+    let dueToday: Int
+    let learned:  Int
+    let week:     [SharedStore.WeekDay]
 }
 
-struct VerseProvider: AppIntentTimelineProvider {
+struct VerseProvider: TimelineProvider {
     func placeholder(in context: Context) -> VerseEntry {
-        VerseEntry(date: Date(), verse: VerseLibrary.allVerses.first, isCurrent: true,
+        VerseEntry(date: Date(), verse: VerseLibrary.allVerses.first, isPinned: false,
                    streak: 0, dueToday: 0, learned: 0, week: [])
     }
 
-    func snapshot(for configuration: VerseConfigIntent, in context: Context) async -> VerseEntry {
-        resolve(configuration)
+    func getSnapshot(in context: Context, completion: @escaping (VerseEntry) -> Void) {
+        completion(resolve())
     }
 
-    func timeline(for configuration: VerseConfigIntent, in context: Context) async -> Timeline<VerseEntry> {
-        // The app reloads us whenever the cursor moves; this re-poll is a safety net.
+    func getTimeline(in context: Context, completion: @escaping (Timeline<VerseEntry>) -> Void) {
+        // The app reloads us whenever the featured verse changes; this re-poll is a safety net.
         let next = Calendar.current.date(byAdding: .hour, value: 6, to: Date()) ?? Date().addingTimeInterval(21_600)
-        return Timeline(entries: [resolve(configuration)], policy: .after(next))
+        completion(Timeline(entries: [resolve()], policy: .after(next)))
     }
 
-    private func resolve(_ config: VerseConfigIntent) -> VerseEntry {
-        let snap    = SharedStore.snapshot()
-        let streak  = snap?.streak ?? 0
-        let due     = snap?.dueToday ?? 0
-        let learned = snap?.learned ?? 0
-        let week    = snap?.week ?? []
-        // A pinned verse wins — unless it's the "Current learning verse" sentinel
-        // (the picker entry that lets the user reset to following their cursor).
-        if let picked = config.verse, picked.id != VerseEntity.currentSentinelID,
-           let v = VerseLibrary.verse(id: picked.id) {
-            return VerseEntry(date: Date(), verse: v, isCurrent: false,
-                              streak: streak, dueToday: due, learned: learned, week: week)
-        }
-        let current = SharedStore.currentLearningVerse()
-        return VerseEntry(date: Date(), verse: current ?? VerseLibrary.allVerses.first,
-                          isCurrent: current != nil, streak: streak, dueToday: due, learned: learned, week: week)
+    /// The widget mirrors whatever the app is featuring — a pinned verse or the
+    /// live cursor — both chosen in-app, so the widget itself has no configuration.
+    private func resolve() -> VerseEntry {
+        let snap  = SharedStore.snapshot()
+        let verse = SharedStore.displayedVerse() ?? VerseLibrary.allVerses.first
+        return VerseEntry(date: Date(), verse: verse, isPinned: SharedStore.isPinned(),
+                          streak: snap?.streak ?? 0, dueToday: snap?.dueToday ?? 0,
+                          learned: snap?.learned ?? 0, week: snap?.week ?? [])
     }
 }
 
@@ -121,10 +113,17 @@ struct VerseEntryView: View {
                 .lineSpacing(verseSpacing)
                 .minimumScaleFactor(0.5)
             Spacer(minLength: 4)
-            Text(v.packName)
-                .font(.system(size: packSize, weight: .medium))
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
+            HStack(spacing: 3) {
+                if entry.isPinned {
+                    Image(systemName: "pin.fill")
+                        .font(.system(size: packSize, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                }
+                Text(v.packName)
+                    .font(.system(size: packSize, weight: .medium))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
         }
     }
 
@@ -152,10 +151,17 @@ struct VerseEntryView: View {
                     .lineLimit(5)
                     .minimumScaleFactor(0.7)
                 Spacer(minLength: 4)
-                Text(v.packName)
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(.tertiary)
-                    .lineLimit(1)
+                HStack(spacing: 3) {
+                    if entry.isPinned {
+                        Image(systemName: "pin.fill")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(.tertiary)
+                    }
+                    Text(v.packName)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(.tertiary)
+                        .lineLimit(1)
+                }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
@@ -286,11 +292,11 @@ struct ScriptureVerseWidget: Widget {
     let kind = "ScriptureVerseWidget"
 
     var body: some WidgetConfiguration {
-        AppIntentConfiguration(kind: kind, intent: VerseConfigIntent.self, provider: VerseProvider()) { entry in
+        StaticConfiguration(kind: kind, provider: VerseProvider()) { entry in
             VerseEntryView(entry: entry)
         }
         .configurationDisplayName("Scripture Verse")
-        .description("Your current learning verse — or one you pin.")
+        .description("Your current learning verse — or one you pin in the app.")
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
     }
 }
@@ -315,7 +321,7 @@ struct ProgressProvider: TimelineProvider {
     private func entry() -> ProgressEntry {
         let snap = SharedStore.snapshot()
         return ProgressEntry(date: Date(),
-                             verse: SharedStore.currentLearningVerse() ?? VerseLibrary.allVerses.first,
+                             verse: SharedStore.displayedVerse() ?? VerseLibrary.allVerses.first,
                              streak: snap?.streak ?? 0,
                              dueToday: snap?.dueToday ?? 0,
                              learned: snap?.learned ?? 0)
