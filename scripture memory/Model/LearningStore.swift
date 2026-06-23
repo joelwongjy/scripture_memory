@@ -1,6 +1,13 @@
 import Foundation
 import Combine
 
+extension Notification.Name {
+    /// Posted when the pinned/featured verse changes, so the app re-syncs the widget
+    /// snapshot right away — SwiftUI `onChange` on the pinned key can miss the update
+    /// while the pin-picker sheet is presented.
+    static let featuredVerseDidChange = Notification.Name("scripture.featuredVerseDidChange")
+}
+
 /// Tracks which verses the user has **learnt**, and derives the linear "current
 /// learning verse" from that — the first verse, in pack order, that hasn't been
 /// marked learnt yet. Crossing pack boundaries falls out naturally.
@@ -108,6 +115,7 @@ final class LearningStore: ObservableObject {
         guard !verse.srsKey.isEmpty else { return }
         pinnedKey = verse.srsKey
         defaults.set(verse.srsKey, forKey: Self.pinStorageKey)
+        NotificationCenter.default.post(name: .featuredVerseDidChange, object: nil)
     }
 
     /// Clear the pin — Home/widget return to the current learning verse.
@@ -115,6 +123,7 @@ final class LearningStore: ObservableObject {
         guard pinnedKey != nil else { return }
         pinnedKey = nil
         defaults.removeObject(forKey: Self.pinStorageKey)
+        NotificationCenter.default.post(name: .featuredVerseDidChange, object: nil)
     }
 
     /// How many of `ordered` are learnt (for progress display).
@@ -126,6 +135,13 @@ final class LearningStore: ObservableObject {
     func markLearnt(_ verse: Verse) {
         guard !verse.srsKey.isEmpty, !learntKeys.contains(verse.srsKey) else { return }
         learntKeys.insert(verse.srsKey)
+        persist()
+    }
+
+    /// Undo `markLearnt` — used when a review grade that auto-advanced the cursor is
+    /// undone, so the cursor returns to this verse.
+    func unmarkLearnt(_ verse: Verse) {
+        guard learntKeys.remove(verse.srsKey) != nil else { return }
         persist()
     }
 

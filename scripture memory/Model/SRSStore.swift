@@ -132,6 +132,23 @@ final class SRSStore: ObservableObject {
         return next
     }
 
+    /// Revert a single card to a known prior state — the review **Undo**. A `nil`
+    /// prior state means the card was brand-new, so its state is removed entirely;
+    /// when `wasNewlyIntroduced`, today's consumed new-card slot is also given back
+    /// so the undo doesn't leave the daily counter inflated.
+    func revert(verse: Verse, to priorState: SRSCardState?, wasNewlyIntroduced: Bool, now: Date = Date()) {
+        let key = verse.srsKey
+        if let priorState {
+            states[key] = priorState
+        } else {
+            states.removeValue(forKey: key)
+        }
+        if wasNewlyIntroduced, !verse.packName.isEmpty {
+            unbumpDailyNew(packName: verse.packName, now: now)
+        }
+        persist()
+    }
+
     /// Wipe all SRS state. `ReviewProgress.completedIds` is intentionally untouched.
     /// Active-pack opt-ins are preserved — they're a UI preference, not progress.
     func resetAll() {
@@ -155,6 +172,15 @@ final class SRSStore: ObservableObject {
         let day = Self.dayKey(now)
         var perPack = dailyNewByDate[day] ?? [:]
         perPack[packName, default: 0] += 1
+        dailyNewByDate[day] = perPack
+    }
+
+    /// Undo a `bumpDailyNew` — returns a consumed slot when a brand-new card's
+    /// first grade is reverted via `revert`. Floors at zero.
+    private func unbumpDailyNew(packName: String, now: Date) {
+        let day = Self.dayKey(now)
+        guard var perPack = dailyNewByDate[day], let count = perPack[packName], count > 0 else { return }
+        perPack[packName] = count - 1
         dailyNewByDate[day] = perPack
     }
 
