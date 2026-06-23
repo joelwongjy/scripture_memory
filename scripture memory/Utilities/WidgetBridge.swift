@@ -28,6 +28,8 @@ enum WidgetBridge {
 
     struct Snapshot: Codable, Equatable {
         var verse:    SharedVerse?
+        /// True when `verse` is a user-pinned spotlight rather than the live cursor.
+        var isPinned: Bool = false
         var streak:   Int
         var dueToday: Int
         var learned:  Int
@@ -36,15 +38,16 @@ enum WidgetBridge {
 
     private static var defaults: UserDefaults? { UserDefaults(suiteName: appGroup) }
 
-    /// Persist the current learning verse + stats. Reloads widget timelines only
-    /// when the snapshot changes.
-    static func update(verse: Verse?, streak: Int, dueToday: Int, learned: Int, week: [WeekDay]) {
+    /// Persist the verse to feature (pinned or current) + stats. Reloads widget
+    /// timelines only when the snapshot changes.
+    static func update(verse: Verse?, isPinned: Bool, streak: Int, dueToday: Int, learned: Int, week: [WeekDay]) {
         guard let defaults else { return }
         let snap = Snapshot(
             verse: verse.map {
                 SharedVerse(title: $0.title, verse: $0.verse, book: $0.book,
                             reference: $0.reference, packName: $0.packName)
             },
+            isPinned: isPinned,
             streak: streak,
             dueToday: dueToday,
             learned: learned,

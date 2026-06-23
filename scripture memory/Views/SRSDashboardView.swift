@@ -17,17 +17,18 @@ struct SRSDashboardView: View {
     @ObservedObject private var streak    = StreakStore.shared
 
     @State private var cover: ActiveCover?
+    @State private var showPinPicker = false
 
     /// One full-screen presentation at a time — review session OR the linear
     /// learning session. (Two separate `.fullScreenCover` modifiers on one view
     /// conflict in SwiftUI, so they're unified here.)
     private enum ActiveCover: Identifiable {
         case review(TestSession)
-        case learning
+        case learning(forceCurrent: Bool)
         var id: String {
             switch self {
-            case .review(let s): return "review-\(s.id)"
-            case .learning:      return "learning"
+            case .review(let s):       return "review-\(s.id)"
+            case .learning(let force): return force ? "learning-current" : "learning"
             }
         }
     }
@@ -55,14 +56,15 @@ struct SRSDashboardView: View {
     /// All visible verses flattened in pack order — the linear "learning" sequence.
     private var ordered:      [Verse] { packs.flatMap(\.verses) }
 
-    /// The current learning verse resolved to its pack + index within that pack,
-    /// so Continue opens just that pack and progress reads within-pack.
-    private func currentLearning() -> (verse: Verse, pack: Pack, indexInPack: Int)? {
-        guard let cur = learning.current(in: ordered),
-              let pack = packs.first(where: { $0.name == cur.verse.packName }),
-              let idx  = pack.verses.firstIndex(where: { $0.srsKey == cur.verse.srsKey })
+    /// The verse to feature on Home — the pinned one if the user pinned one, else
+    /// the current learning verse — resolved to its pack + index, plus whether
+    /// it's pinned (so the card and practice session can adapt).
+    private func displayedLearning() -> (verse: Verse, pack: Pack, indexInPack: Int, isPinned: Bool)? {
+        guard let d = learning.displayed(in: ordered),
+              let pack = packs.first(where: { $0.name == d.verse.packName }),
+              let idx  = pack.verses.firstIndex(where: { $0.srsKey == d.verse.srsKey })
         else { return nil }
-        return (cur.verse, pack, idx)
+        return (d.verse, pack, idx, d.isPinned)
     }
 
     /// The pack before/after `name` — lets a Continue session roll into the next
@@ -96,6 +98,7 @@ struct SRSDashboardView: View {
             VStack(spacing: Layout.sectionSpacing) {
                 streakCard
                 continueLearningCard
+                goToCurrentVerseCard
                 Text("Daily Review")
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(.secondary)
@@ -115,8 +118,11 @@ struct SRSDashboardView: View {
         .fullScreenCover(item: $cover) { c in
             switch c {
             case .review(let s): TestSessionView(session: s, onSessionEnded: { cover = nil })
-            case .learning:      learningSession
+            case .learning(let force): learningSession(forceCurrent: force)
             }
+        }
+        .sheet(isPresented: $showPinPicker) {
+            PinVersePicker(packs: packs, pinnedKey: learning.pinnedKey) { learning.pin($0) }
         }
     }
 
@@ -168,71 +174,144 @@ struct SRSDashboardView: View {
 
     @ViewBuilder
     private var continueLearningCard: some View {
-        if let cur = currentLearning() {
+        if let cur = displayedLearning() {
             let v = cur.verse
-            Button {
-                cover = .learning
-            } label: {
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack {
-                        Text("Continue Learning")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(.secondary)
-                            .textCase(.uppercase)
-                        Spacer()
-                        Text("\(cur.indexInPack + 1) of \(cur.pack.verses.count)")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(.secondary)
-                    }
-                    // The verse itself, shown like a flashcard — a one-look review.
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(v.title)
-                            .font(.system(size: 16, weight: .bold, design: .serif))
-                            .foregroundColor(.primary)
-                            .multilineTextAlignment(.leading)
-                        Text("\(v.book) \(v.reference)")
-                            .font(.system(size: 14, design: .serif))
-                            .foregroundColor(.secondary)
-                        Text(v.verse)
-                            .font(.system(size: 15, design: .serif))
-                            .foregroundColor(.primary)
-                            .lineSpacing(4)
-                            .multilineTextAlignment(.leading)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    HStack(spacing: 5) {
-                        Text(cur.pack.name)
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                        Spacer()
-                        Text("Practice")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(Color.accentColor)
-                        Image(systemName: "chevron.right")
+            VStack(alignment: .leading, spacing: 10) {
+                // Header: mode label + position + pin/reset menu. Kept OUTSIDE the
+                // practice button so the Menu's taps don't fight the card tap.
+                HStack(spacing: 6) {
+                    if cur.isPinned {
+                        Image(systemName: "pin.fill")
                             .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(Color.accentColor)
+                            .foregroundStyle(.secondary)
                     }
-                    .padding(.top, 2)
+                    Text(cur.isPinned ? "Pinned" : "Continue Learning")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                        .textCase(.uppercase)
+                    Spacer()
+                    Text("\(cur.indexInPack + 1) of \(cur.pack.verses.count)")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(.secondary)
+                    Menu {
+                        if cur.isPinned {
+                            Button { showPinPicker = true } label: {
+                                Label("Change pinned verse…", systemImage: "pin")
+                            }
+                            Button { learning.unpin(); HapticEngine.light() } label: {
+                                Label("Back to current verse", systemImage: "arrow.uturn.backward")
+                            }
+                        } else {
+                            Button { showPinPicker = true } label: {
+                                Label("Pin a verse", systemImage: "pin")
+                            }
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                            .contentShape(Rectangle())
+                    }
+                    .accessibilityLabel("Verse options")
                 }
-                .padding(18)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(
-                    RoundedRectangle(cornerRadius: Layout.containerRadius, style: .continuous)
-                        .fill(flashcardBackground)
-                        .shadow(color: .black.opacity(0.13), radius: 14, x: 0, y: 7)
-                        .shadow(color: .black.opacity(0.05), radius: 2,  x: 0, y: 1)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: Layout.containerRadius, style: .continuous)
-                        .strokeBorder(Color(.separator).opacity(0.4), lineWidth: 0.5)
-                )
-                .contentShape(RoundedRectangle(cornerRadius: Layout.containerRadius, style: .continuous))
+
+                // Body: tap the verse to practice it.
+                Button {
+                    cover = .learning(forceCurrent: false)
+                } label: {
+                    VStack(alignment: .leading, spacing: 10) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(v.title)
+                                .font(.system(size: 16, weight: .bold, design: .serif))
+                                .foregroundColor(.primary)
+                                .multilineTextAlignment(.leading)
+                            Text("\(v.book) \(v.reference)")
+                                .font(.system(size: 14, design: .serif))
+                                .foregroundColor(.secondary)
+                            Text(v.verse)
+                                .font(.system(size: 15, design: .serif))
+                                .foregroundColor(.primary)
+                                .lineSpacing(4)
+                                .multilineTextAlignment(.leading)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        HStack(spacing: 5) {
+                            Text(cur.pack.name)
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                            Spacer()
+                            Text("Practice")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(Color.accentColor)
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(Color.accentColor)
+                        }
+                        .padding(.top, 2)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(CardButtonStyle())
+                .accessibilityLabel("Practice \(v.book) \(v.reference)")
             }
-            .buttonStyle(CardButtonStyle())
-            .accessibilityLabel("Continue learning \(v.book) \(v.reference)")
+            .padding(18)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: Layout.containerRadius, style: .continuous)
+                    .fill(flashcardBackground)
+                    .shadow(color: .black.opacity(0.13), radius: 14, x: 0, y: 7)
+                    .shadow(color: .black.opacity(0.05), radius: 2,  x: 0, y: 1)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: Layout.containerRadius, style: .continuous)
+                    .strokeBorder(Color(.separator).opacity(0.4), lineWidth: 0.5)
+            )
         } else if !ordered.isEmpty {
             allLearntCard
+        }
+    }
+
+    /// Standalone shortcut back to the live cursor verse, shown as its own card
+    /// below the pinned card when a *different* verse is pinned — so it reads as a
+    /// distinct action, not part of the pinned verse.
+    @ViewBuilder
+    private var goToCurrentVerseCard: some View {
+        if let cur = displayedLearning(), cur.isPinned,
+           !learning.isCurrent(cur.verse), let c = currentLearning() {
+            Button {
+                cover = .learning(forceCurrent: true)
+                HapticEngine.light()
+            } label: {
+                HStack(spacing: 10) {
+                    Image(systemName: "arrow.turn.down.right")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(Color.accentColor)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Go to current verse")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(.primary)
+                        Text("\(c.verse.book) \(c.verse.reference)")
+                            .font(.system(size: 13))
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer(minLength: 8)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(.tertiary)
+                }
+                .padding(.horizontal, Layout.rowPaddingH)
+                .padding(.vertical, 12)
+                .frame(maxWidth: .infinity)
+                .background(
+                    RoundedRectangle(cornerRadius: Layout.containerRadius, style: .continuous)
+                        .fill(Color(.secondarySystemGroupedBackground))
+                )
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Go to current verse, \(c.verse.book) \(c.verse.reference)")
         }
     }
 
@@ -259,22 +338,37 @@ struct SRSDashboardView: View {
     }
 
     @ViewBuilder
-    private var learningSession: some View {
-        if let cur = currentLearning() {
+    private func learningSession(forceCurrent: Bool) -> some View {
+        // `forceCurrent` opens the live cursor even while a different verse is
+        // pinned (the "Go to current verse" shortcut); otherwise open whatever
+        // Home features (the pinned verse, else the cursor).
+        if let cur = forceCurrent ? currentLearning() : displayedLearning() {
             // Wrap in a NavigationStack (chrome hidden) so the keyboard's "Done"
             // toolbar renders — matching how PackListView presents the card.
+            // A pinned verse is a spotlight, not a progression step, so it gets
+            // neither cross-pack stepping nor "Mark as Learnt".
             NavigationStack {
                 CardStudyView(
                     packName: cur.pack.name,
                     verses: cur.pack.verses,
                     initialIndex: cur.indexInPack,
                     initialReviewMode: true,
-                    adjacentPack: { name, forward in adjacentPack(after: name, forward: forward) },
-                    onMarkLearnt: { learning.markLearnt($0) }
+                    adjacentPack: cur.isPinned ? nil : { name, forward in adjacentPack(after: name, forward: forward) },
+                    onMarkLearnt: cur.isPinned ? nil : { learning.markLearnt($0) }
                 )
                 .toolbar(.hidden, for: .navigationBar)
             }
         }
+    }
+
+    /// The live cursor verse (ignoring any pin) resolved to pack + index — backs
+    /// the "Go to current verse" shortcut. `isPinned` is always false here.
+    private func currentLearning() -> (verse: Verse, pack: Pack, indexInPack: Int, isPinned: Bool)? {
+        guard let c = learning.current(in: ordered),
+              let pack = packs.first(where: { $0.name == c.verse.packName }),
+              let idx  = pack.verses.firstIndex(where: { $0.srsKey == c.verse.srsKey })
+        else { return nil }
+        return (c.verse, pack, idx, false)
     }
 
     // MARK: - Hero Card
@@ -288,7 +382,7 @@ struct SRSDashboardView: View {
             } else if agg.queueSize > 0 {
                 heroQueue(agg: agg)
             } else {
-                heroCaughtUp
+                heroCaughtUp(agg: agg)
             }
         }
         .frame(maxWidth: .infinity)
@@ -345,7 +439,7 @@ struct SRSDashboardView: View {
         }
     }
 
-    private var heroCaughtUp: some View {
+    private func heroCaughtUp(agg: Aggregate) -> some View {
         VStack(spacing: 8) {
             Image(systemName: "checkmark.seal.fill")
                 .font(.system(size: 36))
@@ -353,17 +447,42 @@ struct SRSDashboardView: View {
                 .symbolEffect(.bounce, options: .nonRepeating)
             Text("All caught up")
                 .font(.system(size: 17, weight: .semibold))
-            if let next = nextDueAcrossActivePacks() {
-                Text("Next card returns in \(formatRelative(next))")
-                    .font(.system(size: 14))
-                    .foregroundStyle(.secondary)
-            } else {
-                Text("Turn on more packs to add new verses to your queue.")
-                    .font(.system(size: 13))
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-            }
+            Text(caughtUpMessage(agg: agg))
+                .font(.system(size: 14))
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
         }
+    }
+
+    /// The honest "what's next" line for the caught-up state. The old copy only
+    /// read review due-dates, so it announced "next card in 3 days" even though a
+    /// new verse drips in at tomorrow's midnight reset — misleading. This surfaces
+    /// whichever is genuinely soonest.
+    private func caughtUpMessage(agg: Aggregate) -> String {
+        let next         = nextDueAcrossActivePacks()
+        let newVerseDrip = agg.newCandidates > 0 && dailyNewCap > 0
+        let tomorrow     = Calendar.current.startOfDay(for: now).addingTimeInterval(86_400)
+
+        // A card (often a learning step) is still due before midnight.
+        if let next, next < tomorrow {
+            return "Your next review is in \(formatRelative(next))."
+        }
+        // Today's new verses are done, but the daily cap resets at midnight.
+        if newVerseDrip {
+            let n = min(dailyNewCap, agg.newCandidates)   // how many actually drip in tomorrow
+            return n == 1
+                ? "Come back tomorrow for a new verse."
+                : "Come back tomorrow for \(n) new verses."
+        }
+        // Nothing new left to add — just spaced reviews ahead.
+        if let next {
+            return "Your next review is in \(formatRelative(next))."
+        }
+        // New verses remain, but the daily new-verse limit is off.
+        if agg.newCandidates > 0 {
+            return "Raise your daily new verses in Settings to keep going."
+        }
+        return "You've reviewed every verse in your active packs."
     }
 
     private func breakdownChip(label: String, value: Int, color: Color) -> some View {
@@ -425,9 +544,10 @@ struct SRSDashboardView: View {
     // MARK: - Aggregates
 
     private struct Aggregate {
-        var learning:     Int = 0
-        var review:       Int = 0
-        var newProjected: Int = 0
+        var learning:      Int = 0
+        var review:        Int = 0
+        var newProjected:  Int = 0
+        var newCandidates: Int = 0   // full unscheduled pool (future days), not just today's drip
         var queueSize: Int { learning + review + newProjected }
     }
 
@@ -445,7 +565,8 @@ struct SRSDashboardView: View {
             agg.review      += c.review
             totalCandidates += c.newCandidates
         }
-        agg.newProjected = min(globalNewRemaining, totalCandidates)
+        agg.newProjected  = min(globalNewRemaining, totalCandidates)
+        agg.newCandidates = totalCandidates
         return agg
     }
 
@@ -505,6 +626,88 @@ struct PacksReviewView: View {
             }
         }
         .navigationTitle("Packs in Review")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+// MARK: - Pin Verse Picker
+
+/// A lightweight pack → verse drill-down for choosing which verse to pin to Home.
+/// Tapping a verse pins it immediately and dismisses — no progress is changed.
+private struct PinVersePicker: View {
+    let packs:     [Pack]
+    var pinnedKey: String?
+    var onPick:    (Verse) -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    ForEach(packs) { pack in
+                        NavigationLink {
+                            verseList(pack)
+                        } label: {
+                            HStack {
+                                Text(pack.name).foregroundStyle(.primary)
+                                Spacer()
+                                if pack.verses.contains(where: { $0.srsKey == pinnedKey }) {
+                                    Image(systemName: "pin.fill")
+                                        .font(.footnote)
+                                        .foregroundStyle(Color.accentColor)
+                                }
+                            }
+                        }
+                    }
+                } footer: {
+                    Text("Pick a verse to feature on your Home screen and widget. This doesn't change your learning progress.")
+                }
+            }
+            .navigationTitle("Pin a Verse")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+            }
+        }
+    }
+
+    private func verseList(_ pack: Pack) -> some View {
+        List {
+            ForEach(pack.verses) { verse in
+                Button {
+                    HapticEngine.light()
+                    onPick(verse)
+                    dismiss()
+                } label: {
+                    HStack(alignment: .top, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("\(verse.book) \(verse.reference)")
+                                .font(.headline)
+                                .foregroundStyle(.primary)
+                            Text(verse.title)
+                                .font(.subheadline.weight(.medium))
+                                .foregroundStyle(Color.accentColor)
+                            Text(verse.verse)
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(2)
+                        }
+                        Spacer(minLength: 8)
+                        if verse.srsKey == pinnedKey {
+                            Image(systemName: "pin.fill")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundStyle(Color.accentColor)
+                        }
+                    }
+                    .padding(.vertical, 2)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .navigationTitle(pack.name)
         .navigationBarTitleDisplayMode(.inline)
     }
 }

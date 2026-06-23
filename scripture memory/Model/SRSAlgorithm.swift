@@ -4,8 +4,9 @@ import Foundation
 ///
 /// Behavior summary:
 /// - **Learning phase** walks through `config.learningSteps`. Again resets to step 0;
-///   Hard repeats the current step; Good advances; Easy graduates immediately
-///   with `easyInterval`.
+///   Hard waits midway between the current and next step (so it doesn't coincide
+///   with Again on step 0); Good advances; Easy graduates immediately with
+///   `easyInterval`.
 /// - **Review phase**: Again sends the card back to learning (lapse). Hard scales
 ///   the interval by `hardIntervalMultiplier` and trims ease. Good multiplies by
 ///   ease (unchanged). Easy multiplies by ease × `easyMultiplier` and boosts ease.
@@ -50,8 +51,13 @@ private func applyLearning(
         return s
 
     case .hard:
-        let i = min(s.learningStep, steps.count - 1)
-        s.due = now.addingTimeInterval(steps[i])
+        // Land Hard between "repeat this step" and the next step, so on step 0 it
+        // doesn't collapse onto Again (both would be steps[0]). On the last step
+        // there's no next, so it just repeats the current step.
+        let i        = min(s.learningStep, steps.count - 1)
+        let cur      = steps[i]
+        let nextStep = i + 1 < steps.count ? steps[i + 1] : cur
+        s.due = now.addingTimeInterval((cur + nextStep) / 2)
         return s
 
     case .good:

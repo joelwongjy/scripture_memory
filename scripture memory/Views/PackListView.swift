@@ -3,6 +3,7 @@ import SwiftUI
 struct PackListView: View {
     @AppStorage("bibleVersion") private var bibleVersion: BibleVersion = .niv84
     @ObservedObject private var packPrefs = PackPreferencesStore.shared
+    @ObservedObject private var learning  = LearningStore.shared
 
     @State private var selectedPack:   Pack?             = nil
     @State private var searchText:     String            = ""
@@ -11,6 +12,10 @@ struct PackListView: View {
 
     /// Visible packs in the user's custom order (hidden removed).
     private var visiblePacks: [Pack] { packPrefs.visible(from: bibleVersion.packs) }
+
+    /// Name of the pack holding the current stopped verse — badged in the grid so
+    /// the user can spot where to resume at a glance.
+    private var currentPackName: String? { learning.currentVerse?.packName }
 
     private let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
 
@@ -55,7 +60,7 @@ struct PackListView: View {
                                 guard !pack.verses.isEmpty else { return }
                                 selectedPack = pack
                             } label: {
-                                PackCover(pack: pack)
+                                PackCover(pack: pack, isCurrentPack: pack.name == currentPackName)
                             }
                             .buttonStyle(CardButtonStyle())
                             .accessibilityElement(children: .ignore)
@@ -177,6 +182,7 @@ struct PackListView: View {
 /// Font sizes and layout are written once — no compact/full variants needed.
 struct PackCover: View {
     let pack: Pack
+    var isCurrentPack: Bool = false
 
     private static let designWidth:  CGFloat = 340
     private static let designHeight: CGFloat = designWidth * 3 / 5  // 5:3
@@ -214,6 +220,24 @@ struct PackCover: View {
             .clipShape(RoundedRectangle(cornerRadius: AppLayout.cardRadius, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: AppLayout.cardRadius, style: .continuous).stroke(borderColor, lineWidth: 0.5))
             .shadow(color: .black.opacity(shadowOpacity), radius: 8, x: 0, y: 4)
+            .overlay(alignment: .topTrailing) {
+                if isCurrentPack { currentPackBadge.padding(8) }
+            }
+    }
+
+    /// "Current" chip marking the pack that holds the learning cursor. White
+    /// capsule so it reads on any cover colour.
+    private var currentPackBadge: some View {
+        HStack(spacing: 3) {
+            Image(systemName: "bookmark.fill").font(.system(size: 9, weight: .bold))
+            Text("Current").font(.system(size: 10, weight: .bold))
+        }
+        .foregroundStyle(Color.accentColor)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(Capsule().fill(.white))
+        .shadow(color: .black.opacity(0.18), radius: 3, x: 0, y: 1)
+        .accessibilityLabel("Current pack")
     }
 
     @ViewBuilder

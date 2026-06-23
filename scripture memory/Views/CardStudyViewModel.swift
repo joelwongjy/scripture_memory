@@ -64,6 +64,16 @@ final class CardStudyViewModel: ObservableObject {
         }
     }
 
+    /// True once the current card has been answered — submitted in entire-verse
+    /// mode (right *or* wrong) or fully revealed in first-letter / full-word mode.
+    /// Unlike `isCardComplete` (perfect-only in submit mode), a submitted-but-
+    /// imperfect card counts as answered, so peek can hide once the answer is shown.
+    var isCardAnswered: Bool {
+        guard let verse = currentVerse else { return false }
+        if studyMode == .submit { return submitResults[verse.id] != nil }
+        return isCardComplete
+    }
+
     var canReset: Bool {
         guard isReviewMode, let verse = currentVerse else { return false }
         switch studyMode {
@@ -246,7 +256,14 @@ final class CardStudyViewModel: ObservableObject {
     }
 
     private func advance(verse: Verse, sectionWords: [String], revealed: Int) {
-        let newCount = revealed + 1
+        var newCount = revealed + 1
+        // Auto-skip pure-punctuation tokens (e.g. a standalone "-" with spaces around
+        // it) — they have no first letter to type, so they must not swallow the
+        // keystroke meant for the next real word.
+        while newCount < sectionWords.count,
+              !sectionWords[newCount].contains(where: { $0.isLetter || $0.isNumber }) {
+            newCount += 1
+        }
         withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
             setRevealed(newCount, for: verse.id, section: activeSection)
         }

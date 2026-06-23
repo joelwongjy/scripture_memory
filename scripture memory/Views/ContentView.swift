@@ -86,6 +86,7 @@ struct ContentView: View {
             }
         }
         .onChange(of: learning.learntKeys) { _, _ in syncWidget() }
+        .onChange(of: learning.pinnedKey)  { _, _ in syncWidget() }
         .onChange(of: bibleVersion)        { _, _ in syncWidget() }
         .onChange(of: hasOnboarded)        { _, _ in syncWidget() }
         // Refresh the widget snapshot when leaving/returning — catches streak and
@@ -98,12 +99,13 @@ struct ContentView: View {
 
     /// Mirror the current learning verse + streak + due-count + week into the App Group.
     private func syncWidget() {
-        let visible = packPrefs.visible(from: bibleVersion.packs)
-        let verse   = learning.current(in: visible.flatMap(\.verses))?.verse
-        let week    = StreakStore.shared.thisWeek().map {
+        let visible   = packPrefs.visible(from: bibleVersion.packs)
+        let displayed = learning.displayed(in: visible.flatMap(\.verses))
+        let week      = StreakStore.shared.thisWeek().map {
             WidgetBridge.WeekDay(letter: $0.initial, done: $0.done, today: $0.isToday)
         }
-        WidgetBridge.update(verse: verse,
+        WidgetBridge.update(verse: displayed?.verse,
+                            isPinned: displayed?.isPinned ?? false,
                             streak: StreakStore.shared.current,
                             dueToday: dailyQueueSize(packs: visible),
                             learned: learning.learntKeys.count,

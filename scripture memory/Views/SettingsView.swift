@@ -15,7 +15,6 @@ struct SettingsView: View {
     @State private var showResetSRSAlert      = false
     @State private var showNotifDeniedAlert   = false
     @State private var showLearningSetup      = false
-    @State private var showResetLearningAlert = false
 
     @ObservedObject private var learning  = LearningStore.shared
     @ObservedObject private var packPrefs = PackPreferencesStore.shared
@@ -51,7 +50,7 @@ struct SettingsView: View {
 
             Section {
                 Toggle(isOn: $hardMode) {
-                    Label("Hard Mode", systemImage: "eye.slash")
+                    rowLabel("Hard Mode", "eye.slash")
                 }
             } footer: {
                 Text("Hides all hints — no word placeholders shown during review.")
@@ -62,7 +61,7 @@ struct SettingsView: View {
                 capRow(icon: "sparkles", title: "New cards / day",
                        binding: $dailyNewCap, range: 0...50)
                 capRow(icon: "arrow.clockwise", title: "Reviews / day",
-                       binding: $dailyReviewCap, range: 0...500, step: 5)
+                       binding: $dailyReviewCap, range: 0...500)
             } header: {
                 Text("Daily Review")
             } footer: {
@@ -71,7 +70,7 @@ struct SettingsView: View {
 
             Section {
                 Toggle(isOn: $reminderEnabled) {
-                    Label("Daily Reminder", systemImage: "bell.badge")
+                    rowLabel("Daily Reminder", "bell.badge")
                 }
                 if reminderEnabled {
                     DatePicker("Remind me at",
@@ -111,7 +110,7 @@ struct SettingsView: View {
                     showLearningSetup = true
                 } label: {
                     HStack(spacing: 8) {
-                        Label("Starting point", systemImage: "flag.checkered")
+                        rowLabel("Current verse", "bookmark.fill")
                         Spacer()
                         Text(currentLearningLabel)
                             .foregroundStyle(.secondary)
@@ -124,26 +123,10 @@ struct SettingsView: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                Button(role: .destructive) {
-                    showResetLearningAlert = true
-                } label: {
-                    Text("Reset learning progress")
-                }
             } header: {
                 Text("Learning")
             } footer: {
-                Text("Sets the verse shown on your Home screen. Everything before your starting point counts as already learnt.")
-            }
-            .sheet(isPresented: $showLearningSetup) {
-                LearningSetupView()
-            }
-            .alert("Reset learning progress?", isPresented: $showResetLearningAlert) {
-                Button("Cancel", role: .cancel) { }
-                Button("Reset", role: .destructive) {
-                    LearningStore.shared.resetProgress()
-                }
-            } message: {
-                Text("Your current verse returns to the very first verse. Verses you've marked learnt will be forgotten.")
+                Text("The verse you're currently learning, shown on your Home screen. Everything before it counts as already learnt.")
             }
 
             Section {
@@ -178,21 +161,31 @@ struct SettingsView: View {
             }
         }
         .navigationTitle("Settings")
+        // Hosted on the List (not the Learning Section) so the first presentation
+        // doesn't self-dismiss — a sheet anchored to a lazy List section can tear
+        // down on its initial layout pass.
+        .sheet(isPresented: $showLearningSetup) {
+            LearningSetupView()
+        }
     }
 
-    /// A "icon + title … value [− +]" row. The icon sits in a fixed-width column
-    /// so the two rows' titles align and the icon stays vertically centred with
-    /// the title (the old Stepper-wrapped Label floated the icon above the text).
+    /// A settings-row label with the SF Symbol pinned to a uniform 24pt column,
+    /// so every row's glyph aligns and every title shares one inset. Keeps the
+    /// system `Label` layout, so spacing and the accent tint match iOS defaults.
+    private func rowLabel(_ title: String, _ systemImage: String) -> some View {
+        Label {
+            Text(title)
+        } icon: {
+            Image(systemName: systemImage).frame(width: 24, alignment: .center)
+        }
+    }
+
+    /// A "icon + title … value [− +]" row. The icon column (via `rowLabel`) keeps
+    /// the two titles aligned and the icon vertically centred with the title.
     private func capRow(icon: String, title: String,
                         binding: Binding<Int>, range: ClosedRange<Int>, step: Int = 1) -> some View {
         HStack(spacing: 0) {
-            // Real Label so the icon matches the other rows' tint; fixed-width
-            // icon column so the two titles line up.
-            Label {
-                Text(title)
-            } icon: {
-                Image(systemName: icon).frame(width: 24, alignment: .center)
-            }
+            rowLabel(title, icon)
             Spacer(minLength: 8)
             Text("\(binding.wrappedValue)")
                 .foregroundStyle(.secondary)

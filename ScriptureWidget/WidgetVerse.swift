@@ -72,6 +72,7 @@ enum SharedStore {
     }
     struct Snapshot: Codable {
         var verse:    SharedVerse?
+        var isPinned: Bool = false
         var streak:   Int
         var dueToday: Int
         var learned:  Int
@@ -84,10 +85,15 @@ enum SharedStore {
         return s
     }
 
-    static func currentLearningVerse() -> WidgetVerse? {
+    /// The verse the app is featuring — pinned if the user pinned one, otherwise
+    /// the live current-learning verse. The app writes whichever into the snapshot.
+    static func displayedVerse() -> WidgetVerse? {
         guard let s = snapshot()?.verse else { return nil }
         var v = WidgetVerse(title: s.title, verse: s.verse, book: s.book, reference: s.reference)
         v.packName = s.packName
         return v
     }
+
+    /// Whether `displayedVerse()` is a user-pinned spotlight (vs the live cursor).
+    static func isPinned() -> Bool { snapshot()?.isPinned ?? false }
 }

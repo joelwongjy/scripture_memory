@@ -43,6 +43,13 @@ final class SRSAlgorithmTests: XCTestCase {
         XCTAssertEqual(dueOffset(s), 60, accuracy: 0.001)      // 1 min step
     }
 
+    func testNewCardHardSitsBetweenAgainAndGood() {
+        let s = updateSRS(state: .newCard(key: "k", now: now), grade: .hard, now: now)
+        XCTAssertEqual(s.phase, .learning)
+        XCTAssertEqual(s.learningStep, 0)                      // stays on the same step
+        XCTAssertEqual(dueOffset(s), 330, accuracy: 0.001)     // (60 + 600) / 2 = 5 min
+    }
+
     // MARK: - Review phase
 
     func testReviewGoodMultipliesByEase() {
@@ -89,6 +96,7 @@ final class SRSAlgorithmTests: XCTestCase {
     func testPredictedIntervalLabelsForFreshCard() {
         let fresh = SRSCardState.newCard(key: "k", now: now)
         XCTAssertEqual(predictedIntervalLabel(state: fresh, grade: .again, now: now), "1m")
+        XCTAssertEqual(predictedIntervalLabel(state: fresh, grade: .hard, now: now), "5m")
         XCTAssertEqual(predictedIntervalLabel(state: fresh, grade: .good, now: now), "10m")
         XCTAssertEqual(predictedIntervalLabel(state: fresh, grade: .easy, now: now), "4d")
     }
