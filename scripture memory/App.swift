@@ -27,6 +27,11 @@ struct ScriptureMemoryApp: App {
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active { StreakStore.shared.recordToday() }
+            // Re-arm the reminder window on backgrounding so its pre-scheduled
+            // due counts reflect any reviews just completed.
+            if phase == .background {
+                Task { await NotificationManager.refreshFromSettings() }
+            }
         }
     }
 }

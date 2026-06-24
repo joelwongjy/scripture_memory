@@ -61,4 +61,25 @@ final class ReminderPlanTests: XCTestCase {
         XCTAssertEqual(c.hour, 23)
         XCTAssertEqual(c.minute, 59)
     }
+
+    // MARK: - reminderBody (plain, factual counts; nil when nothing's due)
+
+    func testReminderBodyWithReviewsAndNew() {
+        XCTAssertEqual(ReminderPlan.reminderBody(review: 3, new: 1), "3 reviews, 1 new verse")
+        XCTAssertEqual(ReminderPlan.reminderBody(review: 1, new: 2), "1 review, 2 new verses")
+    }
+
+    func testReminderBodyReviewsOnly() {
+        XCTAssertEqual(ReminderPlan.reminderBody(review: 1, new: 0), "1 review")
+        XCTAssertEqual(ReminderPlan.reminderBody(review: 5, new: 0), "5 reviews")
+    }
+
+    func testReminderBodyNewOnly() {
+        XCTAssertEqual(ReminderPlan.reminderBody(review: 0, new: 1), "1 new verse")
+        XCTAssertEqual(ReminderPlan.reminderBody(review: 0, new: 2), "2 new verses")
+    }
+
+    func testReminderBodyNothingDueReturnsNil() {
+        XCTAssertNil(ReminderPlan.reminderBody(review: 0, new: 0))
+    }
 }
