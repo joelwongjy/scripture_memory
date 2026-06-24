@@ -10,6 +10,7 @@ struct SRSDashboardView: View {
     @AppStorage("bibleVersion")       private var bibleVersion:   BibleVersion = .niv84
     @AppStorage("srs.dailyNewCap")    private var dailyNewCap:    Int          = 1
     @AppStorage("srs.dailyReviewCap") private var dailyReviewCap: Int          = 5
+    @AppStorage("homeVerseStartMode.v1") private var homeVerseStartMode: HomeVerseStartMode = .read
 
     @ObservedObject private var store     = SRSStore.shared
     @ObservedObject private var packPrefs = PackPreferencesStore.shared
@@ -241,7 +242,7 @@ struct SRSDashboardView: View {
                                 .foregroundStyle(.secondary)
                                 .lineLimit(1)
                             Spacer()
-                            Text("Practice")
+                            Text(homeVerseStartMode.ctaLabel)
                                 .font(.system(size: 12, weight: .semibold))
                                 .foregroundStyle(Color.accentColor)
                             Image(systemName: "chevron.right")
@@ -254,7 +255,7 @@ struct SRSDashboardView: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(CardButtonStyle())
-                .accessibilityLabel("Practice \(v.book) \(v.reference)")
+                .accessibilityLabel("\(homeVerseStartMode.ctaLabel) \(v.book) \(v.reference)")
             }
             .padding(18)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -352,7 +353,7 @@ struct SRSDashboardView: View {
                     packName: cur.pack.name,
                     verses: cur.pack.verses,
                     initialIndex: cur.indexInPack,
-                    initialReviewMode: true,
+                    initialReviewMode: homeVerseStartMode.opensInReview,
                     adjacentPack: cur.isPinned ? nil : { name, forward in adjacentPack(after: name, forward: forward) },
                     onMarkLearnt: cur.isPinned ? nil : { learning.markLearnt($0) }
                 )

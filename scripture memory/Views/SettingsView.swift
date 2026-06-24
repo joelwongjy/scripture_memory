@@ -7,6 +7,7 @@ struct SettingsView: View {
     @AppStorage("hardMode")           private var hardMode:     Bool         = false
     @AppStorage("srs.dailyNewCap")    private var dailyNewCap:    Int        = 1
     @AppStorage("srs.dailyReviewCap") private var dailyReviewCap: Int        = 5
+    @AppStorage("homeVerseStartMode.v1") private var homeVerseStartMode: HomeVerseStartMode = .read
 
     @AppStorage(NotificationManager.Keys.enabled) private var reminderEnabled = false
     @AppStorage(NotificationManager.Keys.hour)    private var reminderHour    = NotificationManager.defaultHour
@@ -123,10 +124,19 @@ struct SettingsView: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+
+                Picker(selection: $homeVerseStartMode) {
+                    ForEach(HomeVerseStartMode.allCases, id: \.self) { mode in
+                        Text(mode.displayName).tag(mode)
+                    }
+                } label: {
+                    rowLabel("Opens in", "book")
+                }
+                .pickerStyle(.menu)
             } header: {
                 Text("Learning")
             } footer: {
-                Text("The verse you're currently learning, shown on your Home screen. Everything before it counts as already learnt.")
+                Text("The verse you're currently learning, shown on your Home screen. Everything before it counts as already learnt. Choose whether tapping it opens for reading or active review.")
             }
 
             Section {
