@@ -117,15 +117,9 @@ struct ContentView: View {
 
     /// Cards due today across active packs — the same number Home shows.
     private func dailyQueueSize(packs: [Pack]) -> Int {
-        let store = SRSStore.shared
-        let now = Date()
-        var learning = 0, review = 0, candidates = 0
-        for pack in packs where store.isActive(pack.name) {
-            let c = SRSQueueBuilder.counts(packName: pack.name, allVerses: pack.verses, store: store, now: now)
-            learning += c.learning; review += c.review; candidates += c.newCandidates
-        }
-        let newRemaining = SRSQueueBuilder.globalNewRemaining(store: store, dailyNewCap: dailyNewCap, now: now)
-        return learning + review + min(newRemaining, candidates)
+        let active = packs.filter { SRSStore.shared.isActive($0.name) }
+        return SRSQueueBuilder.dueSummary(activePacks: active, store: SRSStore.shared,
+                                          dailyNewCap: dailyNewCap, now: Date()).total
     }
 
     private func handleDeepLink(_ url: URL) {

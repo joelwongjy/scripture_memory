@@ -24,4 +24,14 @@ enum ReminderPlan {
                                  matching: DateComponents(hour: h, minute: m),
                                  matchingPolicy: .nextTime)
     }
+
+    /// Plain, factual reminder body — just the counts, no marketing. Returns
+    /// `nil` when nothing is due, so no reminder is sent that day.
+    /// e.g. "3 reviews, 1 new verse" · "1 review" · "2 new verses".
+    static func reminderBody(review: Int, new: Int) -> String? {
+        var parts: [String] = []
+        if review > 0 { parts.append("\(review) \(review == 1 ? "review" : "reviews")") }
+        if new   > 0 { parts.append("\(new) new \(new == 1 ? "verse" : "verses")") }
+        return parts.isEmpty ? nil : parts.joined(separator: ", ")
+    }
 }
