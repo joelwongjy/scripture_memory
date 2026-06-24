@@ -153,11 +153,20 @@ struct SettingsView: View {
             } header: {
                 Text("About")
             } footer: {
-                Text("Made with God's ❤️ for The Navigators")
-                    .font(.system(.subheadline, design: .serif))
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.top, 4)
-                    .padding(.bottom, 28)
+                VStack(spacing: 18) {
+                    Text("Made with God's ❤️ for The Navigators")
+                        .font(.system(.subheadline, design: .serif))
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.top, 4)
+
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Scripture quotations taken from The Holy Bible, New International Version® NIV®. Copyright © 1973, 1978, 1984, 2011 by Biblica, Inc.® Used by permission. All rights reserved worldwide.")
+                        Text("Verse selections are based on The Navigators' Topical Memory System®. This app is independent and is not affiliated with, endorsed by, or sponsored by The Navigators.")
+                    }
+                    .font(.footnote)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .padding(.bottom, 28)
             }
         }
         .navigationTitle("Settings")
