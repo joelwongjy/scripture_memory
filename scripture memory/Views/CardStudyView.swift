@@ -591,10 +591,10 @@ struct CardStudyView: View {
     private var completeLabel: some View {
         HStack(spacing: 8) {
             Image(systemName: "checkmark.circle.fill")
-                .foregroundColor(.green).font(.system(size: 22))
+                .foregroundColor(Theme.success).font(.system(size: 22))
                 .symbolEffect(.bounce, options: .nonRepeating)
             Text("Complete!")
-                .font(.system(size: 17, weight: .semibold)).foregroundColor(.green)
+                .font(.system(size: 17, weight: .semibold)).foregroundColor(Theme.success)
         }
         .frame(maxWidth: .infinity)
         .transition(.scale.combined(with: .opacity))
@@ -617,9 +617,10 @@ struct CardStudyView: View {
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity).padding(.vertical, 12)
-                .background(Color.green)
+                .background(Theme.successGradient)
                 .roundedRect(12)
         }
+        .buttonStyle(Theme.SpringyButtonStyle())
         .accessibilityLabel("Mark verse as complete and continue")
     }
 
@@ -659,7 +660,7 @@ struct CardStudyView: View {
                             .font(.system(size: 18, weight: .semibold))
                             .foregroundColor(speech.isListening ? .white : .primary)
                             .frame(width: 48, height: 48)
-                            .background(speech.isListening ? Color.red : Color(.secondarySystemGroupedBackground))
+                            .background(speech.isListening ? Theme.error : Color(.secondarySystemGroupedBackground))
                             .roundedRect(12)
                     }
                     .accessibilityLabel(speech.isListening ? "Stop dictation" : "Dictate verse")

@@ -133,9 +133,14 @@ struct SRSDashboardView: View {
         let count = streak.current
         let week  = streak.thisWeek()
         return HStack(spacing: 10) {
+            // A live streak is a gold moment: gradient flame with the gilt
+            // sheen sweeping it. Unlit, it's plain gray — gold is earned.
             Image(systemName: "flame.fill")
                 .font(.system(size: 20))
-                .foregroundStyle(count > 0 ? Color.orange : Color(.systemGray3))
+                .foregroundStyle(count > 0
+                    ? AnyShapeStyle(Theme.flameGradient)
+                    : AnyShapeStyle(Color(.systemGray3)))
+                .giltSheen(isActive: count > 0)
                 .symbolEffect(.bounce, options: .nonRepeating, value: count)
             Text(count == 1 ? "1 day streak" : "\(count) day streak")
                 .font(.system(size: 15, weight: .semibold))
@@ -146,14 +151,14 @@ struct SRSDashboardView: View {
                 ForEach(Array(week.enumerated()), id: \.offset) { _, day in
                     ZStack {
                         Circle()
-                            .fill(day.done ? Color.orange : Color(.systemGray5))
+                            .fill(day.done ? AnyShapeStyle(Theme.flameGradient) : AnyShapeStyle(Color(.systemGray5)))
                             .frame(width: 17, height: 17)
                         if day.done {
                             Image(systemName: "flame.fill")
                                 .font(.system(size: 8, weight: .bold))
                                 .foregroundStyle(.white)
                         } else if day.isToday {
-                            Circle().strokeBorder(Color.orange, lineWidth: 1.5).frame(width: 17, height: 17)
+                            Circle().strokeBorder(Theme.gold, lineWidth: 1.5).frame(width: 17, height: 17)
                         }
                     }
                     .opacity(day.isFuture ? 0.35 : 1)
@@ -259,16 +264,7 @@ struct SRSDashboardView: View {
             }
             .padding(18)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: Layout.containerRadius, style: .continuous)
-                    .fill(flashcardBackground)
-                    .shadow(color: .black.opacity(0.13), radius: 14, x: 0, y: 7)
-                    .shadow(color: .black.opacity(0.05), radius: 2,  x: 0, y: 1)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: Layout.containerRadius, style: .continuous)
-                    .strokeBorder(Color(.separator).opacity(0.4), lineWidth: 0.5)
-            )
+            .background(ParchmentSurface(cornerRadius: Layout.containerRadius))
         } else if !ordered.isEmpty {
             allLearntCard
         }
@@ -320,7 +316,7 @@ struct SRSDashboardView: View {
         HStack(spacing: 12) {
             Image(systemName: "checkmark.seal.fill")
                 .font(.system(size: 26))
-                .foregroundStyle(.green)
+                .foregroundStyle(Theme.success)
             VStack(alignment: .leading, spacing: 2) {
                 Text("Every verse learnt")
                     .font(.system(size: 16, weight: .semibold))
@@ -421,21 +417,16 @@ struct SRSDashboardView: View {
             }
             .accessibilityElement(children: .combine)
 
-            Button {
+            ProminentActionButton {
                 startSession(forPacks: activePacks)
             } label: {
                 Label("Start Review", systemImage: "play.fill")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
-            .tint(.accentColor)
 
             HStack(spacing: 12) {
-                breakdownChip(label: "Learning", value: agg.learning,     color: .orange)
-                breakdownChip(label: "Review",   value: agg.review,       color: .blue)
-                breakdownChip(label: "New",      value: agg.newProjected, color: .green)
+                breakdownChip(label: "Learning", value: agg.learning,     color: Theme.warning)
+                breakdownChip(label: "Review",   value: agg.review,       color: .accentColor)
+                breakdownChip(label: "New",      value: agg.newProjected, color: Theme.success)
             }
         }
     }
@@ -444,7 +435,7 @@ struct SRSDashboardView: View {
         VStack(spacing: 8) {
             Image(systemName: "checkmark.seal.fill")
                 .font(.system(size: 36))
-                .foregroundStyle(.green)
+                .foregroundStyle(Theme.success)
                 .symbolEffect(.bounce, options: .nonRepeating)
             Text("All caught up")
                 .font(.system(size: 17, weight: .semibold))

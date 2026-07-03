@@ -14,7 +14,7 @@ struct GoldLeafBurst: View {
     var flakeCount: Int = 80
     var duration: Double = 2.6
 
-    @State private var startDate: Date?
+    @State private var startDate: Date? = nil
     @State private var finished = false
 
     private let flakes: [Flake]

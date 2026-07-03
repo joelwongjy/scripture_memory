@@ -80,9 +80,9 @@ struct FlashcardView: View {
             .foregroundStyle(.white)
             .padding(.horizontal, 10)
             .padding(.vertical, 5)
-            .background(Capsule().fill(Color.green))
+            .background(Capsule().fill(Theme.successGradient))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(Theme.SpringyButtonStyle())
         .accessibilityLabel("Mark current verse as complete")
     }
 
@@ -199,7 +199,7 @@ struct FlashcardView: View {
 
             if isComplete {
                 Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(Color.green)
+                    .foregroundStyle(Theme.success)
                     .font(.system(size: 10))
             }
         }
@@ -293,11 +293,11 @@ struct FlashcardView: View {
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     Capsule().fill(Color(.systemGray5))
-                    // Green (matching the completion check) so it reads as
-                    // "progress made" and doesn't blur into the blue active-section
+                    // Emerald (matching the completion check) so it reads as
+                    // "progress made" and doesn't blur into the lapis active-section
                     // bar / next-word accent sitting right above it.
                     Capsule()
-                        .fill(Color.green)
+                        .fill(Theme.success)
                         .frame(width: max(4, geo.size.width * Double(revealed) / Double(max(1, total))))
                         .animation(.spring(response: 0.4, dampingFraction: 0.7), value: revealed)
                 }

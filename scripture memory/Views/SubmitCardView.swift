@@ -117,23 +117,25 @@ struct SubmitCardView: View {
         return groups.enumerated().reduce(Text("")) { acc, pair in
             let (gi, group) = pair
             let sep = gi < groups.count - 1 ? " " : ""
+            // Emerald / vermilion from the theme instead of raw green/red —
+            // easier on the eyes over a whole session, and tuned per mode.
             switch group.kind {
             case .correct:
                 let joined = group.words.map(\.text).joined(separator: " ")
-                return acc + Text(joined + sep).foregroundColor(.green).font(font)
+                return acc + Text(joined + sep).foregroundColor(Theme.success).font(font)
             case .wrong:
                 let wrong       = group.words.map(\.text).joined(separator: " ")
                 let corrections = group.words.compactMap(\.correction).joined(separator: " ")
-                let crossed     = Text(wrong + " ").strikethrough().foregroundColor(.red.opacity(0.5)).font(font)
+                let crossed     = Text(wrong + " ").strikethrough().foregroundColor(Theme.error.opacity(0.5)).font(font)
                 return corrections.isEmpty
                     ? acc + crossed
-                    : acc + crossed + Text(corrections + sep).foregroundColor(.red).font(font)
+                    : acc + crossed + Text(corrections + sep).foregroundColor(Theme.error).font(font)
             case .missing:
                 let joined = group.words.map(\.text).joined(separator: " ")
                 return acc + Text(joined + sep).foregroundColor(.secondary.opacity(0.5)).font(font)
             case .extra:
                 let joined = group.words.map(\.text).joined(separator: " ")
-                return acc + Text(joined + sep).strikethrough().foregroundColor(.red.opacity(0.5)).font(font)
+                return acc + Text(joined + sep).strikethrough().foregroundColor(Theme.error.opacity(0.5)).font(font)
             }
         }
         .lineSpacing(5)
