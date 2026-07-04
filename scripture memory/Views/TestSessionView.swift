@@ -114,7 +114,7 @@ struct TestSessionView: View {
                 bottomControls
             }
         }
-        .background(Color(.systemGroupedBackground))
+        .deskSurface()
         .onChange(of: vm.currentIndex) { _, _ in
             vm.clearInputs()
             pendingGrade = nil   // each card starts from its own suggested difficulty

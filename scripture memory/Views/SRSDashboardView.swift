@@ -114,7 +114,7 @@ struct SRSDashboardView: View {
             .padding(.top, 8)
             .padding(.bottom, 24)
         }
-        .background(Color(.systemGroupedBackground))
+        .deskSurface()
         .navigationTitle("Home")
         .fullScreenCover(item: $cover) { c in
             switch c {
@@ -127,54 +127,77 @@ struct SRSDashboardView: View {
         }
     }
 
-    // MARK: - Streak
+    // MARK: - Streak (weekly stamp card)
 
+    /// The streak as a loyalty stamp card: one gold ink stamp per studied day,
+    /// today an open dashed slot until it's earned. The stamp thunks in with a
+    /// spring when the day is recorded.
     private var streakCard: some View {
         let count = streak.current
         let week  = streak.thisWeek()
-        return HStack(spacing: 10) {
-            // A live streak is a gold moment: gradient flame with the gilt
-            // sheen sweeping it. Unlit, it's plain gray — gold is earned.
-            Image(systemName: "flame.fill")
-                .font(.system(size: 20))
-                .foregroundStyle(count > 0
-                    ? AnyShapeStyle(Theme.flameGradient)
-                    : AnyShapeStyle(Color(.systemGray3)))
-                .giltSheen(isActive: count > 0)
-                .symbolEffect(.bounce, options: .nonRepeating, value: count)
-            Text(count == 1 ? "1 day streak" : "\(count) day streak")
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(.primary)
-                .contentTransition(.numericText())
-            Spacer(minLength: 8)
-            HStack(spacing: 5) {
-                ForEach(Array(week.enumerated()), id: \.offset) { _, day in
-                    ZStack {
-                        Circle()
-                            .fill(day.done ? AnyShapeStyle(Theme.flameGradient) : AnyShapeStyle(Color(.systemGray5)))
-                            .frame(width: 17, height: 17)
-                        if day.done {
-                            Image(systemName: "flame.fill")
-                                .font(.system(size: 8, weight: .bold))
-                                .foregroundStyle(.white)
-                        } else if day.isToday {
-                            Circle().strokeBorder(Theme.gold, lineWidth: 1.5).frame(width: 17, height: 17)
+        let stamped = week.filter { $0.done }.count
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                // A live streak is a gold moment: gradient flame with the gilt
+                // sheen sweeping it. Unlit, it's plain gray — gold is earned.
+                Image(systemName: "flame.fill")
+                    .font(.system(size: 17))
+                    .foregroundStyle(count > 0
+                        ? AnyShapeStyle(Theme.flameGradient)
+                        : AnyShapeStyle(Color(.systemGray3)))
+                    .giltSheen(isActive: count > 0)
+                    .symbolEffect(.bounce, options: .nonRepeating, value: count)
+                Text(count == 1 ? "1 day streak" : "\(count) day streak")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(.primary)
+                    .contentTransition(.numericText())
+                Spacer(minLength: 8)
+            }
+            HStack(spacing: 0) {
+                ForEach(Array(week.enumerated()), id: \.offset) { i, day in
+                    VStack(spacing: 5) {
+                        Text(String(day.initial))
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundStyle(day.isToday ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.secondary))
+                        ZStack {
+                            if day.done {
+                                ZStack {
+                                    Circle().strokeBorder(Theme.gold, lineWidth: 1.6)
+                                    Image(systemName: "flame.fill")
+                                        .font(.system(size: 9, weight: .bold))
+                                        .foregroundStyle(Theme.gold)
+                                }
+                                .frame(width: 22, height: 22)
+                                // Each stamp lands a little off true, like a hand stamp.
+                                .rotationEffect(.degrees(Self.stampTilts[i % Self.stampTilts.count]))
+                                .transition(.scale(scale: 1.7).combined(with: .opacity))
+                            } else {
+                                Circle()
+                                    .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [2.5, 2.5]))
+                                    .foregroundStyle(day.isToday ? Color.accentColor : Color(.systemGray4))
+                                    .frame(width: 22, height: 22)
+                            }
                         }
+                        .opacity(day.isFuture ? 0.4 : 1)
                     }
-                    .opacity(day.isFuture ? 0.35 : 1)
+                    .frame(maxWidth: .infinity)
                 }
             }
+            .animation(.spring(response: 0.35, dampingFraction: 0.55), value: stamped)
         }
         .padding(.horizontal, Layout.rowPaddingH)
-        .padding(.vertical, 11)
+        .padding(.vertical, 12)
         .frame(maxWidth: .infinity)
         .background(
             RoundedRectangle(cornerRadius: Layout.containerRadius, style: .continuous)
                 .fill(Color(.secondarySystemGroupedBackground))
         )
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(count) day streak")
+        .accessibilityLabel("\(count) day streak, \(stamped) days stamped this week")
     }
+
+    /// Deterministic per-weekday stamp rotations — askew but stable.
+    private static let stampTilts: [Double] = [-8, 5, -4, 7, -6, 3, 8]
 
     // MARK: - Continue Learning
 
@@ -373,22 +396,27 @@ struct SRSDashboardView: View {
     @ViewBuilder
     private var heroCard: some View {
         let agg = aggregate()
-        VStack(spacing: 16) {
-            if activePacks.isEmpty {
-                heroNoActivePacks
-            } else if agg.queueSize > 0 {
-                heroQueue(agg: agg)
-            } else {
-                heroCaughtUp(agg: agg)
-            }
+        if activePacks.isEmpty {
+            heroPanel { heroNoActivePacks }
+        } else if agg.queueSize > 0 {
+            // The queue is a physical stack sitting directly on the desk —
+            // no panel around it; the stack itself is the button.
+            heroQueue(agg: agg)
+        } else {
+            heroPanel { heroCaughtUp(agg: agg) }
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, Layout.cardPadding)
-        .padding(.horizontal, Layout.cardPadding)
-        .background(
-            RoundedRectangle(cornerRadius: Layout.containerRadius, style: .continuous)
-                .fill(Color(.secondarySystemGroupedBackground))
-        )
+    }
+
+    /// Paper panel for the non-stack hero states (empty / caught up).
+    private func heroPanel<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        VStack(spacing: 16) { content() }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, Layout.cardPadding)
+            .padding(.horizontal, Layout.cardPadding)
+            .background(
+                RoundedRectangle(cornerRadius: Layout.containerRadius, style: .continuous)
+                    .fill(Color(.secondarySystemGroupedBackground))
+            )
     }
 
     private var heroNoActivePacks: some View {
@@ -406,22 +434,13 @@ struct SRSDashboardView: View {
     }
 
     private func heroQueue(agg: Aggregate) -> some View {
-        VStack(spacing: 16) {
-            VStack(spacing: 4) {
-                Text("\(agg.queueSize)")
-                    .font(.system(size: 48, weight: .bold, design: .rounded))
-                    .contentTransition(.numericText())
-                Text(agg.queueSize == 1 ? "card due today" : "cards due today")
-                    .font(.system(size: 14))
-                    .foregroundStyle(.secondary)
-            }
-            .accessibilityElement(children: .combine)
-
-            ProminentActionButton {
+        VStack(spacing: 12) {
+            Button {
                 startSession(forPacks: activePacks)
             } label: {
-                Label("Start Review", systemImage: "play.fill")
+                TodayStack(count: agg.queueSize)
             }
+            .buttonStyle(Theme.SpringyButtonStyle())
 
             HStack(spacing: 12) {
                 breakdownChip(label: "Learning", value: agg.learning,     color: Theme.warning)

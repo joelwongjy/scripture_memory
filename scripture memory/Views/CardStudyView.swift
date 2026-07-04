@@ -202,7 +202,7 @@ struct CardStudyView: View {
                 bottomControls
             }
         }
-        .background(Color(.systemGroupedBackground))
+        .deskSurface()
         .onChange(of: vm.isReviewMode) { _, reviewing in handleReviewModeChange(reviewing) }
         .onChange(of: vm.currentIndex) { _, _ in
             vm.clearInputs()

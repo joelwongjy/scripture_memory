@@ -23,6 +23,10 @@ struct FlashcardView: View {
     /// exposed edge can't flip a card that isn't front-most.
     var allowsFlip:          Bool = true
 
+    /// Fires after a flip lands, with the now-showing side (`true` = quiz
+    /// side). The onboarding uses this to advance its walkthrough.
+    var onFlip:              ((Bool) -> Void)? = nil
+
     @AppStorage("hardMode") private var hardMode = false
 
     // MARK: - Flip (read mode)
@@ -61,6 +65,7 @@ struct FlashcardView: View {
                 flipRotation = 0
                 flipScale = 1
             }
+            onFlip?(showsQuizSide)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { isFlipping = false }
         }
     }

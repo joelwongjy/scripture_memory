@@ -15,6 +15,25 @@ your hands?*
 3. **Physics carries the delight.** Springs, lift, spin, and haptics tuned to
    what the gesture "weighs". One effect per moment; nothing ambient.
 
+## The Table (app shell)
+
+Every screen lives on one continuous surface — a warm desk mat
+(`DeskSurface`, same grain shader as the cards, putty in light / charcoal
+felt in dark). Chrome is stationery on that desk:
+
+- **Navigation** is a row of index-card **divider tabs** (`DividerTabBar`) —
+  the selected divider pulls up and forward in parchment; the others sit back
+  in the box. Custom shell in `ContentView` (all four stacks stay mounted, so
+  per-tab state survives like `TabView`).
+- **Home is the desk mat**: today's review is a **banded stack**
+  (`TodayStack`) whose physical thickness is the workload — the stack itself
+  is the start button, with a rubber band drawn off-centre so it never covers
+  the count. The streak is a **weekly stamp card**: one gold ink stamp per
+  studied day, each landing slightly askew, today a dashed open slot.
+- **Onboarding is the product**: a real card deals in from the corner of the
+  desk; the user flips it, then flicks it away — learning the app's two core
+  verbs by doing them — before any setup questions.
+
 ## The physical vocabulary
 
 | Real-world act | In the app |

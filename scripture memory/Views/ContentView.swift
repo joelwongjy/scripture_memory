@@ -26,39 +26,21 @@ struct ContentView: View {
         }
     }
 
+    /// Selected divider tab. Custom navigation (not `TabView`) so the bar can
+    /// be the card-box divider row — see `DividerTabBar`.
+    @State private var tab: AppTab = .home
+
     var body: some View {
-        TabView {
-            NavigationStack {
-                SRSDashboardView()
-            }
-            .tabItem {
-                Image(systemName: "house.fill")
-                Text("Home")
-            }
-
-            NavigationStack {
-                PackListView()
-            }
-            .tabItem {
-                Image(systemName: "rectangle.stack.fill")
-                Text("Packs")
-            }
-
-            NavigationStack {
-                TestSetupView()
-            }
-            .tabItem {
-                Image(systemName: "checkmark.circle.fill")
-                Text("Quiz")
-            }
-
-            NavigationStack {
-                SettingsView()
-            }
-            .tabItem {
-                Image(systemName: "gearshape")
-                Text("Settings")
-            }
+        // All four stacks stay mounted (like TabView) so each tab keeps its
+        // navigation and scroll state; only the selected one is visible.
+        ZStack {
+            tabRoot(.home)     { SRSDashboardView() }
+            tabRoot(.packs)    { PackListView() }
+            tabRoot(.quiz)     { TestSetupView() }
+            tabRoot(.settings) { SettingsView() }
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            DividerTabBar(selection: $tab)
         }
         .fullScreenCover(item: $cover) { c in
             switch c {
@@ -98,6 +80,15 @@ struct ContentView: View {
             if phase == .active || phase == .background { syncWidget() }
         }
         .onOpenURL { handleDeepLink($0) }
+    }
+
+    /// One tab's root stack, kept alive but inert while another tab is up.
+    @ViewBuilder
+    private func tabRoot<Content: View>(_ t: AppTab, @ViewBuilder content: () -> Content) -> some View {
+        NavigationStack { content() }
+            .opacity(tab == t ? 1 : 0)
+            .allowsHitTesting(tab == t)
+            .accessibilityHidden(tab != t)
     }
 
     /// Mirror the current learning verse + streak + due-count + week into the App Group.
