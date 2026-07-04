@@ -18,6 +18,8 @@ struct CardStudyView: View {
     @State private var isCardFlying          = false
     @State private var flyDirection: Int     = 0
     @State private var shakeOffset:  CGFloat = 0
+    /// Deck wobble while a shake-to-shuffle riffles the cards.
+    @State private var shuffleTilt:  Double  = 0
     @State private var speechTarget: SubmitField = .title
     @State private var isScrubbing           = false
     @State private var isPeeking             = false
@@ -156,6 +158,7 @@ struct CardStudyView: View {
                         ZStack {
                             cardStack
                                 .frame(width: cardWidth, height: cardH)
+                                .rotationEffect(.degrees(shuffleTilt))
                             // Peek renders as an OVERLAY in every mode so the
                             // SubmitCardView (and its focused TextField) stays
                             // mounted — otherwise the keyboard dismisses — and so
@@ -222,6 +225,24 @@ struct CardStudyView: View {
             speech.stopListening()
             speechTarget = newFocus
             speech.startListening()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .deviceDidShake)) { _ in
+            handleShake()
+        }
+    }
+
+    /// Shake the phone to shuffle the deck — like rapping a real stack on the
+    /// desk. Read mode only; mid-review it would trash typing progress.
+    private func handleShake() {
+        guard !vm.isReviewMode, vm.verses.count > 1 else { return }
+        // Shaking an already-shuffled deck deals a fresh order.
+        if vm.isShuffled { vm.toggleShuffle() }
+        vm.toggleShuffle()
+        HapticEngine.medium()
+        withAnimation(.easeOut(duration: 0.1)) { shuffleTilt = -2.2 }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            HapticEngine.light()
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.45)) { shuffleTilt = 0 }
         }
     }
 
@@ -502,7 +523,8 @@ struct CardStudyView: View {
                     DispatchQueue.main.async { focusInput() }
                 } : nil,
                 isCurrentLearning: learning.isCurrent(verse),
-                onMarkComplete: vm.isReviewMode ? nil : { markVerseComplete(verse) }
+                onMarkComplete: vm.isReviewMode ? nil : { markVerseComplete(verse) },
+                allowsFlip: interactive
             )
         }
     }

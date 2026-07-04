@@ -17,6 +17,10 @@ struct TestSessionView: View {
     @State private var isCardFlying          = false
     @State private var flyDirection: Int     = 0
     @State private var shakeOffset:  CGFloat = 0
+    /// Departure of a just-graded card — separate from `dragOffset` so the
+    /// toss can't tangle with the (SRS-disabled) swipe machinery.
+    @State private var tossOffset:   CGSize  = .zero
+    @State private var tossRotation: Double  = 0
     @State private var speechTarget: SubmitField = .title
     @State private var isScrubbing           = false
     @State private var isPeeking             = false
@@ -108,14 +112,6 @@ struct TestSessionView: View {
                 }
 
                 bottomControls
-            }
-            // Gold-leaf flakes burst from behind the completion seal when the
-            // summary appears — full-screen so they can arc above the panel.
-            .overlay {
-                if showSessionSummary {
-                    GoldLeafBurst(origin: .init(x: 0.5, y: 0.62))
-                        .allowsHitTesting(false)
-                }
             }
         }
         .background(Color(.systemGroupedBackground))
@@ -379,6 +375,8 @@ struct TestSessionView: View {
                             y: goingBack ? backwardDragProgress * 12 : dragOffset.height * 0.1)
                     .scaleEffect(goingBack ? 1.0 - backwardDragProgress * 0.05 : 1.0)
                     .rotationEffect(goingBack ? .zero : .degrees(Double(dragOffset.width) * 0.03))
+                    .offset(tossOffset)
+                    .rotationEffect(.degrees(tossRotation))
                     .zIndex(2)
                 // Always allow swipe (the gesture filters vertical drags so editor scroll/selection still work).
                 // Card-wide tap-to-focus is gated to non-submit modes only — in submit mode it would force focus
@@ -1071,16 +1069,43 @@ struct TestSessionView: View {
         }
 
         if !isLastCard {
-            isScrubbing = true
-            vm.goForward()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                isScrubbing = false
-                refocusIfNeeded()
-            }
+            tossCard(for: grade)
         }
         // Last card: stay put — every card now has a grade, so the session
-        // summary (and its gold-leaf moment) takes over; Done dismisses from
-        // there, and Undo can still step back into grading.
+        // summary takes over; Done dismisses from there, and Undo can still
+        // step back into grading.
+    }
+
+    /// Tosses the graded card off the deck the way you'd deal a real card onto
+    /// a pile: Again drops heavily to the near pile, Easy sails off light and
+    /// fast with more spin. The next card is then committed under a
+    /// no-animation transaction, exactly like a completed swipe.
+    private func tossCard(for grade: SRSGrade) {
+        let arc: CGFloat, spin: Double, duration: Double
+        switch grade {
+        case .again: arc = 190;  spin = -5;  duration = 0.32
+        case .hard:  arc = 90;   spin = -8;  duration = 0.28
+        case .good:  arc = -40;  spin = -11; duration = 0.24
+        case .easy:  arc = -170; spin = -16; duration = 0.20
+        }
+        isScrubbing = true
+        HapticEngine.medium()
+        withAnimation(.easeIn(duration: duration)) {
+            tossOffset   = CGSize(width: -CardSwipeConfig.flyWidth, height: arc)
+            tossRotation = spin
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + duration) {
+            var t = Transaction()
+            t.disablesAnimations = true
+            withTransaction(t) {
+                vm.goForward()
+                tossOffset   = .zero
+                tossRotation = 0
+            }
+            // Refocus immediately so the keyboard is back for the next card.
+            if !vm.isCardComplete && !vm.isSessionComplete { focusInput() }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { isScrubbing = false }
+        }
     }
 
     /// Anki-style Undo: revert the most recent grade (last-in-first-out) and return

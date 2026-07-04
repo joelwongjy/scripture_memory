@@ -39,7 +39,7 @@ struct SubmitCardView: View {
             }
             .padding(.top, 6)
         }
-        .flashcardStyle()
+        .flashcardStyle(edge: packColor(forPackName: verse.packName))
     }
 
     /// "Current" chip marking the learning-cursor verse — matches FlashcardView.

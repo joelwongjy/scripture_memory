@@ -82,6 +82,9 @@ extension Color {
 /// review, submit, peek, Home spotlight) is cut from the same sheet.
 struct ParchmentSurface: View {
     var cornerRadius: CGFloat = AppLayout.cardRadius
+    /// Printed series color — the ink band along the card's top edge that
+    /// color-codes real TMS pack cards. `nil` prints a plain card.
+    var edgeColor: Color? = nil
 
     @Environment(\.colorScheme) private var scheme
 
@@ -91,9 +94,17 @@ struct ParchmentSurface: View {
         let bottom = scheme == .dark ? Color(white: 0.118) : Color(red: 0.965, green: 0.947, blue: 0.910)
         shape
             .fill(LinearGradient(colors: [top, bottom], startPoint: .top, endPoint: .bottom))
+            .overlay(alignment: .top) {
+                if let edgeColor {
+                    Rectangle().fill(edgeColor).frame(height: 3)
+                }
+            }
+            // Re-clip so the edge band follows the card's rounded corners.
+            .clipShape(shape)
             // Texture, not decoration: a couple of percent of luminance noise
-            // that reads as paper tooth. Lower in dark mode, where noise turns
-            // to static faster.
+            // that reads as paper tooth (and prints over the ink band, like
+            // real card stock). Lower in dark mode, where noise turns to
+            // static faster.
             .paperGrain(strength: scheme == .dark ? 0.018 : 0.032)
             .overlay(
                 shape.strokeBorder(

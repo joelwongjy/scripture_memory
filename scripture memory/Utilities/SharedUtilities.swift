@@ -32,7 +32,9 @@ extension Color {
 extension View {
     /// Applies the standard card appearance: the shared parchment surface
     /// (warm gradient + paper grain + hairline border + layered shadows).
-    func flashcardStyle() -> some View {
+    /// `edge` prints the pack's series color as an ink band along the top
+    /// edge, the way the physical pack cards are color-coded.
+    func flashcardStyle(edge: Color? = nil) -> some View {
         self
             .padding(.horizontal, 20)
             .padding(.vertical, 16)
@@ -40,9 +42,18 @@ extension View {
             // Clip the content BEFORE adding the surface, so the surface's own
             // soft shadows aren't sheared off by the clip.
             .clipShape(RoundedRectangle(cornerRadius: AppLayout.cardRadius, style: .continuous))
-            .background(ParchmentSurface(cornerRadius: AppLayout.cardRadius))
+            .background(ParchmentSurface(cornerRadius: AppLayout.cardRadius, edgeColor: edge))
             .contentShape(RoundedRectangle(cornerRadius: AppLayout.cardRadius, style: .continuous))
     }
+}
+
+/// The printed series color for a pack — the ink band on its physical cards.
+/// Looks across both translations (pack names match between them).
+func packColor(forPackName name: String) -> Color? {
+    guard !name.isEmpty else { return nil }
+    let pack = packsNIV84.first(where: { $0.name == name })
+        ?? packsNIV11.first(where: { $0.name == name })
+    return pack.flatMap { Color(hex: $0.color) }
 }
 
 // MARK: - Study chrome (top bar + scrubber)
@@ -251,7 +262,7 @@ struct PeekOverlayCard: View {
                 .font(.system(size: 10, weight: .medium))
                 .foregroundColor(.secondary.opacity(0.5))
         }
-        .flashcardStyle()
+        .flashcardStyle(edge: packColor(forPackName: verse.packName))
         .frame(width: width, height: height)
         .transition(.opacity)
         .animation(.easeInOut(duration: 0.1), value: isPeeking)
