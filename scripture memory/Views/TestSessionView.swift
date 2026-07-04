@@ -17,6 +17,10 @@ struct TestSessionView: View {
     @State private var isCardFlying          = false
     @State private var flyDirection: Int     = 0
     @State private var shakeOffset:  CGFloat = 0
+    /// Departure of a just-graded card — separate from `dragOffset` so the
+    /// toss can't tangle with the (SRS-disabled) swipe machinery.
+    @State private var tossOffset:   CGSize  = .zero
+    @State private var tossRotation: Double  = 0
     @State private var speechTarget: SubmitField = .title
     @State private var isScrubbing           = false
     @State private var isPeeking             = false
@@ -63,7 +67,9 @@ struct TestSessionView: View {
 
     var body: some View {
         GeometryReader { geo in
-            let cardWidth  = geo.size.width - 2 * AppLayout.screenMargin
+            // Clamped by height so the 5:3 card also fits a landscape screen.
+            let cardWidth  = min(geo.size.width - 2 * AppLayout.screenMargin,
+                                 geo.size.height * 0.55 * 5.0 / 3.0)
             let cardHeight = cardWidth * 3.0 / 5.0
 
             VStack(spacing: 0) {
@@ -110,7 +116,7 @@ struct TestSessionView: View {
                 bottomControls
             }
         }
-        .background(Color(.systemGroupedBackground))
+        .deskSurface()
         .onChange(of: vm.currentIndex) { _, _ in
             vm.clearInputs()
             pendingGrade = nil   // each card starts from its own suggested difficulty
@@ -270,13 +276,13 @@ struct TestSessionView: View {
             if vm.isSessionComplete && vm.sessionScore == 0 {
                 Text("✓")
                     .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(Color.green)
+                    .foregroundStyle(Theme.success)
                     .frame(width: 36, height: 36)
                     .background(Color(.secondarySystemBackground), in: Circle())
             } else if vm.sessionScore < 0 {
                 Text("\(vm.sessionScore)")
                     .font(.system(size: 13, weight: .bold, design: .monospaced))
-                    .foregroundStyle(Color.red)
+                    .foregroundStyle(Theme.error)
                     .frame(width: 36, height: 36)
                     .background(Color(.secondarySystemBackground), in: Circle())
             } else {
@@ -347,7 +353,7 @@ struct TestSessionView: View {
 
     private func dotColor(submitted: Bool, correct: Bool) -> Color {
         guard submitted else { return Color.secondary.opacity(0.25) }
-        return correct ? .green : .red
+        return correct ? Theme.success : Theme.error
     }
 
     // MARK: - Card Stack
@@ -371,6 +377,8 @@ struct TestSessionView: View {
                             y: goingBack ? backwardDragProgress * 12 : dragOffset.height * 0.1)
                     .scaleEffect(goingBack ? 1.0 - backwardDragProgress * 0.05 : 1.0)
                     .rotationEffect(goingBack ? .zero : .degrees(Double(dragOffset.width) * 0.03))
+                    .offset(tossOffset)
+                    .rotationEffect(.degrees(tossRotation))
                     .zIndex(2)
                 // Always allow swipe (the gesture filters vertical drags so editor scroll/selection still work).
                 // Card-wide tap-to-focus is gated to non-submit modes only — in submit mode it would force focus
@@ -520,29 +528,23 @@ struct TestSessionView: View {
                 // `currentSelection` is nil only in first-letter mode before the user
                 // picks (no auto-suggestion) — keep Confirm disabled until they do.
                 let pick = currentSelection(for: verse)
-                Button {
+                ProminentActionButton {
                     guard let grade = pick else { return }
                     pendingGrade = nil
                     gradeAndAdvance(grade)
                 } label: {
                     Text(pick == nil ? "Pick a difficulty to continue" : "Confirm")
-                        .font(.headline).frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-                .tint(.accentColor)
                 .disabled(pick == nil)
+                .opacity(pick == nil ? 0.55 : 1)
             } else if !showSessionSummary, sessionKind != .srs,
                       vm.completedCount == vm.verses.count {
                 // Quiz (non-SRS) has no grading, so it keeps an explicit end button.
-                Button {
+                ProminentActionButton {
                     endSession()
                 } label: {
-                    Text("End Session").font(.headline).frame(maxWidth: .infinity)
+                    Text("End Session")
                 }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-                .tint(.accentColor)
             }
         }
         .padding(.horizontal, AppLayout.screenMargin)
@@ -601,7 +603,7 @@ struct TestSessionView: View {
         } label: {
             HStack(spacing: 8) {
                 Image(systemName: "checkmark.circle.fill")
-                    .foregroundColor(.green)
+                    .foregroundColor(Theme.success)
                     .font(.system(size: 18))
                 Text("Next")
                     .font(.system(size: 16, weight: .semibold))
@@ -629,9 +631,10 @@ struct TestSessionView: View {
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity).padding(.vertical, 12)
-                .background(Color.green)
+                .background(Theme.successGradient)
                 .roundedRect(12)
         }
+        .buttonStyle(Theme.SpringyButtonStyle())
         .accessibilityLabel("Mark current verse as complete")
         .transition(.scale.combined(with: .opacity))
     }
@@ -639,55 +642,70 @@ struct TestSessionView: View {
     // MARK: - Session Complete Panel
 
     private var sessionCompletePanel: some View {
-        VStack(spacing: 16) {
-            Image(systemName: vm.sessionScore == 0 ? "checkmark.seal.fill" : "checkmark.circle.fill")
-                .font(.system(size: 40))
-                .foregroundStyle(vm.sessionScore == 0 ? Color.green : Color.accentColor)
+        // Finishing the day's review is THE gold moment (docs/DESIGN.md) —
+        // gold seal regardless of slips; in quiz mode gold must be earned
+        // with a perfect score.
+        let isGold = sessionKind == .srs || vm.sessionScore == 0
+        return VStack(spacing: 16) {
+            Image(systemName: isGold ? "checkmark.seal.fill" : "checkmark.circle.fill")
+                .font(.system(size: 44))
+                .foregroundStyle(isGold
+                    ? AnyShapeStyle(Theme.flameGradient)
+                    : AnyShapeStyle(Color.accentColor))
+                .giltSheen(isActive: isGold)
                 .symbolEffect(.bounce, options: .nonRepeating)
 
-            Text("Session Complete!")
+            Text(sessionKind == .srs ? "Review Complete!" : "Session Complete!")
                 .font(.system(size: 20, weight: .bold))
                 .foregroundColor(.primary)
 
-            if vm.sessionScore == 0 {
-                Text("Perfect!")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(.green)
+            if sessionKind == .srs {
+                // The day's reviews are scheduled, not scored — a keystroke
+                // tally would read as a red mark on a celebration.
+                Text(vm.verses.count == 1 ? "1 card reviewed" : "\(vm.verses.count) cards reviewed")
+                    .font(.system(size: 14))
+                    .foregroundColor(.secondary)
             } else {
-                Text("Score: \(vm.sessionScore)")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(.red)
-            }
-
-            Text("\(vm.perfectCount) of \(vm.verses.count) perfect")
-                .font(.system(size: 14))
-                .foregroundColor(.secondary)
-
-            HStack(spacing: 12) {
-                Button {
-                    vm.resetAllProgress()
-                } label: {
-                    Text("Try Again")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.primary)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(Color(.secondarySystemGroupedBackground))
-                        .roundedRect(12)
+                if vm.sessionScore == 0 {
+                    Text("Perfect!")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(Theme.gold)
+                } else {
+                    Text("Score: \(vm.sessionScore)")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(Theme.error)
                 }
 
-                Button {
+                Text("\(vm.perfectCount) of \(vm.verses.count) perfect")
+                    .font(.system(size: 14))
+                    .foregroundColor(.secondary)
+            }
+
+            HStack(spacing: 12) {
+                // SRS review is forward-only (grades are already committed), so
+                // it gets no whole-session retry; quiz keeps it.
+                if sessionKind != .srs {
+                    Button {
+                        vm.resetAllProgress()
+                    } label: {
+                        // Metrics match ProminentActionButton so the pair sits level.
+                        Text("Try Again")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundColor(.primary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(Color(.secondarySystemGroupedBackground))
+                            .roundedRect(AppLayout.controlRadius + 2)
+                    }
+                    .buttonStyle(Theme.SpringyButtonStyle())
+                }
+
+                ProminentActionButton {
                     vm.clearProgress()
                     onSessionEnded?()
                     dismiss()
                 } label: {
                     Text("Done")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(Color.accentColor)
-                        .roundedRect(12)
                 }
             }
         }
@@ -745,7 +763,7 @@ struct TestSessionView: View {
                             .font(.system(size: 18, weight: .semibold))
                             .foregroundColor(speech.isListening ? .white : .primary)
                             .frame(width: 48, height: 48)
-                            .background(speech.isListening ? Color.red : Color(.secondarySystemGroupedBackground))
+                            .background(speech.isListening ? Theme.error : Color(.secondarySystemGroupedBackground))
                             .roundedRect(12)
                     }
                     .accessibilityLabel(speech.isListening ? "Stop dictation" : "Dictate verse")
@@ -1031,7 +1049,17 @@ struct TestSessionView: View {
             SRSStore.shared.regrade(verse: verse, grade: grade, from: prior)
         }
         if firstGradeInSession { gradedOrder.append(verse.id) }
-        sessionGrades[verse.id] = grade
+        let isLastCard = vm.currentIndex >= vm.verses.count - 1
+        if isLastCard {
+            // The summary panel is keyed off every card having a grade — animate
+            // the final grade in so the panel (and its celebration) springs on.
+            withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
+                sessionGrades[verse.id] = grade
+            }
+            HapticEngine.success()
+        } else {
+            sessionGrades[verse.id] = grade
+        }
 
         // Auto-advance the Home learning cursor: a solid recall (Good/Easy) of the
         // verse you're currently learning marks it learnt and moves the cursor on —
@@ -1042,18 +1070,43 @@ struct TestSessionView: View {
             autoLearntIds.insert(verse.id)
         }
 
-        if vm.currentIndex < vm.verses.count - 1 {
-            isScrubbing = true
-            vm.goForward()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                isScrubbing = false
-                refocusIfNeeded()
+        if !isLastCard {
+            tossCard(for: grade)
+        }
+        // Last card: stay put — every card now has a grade, so the session
+        // summary takes over; Done dismisses from there, and Undo can still
+        // step back into grading.
+    }
+
+    /// Tosses the graded card off the deck the way you'd deal a real card onto
+    /// a pile: Again drops heavily to the near pile, Easy sails off light and
+    /// fast with more spin. The next card is then committed under a
+    /// no-animation transaction, exactly like a completed swipe.
+    private func tossCard(for grade: SRSGrade) {
+        let arc: CGFloat, spin: Double, duration: Double
+        switch grade {
+        case .again: arc = 190;  spin = -5;  duration = 0.32
+        case .hard:  arc = 90;   spin = -8;  duration = 0.28
+        case .good:  arc = -40;  spin = -11; duration = 0.24
+        case .easy:  arc = -170; spin = -16; duration = 0.20
+        }
+        isScrubbing = true
+        HapticEngine.medium()
+        withAnimation(.easeIn(duration: duration)) {
+            tossOffset   = CGSize(width: -CardSwipeConfig.flyWidth, height: arc)
+            tossRotation = spin
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + duration) {
+            var t = Transaction()
+            t.disablesAnimations = true
+            withTransaction(t) {
+                vm.goForward()
+                tossOffset   = .zero
+                tossRotation = 0
             }
-        } else {
-            // Last card — close the session.
-            vm.clearProgress()
-            onSessionEnded?()
-            dismiss()
+            // Refocus immediately so the keyboard is back for the next card.
+            if !vm.isCardComplete && !vm.isSessionComplete { focusInput() }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { isScrubbing = false }
         }
     }
 

@@ -60,84 +60,153 @@ struct LearningSetupView: View {
     }
 }
 
-// MARK: - Welcome (Apple-style hero + feature callouts)
+// MARK: - Welcome (a card is dealt onto the desk; you learn by handling it)
 
+/// The welcome IS the product: a real card deals in from off-screen and the
+/// user learns the app's two core verbs by doing them — flip it over, then
+/// flick it away — before being asked a single setup question.
 private struct WelcomeScreen: View {
     var onContinue: () -> Void
 
-    var body: some View {
-        ScrollView {
-            VStack(spacing: 0) {
-                Image(systemName: "book.closed.fill")
-                    .font(.system(size: 60))
-                    .foregroundStyle(Color.accentColor)
-                    .padding(.top, 56)
-                    .padding(.bottom, 22)
+    @AppStorage("bibleVersion") private var bibleVersion: BibleVersion = .niv84
 
-                Text("Welcome to\nScripture Memory")
-                    .font(.largeTitle.weight(.bold))
+    private enum Step { case deal, flip, toss, done }
+    @State private var step: Step = .deal
+    @State private var dealt      = false
+    @State private var tossed     = false
+    @State private var dragOffset: CGSize = .zero
+
+    /// The very first verse of the library — a real card, not a mockup.
+    private var sample: Verse? { bibleVersion.packs.first?.verses.first }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            VStack(spacing: 8) {
+                Text("Scripture Memory")
+                    .font(.system(size: 28, weight: .bold, design: .serif))
+                Text(caption)
+                    .font(.system(size: 15))
+                    .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 44)
+                    .padding(.horizontal, 36)
+                    .id(step)                       // new step = fresh caption…
+                    .transition(.opacity)           // …crossfaded by the step animation
+                    .frame(minHeight: 48, alignment: .top)
+            }
+            .padding(.top, 32)
 
-                VStack(alignment: .leading, spacing: 30) {
-                    FeatureRow(icon: "text.book.closed.fill",
-                               title: "Memorize Scripture",
-                               subtitle: "Learn verses one at a time, in order, at your own pace.",
-                               tint: .blue)
-                    FeatureRow(icon: "flame.fill",
-                               title: "Build a daily streak",
-                               subtitle: "A verse a day keeps your momentum going.",
-                               tint: .orange)
-                    FeatureRow(icon: "arrow.triangle.2.circlepath",
-                               title: "Reviews that stick",
-                               subtitle: "Spaced repetition brings verses back right before you'd forget.",
-                               tint: .green)
+            Spacer(minLength: 12)
+
+            ZStack {
+                if let verse = sample, !tossed {
+                    FlashcardView(
+                        verse: verse,
+                        cardLabel: verse.packName,
+                        isReviewMode: false,
+                        titleRevealedCount: 0,
+                        verseRevealedCount: 0,
+                        activeSection: .verse,
+                        onFlip: { _ in
+                            // Flipping is the lesson — advance whenever it happens.
+                            if step == .deal || step == .flip {
+                                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) { step = .toss }
+                            }
+                        }
+                    )
+                    .aspectRatio(5.0 / 3.0, contentMode: .fit)
+                    .padding(.horizontal, 28)
+                    // Dealt in from the bottom-right corner of the desk.
+                    .offset(dealt ? dragOffset : CGSize(width: 240, height: 500))
+                    .rotationEffect(.degrees(dealt ? Double(dragOffset.width) * 0.04 : 18))
+                    .gesture(tossGesture, including: step == .toss ? .all : .subviews)
+                } else if tossed {
+                    VStack(spacing: 12) {
+                        Image(systemName: "checkmark.seal.fill")
+                            .font(.system(size: 44))
+                            .foregroundStyle(Theme.flameGradient)
+                            .giltSheen()
+                        Text("That's the whole loop.")
+                            .font(.system(size: 17, weight: .semibold))
+                    }
+                    .transition(.scale(scale: 0.7).combined(with: .opacity))
                 }
-                .padding(.horizontal, 30)
-                .padding(.bottom, 24)
             }
-            .frame(maxWidth: .infinity)
+            .frame(maxHeight: 260)
+
+            Spacer(minLength: 12)
+
+            Group {
+                if step == .done {
+                    ProminentActionButton {
+                        onContinue()
+                    } label: {
+                        Text("Set My Starting Point")
+                    }
+                } else {
+                    Button("Skip") { onContinue() }
+                        .buttonStyle(.plain)
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(.horizontal, 24)
+            .padding(.bottom, 28)
+            .animation(.easeInOut(duration: 0.2), value: step)
         }
-        .safeAreaInset(edge: .bottom) {
-            Button(action: onContinue) {
-                Text("Continue")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
-            }
-            .controlSize(.large)
-            .buttonStyle(.borderedProminent)
-            .buttonBorderShape(.capsule)
-            .tint(.accentColor)
-            .padding(.horizontal, 20)
-            .padding(.top, 12)
-            .padding(.bottom, 8)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .deskSurface()
+        .onAppear { deal() }
+    }
+
+    private var caption: String {
+        switch step {
+        case .deal: return "One pack of printed cards.\nA verse a day."
+        case .flip: return "This is a real card — tap it to flip it over."
+        case .toss: return "Know it? Flick the card away."
+        case .done: return "Reviews bring each card back right before you'd forget it."
         }
     }
-}
 
-private struct FeatureRow: View {
-    let icon: String
-    let title: String
-    let subtitle: String
-    var tint: Color = .accentColor
-
-    var body: some View {
-        HStack(alignment: .center, spacing: 16) {
-            Image(systemName: icon)
-                .font(.system(size: 30))
-                .foregroundStyle(tint)
-                .frame(width: 42, alignment: .center)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.headline)
-                Text(subtitle)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+    /// Deal the card in shortly after the screen settles, then invite the flip.
+    private func deal() {
+        guard !dealt else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+            HapticEngine.medium()
+            withAnimation(.spring(response: 0.55, dampingFraction: 0.75)) { dealt = true }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
+                guard step == .deal else { return }
+                withAnimation(.easeInOut(duration: 0.25)) { step = .flip }
             }
-            Spacer(minLength: 0)
         }
+    }
+
+    private var tossGesture: some Gesture {
+        DragGesture()
+            .onChanged { value in
+                guard step == .toss else { return }
+                dragOffset = value.translation
+            }
+            .onEnded { value in
+                guard step == .toss else { return }
+                let vx = value.predictedEndTranslation.width
+                if abs(dragOffset.width) > 110 || abs(vx) > 500 {
+                    let dir: CGFloat = (dragOffset.width + vx) >= 0 ? 1 : -1
+                    HapticEngine.medium()
+                    withAnimation(.easeIn(duration: 0.22)) {
+                        dragOffset = CGSize(width: dir * 640, height: dragOffset.height - 60)
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.24) {
+                        HapticEngine.success()
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                            tossed = true
+                            step = .done
+                        }
+                    }
+                } else {
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) { dragOffset = .zero }
+                }
+            }
     }
 }
 

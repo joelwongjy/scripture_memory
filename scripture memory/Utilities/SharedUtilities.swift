@@ -30,30 +30,31 @@ extension Color {
 // MARK: - Flashcard Style
 
 extension View {
-    /// Applies the standard card appearance: parchment background, rounded corners, shadows.
-    func flashcardStyle() -> some View {
+    /// Applies the standard card appearance: the shared parchment surface
+    /// (warm gradient + paper grain + hairline border + layered shadows).
+    /// `edge` prints the pack's series color as an ink band along the top
+    /// edge, the way the physical pack cards are color-coded.
+    func flashcardStyle(edge: Color? = nil) -> some View {
         self
             .padding(.horizontal, 20)
             .padding(.vertical, 16)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .background(flashcardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .stroke(Color(.separator).opacity(0.5), lineWidth: 0.5)
-            )
-            .shadow(color: .black.opacity(0.12), radius: 16, x: 0, y: 8)
-            .shadow(color: .black.opacity(0.05), radius: 2,  x: 0, y: 1)
-            .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            // Clip the content BEFORE adding the surface, so the surface's own
+            // soft shadows aren't sheared off by the clip.
+            .clipShape(RoundedRectangle(cornerRadius: AppLayout.cardRadius, style: .continuous))
+            .background(ParchmentSurface(cornerRadius: AppLayout.cardRadius, edgeColor: edge))
+            .contentShape(RoundedRectangle(cornerRadius: AppLayout.cardRadius, style: .continuous))
     }
 }
 
-/// Adaptive parchment-style background shared by all card types.
-let flashcardBackground = Color(uiColor: UIColor { tc in
-    tc.userInterfaceStyle == .dark
-        ? UIColor(white: 0.13, alpha: 1)
-        : UIColor(red: 0.98, green: 0.965, blue: 0.94, alpha: 1)
-})
+/// The printed series color for a pack — the ink band on its physical cards.
+/// Looks across both translations (pack names match between them).
+func packColor(forPackName name: String) -> Color? {
+    guard !name.isEmpty else { return nil }
+    let pack = packsNIV84.first(where: { $0.name == name })
+        ?? packsNIV11.first(where: { $0.name == name })
+    return pack.flatMap { Color(hex: $0.color) }
+}
 
 // MARK: - Study chrome (top bar + scrubber)
 
@@ -118,7 +119,7 @@ struct CardButtonStyle: ButtonStyle {
 enum AppLayout {
     static let screenMargin: CGFloat = 16
     /// Corner radius for content cards (flashcards, pack covers).
-    static let cardRadius:    CGFloat = 10
+    static let cardRadius:    CGFloat = 14
     /// Corner radius for grouped-list containers (Daily hero / packs panels) —
     /// matched to the iOS 26 system `.insetGrouped` section corners so the Daily
     /// dashboard's white panels line up with Settings / Review.
@@ -261,7 +262,7 @@ struct PeekOverlayCard: View {
                 .font(.system(size: 10, weight: .medium))
                 .foregroundColor(.secondary.opacity(0.5))
         }
-        .flashcardStyle()
+        .flashcardStyle(edge: packColor(forPackName: verse.packName))
         .frame(width: width, height: height)
         .transition(.opacity)
         .animation(.easeInOut(duration: 0.1), value: isPeeking)

@@ -18,6 +18,10 @@ struct CardStudyView: View {
     @State private var isCardFlying          = false
     @State private var flyDirection: Int     = 0
     @State private var shakeOffset:  CGFloat = 0
+    /// Deck wobble while a shake-to-shuffle riffles the cards.
+    @State private var shuffleTilt:  Double  = 0
+    /// Centered card index of the landscape spread (scroll-position binding).
+    @State private var spreadPosition: Int?  = nil
     @State private var speechTarget: SubmitField = .title
     @State private var isScrubbing           = false
     @State private var isPeeking             = false
@@ -132,15 +136,23 @@ struct CardStudyView: View {
 
     var body: some View {
         GeometryReader { geo in
-            let cardWidth  = geo.size.width - 2 * AppLayout.screenMargin
+            // Clamped by height so the 5:3 card also fits a landscape screen.
+            let cardWidth  = min(geo.size.width - 2 * AppLayout.screenMargin,
+                                 geo.size.height * 0.55 * 5.0 / 3.0)
             let cardHeight = cardWidth * 3.0 / 5.0
+            // Turning the phone sideways spreads the deck across the desk.
+            let showsSpread = geo.size.width > geo.size.height && !vm.isReviewMode
 
             VStack(spacing: 0) {
                 topBar(width: geo.size.width)
 
+                if showsSpread {
+                    cardSpread(size: geo.size)
+                        .frame(maxHeight: .infinity)
+                }
                 // Vertical scroll is for browsing in read mode only.
                 // Review mode always shows a single focused card.
-                if isVerticalScroll && !vm.isReviewMode {
+                else if isVerticalScroll && !vm.isReviewMode {
                     verticalScrollCards(cardWidth: cardWidth, cardHeight: cardHeight)
                         .frame(maxHeight: .infinity)
                 } else {
@@ -156,6 +168,7 @@ struct CardStudyView: View {
                         ZStack {
                             cardStack
                                 .frame(width: cardWidth, height: cardH)
+                                .rotationEffect(.degrees(shuffleTilt))
                             // Peek renders as an OVERLAY in every mode so the
                             // SubmitCardView (and its focused TextField) stays
                             // mounted — otherwise the keyboard dismisses — and so
@@ -189,7 +202,8 @@ struct CardStudyView: View {
                     }
                 }
 
-                if (!isVerticalScroll || vm.isReviewMode),
+                // The spread IS the scrubber, so it doesn't get one.
+                if !showsSpread, (!isVerticalScroll || vm.isReviewMode),
                    vm.verses.count > 1 || canCrossBackward || canCrossForward {
                     scrubberRow
                         .padding(.horizontal, AppLayout.screenMargin)
@@ -199,7 +213,7 @@ struct CardStudyView: View {
                 bottomControls
             }
         }
-        .background(Color(.systemGroupedBackground))
+        .deskSurface()
         .onChange(of: vm.isReviewMode) { _, reviewing in handleReviewModeChange(reviewing) }
         .onChange(of: vm.currentIndex) { _, _ in
             vm.clearInputs()
@@ -222,6 +236,24 @@ struct CardStudyView: View {
             speech.stopListening()
             speechTarget = newFocus
             speech.startListening()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .deviceDidShake)) { _ in
+            handleShake()
+        }
+    }
+
+    /// Shake the phone to shuffle the deck — like rapping a real stack on the
+    /// desk. Read mode only; mid-review it would trash typing progress.
+    private func handleShake() {
+        guard !vm.isReviewMode, vm.verses.count > 1 else { return }
+        // Shaking an already-shuffled deck deals a fresh order.
+        if vm.isShuffled { vm.toggleShuffle() }
+        vm.toggleShuffle()
+        HapticEngine.medium()
+        withAnimation(.easeOut(duration: 0.1)) { shuffleTilt = -2.2 }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            HapticEngine.light()
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.45)) { shuffleTilt = 0 }
         }
     }
 
@@ -335,6 +367,62 @@ struct CardStudyView: View {
                     .allowsHitTesting(false)
                     .zIndex(3)
             }
+        }
+    }
+
+    // MARK: - Landscape Spread (read mode)
+
+    /// Landscape read mode: the deck spread along the desk. Not Cover Flow —
+    /// cards don't do the tilted-album turn; they lie flat in a row, and the
+    /// centered one lifts to full face while its neighbors settle back, small
+    /// and slightly askew, the way a spread sits when you pick one card up.
+    /// Swipe to run along the spread (snaps card-by-card), tap a neighbor to
+    /// center it, tap the lifted card to flip it.
+    private func cardSpread(size: CGSize) -> some View {
+        let cardH = min(size.height * 0.62, 300)
+        let cardW = cardH * 5.0 / 3.0
+        return ScrollView(.horizontal, showsIndicators: false) {
+            LazyHStack(spacing: 14) {
+                ForEach(Array(vm.verses.enumerated()), id: \.offset) { index, verse in
+                    makeCard(verse: verse, verseIndex: index, interactive: index == vm.currentIndex)
+                        .frame(width: cardW, height: cardH)
+                        .scrollTransition(.interactive, axis: .horizontal) { content, phase in
+                            content
+                                .scaleEffect(1 - abs(phase.value) * 0.13)
+                                .rotationEffect(.degrees(phase.value * -2.5))
+                                .offset(y: abs(phase.value) * 16)
+                                .opacity(1 - abs(phase.value) * 0.22)
+                        }
+                        .overlay {
+                            // Neighbors: tap to slide the spread to that card.
+                            if index != vm.currentIndex {
+                                Color.clear
+                                    .contentShape(Rectangle())
+                                    .onTapGesture {
+                                        HapticEngine.soft()
+                                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                                            spreadPosition = index
+                                        }
+                                    }
+                            }
+                        }
+                        .id(index)
+                }
+            }
+            .scrollTargetLayout()
+        }
+        .scrollTargetBehavior(.viewAligned)
+        .scrollPosition(id: $spreadPosition)
+        // Centre the snapped card; first/last cards can reach centre too.
+        .contentMargins(.horizontal, max(0, (size.width - cardW) / 2), for: .scrollContent)
+        .onAppear { spreadPosition = vm.currentIndex }
+        .onChange(of: spreadPosition) { _, new in
+            guard let new, new != vm.currentIndex else { return }
+            HapticEngine.soft()
+            vm.currentIndex = new
+        }
+        .onChange(of: vm.currentIndex) { _, new in
+            if spreadPosition != new { spreadPosition = new }
         }
     }
 
@@ -502,7 +590,8 @@ struct CardStudyView: View {
                     DispatchQueue.main.async { focusInput() }
                 } : nil,
                 isCurrentLearning: learning.isCurrent(verse),
-                onMarkComplete: vm.isReviewMode ? nil : { markVerseComplete(verse) }
+                onMarkComplete: vm.isReviewMode ? nil : { markVerseComplete(verse) },
+                allowsFlip: interactive
             )
         }
     }
@@ -591,10 +680,10 @@ struct CardStudyView: View {
     private var completeLabel: some View {
         HStack(spacing: 8) {
             Image(systemName: "checkmark.circle.fill")
-                .foregroundColor(.green).font(.system(size: 22))
+                .foregroundColor(Theme.success).font(.system(size: 22))
                 .symbolEffect(.bounce, options: .nonRepeating)
             Text("Complete!")
-                .font(.system(size: 17, weight: .semibold)).foregroundColor(.green)
+                .font(.system(size: 17, weight: .semibold)).foregroundColor(Theme.success)
         }
         .frame(maxWidth: .infinity)
         .transition(.scale.combined(with: .opacity))
@@ -617,9 +706,10 @@ struct CardStudyView: View {
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity).padding(.vertical, 12)
-                .background(Color.green)
+                .background(Theme.successGradient)
                 .roundedRect(12)
         }
+        .buttonStyle(Theme.SpringyButtonStyle())
         .accessibilityLabel("Mark verse as complete and continue")
     }
 
@@ -659,7 +749,7 @@ struct CardStudyView: View {
                             .font(.system(size: 18, weight: .semibold))
                             .foregroundColor(speech.isListening ? .white : .primary)
                             .frame(width: 48, height: 48)
-                            .background(speech.isListening ? Color.red : Color(.secondarySystemGroupedBackground))
+                            .background(speech.isListening ? Theme.error : Color(.secondarySystemGroupedBackground))
                             .roundedRect(12)
                     }
                     .accessibilityLabel(speech.isListening ? "Stop dictation" : "Dictate verse")

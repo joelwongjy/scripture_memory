@@ -57,7 +57,7 @@ struct SRSGradingButtons: View {
                 if isSuggested { suggestedTag(color: color(for: grade)) }
             }
         }
-        .buttonStyle(.plain)
+        .buttonStyle(Theme.SpringyButtonStyle())
     }
 
     /// A small pill anchored to the top edge of the suggested button. The
@@ -74,12 +74,14 @@ struct SRSGradingButtons: View {
             .offset(y: -10)
     }
 
+    /// Semantic grade colors from the Illuminated palette (docs/DESIGN.md):
+    /// Again = error, Hard = warning, Good = success, Easy = the lapis accent.
     private func color(for grade: SRSGrade) -> Color {
         switch grade {
-        case .again: return .red
-        case .hard:  return .orange
-        case .good:  return .green
-        case .easy:  return .blue
+        case .again: return Theme.error
+        case .hard:  return Theme.warning
+        case .good:  return Theme.success
+        case .easy:  return .accentColor
         }
     }
 

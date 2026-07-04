@@ -18,7 +18,64 @@ struct FlashcardView: View {
     /// card — read mode has no test-completion event to surface it otherwise.
     var onMarkComplete:      (() -> Void)? = nil
 
+    /// Whether tap-to-flip is live (read mode only). Callers pass `false` for
+    /// the non-interactive cards peeking out of the stack so a stray tap on an
+    /// exposed edge can't flip a card that isn't front-most.
+    var allowsFlip:          Bool = true
+
+    /// Fires after a flip lands, with the now-showing side (`true` = quiz
+    /// side). The onboarding uses this to advance its walkthrough.
+    var onFlip:              ((Bool) -> Void)? = nil
+
     @AppStorage("hardMode") private var hardMode = false
+
+    // MARK: - Flip (read mode)
+    //
+    // The physical pack cards are two-sided: verse text on one face, topic +
+    // reference on the other, so you quiz yourself by flipping. Tap flips this
+    // card the same way: a quick edge-on turn with a lift, the content swaps
+    // while the card is edge-on (never mirrored), and it settles with a spring.
+
+    @State private var showsQuizSide = false
+    @State private var flipRotation: Double  = 0
+    @State private var flipScale:    CGFloat = 1
+    @State private var isFlipping             = false
+
+    private var canFlip: Bool { !isReviewMode && allowsFlip }
+
+    private func flip() {
+        guard canFlip, !isFlipping else { return }
+        isFlipping = true
+        HapticEngine.soft()
+        withAnimation(.easeIn(duration: 0.16)) {
+            flipRotation = 90
+            flipScale = 1.05
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.16) {
+            // The card may have changed mid-flip (swipe, scrub) — resetFlip()
+            // clears `isFlipping`, and this pending phase must not fire then.
+            guard isFlipping else { return }
+            showsQuizSide.toggle()
+            // Jump to the mirrored edge without animating so the swap happens
+            // while the card is edge-on and text is never seen reversed.
+            var t = Transaction(); t.disablesAnimations = true
+            withTransaction(t) { flipRotation = -90 }
+            HapticEngine.medium()
+            withAnimation(.spring(response: 0.32, dampingFraction: 0.72)) {
+                flipRotation = 0
+                flipScale = 1
+            }
+            onFlip?(showsQuizSide)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { isFlipping = false }
+        }
+    }
+
+    private func resetFlip() {
+        isFlipping    = false
+        showsQuizSide = false
+        flipRotation  = 0
+        flipScale     = 1
+    }
 
     // MARK: - Adaptive Typography
     //
@@ -46,7 +103,13 @@ struct FlashcardView: View {
     var body: some View {
         GeometryReader { geo in
             VStack(alignment: .leading, spacing: 0) {
-                if isReviewMode { reviewContent(cardSize: geo.size) } else { readContent(cardSize: geo.size) }
+                if isReviewMode {
+                    reviewContent(cardSize: geo.size)
+                } else if showsQuizSide {
+                    quizContent(cardSize: geo.size)
+                } else {
+                    readContent(cardSize: geo.size)
+                }
                 Spacer(minLength: 16)
                 HStack(spacing: 6) {
                     Text(cardLabel)
@@ -60,11 +123,31 @@ struct FlashcardView: View {
                             currentBadge
                         }
                     }
+                    if canFlip { flipHint }
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
-        .flashcardStyle()
+        .flashcardStyle(edge: packColor(forPackName: verse.packName))
+        .rotation3DEffect(.degrees(flipRotation), axis: (x: 0, y: 1, z: 0), perspective: 0.35)
+        .scaleEffect(flipScale)
+        // Low-priority so the mark-complete button and section taps still win;
+        // masked to subviews-only when flipping isn't available here.
+        .gesture(TapGesture().onEnded { flip() }, including: canFlip ? .all : .subviews)
+        .onChange(of: verse.id) { _, _ in resetFlip() }
+    }
+
+    /// Footer affordance naming the hidden face — "Quiz" on the verse side,
+    /// "Verse" on the quiz side — so the flip is discoverable without chrome.
+    private var flipHint: some View {
+        HStack(spacing: 3) {
+            Image(systemName: "arrow.triangle.2.circlepath")
+                .font(.system(size: 8, weight: .bold))
+            Text(showsQuizSide ? "Verse" : "Quiz")
+                .font(.system(size: 9, weight: .semibold))
+        }
+        .foregroundStyle(.tertiary)
+        .accessibilityLabel(showsQuizSide ? "Flip to verse side" : "Flip to quiz side")
     }
 
     /// Green "Mark as Complete" pill — the on-card action for the current verse in
@@ -80,9 +163,9 @@ struct FlashcardView: View {
             .foregroundStyle(.white)
             .padding(.horizontal, 10)
             .padding(.vertical, 5)
-            .background(Capsule().fill(Color.green))
+            .background(Capsule().fill(Theme.successGradient))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(Theme.SpringyButtonStyle())
         .accessibilityLabel("Mark current verse as complete")
     }
 
@@ -122,6 +205,28 @@ struct FlashcardView: View {
             FittedVerseText(text: verse.verse, lineSpacing: lineGap, minSize: 11, maxSize: 15)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    // MARK: - Quiz Side (read-mode flip)
+
+    /// The reverse of the printed card: topic and reference only, centered —
+    /// enough to prompt recall, nothing that gives the verse away.
+    private func quizContent(cardSize: CGSize) -> some View {
+        let cardWidth = cardSize.width
+        let titleSize = scaledTypeSize(base: 20, extra: 4.0, cardWidth: cardWidth)
+        let refSize   = scaledTypeSize(base: 15, extra: 3.0, cardWidth: cardWidth)
+        return VStack(spacing: 10) {
+            Spacer(minLength: 0)
+            Text(verse.title)
+                .font(.system(size: titleSize, weight: .bold, design: .serif))
+                .multilineTextAlignment(.center)
+                .minimumScaleFactor(0.7)
+            Text("\(verse.book) \(verse.reference)")
+                .font(.system(size: refSize, design: .serif))
+                .foregroundStyle(.secondary)
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     // MARK: - Review Mode
@@ -199,7 +304,7 @@ struct FlashcardView: View {
 
             if isComplete {
                 Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(Color.green)
+                    .foregroundStyle(Theme.success)
                     .font(.system(size: 10))
             }
         }
@@ -293,11 +398,11 @@ struct FlashcardView: View {
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     Capsule().fill(Color(.systemGray5))
-                    // Green (matching the completion check) so it reads as
-                    // "progress made" and doesn't blur into the blue active-section
+                    // Emerald (matching the completion check) so it reads as
+                    // "progress made" and doesn't blur into the lapis active-section
                     // bar / next-word accent sitting right above it.
                     Capsule()
-                        .fill(Color.green)
+                        .fill(Theme.success)
                         .frame(width: max(4, geo.size.width * Double(revealed) / Double(max(1, total))))
                         .animation(.spring(response: 0.4, dampingFraction: 0.7), value: revealed)
                 }

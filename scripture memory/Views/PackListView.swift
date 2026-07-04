@@ -76,7 +76,7 @@ struct PackListView: View {
             }
         }
         .animation(nil, value: searchText.isEmpty)
-        .background(Color(.systemGroupedBackground))
+        .deskSurface()
         .navigationTitle("Packs")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
