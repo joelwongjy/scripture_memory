@@ -67,7 +67,9 @@ struct TestSessionView: View {
 
     var body: some View {
         GeometryReader { geo in
-            let cardWidth  = geo.size.width - 2 * AppLayout.screenMargin
+            // Clamped by height so the 5:3 card also fits a landscape screen.
+            let cardWidth  = min(geo.size.width - 2 * AppLayout.screenMargin,
+                                 geo.size.height * 0.55 * 5.0 / 3.0)
             let cardHeight = cardWidth * 3.0 / 5.0
 
             VStack(spacing: 0) {

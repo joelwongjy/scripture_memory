@@ -20,6 +20,8 @@ struct CardStudyView: View {
     @State private var shakeOffset:  CGFloat = 0
     /// Deck wobble while a shake-to-shuffle riffles the cards.
     @State private var shuffleTilt:  Double  = 0
+    /// Centered card index of the landscape spread (scroll-position binding).
+    @State private var spreadPosition: Int?  = nil
     @State private var speechTarget: SubmitField = .title
     @State private var isScrubbing           = false
     @State private var isPeeking             = false
@@ -134,15 +136,23 @@ struct CardStudyView: View {
 
     var body: some View {
         GeometryReader { geo in
-            let cardWidth  = geo.size.width - 2 * AppLayout.screenMargin
+            // Clamped by height so the 5:3 card also fits a landscape screen.
+            let cardWidth  = min(geo.size.width - 2 * AppLayout.screenMargin,
+                                 geo.size.height * 0.55 * 5.0 / 3.0)
             let cardHeight = cardWidth * 3.0 / 5.0
+            // Turning the phone sideways spreads the deck across the desk.
+            let showsSpread = geo.size.width > geo.size.height && !vm.isReviewMode
 
             VStack(spacing: 0) {
                 topBar(width: geo.size.width)
 
+                if showsSpread {
+                    cardSpread(size: geo.size)
+                        .frame(maxHeight: .infinity)
+                }
                 // Vertical scroll is for browsing in read mode only.
                 // Review mode always shows a single focused card.
-                if isVerticalScroll && !vm.isReviewMode {
+                else if isVerticalScroll && !vm.isReviewMode {
                     verticalScrollCards(cardWidth: cardWidth, cardHeight: cardHeight)
                         .frame(maxHeight: .infinity)
                 } else {
@@ -192,7 +202,8 @@ struct CardStudyView: View {
                     }
                 }
 
-                if (!isVerticalScroll || vm.isReviewMode),
+                // The spread IS the scrubber, so it doesn't get one.
+                if !showsSpread, (!isVerticalScroll || vm.isReviewMode),
                    vm.verses.count > 1 || canCrossBackward || canCrossForward {
                     scrubberRow
                         .padding(.horizontal, AppLayout.screenMargin)
@@ -356,6 +367,62 @@ struct CardStudyView: View {
                     .allowsHitTesting(false)
                     .zIndex(3)
             }
+        }
+    }
+
+    // MARK: - Landscape Spread (read mode)
+
+    /// Landscape read mode: the deck spread along the desk. Not Cover Flow —
+    /// cards don't do the tilted-album turn; they lie flat in a row, and the
+    /// centered one lifts to full face while its neighbors settle back, small
+    /// and slightly askew, the way a spread sits when you pick one card up.
+    /// Swipe to run along the spread (snaps card-by-card), tap a neighbor to
+    /// center it, tap the lifted card to flip it.
+    private func cardSpread(size: CGSize) -> some View {
+        let cardH = min(size.height * 0.62, 300)
+        let cardW = cardH * 5.0 / 3.0
+        return ScrollView(.horizontal, showsIndicators: false) {
+            LazyHStack(spacing: 14) {
+                ForEach(Array(vm.verses.enumerated()), id: \.offset) { index, verse in
+                    makeCard(verse: verse, verseIndex: index, interactive: index == vm.currentIndex)
+                        .frame(width: cardW, height: cardH)
+                        .scrollTransition(.interactive, axis: .horizontal) { content, phase in
+                            content
+                                .scaleEffect(1 - abs(phase.value) * 0.13)
+                                .rotationEffect(.degrees(phase.value * -2.5))
+                                .offset(y: abs(phase.value) * 16)
+                                .opacity(1 - abs(phase.value) * 0.22)
+                        }
+                        .overlay {
+                            // Neighbors: tap to slide the spread to that card.
+                            if index != vm.currentIndex {
+                                Color.clear
+                                    .contentShape(Rectangle())
+                                    .onTapGesture {
+                                        HapticEngine.soft()
+                                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                                            spreadPosition = index
+                                        }
+                                    }
+                            }
+                        }
+                        .id(index)
+                }
+            }
+            .scrollTargetLayout()
+        }
+        .scrollTargetBehavior(.viewAligned)
+        .scrollPosition(id: $spreadPosition)
+        // Centre the snapped card; first/last cards can reach centre too.
+        .contentMargins(.horizontal, max(0, (size.width - cardW) / 2), for: .scrollContent)
+        .onAppear { spreadPosition = vm.currentIndex }
+        .onChange(of: spreadPosition) { _, new in
+            guard let new, new != vm.currentIndex else { return }
+            HapticEngine.soft()
+            vm.currentIndex = new
+        }
+        .onChange(of: vm.currentIndex) { _, new in
+            if spreadPosition != new { spreadPosition = new }
         }
     }
 

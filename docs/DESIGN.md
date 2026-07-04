@@ -43,6 +43,7 @@ felt in dark). Chrome is stationery on that desk:
 | Card stock | `paperGrain` Metal shader on every card — felt, not seen. |
 | Toss a graded card onto a pile | **Toss-to-grade** in review: Again drops heavy and close, Easy sails off fast with spin (`tossCard(for:)` in `TestSessionView`). |
 | Rap / reshuffle the deck | **Shake to shuffle** in read mode: device shake deals a fresh order with a deck wobble and double haptic (`ShakeDetector` + `handleShake`). |
+| Spread the deck across the desk | **The Spread** (`cardSpread`): turn the phone to landscape in read mode and the deck lies out in a snapping row — the centered card lifts to full face, neighbors settle back small and slightly askew. Deliberately NOT Cover Flow: cards stay flat on the desk, no tilted-album turn. Tap a neighbor to center it; tap the lifted card to flip it. |
 
 ## Materials & color
 
