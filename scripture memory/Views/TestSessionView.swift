@@ -466,19 +466,27 @@ struct TestSessionView: View {
                 .font(.system(size: 20, weight: .bold))
                 .foregroundColor(.primary)
 
-            if vm.sessionScore == 0 {
-                Text("Perfect! 🎉")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(.green)
-            } else {
-                Text("Score: \(vm.sessionScore)")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(.red)
-            }
+            // Mistakes are only tracked in Entire Verse (submit) mode, so a
+            // score is meaningless in first-letter / full-word sessions.
+            if studyMode == .submit {
+                if vm.sessionScore == 0 {
+                    Text("Perfect! 🎉")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(.green)
+                } else {
+                    Text("Score: \(vm.sessionScore)")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(.red)
+                }
 
-            Text("\(vm.perfectCount) of \(vm.verses.count) perfect")
-                .font(.system(size: 14))
-                .foregroundColor(.secondary)
+                Text("\(vm.perfectCount) of \(vm.verses.count) perfect")
+                    .font(.system(size: 14))
+                    .foregroundColor(.secondary)
+            } else {
+                Text("\(vm.verses.count) verses reviewed")
+                    .font(.system(size: 14))
+                    .foregroundColor(.secondary)
+            }
 
             HStack(spacing: 12) {
                 Button {
@@ -651,8 +659,28 @@ struct TestSessionView: View {
             .cornerRadius(12)
             .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(.separator).opacity(0.5), lineWidth: 0.5))
             .offset(x: shakeOffset)
+
+            hintButton
         }
         .padding(.horizontal, 24)
+    }
+
+    /// Reveals the next hidden word (verse first, then title). Wrapped in a
+    /// Button so the touch is a recognized tap target and doesn't resign the
+    /// keyboard's first responder.
+    private var hintButton: some View {
+        Button {
+            vm.revealHint()
+            HapticEngine.light()
+        } label: {
+            Image(systemName: "lightbulb")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundColor(.primary)
+                .frame(width: 48, height: 48)
+                .background(Color(.secondarySystemGroupedBackground))
+                .cornerRadius(12)
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Swipe Gesture

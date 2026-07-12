@@ -34,7 +34,9 @@ final class CardStudyViewModel: ObservableObject {
 
     // MARK: - Published State
 
-    @Published var currentIndex  = 0
+    @Published var currentIndex  = 0 {
+        didSet { if currentIndex != oldValue { syncActiveSection() } }
+    }
     @Published var isReviewMode  = false
     @Published var activeSection: CardSection = .title
 
@@ -96,6 +98,7 @@ final class CardStudyViewModel: ObservableObject {
             inputText  = ""
             titleInput = ""
             verseInput = ""
+            activeSection = .title
         }
     }
 
@@ -204,8 +207,48 @@ final class CardStudyViewModel: ObservableObject {
             default:
                 titleRevealedCounts[verse.id] = 0
                 verseRevealedCounts[verse.id] = 0
+                activeSection = .title
             }
         }
+    }
+
+    // MARK: - Hint
+
+    /// Reveals the next hidden word as a hint — verse words first, then
+    /// title words once the verse is fully revealed.
+    func revealHint() {
+        guard let verse = currentVerse else { return }
+        let verseRevealed = verseRevealedCounts[verse.id, default: 0]
+        let titleRevealed = titleRevealedCounts[verse.id, default: 0]
+        let hinted: CardSection
+        if verseRevealed < verse.verseWords.count {
+            hinted = .verse
+        } else if titleRevealed < verse.titleWords.count {
+            hinted = .title
+        } else {
+            return
+        }
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+            switch hinted {
+            case .verse: verseRevealedCounts[verse.id] = verseRevealed + 1
+            case .title: titleRevealedCounts[verse.id] = titleRevealed + 1
+            }
+        }
+        // If the hint just finished the section the user was typing in,
+        // move the highlight to the other section (if it still has words).
+        if hinted == activeSection,
+           revealedCount(for: verse.id, section: hinted) >= sectionWords(hinted, in: verse).count {
+            switchSectionIfNeeded(verse: verse)
+        }
+        if isCardComplete { ReviewProgress.shared.markComplete(verse.id) }
+    }
+
+    /// Points the highlight at the first incomplete section of the current card.
+    private func syncActiveSection() {
+        guard let verse = currentVerse else { return }
+        let titleDone = titleRevealedCounts[verse.id, default: 0] >= verse.titleWords.count
+        let target: CardSection = titleDone ? .verse : .title
+        if activeSection != target { activeSection = target }
     }
 
     // MARK: - Private Helpers

@@ -35,6 +35,11 @@ struct CardStudyView: View {
     @State private var scrollContentHeight: CGFloat = 0
     /// Bumped on every scroll offset change so the overlay can fade in.
     @State private var scrollActivityPulse: Int = 0
+    /// Scroll target for the vertical read list. Driven by `scrollPosition(id:)`
+    /// rather than `ScrollViewReader.scrollTo` because scrollPosition's
+    /// programmatic scrolls are natively interruptible — the user can grab
+    /// the list mid-animation and take over, which scrollTo forbids.
+    @State private var verticalScrollTarget: Int?
 
     @Environment(\.dismiss) private var dismiss
 
@@ -279,6 +284,7 @@ struct CardStudyView: View {
                                         }
                                 }
                             }
+                            .scrollTargetLayout()
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 12)
                             // Total content height — measured on the padded
@@ -294,6 +300,7 @@ struct CardStudyView: View {
                             )
                         }
                     }
+                    .scrollPosition(id: $verticalScrollTarget, anchor: .center)
                     .coordinateSpace(name: Self.scrollSpace)
                     .background(
                         GeometryReader { geo in
@@ -346,10 +353,11 @@ struct CardStudyView: View {
                         scrollContentHeight = newHeight
                     }
                 }
-                // LazyVStack: yield + delay so row ids exist before scrollTo. `onAppear` runs when returning
-                // from review (the scroll view is removed during review, so scroll offset would otherwise reset).
+                // `onAppear` runs when returning from review (the scroll view is
+                // removed during review, so scroll position would otherwise reset).
+                // No animation — the list mounts already centered on the card.
                 .onAppear {
-                    Task { await scrollVerticalReadListToCurrentVerse(proxy: proxy) }
+                    verticalScrollTarget = vm.currentIndex
                 }
                 .onChange(of: vm.currentIndex) { _, newIndex in
                     // currentIndex is only changed by: tap-on-card, thumb drag,
@@ -359,24 +367,13 @@ struct CardStudyView: View {
                     // on top of the direct one the thumb just performed.
                     if isScrubbing { return }
                     withAnimation(.easeInOut(duration: 0.22)) {
-                        proxy.scrollTo(newIndex, anchor: .center)
+                        verticalScrollTarget = newIndex
                     }
                     // Re-flash the thumb on card-tap navigation in case the
                     // scroll probe misses the offset change.
                     scrollActivityPulse &+= 1
                 }
             }
-        }
-    }
-
-    /// Scrolls the vertical read list so `currentIndex` is centered (read mode / vertical list only).
-    @MainActor
-    private func scrollVerticalReadListToCurrentVerse(proxy: ScrollViewProxy) async {
-        await Task.yield()
-        try? await Task.sleep(for: .milliseconds(72))
-        let idx = vm.currentIndex
-        withAnimation(.easeInOut(duration: 0.24)) {
-            proxy.scrollTo(idx, anchor: .center)
         }
     }
 
@@ -605,8 +602,28 @@ struct CardStudyView: View {
             .cornerRadius(12)
             .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(.separator).opacity(0.5), lineWidth: 0.5))
             .offset(x: shakeOffset)
+
+            hintButton
         }
         .padding(.horizontal, 24)
+    }
+
+    /// Reveals the next hidden word (verse first, then title). Wrapped in a
+    /// Button so the touch is a recognized tap target and doesn't resign the
+    /// keyboard's first responder.
+    private var hintButton: some View {
+        Button {
+            vm.revealHint()
+            HapticEngine.light()
+        } label: {
+            Image(systemName: "lightbulb")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundColor(.primary)
+                .frame(width: 48, height: 48)
+                .background(Color(.secondarySystemGroupedBackground))
+                .cornerRadius(12)
+        }
+        .buttonStyle(.plain)
     }
 
     private var peekIconButton: some View {
