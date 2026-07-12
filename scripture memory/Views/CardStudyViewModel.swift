@@ -248,24 +248,24 @@ final class CardStudyViewModel: ObservableObject {
 
     // MARK: - Hint
 
-    /// Reveals the next hidden word as a hint — verse words first, then
-    /// title words once the verse is fully revealed.
+    /// Reveals the next hidden word as a hint — in the section the user is
+    /// currently on (active), falling back to the other section once the
+    /// active one is fully revealed.
     func revealHint() {
         guard let verse = currentVerse else { return }
-        let verseRevealed = verseRevealedCounts[verse.id, default: 0]
-        let titleRevealed = titleRevealedCounts[verse.id, default: 0]
+        let other: CardSection = activeSection == .title ? .verse : .title
         let hinted: CardSection
-        if verseRevealed < verse.verseWords.count {
-            hinted = .verse
-        } else if titleRevealed < verse.titleWords.count {
-            hinted = .title
+        if revealedCount(for: verse.id, section: activeSection) < sectionWords(activeSection, in: verse).count {
+            hinted = activeSection
+        } else if revealedCount(for: verse.id, section: other) < sectionWords(other, in: verse).count {
+            hinted = other
         } else {
             return
         }
         withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
             switch hinted {
-            case .verse: verseRevealedCounts[verse.id] = verseRevealed + 1
-            case .title: titleRevealedCounts[verse.id] = titleRevealed + 1
+            case .verse: verseRevealedCounts[verse.id] = verseRevealedCounts[verse.id, default: 0] + 1
+            case .title: titleRevealedCounts[verse.id] = titleRevealedCounts[verse.id, default: 0] + 1
             }
         }
         // If the hint just finished the section the user was typing in,
