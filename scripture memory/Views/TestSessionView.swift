@@ -6,6 +6,7 @@ struct TestSessionView: View {
 
     @StateObject private var vm:     TestSessionViewModel
     @StateObject private var speech: SpeechRecognizer = SpeechRecognizer()
+    @ObservedObject private var learning = LearningStore.shared
 
     @AppStorage("studyMode") private var studyMode: StudyMode = .firstLetter
 
@@ -19,13 +20,25 @@ struct TestSessionView: View {
     @State private var speechTarget: SubmitField = .title
     @State private var isScrubbing           = false
     @State private var isPeeking             = false
+    /// Verses the user revealed via hold-to-peek this session — a failed recall
+    /// that pulls the grade suggestion down to "Again".
+    @State private var peekedVerseIds:       Set<Int> = []
     @State private var showVerseSelector     = false
 
     // SRS session bookkeeping. Lets the user swipe back to an already-graded
     // card and change the grade without compounding (regrade computes from
     // the captured pre-grade state, not the already-advanced one).
     @State private var sessionGrades:    [Int: SRSGrade]      = [:]
+    /// Difficulty the user has selected (filled) for the current card but not yet
+    /// confirmed — lets them change it before committing. Reset on each new card.
+    @State private var pendingGrade:     SRSGrade?            = nil
     @State private var preGradeStates:   [Int: SRSCardState]  = [:]
+    /// Verse ids in the order they were graded — the Anki-style Undo stack. SRS
+    /// review runs forward-only; Undo pops the last grade and returns to that card.
+    @State private var gradedOrder:      [Int]                = []
+    /// Verses whose Good/Easy grade auto-advanced the learning cursor, so Undo can
+    /// put the cursor back.
+    @State private var autoLearntIds:    Set<Int>             = []
 
     @Environment(\.dismiss) private var dismiss
 
@@ -40,11 +53,17 @@ struct TestSessionView: View {
         self.sessionKind    = session.kind
     }
 
+    /// Header title matches where the session was launched: the SRS daily flow
+    /// reads "Review", the user-picked self-test from the Quiz tab reads "Quiz".
+    private var sessionTitle: String {
+        sessionKind == .srs ? "Review" : "Quiz"
+    }
+
     // MARK: - Body
 
     var body: some View {
         GeometryReader { geo in
-            let cardWidth  = geo.size.width - 40
+            let cardWidth  = geo.size.width - 2 * AppLayout.screenMargin
             let cardHeight = cardWidth * 3.0 / 5.0
 
             VStack(spacing: 0) {
@@ -53,32 +72,40 @@ struct TestSessionView: View {
                 // Per-verse progress dots — only in Entire Verse (submit) mode
                 if studyMode == .submit {
                     progressDots
-                        .padding(.horizontal, 24)
+                        .padding(.horizontal, AppLayout.screenMargin)
                         .padding(.top, 6)
                         .padding(.bottom, 2)
                 }
 
-                Spacer(minLength: 6)
-                ZStack {
-                    cardStack
-                        .frame(width: cardWidth, height: cardHeight)
-                    if isPeeking, let verse = vm.currentVerse {
-                        PeekOverlayCard(
-                            verse: verse,
-                            cardLabel: vm.cardLabel(for: verse),
-                            width: cardWidth,
-                            height: cardHeight,
-                            isPeeking: isPeeking
-                        )
+                GeometryReader { area in
+                    let cardH = max(cardHeight, min(cardWidth * 0.82, area.size.height - 12))
+                    ZStack {
+                        cardStack
+                            .frame(width: cardWidth, height: cardH)
+                        if isPeeking, let verse = vm.currentVerse {
+                            PeekOverlayCard(
+                                verse: verse,
+                                cardLabel: vm.cardLabel(for: verse),
+                                width: cardWidth,
+                                height: cardH,
+                                isPeeking: isPeeking
+                            )
+                            .allowsHitTesting(false)
+                            .transition(.opacity)
+                            .zIndex(100)
+                        }
                     }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
-                .frame(width: cardWidth, height: cardHeight)
-                .frame(maxWidth: .infinity)
-                Spacer(minLength: 6)
 
-                scrubberRow
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 6)
+                // Anki-style review is forward-only — you advance by grading, and
+                // Undo (top bar) reverts the last grade — so it has no scrubber.
+                // Quiz keeps free navigation.
+                if vm.verses.count > 1, sessionKind != .srs {
+                    scrubberRow
+                        .padding(.horizontal, AppLayout.screenMargin)
+                        .padding(.bottom, 6)
+                }
 
                 bottomControls
             }
@@ -86,6 +113,7 @@ struct TestSessionView: View {
         .background(Color(.systemGroupedBackground))
         .onChange(of: vm.currentIndex) { _, _ in
             vm.clearInputs()
+            pendingGrade = nil   // each card starts from its own suggested difficulty
             if speech.isListening { speech.stopListening() }
             if isScrubbing {
                 // Don't dismiss the keyboard — just point focus at the title field
@@ -103,6 +131,11 @@ struct TestSessionView: View {
             case .verse: vm.verseInput = text
             }
         }
+        .onChange(of: isPeeking) { _, peeking in
+            // Revealing the answer is a failed recall — remember it so the grade
+            // suggestion reflects that the user needed to look.
+            if peeking, let verse = vm.currentVerse { peekedVerseIds.insert(verse.id) }
+        }
         .onChange(of: submitFocus) { _, newFocus in
             guard speech.isListening, let newFocus else { return }
             speech.stopListening()
@@ -115,12 +148,14 @@ struct TestSessionView: View {
         }
     }
 
+    /// A text field is focused (keyboard up). Used to pin the card below the top
+    /// bar so the verse title isn't covered when the keyboard pushes content up.
     // MARK: - Top Bar
 
     private var topBar: some View {
         ZStack {
             VStack(spacing: 2) {
-                Text("Review Session")
+                Text(sessionTitle)
                     .font(.system(size: 15, weight: .semibold))
                     .lineLimit(1)
                 Text("\(vm.completedCount) / \(vm.verses.count) done")
@@ -136,22 +171,55 @@ struct TestSessionView: View {
                 } label: {
                     Image(systemName: "xmark").studyChromeCircleButton()
                 }
+                .accessibilityLabel("Close session")
+
+                // Undo the last grade — the forward-only review's back affordance.
+                // Kept on the leading edge so it stays reachable even while the
+                // keyboard is up on the next card.
+                if sessionKind == .srs {
+                    Button { undoLastGrade() } label: {
+                        Image(systemName: "arrow.uturn.backward").studyChromeCircleButton()
+                    }
+                    .disabled(gradedOrder.isEmpty)
+                    .opacity(gradedOrder.isEmpty ? 0.3 : 1)
+                    .accessibilityLabel("Undo last rating")
+                }
 
                 Spacer()
 
-                HStack(spacing: 8) {
-                    // Verse selector dropdown
-                    Button { showVerseSelector = true } label: {
-                        Image(systemName: "list.bullet").studyChromeCircleButton()
+                // While typing, a guaranteed-visible "Done" replaces the trailing
+                // controls (the keyboard's own toolbar item is unreliable here).
+                if isInputFocused || submitFocus != nil {
+                    Button {
+                        isInputFocused = false
+                        submitFocus = nil
+                    } label: {
+                        Text("Done")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.accentColor)
                     }
-                    // Score display — only in Entire Verse mode
-                    if studyMode == .submit { scoreDisplay }
+                    .accessibilityLabel("Close keyboard")
+                } else {
+                    HStack(spacing: 8) {
+                        // Verse selector (jump anywhere) — Quiz only; SRS review is
+                        // forward-only, so free jumping doesn't belong there.
+                        if sessionKind != .srs {
+                            Button { showVerseSelector = true } label: {
+                                Image(systemName: "list.bullet").studyChromeCircleButton()
+                            }
+                            .accessibilityLabel("Jump to verse")
+                        }
+                        // Score display — only in Entire Verse mode
+                        if studyMode == .submit { scoreDisplay }
+                    }
                 }
             }
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, AppLayout.screenMargin)
         .padding(.top, 12)
         .padding(.bottom, 12)
+        .animation(.easeInOut(duration: 0.18), value: isInputFocused)
+        .animation(.easeInOut(duration: 0.18), value: submitFocus)
         .sheet(isPresented: $showVerseSelector) {
             verseSelectorSheet
         }
@@ -172,12 +240,12 @@ struct TestSessionView: View {
                         HStack(spacing: 10) {
                             Text("\(verse.book) \(verse.reference)")
                                 .font(.system(size: 16))
-                                .foregroundColor(i == vm.currentIndex ? .blue : .primary)
+                                .foregroundColor(i == vm.currentIndex ? .accentColor : .primary)
                             Spacer()
                             if i == vm.currentIndex {
                                 Image(systemName: "checkmark")
                                     .font(.system(size: 11, weight: .semibold))
-                                    .foregroundColor(.blue)
+                                    .foregroundColor(.accentColor)
                             }
                         }
                         .contentShape(Rectangle())
@@ -227,31 +295,54 @@ struct TestSessionView: View {
     // One dot per verse. Size adapts so all dots fit in available width.
     // Gray = not yet done, green = done perfect, orange/red = done with mistakes (submit only).
 
+    /// One dot per verse for short sessions; a continuous bar once dots would
+    /// shrink below legibility (≈ sub-3pt). Both convey position/progress; the
+    /// bar additionally carries a VoiceOver value.
+    @ViewBuilder
     private var progressDots: some View {
-        GeometryReader { geo in
-            let count   = vm.verses.count
-            let spacing = CGFloat(3)
-            let maxDot  = CGFloat(8)
-            let dotSize = min(maxDot, (geo.size.width - spacing * CGFloat(max(1, count - 1))) / CGFloat(max(1, count)))
-
-            HStack(spacing: spacing) {
-                ForEach(Array(vm.verses.enumerated()), id: \.offset) { i, verse in
-                    let submitted = vm.hasSubmitted(verse)
-                    let correct   = vm.submitResults[verse.id]?.isAllCorrect == true
-                    let isCurrent = i == vm.currentIndex
-
-                    Circle()
-                        .fill(dotColor(submitted: submitted, correct: correct))
-                        .frame(width: dotSize, height: dotSize)
-                        .scaleEffect(isCurrent ? 1.4 : 1.0)
-                        .animation(.spring(response: 0.25, dampingFraction: 0.7), value: isCurrent)
-                        .animation(.spring(response: 0.3,  dampingFraction: 0.8), value: submitted)
-                        .animation(.spring(response: 0.3,  dampingFraction: 0.8), value: correct)
+        if vm.verses.count > 24 {
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Color.secondary.opacity(0.2))
+                    Capsule()
+                        .fill(Color.accentColor)
+                        .frame(width: max(6, geo.size.width * CGFloat(vm.completedCount) / CGFloat(max(1, vm.verses.count))))
+                        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: vm.completedCount)
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .center)
+            .frame(height: 6)
+            .accessibilityElement()
+            .accessibilityLabel("Session progress")
+            .accessibilityValue("\(vm.completedCount) of \(vm.verses.count) done")
+        } else {
+            GeometryReader { geo in
+                let count   = vm.verses.count
+                let spacing = CGFloat(3)
+                let maxDot  = CGFloat(8)
+                let dotSize = min(maxDot, (geo.size.width - spacing * CGFloat(max(1, count - 1))) / CGFloat(max(1, count)))
+
+                HStack(spacing: spacing) {
+                    ForEach(Array(vm.verses.enumerated()), id: \.offset) { i, verse in
+                        let submitted = vm.hasSubmitted(verse)
+                        let correct   = vm.submitResults[verse.id]?.isAllCorrect == true
+                        let isCurrent = i == vm.currentIndex
+
+                        Circle()
+                            .fill(dotColor(submitted: submitted, correct: correct))
+                            .frame(width: dotSize, height: dotSize)
+                            .scaleEffect(isCurrent ? 1.4 : 1.0)
+                            .animation(.spring(response: 0.25, dampingFraction: 0.7), value: isCurrent)
+                            .animation(.spring(response: 0.3,  dampingFraction: 0.8), value: submitted)
+                            .animation(.spring(response: 0.3,  dampingFraction: 0.8), value: correct)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .center)
+            }
+            .frame(height: 12)
+            .accessibilityElement()
+            .accessibilityLabel("Session progress")
+            .accessibilityValue("\(vm.completedCount) of \(vm.verses.count) done")
         }
-        .frame(height: 12)
     }
 
     private func dotColor(submitted: Bool, correct: Bool) -> Color {
@@ -337,7 +428,8 @@ struct TestSessionView: View {
                 titleText: interactive ? $vm.titleInput : .constant(""),
                 verseText: interactive ? $vm.verseInput : .constant(""),
                 result: interactive ? vm.submitResults[verse.id] : nil,
-                focusedField: $submitFocus
+                focusedField: $submitFocus,
+                isCurrentLearning: learning.isCurrent(verse)
             )
             .allowsHitTesting(interactive)
         } else {
@@ -356,7 +448,8 @@ struct TestSessionView: View {
                 onSectionTap: interactive ? { section in
                     vm.activeSection = section
                     DispatchQueue.main.async { focusInput() }
-                } : nil
+                } : nil,
+                isCurrentLearning: learning.isCurrent(verse)
             )
         }
     }
@@ -388,80 +481,170 @@ struct TestSessionView: View {
 
     // MARK: - Bottom Controls
 
+    /// In an SRS review the session isn't "done" until every card has been
+    /// **graded** — not merely revealed. `vm.isSessionComplete` flips true as soon
+    /// as the last card is *revealed* (first-letter / full-word) or entered
+    /// *perfectly* (submit); showing the summary then would skip the final card's
+    /// grading buttons and the card would never get scheduled. Quiz sessions have
+    /// no grading, so they keep the plain reveal-based completion.
+    private var showSessionSummary: Bool {
+        if sessionKind == .srs {
+            return vm.verses.allSatisfy { sessionGrades[$0.id] != nil }
+        }
+        return vm.isSessionComplete
+    }
+
     private var bottomControls: some View {
         VStack(spacing: 12) {
-            if vm.isSessionComplete {
+            if showSessionSummary {
                 sessionCompletePanel
-            } else if vm.isCardComplete {
-                if sessionKind == .srs, let verse = vm.currentVerse {
-                    SRSGradingButtons(
-                        state:     displayState(for: verse),
-                        suggested: gradeButtonHighlight(for: verse),
-                        now:       Date(),
-                        onPick:    { gradeAndAdvance($0) }
-                    )
-                } else {
-                    // Next button
-                    Button {
-                        isScrubbing = true
-                        vm.goForward()
-                        HapticEngine.light()
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                            isScrubbing = false
-                            refocusIfNeeded()
-                        }
-                    } label: {
-                        HStack(spacing: 8) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundColor(.green)
-                                .font(.system(size: 18))
-                            Text("Next")
-                                .font(.system(size: 16, weight: .semibold))
-                        }
-                        .foregroundColor(.primary)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14.6)
-                        .background(Color(.secondarySystemGroupedBackground))
-                        .cornerRadius(12)
-                    }
-                    .padding(.horizontal, 24)
-                    .disabled(vm.currentIndex >= vm.verses.count - 1)
-                    .opacity(vm.currentIndex >= vm.verses.count - 1 ? 0.5 : 1)
-                }
-            } else if studyMode == .submit {
-                submitControls
             } else {
-                inputField
+                cardControlBand
             }
 
-            if !vm.isSessionComplete && vm.completedCount == vm.verses.count {
+            // Quiz (non-SRS) has no grade to key off, so completing the current
+            // stopped verse here still offers a manual "Mark as Complete". In SRS a
+            // Good/Easy grade advances the cursor automatically (see gradeAndAdvance).
+            if !showSessionSummary, sessionKind != .srs, vm.isCardComplete,
+               let v = vm.currentVerse, learning.isCurrent(v) {
+                markLearntRow(for: v)
+            }
+
+            // SRS: pick a difficulty above (changeable), then confirm to schedule the
+            // card and move on. Confirming the last card ends the session. Gated on
+            // `isCardAnswered` (not `isCardComplete`) so it tracks the grading selector
+            // exactly — in submit mode a *wrong* answer is answered-but-not-complete,
+            // and still needs a Confirm to commit the grade.
+            if !showSessionSummary, sessionKind == .srs, vm.isCardAnswered,
+               let verse = vm.currentVerse {
+                // `currentSelection` is nil only in first-letter mode before the user
+                // picks (no auto-suggestion) — keep Confirm disabled until they do.
+                let pick = currentSelection(for: verse)
                 Button {
-                    vm.clearProgress()
-                    onSessionEnded?()
-                    dismiss()
+                    guard let grade = pick else { return }
+                    pendingGrade = nil
+                    gradeAndAdvance(grade)
                 } label: {
-                    Text("End Session")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(Color.blue)
-                        .cornerRadius(12)
+                    Text(pick == nil ? "Pick a difficulty to continue" : "Confirm")
+                        .font(.headline).frame(maxWidth: .infinity)
                 }
-                .padding(.horizontal, 24)
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                .tint(.accentColor)
+                .disabled(pick == nil)
+            } else if !showSessionSummary, sessionKind != .srs,
+                      vm.completedCount == vm.verses.count {
+                // Quiz (non-SRS) has no grading, so it keeps an explicit end button.
+                Button {
+                    endSession()
+                } label: {
+                    Text("End Session").font(.headline).frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                .tint(.accentColor)
             }
         }
+        .padding(.horizontal, AppLayout.screenMargin)
         .padding(.bottom, 24)
         .padding(.top, 6)
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: vm.isCardComplete)
+        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: vm.isCardAnswered)
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: vm.isSessionComplete)
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: vm.completedCount)
+    }
+
+    /// Active-card controls (every state except the finished-session summary),
+    /// with the always-present hold-to-peek button anchored to the leading edge
+    /// so it stays put regardless of which controls are showing.
+    private var cardControlBand: some View {
+        HStack(alignment: .center, spacing: StudyControlMetrics.rowSpacing) {
+            // Peeking only makes sense while the verse is still hidden — once the
+            // card is answered (revealed, or submitted right or wrong) the text is
+            // already on the card, so drop the button.
+            if !vm.isCardAnswered {
+                PeekHoldButton(isPeeking: $isPeeking)
+                    .transition(.opacity)
+            }
+            Group {
+                if vm.isCardComplete {
+                    if sessionKind == .srs, let verse = vm.currentVerse {
+                        SRSGradingButtons(
+                            state:     displayState(for: verse),
+                            suggested: suggestedGradeFor(verse),
+                            selected:  currentSelection(for: verse),
+                            now:       Date(),
+                            onPick:    { pendingGrade = $0 }
+                        )
+                    } else {
+                        nextButton
+                    }
+                } else if studyMode == .submit {
+                    submitControls
+                } else {
+                    inputField
+                }
+            }
+            .frame(maxWidth: .infinity)
+        }
+    }
+
+    private var nextButton: some View {
+        Button {
+            isScrubbing = true
+            vm.goForward()
+            HapticEngine.light()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                isScrubbing = false
+                refocusIfNeeded()
+            }
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundColor(.green)
+                    .font(.system(size: 18))
+                Text("Next")
+                    .font(.system(size: 16, weight: .semibold))
+            }
+            .foregroundColor(.primary)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 14.6)
+            .background(Color(.secondarySystemGroupedBackground))
+            .roundedRect(12)
+        }
+        .disabled(vm.currentIndex >= vm.verses.count - 1)
+        .opacity(vm.currentIndex >= vm.verses.count - 1 ? 0.5 : 1)
+    }
+
+    /// When the card under review is the current stopped verse, let the user mark
+    /// it learnt right here — advancing the Home cursor. The SRS grade still
+    /// schedules the card and moves on, so this never replaces grading; once
+    /// tapped, the cursor moves and the row hides itself.
+    private func markLearntRow(for verse: Verse) -> some View {
+        Button {
+            learning.markLearnt(verse)
+            HapticEngine.success()
+        } label: {
+            Label("Mark as Complete", systemImage: "checkmark.circle.fill")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity).padding(.vertical, 12)
+                .background(Color.green)
+                .roundedRect(12)
+        }
+        .accessibilityLabel("Mark current verse as complete")
+        .transition(.scale.combined(with: .opacity))
     }
 
     // MARK: - Session Complete Panel
 
     private var sessionCompletePanel: some View {
         VStack(spacing: 16) {
+            Image(systemName: vm.sessionScore == 0 ? "checkmark.seal.fill" : "checkmark.circle.fill")
+                .font(.system(size: 40))
+                .foregroundStyle(vm.sessionScore == 0 ? Color.green : Color.accentColor)
+                .symbolEffect(.bounce, options: .nonRepeating)
+
             Text("Session Complete!")
                 .font(.system(size: 20, weight: .bold))
                 .foregroundColor(.primary)
@@ -470,7 +653,7 @@ struct TestSessionView: View {
             // score is meaningless in first-letter / full-word sessions.
             if studyMode == .submit {
                 if vm.sessionScore == 0 {
-                    Text("Perfect! 🎉")
+                    Text("Perfect!")
                         .font(.system(size: 17, weight: .semibold))
                         .foregroundColor(.green)
                 } else {
@@ -498,7 +681,7 @@ struct TestSessionView: View {
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
                         .background(Color(.secondarySystemGroupedBackground))
-                        .cornerRadius(12)
+                        .roundedRect(12)
                 }
 
                 Button {
@@ -511,13 +694,11 @@ struct TestSessionView: View {
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
-                        .background(Color.blue)
-                        .cornerRadius(12)
+                        .background(Color.accentColor)
+                        .roundedRect(12)
                 }
             }
-            .padding(.horizontal, 24)
         }
-        .padding(.horizontal, 24)
         .transition(.scale.combined(with: .opacity))
     }
 
@@ -530,9 +711,10 @@ struct TestSessionView: View {
                 if sessionKind == .srs, let verse = vm.currentVerse {
                     SRSGradingButtons(
                         state:     displayState(for: verse),
-                        suggested: gradeButtonHighlight(for: verse),
+                        suggested: suggestedGradeFor(verse),
+                        selected:  currentSelection(for: verse),
                         now:       Date(),
-                        onPick:    { gradeAndAdvance($0) }
+                        onPick:    { pendingGrade = $0 }
                     )
                 } else {
                     HStack(spacing: 10) {
@@ -542,7 +724,7 @@ struct TestSessionView: View {
                                 .foregroundColor(.primary)
                                 .frame(maxWidth: .infinity).padding(.vertical, 12)
                                 .background(Color(.secondarySystemGroupedBackground))
-                                .cornerRadius(12)
+                                .roundedRect(12)
                         }
                         Button {
                             isScrubbing = true
@@ -557,8 +739,8 @@ struct TestSessionView: View {
                                 .font(.system(size: 16, weight: .semibold))
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity).padding(.vertical, 12)
-                                .background(Color.blue)
-                                .cornerRadius(12)
+                                .background(Color.accentColor)
+                                .roundedRect(12)
                         }
                         .disabled(vm.currentIndex >= vm.verses.count - 1)
                         .opacity(vm.currentIndex >= vm.verses.count - 1 ? 0.5 : 1)
@@ -572,9 +754,9 @@ struct TestSessionView: View {
                             .foregroundColor(speech.isListening ? .white : .primary)
                             .frame(width: 48, height: 48)
                             .background(speech.isListening ? Color.red : Color(.secondarySystemGroupedBackground))
-                            .cornerRadius(12)
+                            .roundedRect(12)
                     }
-                    PeekEyeButton(isPeeking: $isPeeking)
+                    .accessibilityLabel(speech.isListening ? "Stop dictation" : "Dictate verse")
                     let isEmpty = vm.titleInput.trimmingCharacters(in: .whitespaces).isEmpty
                               && vm.verseInput.trimmingCharacters(in: .whitespaces).isEmpty
                     Button {
@@ -586,24 +768,13 @@ struct TestSessionView: View {
                         Text("Submit")
                             .font(.system(size: 16, weight: .semibold)).foregroundColor(.white)
                             .frame(maxWidth: .infinity).padding(.vertical, 12)
-                            .background(isEmpty ? Color(.systemGray3) : Color.blue)
-                            .cornerRadius(12)
+                            .background(isEmpty ? Color(.systemGray3) : Color.accentColor)
+                            .roundedRect(12)
                     }
                     .disabled(isEmpty)
-                    if submitFocus != nil {
-                        Button { submitFocus = nil } label: {
-                            Image(systemName: "keyboard.chevron.compact.down")
-                                .font(.system(size: 18, weight: .semibold))
-                                .foregroundColor(.secondary)
-                                .frame(width: 48, height: 48)
-                                .background(Color(.secondarySystemGroupedBackground))
-                                .cornerRadius(12)
-                        }
-                    }
                 }
             }
         }
-        .padding(.horizontal, 24)
     }
 
     // MARK: - Input Field
@@ -625,44 +796,38 @@ struct TestSessionView: View {
                         case .firstLetter:
                             let correct = vm.processFirstLetterInput(newValue)
                             DispatchQueue.main.async { vm.inputText = "" }
-                            if correct { HapticEngine.light() } else { HapticEngine.error(); triggerShake($shakeOffset) }
+                            if correct {
+                                HapticEngine.light()
+                            } else {
+                                // A wrong first letter is a genuine recall miss. Count it
+                                // so the SRS grade suggestion reflects the struggle — these
+                                // modes have no diff to score, unlike submit mode, so without
+                                // this every card looks perfect and is always suggested "Good".
+                                vm.recordMistake()
+                                HapticEngine.error(); triggerShake($shakeOffset)
+                            }
                         case .fullWord:
                             if vm.processFullWordInput(newValue) {
                                 HapticEngine.light()
                             } else if newValue.hasSuffix(" ") {
+                                vm.recordMistake()
                                 HapticEngine.error(); triggerShake($shakeOffset)
                             }
                         case .submit:
                             break
                         }
                     }
-                    // Peek and dismiss live in the keyboard toolbar so touching them
-                    // never triggers UIKit's resign-on-touch-outside behaviour.
-                    .toolbar {
-                        ToolbarItemGroup(placement: .keyboard) {
-                            Button {
-                                isPeeking.toggle()
-                                if isPeeking { HapticEngine.light() }
-                            } label: {
-                                Image(systemName: isPeeking ? "eye.fill" : "eye")
-                                    .foregroundStyle(isPeeking ? AnyShapeStyle(Color.blue) : AnyShapeStyle(.secondary))
-                            }
-                            Spacer()
-                            Button { isInputFocused = false } label: {
-                                Image(systemName: "keyboard.chevron.compact.down")
-                            }
-                        }
-                    }
+                    // Keyboard dismissal lives in the top bar ("Done") — a single,
+                    // reliable affordance instead of a second keyboard-toolbar one.
             }
             .padding(14)
             .background(Color(.secondarySystemGroupedBackground))
-            .cornerRadius(12)
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(.separator).opacity(0.5), lineWidth: 0.5))
+            .roundedRect(12)
+            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Color(.separator).opacity(0.5), lineWidth: 0.5))
             .offset(x: shakeOffset)
 
             hintButton
         }
-        .padding(.horizontal, 24)
     }
 
     /// Reveals the next hidden word (verse first, then title). Wrapped in a
@@ -678,7 +843,7 @@ struct TestSessionView: View {
                 .foregroundColor(.primary)
                 .frame(width: 48, height: 48)
                 .background(Color(.secondarySystemGroupedBackground))
-                .cornerRadius(12)
+                .roundedRect(12)
         }
         .buttonStyle(.plain)
     }
@@ -699,8 +864,11 @@ struct TestSessionView: View {
                 // Skip predominantly-vertical drags so TextEditor scroll/selection in submit mode survives.
                 guard abs(value.translation.width) > abs(value.translation.height) else { return }
                 if isCardFlying { commitSwipe() }
-                let canNext = vm.currentIndex < vm.verses.count - 1
-                let canPrev = vm.currentIndex > 0
+                // Forward-only SRS review: no swipe navigation (advance by grading,
+                // step back via Undo). Quiz keeps free swiping.
+                let swipeNav = sessionKind != .srs
+                let canNext = swipeNav && vm.currentIndex < vm.verses.count - 1
+                let canPrev = swipeNav && vm.currentIndex > 0
                 dragOffset = CardSwipeConfig.clampedDragTranslation(
                     value.translation,
                     canGoNext: canNext,
@@ -711,11 +879,12 @@ struct TestSessionView: View {
                 if isCardFlying { commitSwipe() }
                 let isHorizontal = abs(value.translation.width) > abs(value.translation.height)
                 let vx = value.predictedEndTranslation.width
-                if isHorizontal,
+                let swipeNav = sessionKind != .srs
+                if isHorizontal, swipeNav,
                    (dragOffset.width < -CardSwipeConfig.threshold || vx < -CardSwipeConfig.velocityThreshold),
                    vm.currentIndex < vm.verses.count - 1 {
                     swipeForward()
-                } else if isHorizontal,
+                } else if isHorizontal, swipeNav,
                           (dragOffset.width > CardSwipeConfig.threshold || vx > CardSwipeConfig.velocityThreshold),
                           vm.currentIndex > 0 {
                     swipeBackward()
@@ -810,22 +979,68 @@ struct TestSessionView: View {
         return currentSRSState(for: verse)
     }
 
-    /// Auto-suggested grade unless the user has already picked one this session,
-    /// in which case the previously-picked grade stays highlighted.
-    private func gradeButtonHighlight(for verse: Verse) -> SRSGrade {
-        sessionGrades[verse.id] ?? suggestedGradeForCurrentCard()
+    /// The grade currently shown as **selected** (filled) and that Confirm will
+    /// commit: the user's explicit pick, else a grade already applied this session
+    /// (regrade when scrubbing back), else the suggestion. `nil` only when nothing
+    /// is picked and there's no suggestion — first-letter mode before the user
+    /// chooses — which keeps Confirm disabled until they pick.
+    private func currentSelection(for verse: Verse) -> SRSGrade? {
+        pendingGrade ?? sessionGrades[verse.id] ?? suggestedGradeFor(verse)
     }
 
-    private func suggestedGradeForCurrentCard() -> SRSGrade {
-        guard let verse = vm.currentVerse else { return .good }
-        let isAllCorrect: Bool = (studyMode == .submit)
-            ? (vm.submitResults[verse.id]?.isAllCorrect == true)
-            : true   // Other modes only complete via correct typing.
-        return suggestedGrade(isAllCorrect: isAllCorrect, mistakes: vm.mistakes(for: verse.id))
+    /// Slips tolerated in the typo-prone full-word mode before the suggestion drops
+    /// from "Good" to "Hard" — keystroke fumbles shouldn't be read as poor recall.
+    private static let typingMistakeTolerance = 2
+
+    /// The algorithm's recommended grade — shown with the "Suggested" tag. Returns
+    /// `nil` when there's no reliable recommendation: first-letter mode is so
+    /// keystroke-heavy that a wrong letter is common, so the mistake count is a poor
+    /// signal — we don't suggest a grade and leave the choice to the user.
+    private func suggestedGradeFor(_ verse: Verse) -> SRSGrade? {
+        guard studyMode != .firstLetter else { return nil }
+        // Peeking at the answer is a failed recall — never suggest better than Again.
+        if peekedVerseIds.contains(verse.id) { return .again }
+
+        let mistakes = vm.mistakes(for: verse.id)
+        switch studyMode {
+        case .submit:
+            let allCorrect = vm.submitResults[verse.id]?.isAllCorrect == true
+            return suggestedGrade(isAllCorrect: allCorrect, mistakes: mistakes)
+        case .fullWord:
+            // Completion already means every word was eventually correct; only the
+            // number of slips matters, with leeway before counting it as a struggle.
+            return mistakes <= Self.typingMistakeTolerance ? .good : .hard
+        case .firstLetter:
+            return nil   // handled by the guard above; keeps the switch exhaustive
+        }
+    }
+
+    /// Ends the session. In SRS, any card that's finished but still ungraded — e.g.
+    /// the user typed the last card and tapped "End Session" instead of a grade —
+    /// gets its suggested grade applied first, so the review actually counts
+    /// (schedules the card) instead of silently dropping.
+    private func endSession() {
+        if sessionKind == .srs {
+            var gradedAny = false
+            for verse in vm.verses where sessionGrades[verse.id] == nil && vm.isVerseComplete(verse) {
+                // First-letter mode has no auto-suggestion; default an ungraded-but-
+                // finished card to Good so ending the session still schedules it.
+                let grade = suggestedGradeFor(verse) ?? .good
+                if let prior = SRSStore.shared.state(for: verse) { preGradeStates[verse.id] = prior }
+                SRSStore.shared.grade(verse: verse, grade: grade)
+                sessionGrades[verse.id] = grade
+                gradedAny = true
+            }
+            if gradedAny { StreakStore.shared.recordToday() }
+        }
+        vm.clearProgress()
+        onSessionEnded?()
+        dismiss()
     }
 
     private func gradeAndAdvance(_ grade: SRSGrade) {
         guard let verse = vm.currentVerse else { return }
+        StreakStore.shared.recordToday()   // grading a review verse counts toward the streak
 
         let firstGradeInSession = (sessionGrades[verse.id] == nil)
         if firstGradeInSession {
@@ -843,7 +1058,17 @@ struct TestSessionView: View {
                 ?? SRSCardState.newCard(key: verse.srsKey, now: Date())
             SRSStore.shared.regrade(verse: verse, grade: grade, from: prior)
         }
+        if firstGradeInSession { gradedOrder.append(verse.id) }
         sessionGrades[verse.id] = grade
+
+        // Auto-advance the Home learning cursor: a solid recall (Good/Easy) of the
+        // verse you're currently learning marks it learnt and moves the cursor on —
+        // no manual "Mark as Complete" step. Again/Hard keep you on the verse.
+        // Recorded in `autoLearntIds` so Undo can put the cursor back.
+        if grade == .good || grade == .easy, learning.isCurrent(verse) {
+            learning.markLearnt(verse)
+            autoLearntIds.insert(verse.id)
+        }
 
         if vm.currentIndex < vm.verses.count - 1 {
             isScrubbing = true
@@ -858,6 +1083,37 @@ struct TestSessionView: View {
             onSessionEnded?()
             dismiss()
         }
+    }
+
+    /// Anki-style Undo: revert the most recent grade (last-in-first-out) and return
+    /// to that card so it can be re-rated. Rolls back the card's SRS schedule to its
+    /// captured pre-grade state and, if that grade had auto-advanced the learning
+    /// cursor, restores the cursor too. The card keeps its revealed/submitted state,
+    /// so the grading buttons are right there for a fresh rating.
+    private func undoLastGrade() {
+        guard let lastId = gradedOrder.last,
+              let idx = vm.verses.firstIndex(where: { $0.id == lastId }) else { return }
+        let verse = vm.verses[idx]
+
+        // A nil captured state means the card was brand-new, so revert removes its
+        // state and hands back the consumed daily-new slot.
+        let prior = preGradeStates[lastId]
+        SRSStore.shared.revert(verse: verse, to: prior, wasNewlyIntroduced: prior == nil)
+
+        if autoLearntIds.remove(lastId) != nil {
+            learning.unmarkLearnt(verse)
+        }
+
+        sessionGrades.removeValue(forKey: lastId)
+        preGradeStates.removeValue(forKey: lastId)
+        gradedOrder.removeLast()
+        pendingGrade = nil
+
+        // Return to the just-ungraded card to re-rate it.
+        isScrubbing = true
+        vm.currentIndex = idx
+        HapticEngine.light()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { isScrubbing = false }
     }
 }
 

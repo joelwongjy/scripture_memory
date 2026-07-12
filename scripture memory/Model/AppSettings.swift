@@ -50,3 +50,31 @@ enum BibleVersion: String, CaseIterable {
         self == .niv11 ? packsNIV11 : packsNIV84
     }
 }
+
+// MARK: - Home Verse Start Mode
+
+/// Which mode the Home "current verse" card opens in when tapped: `.read` shows
+/// the full verse for study; `.review` starts active-recall practice. The
+/// in-session Read/Review toggle still lets the user switch at any time.
+enum HomeVerseStartMode: String, CaseIterable {
+    case read
+    case review
+
+    var displayName: String {
+        switch self {
+        case .read:   return "Read"
+        case .review: return "Review"
+        }
+    }
+
+    /// CTA verb shown on the Home current-verse card.
+    var ctaLabel: String {
+        switch self {
+        case .read:   return "Read"
+        case .review: return "Practice"
+        }
+    }
+
+    /// Whether the learning session should open in active-recall review mode.
+    var opensInReview: Bool { self == .review }
+}

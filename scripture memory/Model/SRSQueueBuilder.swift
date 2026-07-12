@@ -104,4 +104,48 @@ enum SRSQueueBuilder {
     static func globalNewRemaining(store: SRSStore, dailyNewCap: Int, now: Date = Date()) -> Int {
         max(0, dailyNewCap - store.newIntroducedToday(now: now))
     }
+
+    /// What's due at `now` across the given (already-active) packs — the single
+    /// number Home, the widget, and the daily reminder all key off, so they never
+    /// disagree. `review` folds learning + review (both are due cards); `new` is
+    /// the new-card drip bounded by the global cap. Passing a future `now`
+    /// projects that day (the daily-new counter is empty for future days, so the
+    /// full cap is available).
+    struct DueSummary {
+        let review: Int
+        let new: Int
+        var total: Int { review + new }
+    }
+
+    static func dueSummary(activePacks: [Pack], store: SRSStore,
+                           dailyNewCap: Int, now: Date = Date()) -> DueSummary {
+        var review = 0
+        var candidates = 0
+        for pack in activePacks {
+            let c = counts(packName: pack.name, allVerses: pack.verses, store: store, now: now)
+            review     += c.learning + c.review
+            candidates += c.newCandidates
+        }
+        let new = min(globalNewRemaining(store: store, dailyNewCap: dailyNewCap, now: now), candidates)
+        return DueSummary(review: review, new: new)
+    }
+
+    /// Per-pack projected NEW cards for today. Drips the GLOBAL new-card cap
+    /// across `orderedActivePacks` IN ORDER — mirroring `buildAllPacksSession` —
+    /// so the per-pack numbers SUM to the global projection instead of each pack
+    /// independently claiming the full remaining cap. Keyed by pack name; packs
+    /// reached after the cap is exhausted map to 0.
+    static func projectedNewByPack(
+        orderedActivePacks: [Pack],
+        store: SRSStore,
+        dailyNewCap: Int,
+        now: Date = Date()
+    ) -> [String: Int] {
+        let budget     = globalNewRemaining(store: store, dailyNewCap: dailyNewCap, now: now)
+        let candidates = orderedActivePacks.map {
+            store.newCandidateCards(in: $0.name, allVerses: $0.verses).count
+        }
+        let taken = SRSMath.dripBudget(budget, across: candidates)
+        return Dictionary(uniqueKeysWithValues: zip(orderedActivePacks.map(\.name), taken))
+    }
 }

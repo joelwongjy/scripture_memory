@@ -15,10 +15,26 @@ struct VerseScrubberRow: View {
     /// Called when the user drags the scrubber to a new index (e.g. persist test session).
     var onScrubIndexChange: (() -> Void)?
 
+    /// When set, the prev/next chevrons stay enabled at the very start/end so a
+    /// "Continue Learning" session can roll into the adjacent pack.
+    var canStepBeyondStart = false
+    var canStepBeyondEnd   = false
+
     let onStepBack: () -> Void
     let onStepForward: () -> Void
 
     var body: some View {
+        // A one-verse session has nothing to scrub to — a lone centred knob (plus
+        // a stray fill stub) just reads as broken — so collapse the control unless
+        // cross-pack stepping keeps the chevrons meaningful.
+        if verseCount <= 1 && !canStepBeyondStart && !canStepBeyondEnd {
+            EmptyView()
+        } else {
+            scrubberContent
+        }
+    }
+
+    private var scrubberContent: some View {
         VStack(spacing: showPositionLabel ? 6 : 0) {
             HStack(spacing: 10) {
                 let canPrev = currentIndex > 0
@@ -27,16 +43,20 @@ struct VerseScrubberRow: View {
                 Button(action: onStepBack) {
                     Image(systemName: "chevron.left").studyScrubberChevronButton()
                 }
-                .disabled(!canPrev)
-                .opacity(canPrev ? 1 : 0.3)
+                .disabled(!canPrev && !canStepBeyondStart)
+                .opacity(canPrev || canStepBeyondStart ? 1 : 0.3)
+                .accessibilityLabel("Previous verse")
 
                 scrubTrack
+                    .accessibilityLabel("Verse position")
+                    .accessibilityValue("\(currentIndex + 1) of \(verseCount)")
 
                 Button(action: onStepForward) {
                     Image(systemName: "chevron.right").studyScrubberChevronButton()
                 }
-                .disabled(!canNext)
-                .opacity(canNext ? 1 : 0.3)
+                .disabled(!canNext && !canStepBeyondEnd)
+                .opacity(canNext || canStepBeyondEnd ? 1 : 0.3)
+                .accessibilityLabel("Next verse")
             }
 
             if showPositionLabel {
@@ -55,14 +75,16 @@ struct VerseScrubberRow: View {
                 ? CGFloat(currentIndex) / CGFloat(verseCount - 1) * (w - knobW)
                 : (w - knobW) / 2
             let progress = verseCount > 1 ? CGFloat(currentIndex) / CGFloat(verseCount - 1) : 0
-            let fillW = knobW / 2 + progress * (w - knobW)
+            // Single verse: run the fill to the centred knob instead of leaving a
+            // stray stub pinned to the left edge.
+            let fillW = verseCount > 1 ? (knobW / 2 + progress * (w - knobW)) : (knobX + knobW / 2)
 
             ZStack(alignment: .leading) {
                 Capsule()
                     .fill(Color(.systemGray5))
                     .frame(height: 6)
                 Capsule()
-                    .fill(Color.blue)
+                    .fill(Color.accentColor)
                     .frame(width: fillW, height: 6)
                     .animation(.spring(response: 0.3, dampingFraction: 0.8), value: currentIndex)
                 Circle()

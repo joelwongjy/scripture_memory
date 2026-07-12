@@ -27,14 +27,17 @@ final class SRSStore: ObservableObject {
 
     /// Packs the user has opted into for daily review. Off by default —
     /// the user explicitly turns on the packs they're memorizing.
-    @Published private(set) var activePackNames: Set<String> = []
+    /// Packs the user has turned OFF for review. Opt-OUT model: every pack is
+    /// active by default (users learn all packs in order), so we only persist
+    /// the exceptions. New packs are therefore active automatically.
+    @Published private(set) var inactivePackNames: Set<String> = []
 
     private let kvStore = NSUbiquitousKeyValueStore.default
     private let local   = UserDefaults.standard
 
     private static let statesKey      = "srs.cardStates.v1"
     private static let dailyNewKey    = "srs.dailyNewByDate.v1"
-    private static let activePacksKey = "srs.activePackNames.v1"
+    private static let inactivePacksKey = "srs.inactivePackNames.v1"
 
     private init() {
         load()
@@ -88,12 +91,12 @@ final class SRSStore: ObservableObject {
     // MARK: - Active Packs
 
     func isActive(_ packName: String) -> Bool {
-        activePackNames.contains(packName)
+        !inactivePackNames.contains(packName)
     }
 
     func setActive(_ packName: String, _ active: Bool) {
-        if active { activePackNames.insert(packName) }
-        else      { activePackNames.remove(packName) }
+        if active { inactivePackNames.remove(packName) }
+        else      { inactivePackNames.insert(packName) }
         persist()
     }
 
@@ -129,6 +132,23 @@ final class SRSStore: ObservableObject {
         return next
     }
 
+    /// Revert a single card to a known prior state — the review **Undo**. A `nil`
+    /// prior state means the card was brand-new, so its state is removed entirely;
+    /// when `wasNewlyIntroduced`, today's consumed new-card slot is also given back
+    /// so the undo doesn't leave the daily counter inflated.
+    func revert(verse: Verse, to priorState: SRSCardState?, wasNewlyIntroduced: Bool, now: Date = Date()) {
+        let key = verse.srsKey
+        if let priorState {
+            states[key] = priorState
+        } else {
+            states.removeValue(forKey: key)
+        }
+        if wasNewlyIntroduced, !verse.packName.isEmpty {
+            unbumpDailyNew(packName: verse.packName, now: now)
+        }
+        persist()
+    }
+
     /// Wipe all SRS state. `ReviewProgress.completedIds` is intentionally untouched.
     /// Active-pack opt-ins are preserved — they're a UI preference, not progress.
     func resetAll() {
@@ -152,6 +172,15 @@ final class SRSStore: ObservableObject {
         let day = Self.dayKey(now)
         var perPack = dailyNewByDate[day] ?? [:]
         perPack[packName, default: 0] += 1
+        dailyNewByDate[day] = perPack
+    }
+
+    /// Undo a `bumpDailyNew` — returns a consumed slot when a brand-new card's
+    /// first grade is reverted via `revert`. Floors at zero.
+    private func unbumpDailyNew(packName: String, now: Date) {
+        let day = Self.dayKey(now)
+        guard var perPack = dailyNewByDate[day], let count = perPack[packName], count > 0 else { return }
+        perPack[packName] = count - 1
         dailyNewByDate[day] = perPack
     }
 
@@ -181,9 +210,9 @@ final class SRSStore: ObservableObject {
             kvStore.set(data, forKey: Self.dailyNewKey)
             local.set(data, forKey: Self.dailyNewKey)
         }
-        if let data = try? JSONEncoder().encode(Array(activePackNames)) {
-            kvStore.set(data, forKey: Self.activePacksKey)
-            local.set(data, forKey: Self.activePacksKey)
+        if let data = try? JSONEncoder().encode(Array(inactivePackNames)) {
+            kvStore.set(data, forKey: Self.inactivePacksKey)
+            local.set(data, forKey: Self.inactivePacksKey)
         }
         kvStore.synchronize()
     }
@@ -198,9 +227,9 @@ final class SRSStore: ObservableObject {
            let decoded = try? JSONDecoder().decode([String: [String: Int]].self, from: data) {
             dailyNewByDate = decoded
         }
-        if let data = kvStore.data(forKey: Self.activePacksKey) ?? local.data(forKey: Self.activePacksKey),
+        if let data = kvStore.data(forKey: Self.inactivePacksKey) ?? local.data(forKey: Self.inactivePacksKey),
            let decoded = try? JSONDecoder().decode([String].self, from: data) {
-            activePackNames = Set(decoded)
+            inactivePackNames = Set(decoded)
         }
     }
 

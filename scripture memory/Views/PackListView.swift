@@ -2,10 +2,20 @@ import SwiftUI
 
 struct PackListView: View {
     @AppStorage("bibleVersion") private var bibleVersion: BibleVersion = .niv84
+    @ObservedObject private var packPrefs = PackPreferencesStore.shared
+    @ObservedObject private var learning  = LearningStore.shared
 
     @State private var selectedPack:   Pack?             = nil
     @State private var searchText:     String            = ""
     @State private var searchSelected: VerseSearchResult? = nil
+    @State private var showOrganizer:  Bool              = false
+
+    /// Visible packs in the user's custom order (hidden removed).
+    private var visiblePacks: [Pack] { packPrefs.visible(from: bibleVersion.packs) }
+
+    /// Name of the pack holding the current stopped verse — badged in the grid so
+    /// the user can spot where to resume at a glance.
+    private var currentPackName: String? { learning.currentVerse?.packName }
 
     private let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
 
@@ -24,7 +34,7 @@ struct PackListView: View {
         guard !searchText.isEmpty else { return [] }
         let query = searchText.lowercased()
         var results: [VerseSearchResult] = []
-        for pack in bibleVersion.packs {
+        for pack in visiblePacks {
             for (index, verse) in pack.verses.enumerated() {
                 let ref = "\(verse.book) \(verse.reference)".lowercased()
                 if ref.contains(query)
@@ -45,17 +55,20 @@ struct PackListView: View {
             if searchText.isEmpty {
                 ScrollView {
                     LazyVGrid(columns: columns, spacing: 12) {
-                        ForEach(bibleVersion.packs) { pack in
+                        ForEach(visiblePacks) { pack in
                             Button {
                                 guard !pack.verses.isEmpty else { return }
                                 selectedPack = pack
                             } label: {
-                                PackCover(pack: pack)
+                                PackCover(pack: pack, isCurrentPack: pack.name == currentPackName)
                             }
                             .buttonStyle(CardButtonStyle())
+                            .accessibilityElement(children: .ignore)
+                            .accessibilityLabel("\(pack.name), \(pack.verses.count) cards")
+                            .accessibilityAddTraits(.isButton)
                         }
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppLayout.screenMargin)
                     .padding(.vertical, 12)
                 }
             } else {
@@ -65,6 +78,19 @@ struct PackListView: View {
         .animation(nil, value: searchText.isEmpty)
         .background(Color(.systemGroupedBackground))
         .navigationTitle("Packs")
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    showOrganizer = true
+                } label: {
+                    Image(systemName: "arrow.up.arrow.down")
+                }
+                .accessibilityLabel("Organize packs")
+            }
+        }
+        .sheet(isPresented: $showOrganizer) {
+            PackOrganizerView(allPacks: bibleVersion.packs)
+        }
         .searchable(
             text: $searchText,
             placement: .navigationBarDrawer(displayMode: .always),
@@ -95,16 +121,13 @@ struct PackListView: View {
             ScrollView {
                 LazyVStack(spacing: 0) {
                     if searchResults.isEmpty {
-                        VStack(spacing: 8) {
-                            Image(systemName: "magnifyingglass")
-                                .font(.system(size: 40, weight: .light))
-                                .foregroundColor(.secondary.opacity(0.5))
-                            Text("No results")
-                                .font(.system(size: 15))
-                                .foregroundColor(.secondary)
+                        ContentUnavailableView {
+                            Label("No Results", systemImage: "magnifyingglass")
+                        } description: {
+                            Text("No verses match \u{201C}\(searchText)\u{201D}.")
                         }
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.vertical, 12)
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 48)
                     } else {
                         ForEach(Array(searchResults.enumerated()), id: \.element.id) { _, result in
                             VStack(spacing: 0) {
@@ -134,7 +157,7 @@ struct PackListView: View {
                                             .font(.system(size: 12, weight: .semibold))
                                             .foregroundStyle(.secondary)
                                     }
-                                    .padding(.horizontal, 16)
+                                    .padding(.horizontal, AppLayout.screenMargin)
                                     .padding(.vertical, 11)
                                     .contentShape(Rectangle())
                                 }
@@ -145,8 +168,8 @@ struct PackListView: View {
                     }
                 }
                 .background(Color(.systemBackground))
-                .clipShape(RoundedRectangle(cornerRadius: 10))
-                .padding(.horizontal, 16)
+                .clipShape(RoundedRectangle(cornerRadius: AppLayout.cardRadius, style: .continuous))
+                .padding(.horizontal, AppLayout.screenMargin)
                 .padding(.top, 8)
             }
         }
@@ -159,6 +182,7 @@ struct PackListView: View {
 /// Font sizes and layout are written once — no compact/full variants needed.
 struct PackCover: View {
     let pack: Pack
+    var isCurrentPack: Bool = false
 
     private static let designWidth:  CGFloat = 340
     private static let designHeight: CGFloat = designWidth * 3 / 5  // 5:3
@@ -193,9 +217,27 @@ struct PackCover: View {
                         .frame(width: geo.size.width, height: geo.size.height, alignment: .topLeading)
                 }
             )
-            .clipShape(RoundedRectangle(cornerRadius: 10))
-            .overlay(RoundedRectangle(cornerRadius: 10).stroke(borderColor, lineWidth: 0.5))
+            .clipShape(RoundedRectangle(cornerRadius: AppLayout.cardRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: AppLayout.cardRadius, style: .continuous).stroke(borderColor, lineWidth: 0.5))
             .shadow(color: .black.opacity(shadowOpacity), radius: 8, x: 0, y: 4)
+            .overlay(alignment: .topTrailing) {
+                if isCurrentPack { currentPackBadge.padding(8) }
+            }
+    }
+
+    /// "Current" chip marking the pack that holds the learning cursor. White
+    /// capsule so it reads on any cover colour.
+    private var currentPackBadge: some View {
+        HStack(spacing: 3) {
+            Image(systemName: "bookmark.fill").font(.system(size: 9, weight: .bold))
+            Text("Current").font(.system(size: 10, weight: .bold))
+        }
+        .foregroundStyle(Color.accentColor)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(Capsule().fill(.white))
+        .shadow(color: .black.opacity(0.18), radius: 3, x: 0, y: 1)
+        .accessibilityLabel("Current pack")
     }
 
     @ViewBuilder
@@ -308,7 +350,7 @@ struct PackCover: View {
                                     .font(.system(size: 14, weight: .semibold))
                                     .foregroundColor(.white)
                                     .padding(.horizontal, 9).padding(.vertical, 5)
-                                    .background(RoundedRectangle(cornerRadius: 5).fill(baseColor))
+                                    .background(RoundedRectangle(cornerRadius: 5, style: .continuous).fill(baseColor))
                                 Text("구절")
                                     .font(.system(size: 62, weight: .bold, design: .monospaced))
                                     .foregroundColor(baseColor)
