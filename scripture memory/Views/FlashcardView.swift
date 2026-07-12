@@ -209,6 +209,11 @@ struct FlashcardView: View {
         return words.enumerated().reduce(Text("")) { acc, pair in
             let (i, word) = pair
             let sep = i < words.count - 1 ? " " : ""
+            // Words already revealed (e.g. via hints, or before the user
+            // switched sections) stay visible even while the section is inactive.
+            if i < revealed {
+                return acc + Text(word + sep).foregroundStyle(.secondary).font(font)
+            }
             return acc + Text(masked(word) + sep).foregroundStyle(.quaternary).font(font)
         }
     }
