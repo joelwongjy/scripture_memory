@@ -30,6 +30,11 @@ struct CardStudyView: View {
     /// browse mode, measured from the content's offset. Drives the fast-scroll
     /// thumb so it tracks smoothly and reaches both ends exactly.
     @State private var scrollFraction: Double = 0
+    /// Scroll target for the vertical read list. Driven by `scrollPosition(id:)`
+    /// rather than `ScrollViewReader.scrollTo` because scrollPosition's
+    /// programmatic scrolls are natively interruptible — the user can grab
+    /// the list mid-animation and take over, which scrollTo forbids.
+    @State private var verticalScrollTarget: Int?
     private static let vScrollSpace = "verticalScrollCards"
 
     @Environment(\.dismiss) private var dismiss
@@ -363,6 +368,7 @@ struct CardStudyView: View {
                                     }
                             }
                         }
+                        .scrollTargetLayout()
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
                         // Continuous offset probe on the (always-present) content
@@ -384,6 +390,7 @@ struct CardStudyView: View {
                         if abs(f - scrollFraction) > 0.0001 { scrollFraction = f }
                         if abs(listScrollOffset - m.offset) > 0.5 { listScrollOffset = m.offset }
                     }
+                    .scrollPosition(id: $verticalScrollTarget, anchor: .center)
 
                     if vm.verses.count >= 2 {
                         VerseFastScrollOverlay(
@@ -409,17 +416,18 @@ struct CardStudyView: View {
                         )
                     }
                 }
+                // `onAppear` runs when returning from review (the scroll view is
+                // removed during review, so scroll position would otherwise reset).
+                // No animation or delay — scrollPosition mounts the list already
+                // centered on the card.
                 .onAppear {
-                    Task {
-                        try? await Task.sleep(for: .milliseconds(60))
-                        proxy.scrollTo(vm.currentIndex, anchor: .center)
-                    }
+                    verticalScrollTarget = vm.currentIndex
                 }
                 .onChange(of: vm.currentIndex) { _, newIndex in
                     // Tap-on-card or external nav — keep scroll position in sync.
                     // Thumb drag sets isScrubbing, so skip to avoid a duplicate scroll.
                     guard !isScrubbing else { return }
-                    withAnimation(.easeInOut(duration: 0.22)) { proxy.scrollTo(newIndex, anchor: .center) }
+                    withAnimation(.easeInOut(duration: 0.22)) { verticalScrollTarget = newIndex }
                 }
                 // Bottom-trailing to match the single-card view (aligned to the layout
                 // margin). Visibility tracks the cursor card's scroll position, so the
@@ -427,14 +435,14 @@ struct CardStudyView: View {
                 .overlay(alignment: .bottomTrailing) {
                     if showJumpInList(cardHeight: cardHeight, viewportHeight: outerGeo.size.height) {
                         JumpToCurrentButton(action: {
-                            // Scroll via the proxy directly (not by mutating currentIndex)
+                            // Set the scroll target directly (not just currentIndex)
                             // so a re-jump still works when currentIndex is already the
                             // cursor from a previous jump.
                             guard let i = currentVerseIndexInPack else { return }
                             HapticEngine.light()
                             isScrubbing = true
                             if vm.currentIndex != i { vm.currentIndex = i }
-                            withAnimation(.easeInOut(duration: 0.3)) { proxy.scrollTo(i, anchor: .center) }
+                            withAnimation(.easeInOut(duration: 0.3)) { verticalScrollTarget = i }
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { isScrubbing = false }
                         })
                         .padding(.trailing, AppLayout.screenMargin)
@@ -720,7 +728,27 @@ struct CardStudyView: View {
             .roundedRect(12)
             .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Color(.separator).opacity(0.5), lineWidth: 0.5))
             .offset(x: shakeOffset)
+
+            hintButton
         }
+    }
+
+    /// Reveals the next hidden word (verse first, then title). Wrapped in a
+    /// Button so the touch is a recognized tap target and doesn't resign the
+    /// keyboard's first responder.
+    private var hintButton: some View {
+        Button {
+            vm.revealHint()
+            HapticEngine.light()
+        } label: {
+            Image(systemName: "lightbulb")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundColor(.primary)
+                .frame(width: 48, height: 48)
+                .background(Color(.secondarySystemGroupedBackground))
+                .roundedRect(12)
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Swipe Gesture
