@@ -24,6 +24,8 @@ struct TestSessionView: View {
     /// that pulls the grade suggestion down to "Again".
     @State private var peekedVerseIds:       Set<Int> = []
     @State private var showVerseSelector     = false
+    /// Pending "marked complete" undo prompt.
+    @State private var undoToastState:       UndoToastState?
 
     // SRS session bookkeeping. Lets the user swipe back to an already-graded
     // card and change the grade without compounding (regrade computes from
@@ -111,6 +113,7 @@ struct TestSessionView: View {
             }
         }
         .background(Color(.systemGroupedBackground))
+        .undoToast($undoToastState)
         .onChange(of: vm.currentIndex) { _, _ in
             vm.clearInputs()
             pendingGrade = nil   // each card starts from its own suggested difficulty
@@ -624,6 +627,11 @@ struct TestSessionView: View {
         Button {
             learning.markLearnt(verse)
             HapticEngine.success()
+            // One tap, right under the card, and it advances the learning cursor —
+            // give it a moment's grace before it's final.
+            undoToastState = UndoToastState(message: "Marked as complete") {
+                learning.unmarkLearnt(verse)
+            }
         } label: {
             Label("Mark as Complete", systemImage: "checkmark.circle.fill")
                 .font(.system(size: 16, weight: .semibold))
