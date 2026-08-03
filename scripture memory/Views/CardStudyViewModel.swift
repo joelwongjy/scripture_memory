@@ -116,20 +116,28 @@ final class CardStudyViewModel: ObservableObject {
         }
     }
 
+    /// Flips between the pack's own order and a random one.
+    ///
+    /// Reordering is purely presentational: every bit of progress (revealed word
+    /// counts, submitted answers) is keyed by verse **id**, not by position, so
+    /// shuffling can't invalidate any of it. Wiping those dictionaries here meant
+    /// toggling shuffle off — the natural "put it back how it was" gesture — threw
+    /// away the whole session. Keep the progress, and stay parked on the verse the
+    /// user is looking at rather than snapping back to the top.
     func toggleShuffle() {
+        let anchorId = currentVerse?.id
         var t = Transaction(); t.disablesAnimations = true
         withTransaction(t) {
-            isShuffled            = !isShuffled
-            verses                = isShuffled ? originalVerses.shuffled() : originalVerses
-            currentIndex          = 0
-            titleRevealedCounts   = [:]
-            verseRevealedCounts   = [:]
-            submitResults         = [:]
+            isShuffled = !isShuffled
+            verses     = isShuffled ? originalVerses.shuffled() : originalVerses
+            currentIndex = anchorId.flatMap { id in verses.firstIndex { $0.id == id } } ?? 0
             inputText  = ""
             titleInput = ""
             verseInput = ""
-            activeSection = .title
         }
+        // `currentIndex`'s didSet only re-points the highlight when the index
+        // actually changed — the anchor verse may well land on the same index.
+        syncActiveSection()
     }
 
     /// Clears all text inputs. Call when the user navigates to a new card.
@@ -244,6 +252,41 @@ final class CardStudyViewModel: ObservableObject {
                 activeSection = .title
             }
         }
+    }
+
+    // MARK: - Dictation
+
+    /// How many words of the running transcript have already been matched. The
+    /// recognizer re-emits the *whole* transcript on every partial result, so
+    /// without this each update would replay the verse from the beginning.
+    private var spokenWordsConsumed = 0
+
+    /// Drops dictation bookkeeping — call when a listening session starts or the
+    /// card changes, both of which restart the transcript.
+    func resetDictation() { spokenWordsConsumed = 0 }
+
+    /// Feeds a dictation transcript through the same reveal path typing uses: each
+    /// newly spoken word that matches the next hidden word reveals it, crossing from
+    /// title to verse exactly as typing does.
+    ///
+    /// Only words past the ones already handled are considered, and the count never
+    /// rewinds. Speech arrives as a growing and occasionally *revised* transcript,
+    /// and revealing is one-way — re-matching a revised prefix would double-advance
+    /// the verse. A spoken word that doesn't match is consumed rather than retried,
+    /// so one misheard word can't wedge the card.
+    func processDictation(_ transcript: String) {
+        let spoken = transcript.split(whereSeparator: { $0 == " " || $0.isNewline }).map(String.init)
+        guard spoken.count > spokenWordsConsumed else { return }
+        for word in spoken[spokenWordsConsumed...] {
+            guard let verse = currentVerse else { break }
+            let words    = sectionWords(activeSection, in: verse)
+            let revealed = revealedCount(for: verse.id, section: activeSection)
+            guard revealed < words.count else { break }
+            if DiffEngine.normalizedMatch(word, words[revealed]) {
+                advance(verse: verse, sectionWords: words, revealed: revealed)
+            }
+        }
+        spokenWordsConsumed = spoken.count
     }
 
     // MARK: - Hint

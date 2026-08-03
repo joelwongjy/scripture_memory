@@ -19,17 +19,20 @@ struct SRSDashboardView: View {
 
     @State private var cover: ActiveCover?
     @State private var showPinPicker = false
+    @State private var searchText    = ""
 
-    /// One full-screen presentation at a time — review session OR the linear
-    /// learning session. (Two separate `.fullScreenCover` modifiers on one view
-    /// conflict in SwiftUI, so they're unified here.)
+    /// One full-screen presentation at a time — review session, the linear learning
+    /// session, or a verse opened from search. (Two separate `.fullScreenCover`
+    /// modifiers on one view conflict in SwiftUI, so they're unified here.)
     private enum ActiveCover: Identifiable {
         case review(TestSession)
         case learning(forceCurrent: Bool)
+        case verse(VerseSearchResult)
         var id: String {
             switch self {
             case .review(let s):       return "review-\(s.id)"
             case .learning(let force): return force ? "learning-current" : "learning"
+            case .verse(let r):        return "verse-\(r.id)"
             }
         }
     }
@@ -95,6 +98,44 @@ struct SRSDashboardView: View {
     }
 
     var body: some View {
+        Group {
+            if searchText.isEmpty {
+                dashboard
+            } else {
+                VerseSearchResultsList(
+                    query:   searchText,
+                    results: VerseSearch.results(for: searchText, in: packs),
+                    onSelect: { cover = .verse($0) }
+                )
+            }
+        }
+        // Swapping the whole screen shouldn't animate — matches Packs.
+        .animation(nil, value: searchText.isEmpty)
+        .background(Color(.systemGroupedBackground))
+        .navigationTitle("Home")
+        .searchable(
+            text: $searchText,
+            placement: .navigationBarDrawer(displayMode: .always),
+            prompt: "Search verses"
+        )
+        .fullScreenCover(item: $cover) { c in
+            switch c {
+            case .review(let s): TestSessionView(session: s, onSessionEnded: { cover = nil })
+            case .learning(let force): learningSession(forceCurrent: force)
+            case .verse(let r):
+                // Read mode in its own pack, like tapping the verse from Packs.
+                NavigationStack {
+                    CardStudyView(packName: r.pack.name, verses: r.pack.verses, initialIndex: r.verseIndex)
+                        .toolbar(.hidden, for: .navigationBar)
+                }
+            }
+        }
+        .sheet(isPresented: $showPinPicker) {
+            PinVersePicker(packs: packs, pinnedKey: learning.pinnedKey) { learning.pin($0) }
+        }
+    }
+
+    private var dashboard: some View {
         ScrollView {
             VStack(spacing: Layout.sectionSpacing) {
                 streakCard
@@ -113,17 +154,6 @@ struct SRSDashboardView: View {
             .padding(.horizontal, Layout.edgeMargin)
             .padding(.top, 8)
             .padding(.bottom, 24)
-        }
-        .background(Color(.systemGroupedBackground))
-        .navigationTitle("Home")
-        .fullScreenCover(item: $cover) { c in
-            switch c {
-            case .review(let s): TestSessionView(session: s, onSessionEnded: { cover = nil })
-            case .learning(let force): learningSession(forceCurrent: force)
-            }
-        }
-        .sheet(isPresented: $showPinPicker) {
-            PinVersePicker(packs: packs, pinnedKey: learning.pinnedKey) { learning.pin($0) }
         }
     }
 

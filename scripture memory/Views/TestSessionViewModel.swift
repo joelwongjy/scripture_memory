@@ -135,9 +135,16 @@ final class TestSessionViewModel: ObservableObject {
             : verseRevealedCounts[verseId, default: 0]
     }
 
-    // MARK: - Mistake Tracking (submit mode only)
+    // MARK: - Mistake Tracking
 
+    /// Only Entire Verse mode scores. The two typing modes reveal the text a word at
+    /// a time against a phone keyboard, so a fat-fingered neighbouring key reads as a
+    /// recall miss — the count measures typing accuracy far more than memory, and it
+    /// handed people a negative for slips they never made. Nothing is tracked in
+    /// those modes: no score, and no input to the SRS grade suggestion (which
+    /// declines to suggest anything there — see `suggestedGradeFor`).
     func recordMistake() {
+        guard studyMode == .submit else { return }
         guard let verse = currentVerse else { return }
         let current = mistakeCounts[verse.id, default: 0]
         guard current < 5 else { return }
@@ -228,6 +235,41 @@ final class TestSessionViewModel: ObservableObject {
         saveProgress()
         titleInput = ""
         verseInput = ""
+    }
+
+    // MARK: - Dictation
+
+    /// How many words of the running transcript have already been matched. The
+    /// recognizer re-emits the *whole* transcript on every partial result, so
+    /// without this each update would replay the verse from the beginning.
+    private var spokenWordsConsumed = 0
+
+    /// Drops dictation bookkeeping — call when a listening session starts or the
+    /// card changes, both of which restart the transcript.
+    func resetDictation() { spokenWordsConsumed = 0 }
+
+    /// Feeds a dictation transcript through the same reveal path typing uses: each
+    /// newly spoken word that matches the next hidden word reveals it, crossing from
+    /// title to verse exactly as typing does.
+    ///
+    /// Only words past the ones already handled are considered, and the count never
+    /// rewinds. Speech arrives as a growing and occasionally *revised* transcript,
+    /// and revealing is one-way — re-matching a revised prefix would double-advance
+    /// the verse. A spoken word that doesn't match is consumed rather than retried,
+    /// so one misheard word can't wedge the card.
+    func processDictation(_ transcript: String) {
+        let spoken = transcript.split(whereSeparator: { $0 == " " || $0.isNewline }).map(String.init)
+        guard spoken.count > spokenWordsConsumed else { return }
+        for word in spoken[spokenWordsConsumed...] {
+            guard let verse = currentVerse else { break }
+            let words    = sectionWords(activeSection, in: verse)
+            let revealed = revealedCount(for: verse.id, section: activeSection)
+            guard revealed < words.count else { break }
+            if DiffEngine.normalizedMatch(word, words[revealed]) {
+                advance(verse: verse, sectionWords: words, revealed: revealed)
+            }
+        }
+        spokenWordsConsumed = spoken.count
     }
 
     // MARK: - Hint

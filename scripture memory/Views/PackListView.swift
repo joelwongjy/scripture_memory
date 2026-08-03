@@ -19,35 +19,6 @@ struct PackListView: View {
 
     private let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
 
-    // MARK: - Search Result Model
-
-    struct VerseSearchResult: Identifiable {
-        var id: String { "\(pack.name)-\(verse.id)" }
-        let verse:      Verse
-        let pack:       Pack
-        let verseIndex: Int
-    }
-
-    // MARK: - Search Logic
-
-    private var searchResults: [VerseSearchResult] {
-        guard !searchText.isEmpty else { return [] }
-        let query = searchText.lowercased()
-        var results: [VerseSearchResult] = []
-        for pack in visiblePacks {
-            for (index, verse) in pack.verses.enumerated() {
-                let ref = "\(verse.book) \(verse.reference)".lowercased()
-                if ref.contains(query)
-                    || verse.title.lowercased().contains(query)
-                    || verse.verse.lowercased().contains(query) {
-                    results.append(VerseSearchResult(verse: verse, pack: pack, verseIndex: index))
-                    if results.count == 25 { return results }
-                }
-            }
-        }
-        return results
-    }
-
     // MARK: - Body
 
     var body: some View {
@@ -72,7 +43,11 @@ struct PackListView: View {
                     .padding(.vertical, 12)
                 }
             } else {
-                searchResultsView
+                VerseSearchResultsList(
+                    query:   searchText,
+                    results: VerseSearch.results(for: searchText, in: visiblePacks),
+                    onSelect: { searchSelected = $0 }
+                )
             }
         }
         .animation(nil, value: searchText.isEmpty)
@@ -114,66 +89,6 @@ struct PackListView: View {
         }
     }
 
-    // MARK: - Search Results View
-
-    private var searchResultsView: some View {
-        GeometryReader { geo in
-            ScrollView {
-                LazyVStack(spacing: 0) {
-                    if searchResults.isEmpty {
-                        ContentUnavailableView {
-                            Label("No Results", systemImage: "magnifyingglass")
-                        } description: {
-                            Text("No verses match \u{201C}\(searchText)\u{201D}.")
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.top, 48)
-                    } else {
-                        ForEach(Array(searchResults.enumerated()), id: \.element.id) { _, result in
-                            VStack(spacing: 0) {
-                                Button {
-                                    searchSelected = result
-                                } label: {
-                                    HStack(spacing: 14) {
-                                        VStack(alignment: .leading, spacing: 3) {
-                                            Text("\(result.verse.book) \(result.verse.reference)")
-                                                .font(.system(size: 15, weight: .semibold))
-                                                .foregroundStyle(.primary)
-                                            Text(result.verse.title)
-                                                .font(.system(size: 13, weight: .medium))
-                                                .foregroundStyle(.primary)
-                                            Text(result.verse.verse)
-                                                .font(.system(size: 12))
-                                                .foregroundStyle(.secondary)
-                                                .lineLimit(1)
-                                                .truncationMode(.tail)
-                                                .multilineTextAlignment(.leading)
-                                            Text(result.pack.name)
-                                                .font(.system(size: 11, weight: .medium))
-                                                .foregroundStyle(.tertiary)
-                                        }
-                                        Spacer()
-                                        Image(systemName: "chevron.right")
-                                            .font(.system(size: 12, weight: .semibold))
-                                            .foregroundStyle(.secondary)
-                                    }
-                                    .padding(.horizontal, AppLayout.screenMargin)
-                                    .padding(.vertical, 11)
-                                    .contentShape(Rectangle())
-                                }
-                                .buttonStyle(.plain)
-                                Divider().padding(.leading, 16)
-                            }
-                        }
-                    }
-                }
-                .background(Color(.systemBackground))
-                .clipShape(RoundedRectangle(cornerRadius: AppLayout.cardRadius, style: .continuous))
-                .padding(.horizontal, AppLayout.screenMargin)
-                .padding(.top, 8)
-            }
-        }
-    }
 }
 
 // MARK: - Pack Cover

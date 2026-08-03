@@ -24,6 +24,8 @@ struct TestSessionView: View {
     /// that pulls the grade suggestion down to "Again".
     @State private var peekedVerseIds:       Set<Int> = []
     @State private var showVerseSelector     = false
+    /// Pending "marked complete" undo prompt.
+    @State private var undoToastState:       UndoToastState?
 
     // SRS session bookkeeping. Lets the user swipe back to an already-graded
     // card and change the grade without compounding (regrade computes from
@@ -111,8 +113,11 @@ struct TestSessionView: View {
             }
         }
         .background(Color(.systemGroupedBackground))
+        .undoToast($undoToastState)
+        .speechErrorAlert(speech)
         .onChange(of: vm.currentIndex) { _, _ in
             vm.clearInputs()
+            vm.resetDictation()
             pendingGrade = nil   // each card starts from its own suggested difficulty
             if speech.isListening { speech.stopListening() }
             if isScrubbing {
@@ -126,9 +131,15 @@ struct TestSessionView: View {
         }
         .onChange(of: speech.transcript) { _, text in
             guard speech.isListening else { return }
-            switch speechTarget {
-            case .title: vm.titleInput = text
-            case .verse: vm.verseInput = text
+            // Entire Verse collects the transcript as free text to submit; the two
+            // typing modes match it word by word against the hidden verse instead.
+            if studyMode == .submit {
+                switch speechTarget {
+                case .title: vm.titleInput = text
+                case .verse: vm.verseInput = text
+                }
+            } else {
+                vm.processDictation(text)
             }
         }
         .onChange(of: isPeeking) { _, peeking in
@@ -624,8 +635,13 @@ struct TestSessionView: View {
         Button {
             learning.markLearnt(verse)
             HapticEngine.success()
+            // One tap, right under the card, and it advances the learning cursor —
+            // give it a moment's grace before it's final.
+            undoToastState = UndoToastState(message: "Marked as complete") {
+                learning.unmarkLearnt(verse)
+            }
         } label: {
-            Label("Mark as Complete", systemImage: "checkmark.circle.fill")
+            Label("Complete", systemImage: "checkmark.circle.fill")
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity).padding(.vertical, 12)
@@ -782,8 +798,7 @@ struct TestSessionView: View {
     private var inputField: some View {
         HStack(spacing: 10) {
             HStack(spacing: 10) {
-                Image(systemName: "character.cursor.ibeam")
-                    .foregroundColor(.secondary).font(.system(size: 16))
+                dictationButton
 
                 TextField(studyMode.inputPlaceholder, text: $vm.inputText)
                     .font(.system(size: 17))
@@ -799,18 +814,15 @@ struct TestSessionView: View {
                             if correct {
                                 HapticEngine.light()
                             } else {
-                                // A wrong first letter is a genuine recall miss. Count it
-                                // so the SRS grade suggestion reflects the struggle — these
-                                // modes have no diff to score, unlike submit mode, so without
-                                // this every card looks perfect and is always suggested "Good".
-                                vm.recordMistake()
+                                // Deliberately unscored — a mistyped letter is as likely a
+                                // fat finger as a memory lapse. Same for full word below.
+                                // See `TestSessionViewModel.recordMistake`.
                                 HapticEngine.error(); triggerShake($shakeOffset)
                             }
                         case .fullWord:
                             if vm.processFullWordInput(newValue) {
                                 HapticEngine.light()
                             } else if newValue.hasSuffix(" ") {
-                                vm.recordMistake()
                                 HapticEngine.error(); triggerShake($shakeOffset)
                             }
                         case .submit:
@@ -828,6 +840,27 @@ struct TestSessionView: View {
 
             hintButton
         }
+    }
+
+    /// Speak the verse instead of typing it. Takes the slot the decorative
+    /// "character.cursor.ibeam" glyph used to occupy inside the text field: the
+    /// control row (peek, field, hint) has no width left for a fourth button, and
+    /// that glyph was ornament. Entire Verse mode keeps its own larger mic in
+    /// `submitControls` — this field only exists in the two typing modes.
+    ///
+    /// A `Button`, so pressing it doesn't resign the field's first responder and
+    /// dismiss the keyboard mid-verse.
+    private var dictationButton: some View {
+        Button { toggleSpeech() } label: {
+            Image(systemName: speech.isListening ? "mic.fill" : "mic")
+                .font(.system(size: 16))
+                .foregroundColor(speech.isListening ? .red : .secondary)
+                .contentTransition(.symbolEffect(.replace))
+                .frame(width: 22, height: 22)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(speech.isListening ? "Stop dictation" : "Dictate verse")
     }
 
     /// Reveals the next hidden word (verse first, then title). Wrapped in a
@@ -944,8 +977,23 @@ struct TestSessionView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { focusInput() }
     }
 
-    private func focusInput() {
+    /// Puts the keyboard back on the answer input, re-arming until it actually takes.
+    ///
+    /// Completing a card unmounts the input field (grading buttons take its place),
+    /// so on the *next* card the field is a freshly inserted view. A lone
+    /// `isInputFocused = true` fired while that insertion is still animating in gets
+    /// dropped on the floor — which is why the keyboard stayed shut for the rest of
+    /// the session once you finished your first verse. Retrying costs nothing when
+    /// focus lands on the first attempt (the guard below stops immediately).
+    private func focusInput(retriesLeft: Int = 4) {
         studyMode == .submit ? (submitFocus = .title) : (isInputFocused = true)
+        guard retriesLeft > 0 else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+            // Card finished or session over while we waited — leave the keyboard alone.
+            guard !vm.isCardComplete, !vm.isSessionComplete else { return }
+            let landed = studyMode == .submit ? (submitFocus != nil) : isInputFocused
+            if !landed { focusInput(retriesLeft: retriesLeft - 1) }
+        }
     }
 
     private func toggleSpeech() {
@@ -953,6 +1001,9 @@ struct TestSessionView: View {
             speech.stopListening()
         } else {
             speechTarget = submitFocus ?? .title
+            // The recognizer restarts its transcript from empty, so the
+            // already-matched count has to start over with it.
+            vm.resetDictation()
             speech.startListening()
         }
     }
@@ -988,31 +1039,21 @@ struct TestSessionView: View {
         pendingGrade ?? sessionGrades[verse.id] ?? suggestedGradeFor(verse)
     }
 
-    /// Slips tolerated in the typo-prone full-word mode before the suggestion drops
-    /// from "Good" to "Hard" — keystroke fumbles shouldn't be read as poor recall.
-    private static let typingMistakeTolerance = 2
-
-    /// The algorithm's recommended grade — shown with the "Suggested" tag. Returns
-    /// `nil` when there's no reliable recommendation: first-letter mode is so
-    /// keystroke-heavy that a wrong letter is common, so the mistake count is a poor
-    /// signal — we don't suggest a grade and leave the choice to the user.
+    /// The algorithm's recommended grade — shown with the "Suggested" tag.
+    ///
+    /// Only Entire Verse mode produces one, because it's the only mode that scores an
+    /// answer: it diffs what you actually wrote against the verse. The two typing
+    /// modes reveal the text a word at a time and no longer count slips at all (a
+    /// mistyped letter says more about the keyboard than about recall — see
+    /// `TestSessionViewModel.recordMistake`), so there's nothing left to base a
+    /// recommendation on and the choice is the user's.
     private func suggestedGradeFor(_ verse: Verse) -> SRSGrade? {
-        guard studyMode != .firstLetter else { return nil }
+        guard studyMode == .submit else { return nil }
         // Peeking at the answer is a failed recall — never suggest better than Again.
         if peekedVerseIds.contains(verse.id) { return .again }
 
-        let mistakes = vm.mistakes(for: verse.id)
-        switch studyMode {
-        case .submit:
-            let allCorrect = vm.submitResults[verse.id]?.isAllCorrect == true
-            return suggestedGrade(isAllCorrect: allCorrect, mistakes: mistakes)
-        case .fullWord:
-            // Completion already means every word was eventually correct; only the
-            // number of slips matters, with leeway before counting it as a struggle.
-            return mistakes <= Self.typingMistakeTolerance ? .good : .hard
-        case .firstLetter:
-            return nil   // handled by the guard above; keeps the switch exhaustive
-        }
+        let allCorrect = vm.submitResults[verse.id]?.isAllCorrect == true
+        return suggestedGrade(isAllCorrect: allCorrect, mistakes: vm.mistakes(for: verse.id))
     }
 
     /// Ends the session. In SRS, any card that's finished but still ungraded — e.g.

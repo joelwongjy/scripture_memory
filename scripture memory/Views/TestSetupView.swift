@@ -28,6 +28,12 @@ struct TestSetupView: View {
     @State private var savedSession:      TestSession? = nil
     @State private var showOverwriteAlert = false
 
+    /// Typed-entry state for the card count. Stepping one at a time is fine for a
+    /// nudge but painful for "make it 40", so the number itself is tappable and
+    /// swaps to a number-pad field.
+    @State private var countDraft = ""
+    @FocusState private var countFieldFocused: Bool
+
     private static let savedSessionKey = "lastTestSessionVerseIds"
     private static let quizCountKey    = "reviewSetupQuizCount"
 
@@ -293,10 +299,7 @@ struct TestSetupView: View {
                     .opacity(clampedCount <= 1 ? 0.35 : 1)
                     .accessibilityLabel("Fewer cards to quiz")
 
-                    Text("\(clampedCount)")
-                        .font(.system(size: 22, weight: .bold, design: .monospaced))
-                        .frame(minWidth: 36)
-                        .accessibilityLabel("\(clampedCount) cards to quiz")
+                    countField
 
                     Button {
                         if quizCount < selectedCount { quizCount += 1 }
@@ -336,7 +339,77 @@ struct TestSetupView: View {
         .overlay(Rectangle().fill(Color(.separator).opacity(0.4)).frame(height: 0.5), alignment: .top)
     }
 
+    /// The card count, tappable to type a value directly instead of stepping there
+    /// one press at a time. Always a `TextField` (rather than a label that swaps for
+    /// one on tap) so tapping it focuses an already-mounted responder and the keypad
+    /// opens on the first tap. While unfocused it renders the clamped count, so it
+    /// still tracks the +/- buttons and the selection.
+    private var countField: some View {
+        TextField("", text: $countDraft)
+            .keyboardType(.numberPad)
+            .multilineTextAlignment(.center)
+            .font(.system(size: 22, weight: .bold, design: .monospaced))
+            .focused($countFieldFocused)
+            .frame(minWidth: 44)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            // Sanitise and commit on every keystroke, so what the field shows is
+            // always exactly what Start will use.
+            //
+            // Two things this guards against. `.numberPad` only limits what the
+            // on-screen keyboard *offers* — a hardware keyboard, dictation or paste
+            // can still put letters in, so non-digits are stripped as they arrive.
+            // And committing only when editing ended wasn't enough: tapping a pack
+            // row doesn't resign focus, so the field could sit there reading "999"
+            // while the session quietly still used the old number.
+            .onChange(of: countDraft) { _, newValue in
+                var digits = String(newValue.filter(\.isNumber).prefix(4))
+                if let typed = Int(digits) {
+                    let clamped = max(1, min(typed, max(1, selectedCount)))
+                    // Rewrite the field too, so it can never display a count that's
+                    // out of range for the current selection.
+                    if clamped != typed { digits = "\(clamped)" }
+                    quizCount = clamped
+                }
+                // An empty field mid-edit is fine — `commitCountEdit` restores a
+                // valid number when focus leaves.
+                if digits != newValue { countDraft = digits }
+            }
+            .onChange(of: countFieldFocused) { _, focused in
+                if focused {
+                    countDraft = ""          // start clean — typing replaces, not appends
+                } else {
+                    commitCountEdit()
+                }
+            }
+            .onChange(of: clampedCount) { _, newValue in
+                // +/- taps and selection changes while not editing.
+                if !countFieldFocused { countDraft = "\(newValue)" }
+            }
+            .onAppear { countDraft = "\(clampedCount)" }
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("Done") { countFieldFocused = false }
+                }
+            }
+            .accessibilityLabel("Cards to quiz")
+            .accessibilityValue("\(clampedCount)")
+            .accessibilityHint("Tap to type a number")
+    }
+
     // MARK: - Actions
+
+    /// Applies a typed card count, clamped to 1...selected. An empty or unparseable
+    /// draft (tapped in, then out) falls back to the count already in effect.
+    private func commitCountEdit() {
+        let digits = countDraft.filter(\.isNumber)
+        if let typed = Int(digits), typed >= 1 {
+            quizCount = max(1, min(typed, max(1, selectedCount)))
+        }
+        countDraft = "\(clampedCount)"
+    }
 
     private func launchNewSession() {
         // Wipe any stale progress so the new session starts clean
