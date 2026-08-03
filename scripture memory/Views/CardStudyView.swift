@@ -248,9 +248,11 @@ struct CardStudyView: View {
         }
         .background(Color(.systemGroupedBackground))
         .undoToast($undoToastState)
+        .speechErrorAlert(speech)
         .onChange(of: vm.isReviewMode) { _, reviewing in handleReviewModeChange(reviewing) }
         .onChange(of: vm.currentIndex) { _, _ in
             vm.clearInputs()
+            vm.resetDictation()
             if speech.isListening { speech.stopListening() }
             if isScrubbing {
                 if submitFocus != nil { submitFocus = .title }
@@ -260,9 +262,15 @@ struct CardStudyView: View {
         }
         .onChange(of: speech.transcript) { _, text in
             guard speech.isListening else { return }
-            switch speechTarget {
-            case .title: vm.titleInput = text
-            case .verse: vm.verseInput = text
+            // Entire Verse collects the transcript as free text to submit; the two
+            // typing modes match it word by word against the hidden verse instead.
+            if studyMode == .submit {
+                switch speechTarget {
+                case .title: vm.titleInput = text
+                case .verse: vm.verseInput = text
+                }
+            } else {
+                vm.processDictation(text)
             }
         }
         .onChange(of: submitFocus) { _, newFocus in
@@ -741,7 +749,9 @@ struct CardStudyView: View {
                 refocusIfNeeded()
             }
         } label: {
-            Label("Mark as Complete", systemImage: "checkmark.circle.fill")
+            // Short label: it shares the row with "Try Again", and the checkmark
+            // plus its position on the cursor verse already carry the meaning.
+            Label("Complete", systemImage: "checkmark.circle.fill")
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity).padding(.vertical, 12)
@@ -815,8 +825,7 @@ struct CardStudyView: View {
     private var inputField: some View {
         HStack(spacing: 10) {
             HStack(spacing: 10) {
-                Image(systemName: "character.cursor.ibeam")
-                    .foregroundColor(.secondary).font(.system(size: 16))
+                dictationButton
 
                 TextField(studyMode.inputPlaceholder, text: $vm.inputText)
                     .font(.system(size: 17))
@@ -851,6 +860,27 @@ struct CardStudyView: View {
 
             hintButton
         }
+    }
+
+    /// Speak the verse instead of typing it. Takes the slot the decorative
+    /// "character.cursor.ibeam" glyph used to occupy inside the text field: the
+    /// control row (peek, field, hint) has no width left for a fourth button, and
+    /// that glyph was ornament. Entire Verse mode keeps its own larger mic in
+    /// `submitControls` — this field only exists in the two typing modes.
+    ///
+    /// A `Button`, so pressing it doesn't resign the field's first responder and
+    /// dismiss the keyboard mid-verse.
+    private var dictationButton: some View {
+        Button { toggleSpeech() } label: {
+            Image(systemName: speech.isListening ? "mic.fill" : "mic")
+                .font(.system(size: 16))
+                .foregroundColor(speech.isListening ? .red : .secondary)
+                .contentTransition(.symbolEffect(.replace))
+                .frame(width: 22, height: 22)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(speech.isListening ? "Stop dictation" : "Dictate verse")
     }
 
     /// Reveals the next hidden word (verse first, then title). Wrapped in a
@@ -998,6 +1028,9 @@ struct CardStudyView: View {
             speech.stopListening()
         } else {
             speechTarget = submitFocus ?? .title
+            // The recognizer restarts its transcript from empty, so the
+            // already-matched count has to start over with it.
+            vm.resetDictation()
             speech.startListening()
         }
     }

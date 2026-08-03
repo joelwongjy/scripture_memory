@@ -74,7 +74,7 @@ struct FlashcardView: View {
             HStack(spacing: 4) {
                 Image(systemName: "checkmark.circle.fill")
                     .font(.system(size: 11, weight: .bold))
-                Text("Mark as Complete")
+                Text("Complete")
                     .font(.system(size: 11, weight: .bold))
             }
             .foregroundStyle(.white)
