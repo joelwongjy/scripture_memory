@@ -116,20 +116,28 @@ final class CardStudyViewModel: ObservableObject {
         }
     }
 
+    /// Flips between the pack's own order and a random one.
+    ///
+    /// Reordering is purely presentational: every bit of progress (revealed word
+    /// counts, submitted answers) is keyed by verse **id**, not by position, so
+    /// shuffling can't invalidate any of it. Wiping those dictionaries here meant
+    /// toggling shuffle off — the natural "put it back how it was" gesture — threw
+    /// away the whole session. Keep the progress, and stay parked on the verse the
+    /// user is looking at rather than snapping back to the top.
     func toggleShuffle() {
+        let anchorId = currentVerse?.id
         var t = Transaction(); t.disablesAnimations = true
         withTransaction(t) {
-            isShuffled            = !isShuffled
-            verses                = isShuffled ? originalVerses.shuffled() : originalVerses
-            currentIndex          = 0
-            titleRevealedCounts   = [:]
-            verseRevealedCounts   = [:]
-            submitResults         = [:]
+            isShuffled = !isShuffled
+            verses     = isShuffled ? originalVerses.shuffled() : originalVerses
+            currentIndex = anchorId.flatMap { id in verses.firstIndex { $0.id == id } } ?? 0
             inputText  = ""
             titleInput = ""
             verseInput = ""
-            activeSection = .title
         }
+        // `currentIndex`'s didSet only re-points the highlight when the index
+        // actually changed — the anchor verse may well land on the same index.
+        syncActiveSection()
     }
 
     /// Clears all text inputs. Call when the user navigates to a new card.

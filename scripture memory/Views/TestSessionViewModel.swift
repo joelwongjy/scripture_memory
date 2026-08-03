@@ -135,9 +135,16 @@ final class TestSessionViewModel: ObservableObject {
             : verseRevealedCounts[verseId, default: 0]
     }
 
-    // MARK: - Mistake Tracking (submit mode only)
+    // MARK: - Mistake Tracking
 
+    /// Only Entire Verse mode scores. The two typing modes reveal the text a word at
+    /// a time against a phone keyboard, so a fat-fingered neighbouring key reads as a
+    /// recall miss — the count measures typing accuracy far more than memory, and it
+    /// handed people a negative for slips they never made. Nothing is tracked in
+    /// those modes: no score, and no input to the SRS grade suggestion (which
+    /// declines to suggest anything there — see `suggestedGradeFor`).
     func recordMistake() {
+        guard studyMode == .submit else { return }
         guard let verse = currentVerse else { return }
         let current = mistakeCounts[verse.id, default: 0]
         guard current < 5 else { return }

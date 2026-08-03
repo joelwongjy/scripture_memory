@@ -167,7 +167,8 @@ struct FlashcardView: View {
                          words: verse.verseWords,
                          revealed: verseRevealedCount,
                          cardWidth: cardWidth,
-                         font: .system(size: verseSize, design: .serif))
+                         font: .system(size: verseSize, design: .serif),
+                         fillsRemainingSpace: true)
 
             if !hardMode && activeRevealed < activeWords.count {
                 Spacer().frame(height: 10)
@@ -178,8 +179,13 @@ struct FlashcardView: View {
 
     // MARK: - Section View
 
+    /// - Parameter fillsRemainingSpace: give this section the card's leftover
+    ///   vertical space as tap target. Set on the verse (the last section), so the
+    ///   empty area beneath it — which visually reads as part of the verse — selects
+    ///   the verse instead of doing nothing.
     @ViewBuilder
-    private func sectionView(_ section: CardSection, words: [String], revealed: Int, cardWidth: CGFloat, font: Font) -> some View {
+    private func sectionView(_ section: CardSection, words: [String], revealed: Int, cardWidth: CGFloat, font: Font,
+                             fillsRemainingSpace: Bool = false) -> some View {
         let isActive   = (activeSection == section)
         let isComplete = revealed >= words.count && !words.isEmpty
         let verseGap = verseLineSpacing(cardWidth: cardWidth)
@@ -211,6 +217,15 @@ struct FlashcardView: View {
                     .offset(x: -6)
             }
         }
+        // Stretch the tap target past the glyphs: full card width, and for the verse
+        // all the way down through the blank space below it. Aiming at the text
+        // itself was a needle-thread — in hard mode a whole section is the single
+        // word "Verse", leaving most of the card dead to taps. Applied *after* the
+        // active-section overlay so the accent bar still hugs the text rather than
+        // running the height of the card.
+        .frame(maxWidth: .infinity,
+               maxHeight: fillsRemainingSpace ? .infinity : nil,
+               alignment: .topLeading)
         .contentShape(Rectangle())
         // A finished section (all words revealed) can't be re-focused — tapping it
         // shouldn't pull the keyboard off the section you're still working on.

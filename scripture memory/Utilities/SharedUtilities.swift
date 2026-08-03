@@ -158,8 +158,7 @@ enum StudyControlMetrics {
 /// visually subordinate to the centered primary action. Compact (matches the
 /// mic / keyboard-dismiss buttons). Wrapped in a `Button` (with a no-op action)
 /// so pressing it never resigns the focused text field — otherwise the keyboard
-/// would dismiss mid-review. The `DragGesture(minimumDistance: 0)` rides
-/// alongside for press-and-hold: press down reveals, release hides.
+/// would dismiss mid-review.
 struct PeekHoldButton: View {
     @Binding var isPeeking: Bool
 
@@ -180,7 +179,13 @@ struct PeekHoldButton: View {
                 )
                 .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressReportingButtonStyle { pressed in
+            withAnimation(.easeInOut(duration: 0.1)) { isPeeking = pressed }
+            if pressed {
+                HapticEngine.light()
+                dismissHint()
+            }
+        })
         .accessibilityLabel("Peek at answer")
         .accessibilityHint("Press and hold to reveal the verse")
         .accessibilityAddTraits(.isButton)
@@ -198,19 +203,6 @@ struct PeekHoldButton: View {
                     .allowsHitTesting(false)
             }
         }
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { _ in
-                    if !isPeeking {
-                        withAnimation(.easeInOut(duration: 0.1)) { isPeeking = true }
-                        HapticEngine.light()
-                        dismissHint()
-                    }
-                }
-                .onEnded { _ in
-                    withAnimation(.easeInOut(duration: 0.1)) { isPeeking = false }
-                }
-        )
         .task {
             guard !hintSeen else { return }
             try? await Task.sleep(for: .milliseconds(700))   // let the screen settle
@@ -224,6 +216,24 @@ struct PeekHoldButton: View {
     private func dismissHint() {
         if showHint { withAnimation(.easeOut(duration: 0.25)) { showHint = false } }
         hintSeen = true
+    }
+}
+
+/// Reports a button's press state the moment the touch lands, and again on release.
+///
+/// `PeekHoldButton` used to get press-and-hold from a `DragGesture(minimumDistance: 0)`
+/// riding alongside the button. That gesture sits behind UIKit's decision about
+/// whether the touch is really a drag, and inside the review screen's gesture stack
+/// (card swipe + tap-to-focus + the button itself) that arbitration took a long
+/// beat — so peek felt like it demanded a multi-second press before anything
+/// happened. A `ButtonStyle`'s `isPressed` flips on touch-down with no arbitration
+/// to wait for, so the reveal is immediate.
+struct PressReportingButtonStyle: ButtonStyle {
+    let onPressChange: (Bool) -> Void
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .onChange(of: configuration.isPressed) { _, pressed in onPressChange(pressed) }
     }
 }
 

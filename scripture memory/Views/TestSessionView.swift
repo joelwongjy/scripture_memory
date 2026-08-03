@@ -799,18 +799,15 @@ struct TestSessionView: View {
                             if correct {
                                 HapticEngine.light()
                             } else {
-                                // A wrong first letter is a genuine recall miss. Count it
-                                // so the SRS grade suggestion reflects the struggle — these
-                                // modes have no diff to score, unlike submit mode, so without
-                                // this every card looks perfect and is always suggested "Good".
-                                vm.recordMistake()
+                                // Deliberately unscored — a mistyped letter is as likely a
+                                // fat finger as a memory lapse. Same for full word below.
+                                // See `TestSessionViewModel.recordMistake`.
                                 HapticEngine.error(); triggerShake($shakeOffset)
                             }
                         case .fullWord:
                             if vm.processFullWordInput(newValue) {
                                 HapticEngine.light()
                             } else if newValue.hasSuffix(" ") {
-                                vm.recordMistake()
                                 HapticEngine.error(); triggerShake($shakeOffset)
                             }
                         case .submit:
@@ -944,8 +941,23 @@ struct TestSessionView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { focusInput() }
     }
 
-    private func focusInput() {
+    /// Puts the keyboard back on the answer input, re-arming until it actually takes.
+    ///
+    /// Completing a card unmounts the input field (grading buttons take its place),
+    /// so on the *next* card the field is a freshly inserted view. A lone
+    /// `isInputFocused = true` fired while that insertion is still animating in gets
+    /// dropped on the floor — which is why the keyboard stayed shut for the rest of
+    /// the session once you finished your first verse. Retrying costs nothing when
+    /// focus lands on the first attempt (the guard below stops immediately).
+    private func focusInput(retriesLeft: Int = 4) {
         studyMode == .submit ? (submitFocus = .title) : (isInputFocused = true)
+        guard retriesLeft > 0 else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+            // Card finished or session over while we waited — leave the keyboard alone.
+            guard !vm.isCardComplete, !vm.isSessionComplete else { return }
+            let landed = studyMode == .submit ? (submitFocus != nil) : isInputFocused
+            if !landed { focusInput(retriesLeft: retriesLeft - 1) }
+        }
     }
 
     private func toggleSpeech() {
@@ -988,31 +1000,21 @@ struct TestSessionView: View {
         pendingGrade ?? sessionGrades[verse.id] ?? suggestedGradeFor(verse)
     }
 
-    /// Slips tolerated in the typo-prone full-word mode before the suggestion drops
-    /// from "Good" to "Hard" — keystroke fumbles shouldn't be read as poor recall.
-    private static let typingMistakeTolerance = 2
-
-    /// The algorithm's recommended grade — shown with the "Suggested" tag. Returns
-    /// `nil` when there's no reliable recommendation: first-letter mode is so
-    /// keystroke-heavy that a wrong letter is common, so the mistake count is a poor
-    /// signal — we don't suggest a grade and leave the choice to the user.
+    /// The algorithm's recommended grade — shown with the "Suggested" tag.
+    ///
+    /// Only Entire Verse mode produces one, because it's the only mode that scores an
+    /// answer: it diffs what you actually wrote against the verse. The two typing
+    /// modes reveal the text a word at a time and no longer count slips at all (a
+    /// mistyped letter says more about the keyboard than about recall — see
+    /// `TestSessionViewModel.recordMistake`), so there's nothing left to base a
+    /// recommendation on and the choice is the user's.
     private func suggestedGradeFor(_ verse: Verse) -> SRSGrade? {
-        guard studyMode != .firstLetter else { return nil }
+        guard studyMode == .submit else { return nil }
         // Peeking at the answer is a failed recall — never suggest better than Again.
         if peekedVerseIds.contains(verse.id) { return .again }
 
-        let mistakes = vm.mistakes(for: verse.id)
-        switch studyMode {
-        case .submit:
-            let allCorrect = vm.submitResults[verse.id]?.isAllCorrect == true
-            return suggestedGrade(isAllCorrect: allCorrect, mistakes: mistakes)
-        case .fullWord:
-            // Completion already means every word was eventually correct; only the
-            // number of slips matters, with leeway before counting it as a struggle.
-            return mistakes <= Self.typingMistakeTolerance ? .good : .hard
-        case .firstLetter:
-            return nil   // handled by the guard above; keeps the switch exhaustive
-        }
+        let allCorrect = vm.submitResults[verse.id]?.isAllCorrect == true
+        return suggestedGrade(isAllCorrect: allCorrect, mistakes: vm.mistakes(for: verse.id))
     }
 
     /// Ends the session. In SRS, any card that's finished but still ungraded — e.g.

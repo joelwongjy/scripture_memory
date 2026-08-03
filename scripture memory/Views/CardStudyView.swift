@@ -102,10 +102,17 @@ struct CardStudyView: View {
     private var offersMarkLearnt: Bool { onMarkLearnt != nil || isCurrentLearningVerse }
 
     /// Float the "Current verse" shortcut when this pack holds the current stopped
-    /// verse, we're parked on a different card, and the keyboard isn't up.
+    /// verse and we're parked on a different card.
+    ///
+    /// This used to also require the keyboard to be down. Review mode holds focus on
+    /// the answer field the whole time it's open, so that condition was never
+    /// satisfied there and the shortcut simply didn't exist in review — the mode
+    /// where hopping back to the verse you're actually learning matters most. Read
+    /// mode has no text input at all, so the condition never did anything there
+    /// either; it only ever suppressed the button.
     private var showGoToCurrent: Bool {
         guard let i = currentVerseIndexInPack else { return false }
-        return i != vm.currentIndex && !isEditing
+        return i != vm.currentIndex
     }
 
     private func jumpToCurrentVerse() {
@@ -323,15 +330,35 @@ struct CardStudyView: View {
                 let goingBack = dragOffset.width > 0
                 // Peek is rendered as an overlay in `body` (consistent across
                 // all modes); the underlying card never swaps for peek.
-                makeCard(verse: verse, verseIndex: vm.currentIndex, interactive: true, isPeeking: false)
+                let frontCard = makeCard(verse: verse, verseIndex: vm.currentIndex, interactive: true, isPeeking: false)
                     .offset(x: goingBack ? 0 : dragOffset.width,
                             y: goingBack ? backwardDragProgress * 12 : dragOffset.height * 0.1)
                     .scaleEffect(goingBack ? 1.0 - backwardDragProgress * 0.05 : 1.0)
                     .rotationEffect(goingBack ? .zero : .degrees(Double(dragOffset.width) * 0.03))
                     .zIndex(2)
-                    // `simultaneousGesture` lets TextField taps and TextEditor cursor/selection still fire;
-                    // the gesture itself filters out predominantly-vertical drags so editor scroll keeps working.
-                    .simultaneousGesture(swipeGesture)
+                // `simultaneousGesture` lets TextField taps and TextEditor cursor/selection still fire;
+                // the gesture itself filters out predominantly-vertical drags so editor scroll keeps working.
+                let swipingCard = frontCard.simultaneousGesture(swipeGesture)
+
+                // Tap anywhere on the card to bring the keyboard back. Previously the
+                // only way in was the section text itself — a couple of thin lines —
+                // so most of the card was dead space. Restricted to the masked-recall
+                // modes: in submit mode the card *is* two text inputs, and forcing
+                // focus to the title would steal taps meant for the verse editor.
+                if vm.isReviewMode && studyMode != .submit {
+                    swipingCard
+                        // Simultaneous so a tap on the title/verse underscores still
+                        // reaches FlashcardView's section handler (which picks the
+                        // section) while taps elsewhere just open the keyboard.
+                        .simultaneousGesture(
+                            TapGesture().onEnded {
+                                guard !vm.isCardComplete else { return }
+                                focusInput()
+                            }
+                        )
+                } else {
+                    swipingCard
+                }
             }
             if vm.currentIndex > 0 && dragOffset.width > 0 {
                 makeCard(verse: vm.verses[vm.currentIndex - 1], verseIndex: vm.currentIndex - 1, interactive: false)
@@ -527,17 +554,25 @@ struct CardStudyView: View {
             onScrubIndexChange: nil,
             canStepBeyondStart: canCrossBackward,
             canStepBeyondEnd: canCrossForward,
+            // Stepping lands on a new card to answer, so the keyboard comes back with
+            // it — `refocusIfNeeded` no-ops outside review mode and on finished cards.
             onStepBack: {
                 isScrubbing = true
                 stepBackward()
                 HapticEngine.light()
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { isScrubbing = false }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                    isScrubbing = false
+                    refocusIfNeeded()
+                }
             },
             onStepForward: {
                 isScrubbing = true
                 stepForward()
                 HapticEngine.light()
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { isScrubbing = false }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                    isScrubbing = false
+                    refocusIfNeeded()
+                }
             }
         )
     }
@@ -619,7 +654,10 @@ struct CardStudyView: View {
             HapticEngine.success()
             isScrubbing = true
             stepForward()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { isScrubbing = false }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                isScrubbing = false
+                refocusIfNeeded()
+            }
         } label: {
             Label("Mark as Complete", systemImage: "checkmark.circle.fill")
                 .font(.system(size: 16, weight: .semibold))
@@ -854,8 +892,23 @@ struct CardStudyView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { focusInput() }
     }
 
-    private func focusInput() {
+    /// Puts the keyboard back on the answer input, re-arming until it actually takes.
+    ///
+    /// Completing a card unmounts the input field (the Try Again / Mark as Complete
+    /// row takes its place), so on the *next* card the field is a freshly inserted
+    /// view. A lone `isInputFocused = true` fired while that insertion is still
+    /// animating in gets dropped on the floor — which is why the keyboard stayed shut
+    /// once you'd finished a verse. Retrying costs nothing when focus lands on the
+    /// first attempt (the guard below stops immediately).
+    private func focusInput(retriesLeft: Int = 4) {
         studyMode == .submit ? (submitFocus = .title) : (isInputFocused = true)
+        guard retriesLeft > 0 else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+            // Left review mode or finished the card while we waited — leave it alone.
+            guard vm.isReviewMode, !vm.isCardComplete else { return }
+            let landed = studyMode == .submit ? (submitFocus != nil) : isInputFocused
+            if !landed { focusInput(retriesLeft: retriesLeft - 1) }
+        }
     }
 
     private func toggleSpeech() {
