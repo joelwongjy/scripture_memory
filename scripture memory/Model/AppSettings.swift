@@ -46,8 +46,17 @@ enum BibleVersion: String, CaseIterable {
         }
     }
 
+    /// Packs that have no NIV 2011 edition in the material we're tested on. Their
+    /// cards stay on NIV 1984 whichever translation is selected — otherwise the
+    /// user would memorise wording that the test doesn't accept.
+    static let niv84OnlyPackNames: Set<String> = ["5 Assurances"]
+
     var packs: [Pack] {
-        self == .niv11 ? packsNIV11 : packsNIV84
+        guard self == .niv11 else { return packsNIV84 }
+        return packsNIV11.map { pack in
+            guard Self.niv84OnlyPackNames.contains(pack.name) else { return pack }
+            return packsNIV84.first { $0.name == pack.name } ?? pack
+        }
     }
 }
 

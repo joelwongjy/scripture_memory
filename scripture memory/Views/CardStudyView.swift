@@ -141,6 +141,17 @@ struct CardStudyView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { isScrubbing = false }
     }
 
+    /// Sends the read list back to the first card. `scrollPosition` only scrolls on a
+    /// *change* of id, so a re-entry of the same target (index 0 is a common resting
+    /// place) needs the clear-then-set — otherwise a shuffle that leaves the cursor
+    /// on 0 would reorder the list under a stationary scroll offset.
+    private func scrollListToTop() {
+        verticalScrollTarget = nil
+        DispatchQueue.main.async {
+            withAnimation(.easeInOut(duration: 0.25)) { verticalScrollTarget = 0 }
+        }
+    }
+
     /// List (vertical-scroll read) visibility: show the jump shortcut whenever the
     /// cursor card's centre has scrolled out of the viewport. Cards are a fixed
     /// height here, so the centre is `topPadding + index·(card+spacing) + card/2`.
@@ -212,7 +223,8 @@ struct CardStudyView: View {
                                     cardLabel: vm.cardLabel(for: verse),
                                     width: cardWidth,
                                     height: cardH,
-                                    isPeeking: isPeeking
+                                    isPeeking: isPeeking,
+                                    showCardLabel: showsCardLabel
                                 )
                                 .allowsHitTesting(false)
                                 .transition(.opacity)
@@ -323,7 +335,11 @@ struct CardStudyView: View {
                 } else {
                     HStack(spacing: 8) {
                         Button {
-                            vm.toggleShuffle()
+                            let isList = isVerticalScroll && !vm.isReviewMode
+                            vm.toggleShuffle(restartFromTop: isList)
+                            // `currentIndex` may already be 0, in which case its
+                            // onChange won't fire — drive the list to the top here.
+                            if isList { scrollListToTop() }
                             HapticEngine.light()
                         } label: {
                             Image(systemName: "shuffle")
@@ -354,6 +370,11 @@ struct CardStudyView: View {
 
     /// True whenever either text input has keyboard focus.
     private var isEditing: Bool { isInputFocused || submitFocus != nil }
+
+    /// Read mode shows where each verse sits (`"A-1 · TMS 60"`); review mode hides
+    /// it. Once the verse is masked, its subpack and pack name are a clue about the
+    /// answer rather than a caption — see `FlashcardView.showCardLabel`.
+    private var showsCardLabel: Bool { !vm.isReviewMode }
 
     /// "3 of 37" for the top bar. Single-card modes track `currentIndex`; list mode
     /// tracks what's actually on screen, since scrolling there doesn't move
@@ -474,9 +495,21 @@ struct CardStudyView: View {
                         // fixed height here, so inverting the same layout the jump
                         // button uses (12pt top pad, card + 20pt spacing) gives the
                         // index directly.
-                        let viewportCentre = m.offset + outerGeo.size.height / 2
-                        let raw = (viewportCentre - 12 - cardHeight / 2) / (cardHeight + 20)
-                        let idx = min(max(Int(raw.rounded()), 0), max(0, vm.verses.count - 1))
+                        //
+                        // Both ends are special-cased: the list can't scroll far enough
+                        // to centre the first or last card, so at rest against either
+                        // stop the middle of the viewport is still pointing a card or
+                        // two inward — and "1 of 18" is what the top of the list means.
+                        let idx: Int
+                        if m.offset <= 1 {
+                            idx = 0
+                        } else if m.offset >= maxScroll - 1 {
+                            idx = max(0, vm.verses.count - 1)
+                        } else {
+                            let viewportCentre = m.offset + outerGeo.size.height / 2
+                            let raw = (viewportCentre - 12 - cardHeight / 2) / (cardHeight + 20)
+                            idx = min(max(Int(raw.rounded()), 0), max(0, vm.verses.count - 1))
+                        }
                         if visibleListIndex != idx { visibleListIndex = idx }
                     }
                     .scrollPosition(id: $verticalScrollTarget, anchor: .center)
@@ -578,7 +611,8 @@ struct CardStudyView: View {
                 verseText: interactive ? $vm.verseInput : .constant(""),
                 result: interactive ? vm.submitResults[verse.id] : nil,
                 focusedField: $submitFocus,
-                isCurrentLearning: learning.isCurrent(verse)
+                isCurrentLearning: learning.isCurrent(verse),
+                showCardLabel: showsCardLabel
             )
             .allowsHitTesting(interactive)
         } else {
@@ -600,6 +634,7 @@ struct CardStudyView: View {
                     vm.activeSection = section
                     DispatchQueue.main.async { focusInput() }
                 } : nil,
+                showCardLabel: showsCardLabel,
                 isCurrentLearning: learning.isCurrent(verse),
                 onMarkComplete: vm.isReviewMode ? nil : { markVerseComplete(verse) }
             )

@@ -9,6 +9,13 @@ struct FlashcardView: View {
     let activeSection:       CardSection
     var onSectionTap:        ((CardSection) -> Void)? = nil
 
+    /// Whether the footer may name the pack the verse came from. Off wherever the
+    /// card is a question — quiz and review both draw from a set the user chose,
+    /// so "TMS 60" under a masked verse narrows the answer before they've recalled
+    /// anything. Spaced repetition keeps it: there the pack is the context you
+    /// need, not a clue.
+    var showCardLabel:       Bool = true
+
     /// Marks this card as the "current stopped verse" (the learning cursor) with a
     /// small badge — shown wherever the verse appears: study card and test card.
     var isCurrentLearning:   Bool = false
@@ -49,9 +56,16 @@ struct FlashcardView: View {
                 if isReviewMode { reviewContent(cardSize: geo.size) } else { readContent(cardSize: geo.size) }
                 Spacer(minLength: 16)
                 HStack(spacing: 6) {
-                    Text(cardLabel)
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(.secondary)
+                    if showCardLabel {
+                        // Just under the reference line rather than fine print —
+                        // "A-12 · Live the New Life" is how you find the card in the
+                        // booklet, so it has to be readable at a glance.
+                        Text(cardLabel)
+                            .font(.system(size: 12.5, weight: .medium))
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                    }
                     Spacer(minLength: 8)
                     if isCurrentLearning {
                         if let onMarkComplete {
@@ -144,7 +158,7 @@ struct FlashcardView: View {
         // that's actually free: the progress block (spacer + bar) and the card's
         // own bottom spacer + label. Undercounting here picks a font one step too
         // big — which is exactly what made long verses overflow and truncate.
-        let reserved = refH + 12 + titleH + 8 + (showsProgress ? 24 : 0) + 34
+        let reserved = refH + 12 + titleH + 8 + (showsProgress ? 24 : 0) + (showCardLabel ? 40 : 24)
         let avail = max(48, cardSize.height - reserved)
         let verseSize = VerseFit.fontSize(verse.verse, width: cardWidth, height: avail,
                                           lineSpacing: verseGap, minSize: 10, maxSize: 16)

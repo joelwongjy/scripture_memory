@@ -245,6 +245,8 @@ struct PeekOverlayCard: View {
     let width:     CGFloat
     let height:    CGFloat
     let isPeeking: Bool
+    /// Matches the card underneath — see `FlashcardView.showCardLabel`.
+    var showCardLabel: Bool = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -267,9 +269,13 @@ struct PeekOverlayCard: View {
 
             Spacer(minLength: 6)
 
-            Text(cardLabel)
-                .font(.system(size: 10, weight: .medium))
-                .foregroundColor(.secondary.opacity(0.5))
+            if showCardLabel {
+                Text(cardLabel)
+                    .font(.system(size: 12.5, weight: .medium))
+                    .foregroundColor(.secondary.opacity(0.5))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
         }
         .flashcardStyle()
         .frame(width: width, height: height)

@@ -33,6 +33,14 @@ struct TestSetupView: View {
     /// swaps to a number-pad field.
     @State private var countDraft = ""
     @FocusState private var countFieldFocused: Bool
+    /// The value the field is showing that a keystroke should *replace* rather than
+    /// extend — set whenever the count arrives from somewhere other than typing
+    /// (focus, +/-, Max), cleared once a digit has replaced it.
+    ///
+    /// The field used to blank itself on focus to get the same effect, which left it
+    /// showing nothing while the stepper still held a value, so any +/- tap made
+    /// with the keypad up looked like it did nothing at all.
+    @State private var countReplaceAnchor: String? = nil
 
     private static let savedSessionKey = "lastTestSessionVerseIds"
     private static let quizCountKey    = "reviewSetupQuizCount"
@@ -286,7 +294,7 @@ struct TestSetupView: View {
             VStack(spacing: 4) {
                 HStack(spacing: 10) {
                     Button {
-                        if quizCount > 1 { quizCount -= 1 }
+                        setCount(clampedCount - 1)
                     } label: {
                         Image(systemName: "minus")
                             .font(.system(size: 13, weight: .semibold))
@@ -302,7 +310,7 @@ struct TestSetupView: View {
                     countField
 
                     Button {
-                        if quizCount < selectedCount { quizCount += 1 }
+                        setCount(clampedCount + 1)
                     } label: {
                         Image(systemName: "plus")
                             .font(.system(size: 13, weight: .semibold))
@@ -315,9 +323,25 @@ struct TestSetupView: View {
                     .opacity(clampedCount >= selectedCount ? 0.35 : 1)
                     .accessibilityLabel("More cards to quiz")
                 }
-                Text("cards to quiz")
-                    .font(.system(size: 11))
-                    .foregroundColor(.secondary)
+                // "Max" is the one count that's tedious to reach by stepping and
+                // annoying to type — quizzing everything you just selected.
+                HStack(spacing: 6) {
+                    Text("cards to quiz")
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
+                    Button {
+                        setCount(selectedCount)
+                        HapticEngine.light()
+                    } label: {
+                        Text("Max")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundStyle(Color.accentColor)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(clampedCount >= selectedCount)
+                    .opacity(clampedCount >= selectedCount ? 0.35 : 1)
+                    .accessibilityLabel("Quiz all \(selectedCount) selected verses")
+                }
             }
 
             Spacer()
@@ -342,17 +366,18 @@ struct TestSetupView: View {
     /// The card count, tappable to type a value directly instead of stepping there
     /// one press at a time. Always a `TextField` (rather than a label that swaps for
     /// one on tap) so tapping it focuses an already-mounted responder and the keypad
-    /// opens on the first tap. While unfocused it renders the clamped count, so it
-    /// still tracks the +/- buttons and the selection.
+    /// opens on the first tap. It renders the live count whether or not it has
+    /// focus, so the +/- buttons and Max keep working with the keypad up.
     private var countField: some View {
         TextField("", text: $countDraft)
             .keyboardType(.numberPad)
             .multilineTextAlignment(.center)
             .font(.system(size: 22, weight: .bold, design: .monospaced))
             .focused($countFieldFocused)
-            .frame(minWidth: 44)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
+            // Fixed size: the field sits between the two stepper circles, and
+            // letting it grow with the digit count shunted them sideways every
+            // time the number crossed 10 or 100.
+            .frame(width: 58, height: 32)
             .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
             // Sanitise and commit on every keystroke, so what the field shows is
             // always exactly what Start will use.
@@ -363,8 +388,18 @@ struct TestSetupView: View {
             // And committing only when editing ended wasn't enough: tapping a pack
             // row doesn't resign focus, so the field could sit there reading "999"
             // while the session quietly still used the old number.
-            .onChange(of: countDraft) { _, newValue in
-                var digits = String(newValue.filter(\.isNumber).prefix(4))
+            .onChange(of: countDraft) { oldValue, newValue in
+                // First digit typed after the count arrived from elsewhere replaces
+                // it rather than extending it: tap the field showing 15, type "8",
+                // get 8 — not 158. Gated on the anchor still being what's on screen,
+                // so a +/- or Max tap made mid-edit isn't mistaken for that keystroke.
+                var incoming = newValue
+                if let anchor = countReplaceAnchor, oldValue == anchor,
+                   newValue.count > anchor.count, newValue.hasPrefix(anchor) {
+                    incoming = String(newValue.dropFirst(anchor.count))
+                    countReplaceAnchor = nil
+                }
+                var digits = String(incoming.filter(\.isNumber).prefix(4))
                 if let typed = Int(digits) {
                     let clamped = max(1, min(typed, max(1, selectedCount)))
                     // Rewrite the field too, so it can never display a count that's
@@ -378,18 +413,31 @@ struct TestSetupView: View {
             }
             .onChange(of: countFieldFocused) { _, focused in
                 if focused {
-                    countDraft = ""          // start clean — typing replaces, not appends
+                    // Keep the number visible while editing (it's what +/- and Max
+                    // drive); the next keystroke swaps it out.
+                    countDraft = "\(clampedCount)"
+                    countReplaceAnchor = "\(clampedCount)"
                 } else {
+                    countReplaceAnchor = nil
                     commitCountEdit()
                 }
             }
             .onChange(of: clampedCount) { _, newValue in
-                // +/- taps and selection changes while not editing.
-                if !countFieldFocused { countDraft = "\(newValue)" }
+                // Any count change that didn't come from typing — +/-, Max, or the
+                // selection shrinking under it. The field tracks it even while
+                // focused, so what's displayed is always what Start will use.
+                guard countDraft != "\(newValue)" else { return }
+                countDraft = "\(newValue)"
+                if countFieldFocused { countReplaceAnchor = "\(newValue)" }
             }
             .onAppear { countDraft = "\(clampedCount)" }
             .toolbar {
                 ToolbarItemGroup(placement: .keyboard) {
+                    Button("Max (\(selectedCount))") {
+                        setCount(selectedCount)
+                        HapticEngine.light()
+                    }
+                    .disabled(selectedCount == 0)
                     Spacer()
                     Button("Done") { countFieldFocused = false }
                 }
@@ -400,6 +448,17 @@ struct TestSetupView: View {
     }
 
     // MARK: - Actions
+
+    /// Single write path for the card count from anything that isn't typing (+/-,
+    /// Max). Pushes the clamped value into the field too, so the number on screen
+    /// and the number Start will use never drift apart — including while the
+    /// keypad is up.
+    private func setCount(_ value: Int) {
+        let clamped = max(1, min(value, max(1, selectedCount)))
+        quizCount  = clamped
+        countDraft = "\(clamped)"
+        countReplaceAnchor = countFieldFocused ? "\(clamped)" : nil
+    }
 
     /// Applies a typed card count, clamped to 1...selected. An empty or unparseable
     /// draft (tapped in, then out) falls back to the count already in effect.

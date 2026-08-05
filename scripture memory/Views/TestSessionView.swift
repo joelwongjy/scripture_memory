@@ -61,6 +61,11 @@ struct TestSessionView: View {
         sessionKind == .srs ? "Review" : "Quiz"
     }
 
+    /// A quiz is drawn from packs the user hand-picked, so naming the pack on the
+    /// card hands them half the answer. The SRS deck is dealt to them and mixes
+    /// everything they're learning, so there the label is orientation, not a clue.
+    private var showsCardLabel: Bool { sessionKind == .srs }
+
     // MARK: - Body
 
     var body: some View {
@@ -90,7 +95,8 @@ struct TestSessionView: View {
                                 cardLabel: vm.cardLabel(for: verse),
                                 width: cardWidth,
                                 height: cardH,
-                                isPeeking: isPeeking
+                                isPeeking: isPeeking,
+                                showCardLabel: showsCardLabel
                             )
                             .allowsHitTesting(false)
                             .transition(.opacity)
@@ -440,7 +446,8 @@ struct TestSessionView: View {
                 verseText: interactive ? $vm.verseInput : .constant(""),
                 result: interactive ? vm.submitResults[verse.id] : nil,
                 focusedField: $submitFocus,
-                isCurrentLearning: learning.isCurrent(verse)
+                isCurrentLearning: learning.isCurrent(verse),
+                showCardLabel: showsCardLabel
             )
             .allowsHitTesting(interactive)
         } else {
@@ -460,6 +467,7 @@ struct TestSessionView: View {
                     vm.activeSection = section
                     DispatchQueue.main.async { focusInput() }
                 } : nil,
+                showCardLabel: showsCardLabel,
                 isCurrentLearning: learning.isCurrent(verse)
             )
         }

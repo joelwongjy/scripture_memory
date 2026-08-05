@@ -122,10 +122,15 @@ final class CardStudyViewModel: ObservableObject {
     /// counts, submitted answers) is keyed by verse **id**, not by position, so
     /// shuffling can't invalidate any of it. Wiping those dictionaries here meant
     /// toggling shuffle off — the natural "put it back how it was" gesture — threw
-    /// away the whole session. Keep the progress, and stay parked on the verse the
-    /// user is looking at rather than snapping back to the top.
-    func toggleShuffle() {
-        let anchorId = currentVerse?.id
+    /// away the whole session. Keep the progress.
+    ///
+    /// `restartFromTop` picks where the reorder leaves you. A single card is a
+    /// place you're standing, so it stays parked on the verse you were looking at.
+    /// A list is a thing you read top-down, and following the old verse to wherever
+    /// it landed just drops you mid-list with no sense of the new order — so the
+    /// list restarts at the first card.
+    func toggleShuffle(restartFromTop: Bool = false) {
+        let anchorId = restartFromTop ? nil : currentVerse?.id
         var t = Transaction(); t.disablesAnimations = true
         withTransaction(t) {
             isShuffled = !isShuffled
@@ -149,15 +154,11 @@ final class CardStudyViewModel: ObservableObject {
 
     // MARK: - Card Label
 
-    /// Returns the footer label for a card, e.g. `"A-1 · TMS 60"`. Uses the
-    /// verse's own pack (not the session's) so cross-pack "Continue Learning"
-    /// sessions still show which pack each verse belongs to.
+    /// Returns the footer label for a card, e.g. `"A-12 · Live the New Life"`.
+    /// Keyed off the verse's own pack (not the session's) so cross-pack "Continue
+    /// Learning" sessions still label each verse correctly.
     func cardLabel(for verse: Verse) -> String {
-        let pack = verse.packName.isEmpty ? packName : verse.packName
-        guard !verse.subpack.isEmpty else { return pack }
-        let subpackVerses = verses.filter { $0.subpack == verse.subpack && $0.packName == verse.packName }
-        let position = (subpackVerses.firstIndex(where: { $0.id == verse.id }) ?? 0) + 1
-        return "\(verse.subpack)-\(position) · \(pack)"
+        CardFooter.label(for: verse, fallbackPack: packName)
     }
 
     // MARK: - Reveal State
