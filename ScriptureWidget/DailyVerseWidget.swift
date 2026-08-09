@@ -95,23 +95,19 @@ struct VerseEntryView: View {
                             titleSize: CGFloat, refSize: CGFloat, verseSize: CGFloat, packSize: CGFloat,
                             gap1: CGFloat, gap2: CGFloat, verseSpacing: CGFloat, titleLines: Int) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(v.title)
-                .font(.system(size: titleSize, weight: .bold, design: .serif))
-                .foregroundStyle(.primary)
-                .fixedSize(horizontal: false, vertical: true)
-                .lineLimit(titleLines)
-                .minimumScaleFactor(0.8)
-            Spacer().frame(height: gap1)
-            Text(v.fullReference)
-                .font(.system(size: refSize))
-                .foregroundStyle(.primary)
-                .lineLimit(1).minimumScaleFactor(0.8)
-            Spacer().frame(height: gap2)
-            Text(v.verse)
-                .font(.system(size: verseSize, design: .serif))
-                .foregroundStyle(.primary)
-                .lineSpacing(verseSpacing)
-                .minimumScaleFactor(0.5)
+            // Title, reference and verse scale together — the sizes below are
+            // proportions, not final values.
+            FittedVerseBlock(title: v.title,
+                             reference: v.fullReference,
+                             verse: v.verse,
+                             baseTitle: titleSize,
+                             baseRef: refSize,
+                             baseVerse: verseSize,
+                             gap1: gap1,
+                             gap2: gap2,
+                             lineSpacing: verseSpacing,
+                             titleLines: titleLines)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             Spacer(minLength: 4)
             HStack(spacing: 3) {
                 if entry.isPinned {
@@ -134,22 +130,21 @@ struct VerseEntryView: View {
         VStack(spacing: 0) {
             // ── Top half: the verse ───────────────────────────────────
             VStack(alignment: .leading, spacing: 0) {
-                Text(v.title)
-                    .font(.system(size: 18, weight: .bold, design: .serif))
-                    .foregroundStyle(.primary)
-                    .lineLimit(2).minimumScaleFactor(0.75)
-                Spacer().frame(height: 5)
-                Text(v.fullReference)
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                Spacer().frame(height: 7)
-                Text(v.verse)
-                    .font(.system(size: 15, design: .serif))
-                    .foregroundStyle(.primary.opacity(0.92))
-                    .lineSpacing(4)
-                    .lineLimit(5)
-                    .minimumScaleFactor(0.7)
+                // Same block fit as the smaller families, but with a tighter
+                // ceiling: the bottom half of this widget is the streak block, so
+                // the verse gets the room the layout gives it, not all of it.
+                FittedVerseBlock(title: v.title,
+                                 reference: v.fullReference,
+                                 verse: v.verse,
+                                 baseTitle: 18,
+                                 baseRef: 14,
+                                 baseVerse: 15,
+                                 gap1: 5,
+                                 gap2: 7,
+                                 lineSpacing: 4,
+                                 titleLines: 2,
+                                 maxScale: 1.3)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 Spacer(minLength: 4)
                 HStack(spacing: 3) {
                     if entry.isPinned {

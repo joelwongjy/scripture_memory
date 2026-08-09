@@ -107,6 +107,7 @@ struct ContentView: View {
         let week      = StreakStore.shared.thisWeek().map {
             WidgetBridge.WeekDay(letter: $0.initial, done: $0.done, today: $0.isToday)
         }
+        WidgetBridge.setEdition(bibleVersion.rawValue)
         WidgetBridge.update(verse: displayed?.verse,
                             isPinned: displayed?.isPinned ?? false,
                             streak: StreakStore.shared.current,

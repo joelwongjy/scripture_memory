@@ -20,10 +20,17 @@ final class CardStudyViewModel: ObservableObject {
     // MARK: - Initialisation
 
     @Published var packName: String
+    /// The verses actually on screen: `originalVerses` after shuffle and the
+    /// favourites filter. Everything else in the session indexes into this.
     @Published var verses: [Verse]
     @Published private(set) var isShuffled = false
+    @Published private(set) var isFavoritesFiltered = false
 
     private var originalVerses: [Verse]
+
+    /// The shuffled permutation, held so that turning the favourites filter on
+    /// and off doesn't silently reshuffle the pack underneath the user.
+    private var shuffledVerses: [Verse] = []
 
     init(packName: String, verses: [Verse], initialIndex: Int = 0, initialReviewMode: Bool = false) {
         self.packName       = packName
@@ -105,7 +112,9 @@ final class CardStudyViewModel: ObservableObject {
             packName            = name
             verses              = newVerses
             originalVerses      = newVerses
+            shuffledVerses      = []
             isShuffled          = false
+            isFavoritesFiltered = false
             currentIndex        = min(max(index, 0), max(newVerses.count - 1, 0))
             titleRevealedCounts = [:]
             verseRevealedCounts = [:]
@@ -130,12 +139,49 @@ final class CardStudyViewModel: ObservableObject {
     /// it landed just drops you mid-list with no sense of the new order — so the
     /// list restarts at the first card.
     func toggleShuffle(restartFromTop: Bool = false) {
-        let anchorId = restartFromTop ? nil : currentVerse?.id
+        isShuffled.toggle()
+        if isShuffled { shuffledVerses = originalVerses.shuffled() }
+        rebuild(anchorId: restartFromTop ? nil : currentVerse?.id)
+    }
+
+    /// Narrow the session to starred verses (or widen it back).
+    ///
+    /// Applied on top of the current order rather than replacing it, so a
+    /// shuffled pack stays shuffled — and, more importantly, the filtered list is
+    /// what Review then tests, which is the whole point of being able to filter.
+    ///
+    /// The caller is responsible for not filtering a pack down to nothing; see
+    /// `favoriteCount`.
+    func setFavoritesFilter(_ on: Bool) {
+        guard isFavoritesFiltered != on else { return }
+        isFavoritesFiltered = on
+        rebuild(anchorId: currentVerse?.id)
+    }
+
+    /// How many of this pack's verses are starred — gates the filter control, and
+    /// lets the view drop the filter if the last one is un-starred while it's on.
+    var favoriteCount: Int {
+        let keys = FavoritesStore.shared.keys
+        return originalVerses.reduce(0) { $0 + (keys.contains($1.srsKey) ? 1 : 0) }
+    }
+
+    /// Recompute `verses` from the pack plus the current order/filter, keeping the
+    /// user parked on `anchorId` if it survived the rebuild.
+    ///
+    /// Reordering and filtering are purely presentational: every bit of progress
+    /// (revealed word counts, submitted answers) is keyed by verse **id**, not by
+    /// position, so neither can invalidate any of it — which is why nothing is
+    /// cleared here beyond the in-flight text inputs.
+    private func rebuild(anchorId: Int?) {
+        var next = isShuffled ? shuffledVerses : originalVerses
+        if isFavoritesFiltered {
+            let keys = FavoritesStore.shared.keys
+            next = next.filter { keys.contains($0.srsKey) }
+        }
         var t = Transaction(); t.disablesAnimations = true
         withTransaction(t) {
-            isShuffled = !isShuffled
-            verses     = isShuffled ? originalVerses.shuffled() : originalVerses
-            currentIndex = anchorId.flatMap { id in verses.firstIndex { $0.id == id } } ?? 0
+            verses       = next
+            currentIndex = anchorId.flatMap { id in next.firstIndex { $0.id == id } } ?? 0
             inputText  = ""
             titleInput = ""
             verseInput = ""

@@ -26,34 +26,12 @@ enum CardFooter {
         "5 Assurances": "Beginning with Christ",
     ]
 
-    /// Each verse's 1-based position within its series, keyed by `srsKey` so the
-    /// numbering survives a translation switch.
-    ///
-    /// Taken from the pack's published order rather than the list on screen. The
-    /// session's own order is reordered by shuffle and by picking a subset for a
-    /// quiz, which would renumber a card whose number is fixed in the booklet —
-    /// A-12 has to stay A-12 wherever it turns up.
-    private static let positions: [String: Int] = {
-        var map: [String: Int] = [:]
-        for packs in [packsNIV84, packsNIV11] {
-            for pack in packs {
-                var countsBySection: [String: Int] = [:]
-                for verse in pack.verses {
-                    let position = (countsBySection[verse.subpack] ?? 0) + 1
-                    countsBySection[verse.subpack] = position
-                    map[verse.srsKey] = position
-                }
-            }
-        }
-        return map
-    }()
-
     /// `fallbackPack` covers verses built outside the JSON (previews, ad-hoc
     /// construction) whose `packName` was never back-filled.
     static func label(for verse: Verse, fallbackPack: String = "") -> String {
         let pack = verse.packName.isEmpty ? fallbackPack : verse.packName
         guard let title = seriesTitle(pack: pack, section: verse.subpack),
-              let position = positions[verse.srsKey] else { return pack }
+              let position = VerseNumbering.position(of: verse) else { return pack }
         let number = verse.subpack.isEmpty ? "\(position)" : "\(verse.subpack)-\(position)"
         return "\(number) · \(title)"
     }

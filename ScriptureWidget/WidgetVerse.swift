@@ -38,18 +38,61 @@ private struct WidgetPack: Decodable {
     let verses: [WidgetVerse]
 }
 
-/// The bundled verse catalogue (pack names injected) — used by the configuration
-/// picker and as a fallback when no current learning verse is available yet.
+/// The verse catalogue — used by the configuration picker and as a fallback
+/// when no current learning verse is available yet.
+///
+/// Prefers the catalog the app downloaded into the shared App Group, and only
+/// falls back to the copy bundled with the widget. Before this, the picker was
+/// permanently on whatever shipped with the build, so a pack added or a verse
+/// corrected in Supabase never appeared here even though the featured verse
+/// (which comes through the App Group snapshot) updated fine.
 enum VerseLibrary {
-    static let allVerses: [WidgetVerse] = {
+
+    /// Mirrors `VerseCatalog.Document` on the app side. Only the fields the
+    /// widget needs are decoded; `schema` is required so a file written by an
+    /// older app build is rejected rather than half-read.
+    private struct SharedCatalog: Decodable {
+        let schema: Int
+        let editions: [String: [WidgetPack]]
+    }
+
+    private static let currentSchema = 2
+
+    static let allVerses: [WidgetVerse] = shared() ?? bundled()
+
+    private static func shared() -> [WidgetVerse]? {
+        guard let url = FileManager.default
+                .containerURL(forSecurityApplicationGroupIdentifier: SharedStore.appGroup)?
+                .appendingPathComponent("verseCatalog.json"),
+              let data = try? Data(contentsOf: url),
+              let doc  = try? JSONDecoder().decode(SharedCatalog.self, from: data),
+              doc.schema == currentSchema
+        else { return nil }
+
+        // The edition the app is showing; fall back to NIV84, then to whatever
+        // the file happens to contain.
+        let preferred = UserDefaults(suiteName: SharedStore.appGroup)?
+            .string(forKey: "widget.edition.v1")
+        let packs = preferred.flatMap { doc.editions[$0] }
+            ?? doc.editions["NIV84"]
+            ?? doc.editions.values.first
+        guard let packs, !packs.isEmpty else { return nil }
+        return flatten(packs)
+    }
+
+    private static func bundled() -> [WidgetVerse] {
         guard let url   = Bundle.main.url(forResource: "verseData", withExtension: "json"),
               let data  = try? Data(contentsOf: url),
               let packs = try? JSONDecoder().decode([WidgetPack].self, from: data)
         else { return [] }
-        return packs.flatMap { pack in
+        return flatten(packs)
+    }
+
+    private static func flatten(_ packs: [WidgetPack]) -> [WidgetVerse] {
+        packs.flatMap { pack in
             pack.verses.map { var v = $0; v.packName = pack.name; return v }
         }
-    }()
+    }
 
     static func verse(id: String) -> WidgetVerse? {
         allVerses.first { $0.id == id }

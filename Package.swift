@@ -24,6 +24,7 @@ let package = Package(
                 "DiffEngine.swift",
                 "DiffResult.swift",
                 "TextTokens.swift",
+                "SpellingVariants.swift",
                 "ReminderPlan.swift",
                 "ScrubberMath.swift",
                 "PackArranger.swift",

@@ -114,4 +114,55 @@ final class DiffEngineTests: XCTestCase {
             XCTAssertEqual(consumedTyped, typed.count)
         }
     }
+
+    // MARK: - Punctuation-only tokens
+
+    /// Around thirty cards title themselves "Man - the sinner". The standalone
+    /// dash used to be scored as a target word, so not typing it was reported as
+    /// a missing word and the card could never come out perfect.
+    func testStandalonePunctuationIsNotScored() {
+        let target = ["Man", "-", "the", "sinner"]
+        let diffs  = DiffEngine.buildDiffs(typed: ["Man", "the", "sinner"], target: target)
+        XCTAssertTrue(diffs.allSatisfy { $0.kind == .correct },
+                      "a dash the user can't reasonably type must not count against them")
+        XCTAssertEqual(diffs.count, 3)
+    }
+
+    /// Typing the dash is still fine — it just isn't required either way.
+    func testTypingThePunctuationIsAlsoAccepted() {
+        let diffs = DiffEngine.buildDiffs(typed: ["Man", "-", "the", "sinner"],
+                                          target: ["Man", "-", "the", "sinner"])
+        XCTAssertTrue(diffs.allSatisfy { $0.kind == .correct })
+    }
+
+    // MARK: - British / American spelling
+
+    func testBritishSpellingAccepted() {
+        for (british, american) in [("saviour", "savior"), ("honour", "honor"),
+                                    ("neighbour", "neighbor"), ("realise", "realize"),
+                                    ("baptised", "baptized"), ("defence", "defense"),
+                                    ("judgement", "judgment"), ("fulfilled", "fulfilled")] {
+            XCTAssertTrue(DiffEngine.normalizedMatch(british, american),
+                          "\(british) should match \(american)")
+            XCTAssertTrue(DiffEngine.normalizedMatch(american, british),
+                          "\(american) should match \(british)")
+        }
+    }
+
+    func testSpellingEquivalenceDoesNotMergeUnrelatedWords() {
+        // Words that merely *look* like they'd be caught by an "-our -> -or"
+        // or "-ise -> -ize" rule must stay distinct.
+        XCTAssertFalse(DiffEngine.normalizedMatch("four", "for"))
+        XCTAssertFalse(DiffEngine.normalizedMatch("hour", "hor"))
+        XCTAssertFalse(DiffEngine.normalizedMatch("wise", "wize"))
+        XCTAssertFalse(DiffEngine.normalizedMatch("praise", "praize"))
+        XCTAssertFalse(DiffEngine.normalizedMatch("honour", "honesty"))
+    }
+
+    func testBritishSpellingInAFullDiff() {
+        let diffs = DiffEngine.buildDiffs(
+            typed:  ["our", "saviour", "showed", "favour"],
+            target: ["our", "savior",  "showed", "favor"])
+        XCTAssertTrue(diffs.allSatisfy { $0.kind == .correct })
+    }
 }

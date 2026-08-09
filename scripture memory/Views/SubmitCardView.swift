@@ -18,6 +18,10 @@ struct SubmitCardView: View {
     /// See `FlashcardView.showCardLabel` — the pack name is a clue on a card the
     /// user is being asked to recall.
     var showCardLabel:     Bool = true
+    /// See `FlashcardView.showsFavoriteToggle`. Entire Verse is still review, so
+    /// it gets the same star in the same corner as the other two modes.
+    var showsFavoriteToggle: Bool = false
+
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -42,6 +46,7 @@ struct SubmitCardView: View {
                         .minimumScaleFactor(0.8)
                 }
                 Spacer(minLength: 8)
+                if showsFavoriteToggle { FavoriteStarButton(verse: verse) }
                 if isCurrentLearning { currentBadge }
             }
             .padding(.top, 6)

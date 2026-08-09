@@ -20,9 +20,19 @@ struct TestSetupView: View {
 
     @AppStorage("bibleVersion") private var bibleVersion: BibleVersion = .niv84
     @ObservedObject private var packPrefs = PackPreferencesStore.shared
+    @ObservedObject private var learning  = LearningStore.shared
+    @ObservedObject private var favorites = FavoritesStore.shared
 
     @State private var selectedVerseIds:  Set<Int>    = []
     @State private var expandedPackIds:   Set<String> = []
+
+    /// Live row positions, and the state of an in-flight two-finger drag.
+    @State private var dragFrames = DragSelectFrames()
+    /// What the drag is doing: `true` selects everything it crosses, `false`
+    /// clears. Decided by the first row touched, so a run never alternates.
+    @State private var dragSelects = true
+    /// Rows already handled by this drag — re-entering one mustn't flip it back.
+    @State private var dragVisited: Set<Int> = []
     @State private var quizCount:         Int         = 15
     @State private var activeSession:     TestSession? = nil
     @State private var savedSession:      TestSession? = nil
@@ -48,10 +58,16 @@ struct TestSetupView: View {
     private var selectedCount: Int { selectedVerseIds.count }
     private var clampedCount:  Int { max(1, min(quizCount, selectedCount)) }
 
+    private var visiblePacks: [Pack] { packPrefs.visible(from: bibleVersion.packs) }
+
+    /// Every visible verse in catalogue order — the sequence the learning cursor
+    /// walks, and what "everything before this one" means.
+    private var catalogue: [Verse] { Catalogue.verses(in: visiblePacks) }
+
     // Flat items for packs + their expanded verses — driven by expandedPackIds
     private var packItems: [PackListItem] {
         var items: [PackListItem] = []
-        for pack in packPrefs.visible(from: bibleVersion.packs) {
+        for pack in visiblePacks {
             items.append(.packHeader(pack))
             if expandedPackIds.contains(pack.id) {
                 for verse in pack.verses {
@@ -71,6 +87,10 @@ struct TestSetupView: View {
                 }
             }
 
+            Section {
+                shortcutRows
+            }
+
             // All packs in one compact section
             Section {
                 ForEach(packItems) { item in
@@ -86,12 +106,25 @@ struct TestSetupView: View {
                 }
             }
         }
+        // Two-finger drag anywhere over the list to select a run of verses.
+        // Zero-sized and non-interactive: it only exists to find the enclosing
+        // scroll view and hang a gesture off it.
+        .background(
+            TwoFingerDragSelect(
+                onDrag: { point, isFirst in handleDragSelect(at: point, isFirst: isFirst) },
+                onEnd:  { dragVisited.removeAll() }
+            )
+            .frame(width: 0, height: 0)
+        )
         .listStyle(.insetGrouped)
         .listSectionSpacing(savedSession == nil ? 12 : 22)
         .animation(.spring(response: 0.3, dampingFraction: 0.8), value: expandedPackIds)
         .animation(.spring(response: 0.3, dampingFraction: 0.8), value: savedSession != nil)
         .background(Color(.systemGroupedBackground))
         .navigationTitle("Quiz")
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) { deselectAllButton }
+        }
         .onAppear {
             loadPersistedQuizCount()
             loadSavedSession()
@@ -162,14 +195,86 @@ struct TestSetupView: View {
         }
     }
 
+    // MARK: - Shortcuts
+    //
+    // Picking a quiz almost always means one of a few spans, and reaching them by
+    // hand is the tedious part: "everything I've learnt so far" is a hundred-odd
+    // taps, or one pack checkbox plus un-ticking the tail of the pack you're in.
+
+    /// The two smart presets, as visible rows.
+    ///
+    /// These stay on screen rather than folding into a menu: they're for use
+    /// *while* choosing verses, and a control you need mid-task has to be in
+    /// sight — a `⋯` menu is where occasional commands go, not the ones you're
+    /// reaching for. They sit in their own group above the packs, so they read as
+    /// shortcuts rather than as two more packs.
+    @ViewBuilder
+    private var shortcutRows: some View {
+        let upToCurrent = versesUpToCurrent()
+        if !upToCurrent.isEmpty {
+            shortcutRow(
+                title: "Up to current verse",
+                detail: learning.currentVerse.flatMap { VerseNumbering.code(for: $0) }
+                    ?? verseCount(upToCurrent.count)
+            ) { select(upToCurrent) }
+        }
+
+        let starred = favorites.verses(in: visiblePacks)
+        if !starred.isEmpty {
+            shortcutRow(title: "Favourites", detail: "\(starred.count)") { select(starred) }
+        }
+    }
+
+    /// Clearing the selection, in the navigation bar — where Mail and Files put
+    /// it. It acts on the whole selection rather than adding a span to it, so as
+    /// a list row it had to appear the moment you picked something, shoving every
+    /// pack down under a finger already moving toward one.
+    @ViewBuilder
+    private var deselectAllButton: some View {
+        if !selectedVerseIds.isEmpty {
+            Button("Deselect All") {
+                selectedVerseIds = []
+                HapticEngine.light()
+            }
+        }
+    }
+
+    private func verseCount(_ n: Int) -> String { "\(n) \(n == 1 ? "verse" : "verses")" }
+
+    /// A plain title-and-value row, the shape iOS uses for exactly this. No icon:
+    /// coloured glyphs down the left edge implied unrelated kinds of thing, when
+    /// these are just two ways of filling the same selection.
+    private func shortcutRow(title: String, detail: String,
+                             action: @escaping () -> Void) -> some View {
+        Button {
+            action()
+            HapticEngine.light()
+        } label: {
+            HStack {
+                Text(title)
+                    .font(.system(size: 16))
+                    .foregroundStyle(Color.accentColor)
+                Spacer()
+                Text(detail)
+                    .font(.system(size: 15))
+                    .foregroundColor(.secondary)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
     // MARK: - Pack Header Row
     //
     // Three distinct zones:
     //   ① Checkbox button  — select/deselect all verses in this pack
-    //   ② Pack name text   — non-interactive (tapping does nothing)
-    //   ③ Chevron button   — the ONLY thing that expands/collapses
+    //   ② Pack name        — tap to expand/collapse
+    //   ③ Chevron          — same as ②, just the affordance for it
     //
-    // Removing the auto-select-on-expand so the chevron only expands.
+    // Tapping the row used to select the whole pack, which put "select 55 verses"
+    // and "look inside" one mis-tap apart, with only the checkbox distinguishing
+    // them. Now the row does the reversible thing and the checkbox does the
+    // committal one — the same split the verse rows use.
 
     private func packHeaderRow(_ pack: Pack) -> some View {
         let packVerseIds   = Set(pack.verses.map(\.id))
@@ -186,6 +291,7 @@ struct TestSetupView: View {
                 } else {
                     for verse in pack.verses { selectedVerseIds.insert(verse.id) }
                 }
+                HapticEngine.light()
             } label: {
                 Image(systemName: allSelected  ? "checkmark.circle.fill"
                                  : someSelected ? "minus.circle.fill"
@@ -197,19 +303,21 @@ struct TestSetupView: View {
             .buttonStyle(.plain)
             .accessibilityLabel(allSelected ? "Deselect all verses in \(pack.name)" : "Select all verses in \(pack.name)")
 
-            // ② Pack name — tapping selects/deselects all verses (does NOT expand)
+            // ② + ③ Name and chevron — one expand target
             Button {
-                if allSelected {
-                    for verse in pack.verses { selectedVerseIds.remove(verse.id) }
-                } else {
-                    for verse in pack.verses { selectedVerseIds.insert(verse.id) }
-                }
+                if isExpanded { expandedPackIds.remove(pack.id) }
+                else          { expandedPackIds.insert(pack.id) }
             } label: {
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
+                        // One line, truncated. The 180-series names are long
+                        // enough to wrap, and a two-line row here makes the pack
+                        // list ragged for a tail everyone can already predict.
                         Text(pack.name)
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(.primary)
+                            .lineLimit(1)
+                            .truncationMode(.tail)
                         Text(selectedInPack > 0
                              ? "\(selectedInPack) of \(pack.verses.count) verses"
                              : "\(pack.verses.count) verses")
@@ -217,25 +325,14 @@ struct TestSetupView: View {
                             .foregroundColor(.secondary)
                     }
                     Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.secondary)
+                        .rotationEffect(isExpanded ? .degrees(90) : .zero)
+                        .frame(width: 44, height: 50)
                 }
                 .frame(maxHeight: .infinity)
                 .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-
-            // ③ Chevron — only expansion trigger, no selection side-effect
-            Button {
-                if isExpanded {
-                    expandedPackIds.remove(pack.id)
-                } else {
-                    expandedPackIds.insert(pack.id)
-                }
-            } label: {
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(.secondary)
-                    .rotationEffect(isExpanded ? .degrees(90) : .zero)
-                    .frame(width: 44, height: 50)
             }
             .buttonStyle(.plain)
             .accessibilityLabel(isExpanded ? "Collapse \(pack.name)" : "Expand \(pack.name) to pick individual verses")
@@ -244,11 +341,19 @@ struct TestSetupView: View {
 
     // MARK: - Verse Row
 
+    /// One line: tick, card number, title, reference. Nothing to open.
+    ///
+    /// A verse row has exactly one job here — in or out of the quiz — so the
+    /// whole row does it. It used to expand to a panel holding the verse text and
+    /// two more buttons, which meant every row carried a disclosure chevron for a
+    /// drawer nobody wants open while picking a quiz. "Select all up to here"
+    /// moved to a swipe action: still one gesture away, costs no pixels.
     private func verseRow(_ verse: Verse) -> some View {
         let isSelected = selectedVerseIds.contains(verse.id)
         return Button {
             if isSelected { selectedVerseIds.remove(verse.id) }
             else          { selectedVerseIds.insert(verse.id) }
+            HapticEngine.light()
         } label: {
             HStack(spacing: 10) {
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
@@ -256,10 +361,19 @@ struct TestSetupView: View {
                     .foregroundStyle(isSelected ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.secondary))
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(verse.title)
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.primary)
-                        .lineLimit(1)
+                    HStack(spacing: 6) {
+                        // The card's printed number — how the verse is referred to
+                        // out loud and how it's found in the booklet — so it leads.
+                        if let code = VerseNumbering.code(for: verse) {
+                            Text(code)
+                                .font(.system(size: 11, weight: .bold, design: .monospaced))
+                                .foregroundStyle(.secondary)
+                        }
+                        Text(verse.title)
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.primary)
+                            .lineLimit(1)
+                    }
                     Text("\(verse.book) \(verse.reference)")
                         .font(.system(size: 12))
                         .foregroundColor(.secondary)
@@ -271,9 +385,86 @@ struct TestSetupView: View {
             .padding(.vertical, 2)
         }
         .buttonStyle(.plain)
+        .overlay(alignment: .trailing) { upToHereButton(verse) }
+        .dragSelectRow(id: verse.id, in: dragFrames)
         .accessibilityLabel("\(verse.title), \(verse.book) \(verse.reference)")
         .accessibilityValue(isSelected ? "Selected" : "Not selected")
         .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
+    }
+
+    // MARK: - Span selection
+
+    /// Every visible verse up to and including `verse`, in catalogue order.
+    private func versesUpTo(_ verse: Verse) -> [Verse] {
+        let all = catalogue
+        guard let i = all.firstIndex(where: { $0.id == verse.id }) else { return [] }
+        return Array(all[...i])
+    }
+
+    /// Everything up to and including the learning cursor. Once every verse is
+    /// learnt there is no cursor, and the span is the whole catalogue.
+    private func versesUpToCurrent() -> [Verse] {
+        guard let current = learning.currentVerse else { return catalogue }
+        let all = catalogue
+        guard let i = all.firstIndex(where: { $0.srsKey == current.srsKey }) else { return [] }
+        return Array(all[...i])
+    }
+
+    /// Selects everything up to and including this verse, across the whole
+    /// catalogue rather than just this pack. Reaching, say, DEP 1 card 12 means
+    /// "everything I've covered so far" — the span you most want, and the most
+    /// tedious to tick by hand.
+    ///
+    /// A visible control because the swipe action alone was undiscoverable —
+    /// nobody finds a gesture they haven't been told about. Kept to a single
+    /// tertiary glyph at the trailing edge: on a list this long, anything with a
+    /// label would be thirty copies of the same sentence running down the page.
+    private func upToHereButton(_ verse: Verse) -> some View {
+        Button {
+            select(versesUpTo(verse))
+            HapticEngine.light()
+        } label: {
+            Image(systemName: "arrow.up.to.line")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.tertiary)
+                .frame(width: 34, height: 36)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Select all verses up to \(verse.title)")
+    }
+
+    /// Applies a two-finger drag to whichever verse row is under the finger.
+    ///
+    /// The first row decides the direction for the whole drag — start on an
+    /// unselected verse and the run selects, start on a selected one and it
+    /// clears. Toggling each row on its own terms would leave a dragged-over run
+    /// alternating, which is never what anyone means.
+    ///
+    /// `dragVisited` stops a row flipping again when the finger wobbles back
+    /// over it.
+    private func handleDragSelect(at point: CGPoint, isFirst: Bool) {
+        guard let id = dragFrames.row(at: point) else { return }
+        if isFirst {
+            dragVisited.removeAll()
+            dragSelects = !selectedVerseIds.contains(id)
+        }
+        guard !dragVisited.contains(id) else { return }
+        dragVisited.insert(id)
+        if dragSelects { selectedVerseIds.insert(id) } else { selectedVerseIds.remove(id) }
+        HapticEngine.light()
+    }
+
+    /// Replaces the selection rather than adding to it.
+    ///
+    /// These read as "quiz me on X", so tapping Favourites after Up to Current
+    /// Verse has to leave you with the favourites — not with both sets unioned
+    /// and no indication that's what happened. Composing them was defensible in
+    /// the abstract and wrong in the hand: the shortcut appears to do nothing
+    /// when everything it would add is already selected, and there's no way to
+    /// subtract one preset back out again.
+    private func select(_ verses: [Verse]) {
+        selectedVerseIds = Set(verses.map(\.id))
     }
 
     // MARK: - Bottom Bar
@@ -431,13 +622,13 @@ struct TestSetupView: View {
                 if countFieldFocused { countReplaceAnchor = "\(newValue)" }
             }
             .onAppear { countDraft = "\(clampedCount)" }
+            // Just "Done" — a number pad has no return key, so something has to
+            // dismiss it. "Max" used to sit here too, duplicating the one in the
+            // bar below: that one deliberately keeps working with the keypad up
+            // (the field tracks the count whether or not it has focus), so the
+            // toolbar copy only ever covered the row it was copying.
             .toolbar {
                 ToolbarItemGroup(placement: .keyboard) {
-                    Button("Max (\(selectedCount))") {
-                        setCount(selectedCount)
-                        HapticEngine.light()
-                    }
-                    .disabled(selectedCount == 0)
                     Spacer()
                     Button("Done") { countFieldFocused = false }
                 }

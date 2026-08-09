@@ -11,7 +11,15 @@ enum DiffEngine {
     // MARK: Public
 
     /// Builds an array of `DiffWord` annotations comparing `typed` words to `target` words.
-    static func buildDiffs(typed: [String], target: [String]) -> [DiffWord] {
+    ///
+    /// Tokens that are pure punctuation are dropped from both sides first.
+    /// Around thirty cards carry a standalone `-` in the title ("Man - the
+    /// sinner"), and scoring it meant the dash was reported missing unless the
+    /// user typed it as a word of its own — so those cards could never come out
+    /// perfect, and the mistake it named wasn't one.
+    static func buildDiffs(typed rawTyped: [String], target rawTarget: [String]) -> [DiffWord] {
+        let typed  = rawTyped.filter  { !normalize($0).isEmpty }
+        let target = rawTarget.filter { !normalize($0).isEmpty }
         let m = typed.count, n = target.count
         if m == 0 { return target.map { DiffWord(text: $0, kind: .missing) } }
         if n == 0 { return typed.map  { DiffWord(text: $0, kind: .extra)   } }
@@ -25,12 +33,15 @@ enum DiffEngine {
         normalize(a) == normalize(b)
     }
 
+    /// Lowercased, punctuation-stripped, and reduced to one spelling where
+    /// British and American differ — see `SpellingVariants`.
     static func normalize(_ word: String) -> String {
-        word.trimmingQuotationDelimitersOnEnds()
+        let stripped = word.trimmingQuotationDelimitersOnEnds()
             .lowercased()
             .components(separatedBy: CharacterSet.punctuationCharacters.union(.symbols))
             .joined()
             .trimmingCharacters(in: .whitespaces)
+        return SpellingVariants.canonical(stripped)
     }
 
     // MARK: Private

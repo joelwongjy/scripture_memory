@@ -51,13 +51,17 @@ enum BibleVersion: String, CaseIterable {
     /// user would memorise wording that the test doesn't accept.
     static let niv84OnlyPackNames: Set<String> = ["5 Assurances"]
 
-    var packs: [Pack] {
-        guard self == .niv11 else { return packsNIV84 }
-        return packsNIV11.map { pack in
-            guard Self.niv84OnlyPackNames.contains(pack.name) else { return pack }
-            return packsNIV84.first { $0.name == pack.name } ?? pack
-        }
+    /// Built once rather than per access. `packs` is read inside `body` on
+    /// several screens — which means once per frame of any animation running on
+    /// them — and rebuilding 15 pack values each time is enough copying to show
+    /// up as dropped frames in a system transition. The two bundles are fixed for
+    /// the life of the process (see `VerseCatalog`), so this can be a constant.
+    private static let niv11Packs: [Pack] = packsNIV11.map { pack in
+        guard niv84OnlyPackNames.contains(pack.name) else { return pack }
+        return packsNIV84.first { $0.name == pack.name } ?? pack
     }
+
+    var packs: [Pack] { self == .niv11 ? Self.niv11Packs : packsNIV84 }
 }
 
 // MARK: - Home Verse Start Mode
