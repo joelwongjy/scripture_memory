@@ -9,6 +9,16 @@ enum WidgetBridge {
     /// Shared between the app and the widget extension (see both .entitlements).
     static let appGroup    = "group.joel.scripture-memory"
     static let snapshotKey = "widget.snapshot.v1"
+    /// Which edition the user is reading, so the widget picks the same one out
+    /// of the shared catalog file.
+    static let editionKey  = "widget.edition.v1"
+
+    /// Mirror the selected translation into the group. Cheap and idempotent.
+    static func setEdition(_ edition: String) {
+        guard let defaults, defaults.string(forKey: editionKey) != edition else { return }
+        defaults.set(edition, forKey: editionKey)
+        WidgetCenter.shared.reloadAllTimelines()
+    }
 
     /// Compact, Codable mirror of a verse — enough to render and to deep-link back.
     struct SharedVerse: Codable, Equatable {

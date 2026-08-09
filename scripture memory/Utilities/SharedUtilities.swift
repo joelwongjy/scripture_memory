@@ -18,6 +18,17 @@ extension Color {
         )
     }
 
+    /// The same hue, darker. Unlike `muted` this keeps the saturation, so it
+    /// reads as a shadow of the colour rather than a wash of it — for bands and
+    /// panels that sit on a coloured field.
+    func darkened(by amount: Double) -> Color {
+        let uic = UIColor(self)
+        var h: CGFloat = 0, s: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        uic.getHue(&h, saturation: &s, brightness: &b, alpha: &a)
+        return Color(hue: Double(h), saturation: Double(s),
+                     brightness: Double(b) * (1 - amount))
+    }
+
     /// A desaturated, darker variant suitable for muted pack-cover backgrounds.
     var muted: Color {
         let uic = UIColor(self)
@@ -95,6 +106,39 @@ extension Image {
             )
             .frame(width: 44, height: 44)
             .contentShape(Rectangle())
+    }
+}
+
+// MARK: - Outlined Text
+
+/// Hollow lettering — the printed "242" on a DEP pack is an outline, not a solid.
+///
+/// SwiftUI can't stroke a `Text`, so this draws the glyphs eight times in the
+/// stroke colour, nudged one width in each direction, then lays a solid copy in
+/// the field colour on top. What's left visible is the rim.
+struct OutlinedText: View {
+    let text:   String
+    let font:   Font
+    let stroke: Color
+    /// Must match whatever sits behind, since the fill is what hollows the glyph.
+    let fill:   Color
+    var width:  CGFloat = 1.6
+
+    private static let directions: [(CGFloat, CGFloat)] = [
+        (-1, -1), (0, -1), (1, -1),
+        (-1,  0),          (1,  0),
+        (-1,  1), (0,  1), (1,  1),
+    ]
+
+    var body: some View {
+        ZStack {
+            ForEach(Array(Self.directions.enumerated()), id: \.offset) { _, d in
+                Text(text).font(font).foregroundColor(stroke)
+                    .offset(x: d.0 * width, y: d.1 * width)
+            }
+            Text(text).font(font).foregroundColor(fill)
+        }
+        .fixedSize()
     }
 }
 
@@ -237,6 +281,70 @@ struct PressReportingButtonStyle: ButtonStyle {
     }
 }
 
+/// Filling an Entire Verse answer box one word at a time.
+///
+/// The hint types the next word straight into the field rather than showing it
+/// beside one. Consistent with the other two study modes, where a hint reveals
+/// the word in place and the card still counts as finished — hints are free
+/// everywhere, so a separate "this was given to you" display would be the odd
+/// one out. It also means Try Again clears the hints for nothing extra: the
+/// hints *are* the field, and Try Again already empties it.
+///
+/// Splits on whitespace rather than `String.wordTokens`, because tokens have
+/// their surrounding quotation marks stripped for matching — filling from them
+/// would type a subtly different verse to the one printed on the card.
+enum HintFill {
+
+    static func words(_ text: String) -> [String] {
+        text.split(whereSeparator: { $0 == " " || $0.isNewline }).map(String.init)
+    }
+
+    /// `typed` extended by one more word of `target`, or `nil` when there's
+    /// nothing left to give.
+    ///
+    /// Counts what's already in the box and rewrites the whole prefix, so the
+    /// hint continues from wherever the user got to — and quietly corrects a
+    /// wrong word rather than appending after it.
+    static func next(target: String, typed: String) -> String? {
+        let targetWords = words(target)
+        let typedCount  = words(typed).count
+        guard typedCount < targetWords.count else { return nil }
+        return targetWords.prefix(typedCount + 1).joined(separator: " ")
+    }
+}
+
+/// The star that adds a verse to favourites, living in a card's footer corner.
+///
+/// Shared by every card surface so the control is in the same place with the
+/// same size wherever a verse can be starred. In the card rather than the screen
+/// chrome because chrome refers to the pack — there'd be no way for a chrome
+/// button to say *which* verse it meant.
+struct FavoriteStarButton: View {
+    let verse: Verse
+    @ObservedObject private var favorites = FavoritesStore.shared
+
+    init(verse: Verse) { self.verse = verse }
+
+    var body: some View {
+        let isFavorite = favorites.isFavorite(verse)
+        return Button {
+            favorites.toggle(verse)
+            HapticEngine.light()
+        } label: {
+            Image(systemName: isFavorite ? "star.fill" : "star")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(isFavorite ? AnyShapeStyle(.yellow) : AnyShapeStyle(.tertiary))
+                .contentTransition(.symbolEffect(.replace))
+                // 30pt target: the card footer can't spare the full 44, and the
+                // control sits alone in its corner with nothing to mis-hit.
+                .frame(width: 30, height: 30)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(isFavorite ? "Remove from favourites" : "Add to favourites")
+    }
+}
+
 /// Card-style overlay matching the real card but with all text in secondary color.
 /// Shown while the user holds a `PeekHoldButton`.
 struct PeekOverlayCard: View {
@@ -245,9 +353,17 @@ struct PeekOverlayCard: View {
     let width:     CGFloat
     let height:    CGFloat
     let isPeeking: Bool
+    /// Matches the card underneath — see `FlashcardView.showCardLabel`.
+    var showCardLabel: Bool = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
+            if let pinned = verse.pinnedVersion {
+                Text("(\(pinned))")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundColor(.secondary)
+                Spacer().frame(height: 6)
+            }
             Text("\(verse.book) \(verse.reference)")
                 .font(.system(size: 18, weight: .bold, design: .serif))
                 .foregroundColor(.secondary)
@@ -267,9 +383,13 @@ struct PeekOverlayCard: View {
 
             Spacer(minLength: 6)
 
-            Text(cardLabel)
-                .font(.system(size: 10, weight: .medium))
-                .foregroundColor(.secondary.opacity(0.5))
+            if showCardLabel {
+                Text(cardLabel)
+                    .font(.system(size: 12.5, weight: .medium))
+                    .foregroundColor(.secondary.opacity(0.5))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
         }
         .flashcardStyle()
         .frame(width: width, height: height)

@@ -57,22 +57,23 @@ struct PackOrganizerView: View {
         }
     }
 
+    /// One line per pack: name, show/hide, drag handle.
+    ///
+    /// The colour swatch is gone. It cost a row of height and a column of width
+    /// to restate something the name already says — and worse, it showed the
+    /// `.muted` cover colour rather than the real one, so it wasn't even an
+    /// accurate swatch. Without it the names fit on one line, which is what was
+    /// making this list twice as tall as it needed to be.
     private func row(_ pack: Pack) -> some View {
         let isHidden = store.isHidden(pack.name)
-        return HStack(spacing: 12) {
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .fill((Color(hex: pack.color) ?? .gray).muted)
-                .frame(width: 36, height: 24)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .strokeBorder(Color(.separator).opacity(0.4), lineWidth: 0.5)
-                )
-
+        return HStack(spacing: 8) {
             Text(pack.name)
                 .font(.body)
                 .foregroundStyle(.primary)
+                .lineLimit(1)
+                .truncationMode(.tail)
 
-            Spacer()
+            Spacer(minLength: 4)
 
             Button {
                 store.setHidden(pack.name, !isHidden)
@@ -81,7 +82,9 @@ struct PackOrganizerView: View {
                 Image(systemName: isHidden ? "eye.slash" : "eye")
                     .font(.system(size: 17))
                     .foregroundStyle(isHidden ? AnyShapeStyle(.secondary) : AnyShapeStyle(Color.accentColor))
-                    .frame(width: 44, height: 44)
+                    // Still a 44pt target, but only 30 of it counts toward the
+                    // row's height — the drag handle sets that anyway.
+                    .frame(width: 44, height: 30)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.borderless)

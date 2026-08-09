@@ -15,5 +15,17 @@
             </array>
         </dict>
     </array>
+
+    <!-- Remote verse catalog (Supabase). Leave both empty to run entirely off the
+         bundled JSON — the app works exactly as before and never touches the
+         network. The key below is the *publishable* one (`sb_publishable_…`,
+         formerly `anon`): it is designed to ship in clients, and row-level
+         security (see supabase/schema.sql) is what keeps the catalog read-only.
+         Never put the secret key (`sb_secret_…`, formerly `service_role`) here —
+         it bypasses RLS. -->
+    <key>SupabaseURL</key>
+    <string>https://jpyktgyajlvzjtpomvyz.supabase.co</string>
+    <key>SupabaseAnonKey</key>
+    <string>sb_publishable_cZKhdNOAhfy9TZfqszZnig_ayAcWCF1</string>
 </dict>
 </plist>

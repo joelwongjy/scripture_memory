@@ -9,6 +9,13 @@ struct FlashcardView: View {
     let activeSection:       CardSection
     var onSectionTap:        ((CardSection) -> Void)? = nil
 
+    /// Whether the footer may name the pack the verse came from. Off wherever the
+    /// card is a question — quiz and review both draw from a set the user chose,
+    /// so "TMS 60" under a masked verse narrows the answer before they've recalled
+    /// anything. Spaced repetition keeps it: there the pack is the context you
+    /// need, not a clue.
+    var showCardLabel:       Bool = true
+
     /// Marks this card as the "current stopped verse" (the learning cursor) with a
     /// small badge — shown wherever the verse appears: study card and test card.
     var isCurrentLearning:   Bool = false
@@ -17,6 +24,12 @@ struct FlashcardView: View {
     /// "Mark as Complete" button so the current verse can be marked right on the
     /// card — read mode has no test-completion event to surface it otherwise.
     var onMarkComplete:      (() -> Void)? = nil
+
+    /// Whether this card offers the star. On wherever the card is something the
+    /// user is *reading* — starring is a "come back to this one" gesture, and the
+    /// moment you want it is while the verse is in front of you. Off on quiz and
+    /// test cards, where the footer row is already carrying the answer state.
+    var showsFavoriteToggle: Bool = false
 
     @AppStorage("hardMode") private var hardMode = false
 
@@ -49,10 +62,18 @@ struct FlashcardView: View {
                 if isReviewMode { reviewContent(cardSize: geo.size) } else { readContent(cardSize: geo.size) }
                 Spacer(minLength: 16)
                 HStack(spacing: 6) {
-                    Text(cardLabel)
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(.secondary)
+                    if showCardLabel {
+                        // Just under the reference line rather than fine print —
+                        // "A-12 · Live the New Life" is how you find the card in the
+                        // booklet, so it has to be readable at a glance.
+                        Text(cardLabel)
+                            .font(.system(size: 12.5, weight: .medium))
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                    }
                     Spacer(minLength: 8)
+                    if showsFavoriteToggle { FavoriteStarButton(verse: verse) }
                     if isCurrentLearning {
                         if let onMarkComplete {
                             markCompleteButton(onMarkComplete)
@@ -86,6 +107,21 @@ struct FlashcardView: View {
         .accessibilityLabel("Mark current verse as complete")
     }
 
+    /// "(KJV)" chip for the handful of cards printed in a translation other than
+    /// the edition the rest of the pack uses. Without it the card reads as a
+    /// mistake — Jacobean English sitting in the middle of an NIV pack — and the
+    /// user has no way to tell that the wording is deliberate and is what they're
+    /// meant to memorise. Sits above the reference, the first thing read.
+    private var versionBadge: some View {
+        Text("(\(verse.pinnedVersion ?? ""))")
+            .font(.system(size: 10, weight: .bold))
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(Capsule().fill(Color(.tertiarySystemFill)))
+            .accessibilityLabel("King James Version")
+    }
+
     /// Small "Current" chip marking the learning-cursor verse on any flashcard —
     /// a bookmark (distinct from the pin used for the Home spotlight) so it reads
     /// as "this is where you stopped."
@@ -111,6 +147,7 @@ struct FlashcardView: View {
         let titleSize = scaledTypeSize(base: 15, extra: 3.5, cardWidth: cardWidth)
         let refSize = scaledTypeSize(base: 14, extra: 3.0, cardWidth: cardWidth)
         return VStack(alignment: .leading, spacing: 0) {
+            if verse.pinnedVersion != nil { versionBadge; Spacer().frame(height: 6) }
             Text(verse.title)
                 .font(.system(size: titleSize, weight: .bold, design: .serif))
             Spacer().frame(height: 8)
@@ -144,12 +181,14 @@ struct FlashcardView: View {
         // that's actually free: the progress block (spacer + bar) and the card's
         // own bottom spacer + label. Undercounting here picks a font one step too
         // big — which is exactly what made long verses overflow and truncate.
-        let reserved = refH + 12 + titleH + 8 + (showsProgress ? 24 : 0) + 34
+        let badgeH: CGFloat = verse.pinnedVersion != nil ? 22 : 0
+        let reserved = badgeH + refH + 12 + titleH + 8 + (showsProgress ? 24 : 0) + (showCardLabel ? 40 : 24)
         let avail = max(48, cardSize.height - reserved)
         let verseSize = VerseFit.fontSize(verse.verse, width: cardWidth, height: avail,
                                           lineSpacing: verseGap, minSize: 10, maxSize: 16)
 
         return VStack(alignment: .leading, spacing: 0) {
+            if verse.pinnedVersion != nil { versionBadge; Spacer().frame(height: 6) }
             Text("\(verse.book) \(verse.reference)")
                 .font(.system(size: refSize, weight: .bold, design: .serif))
 

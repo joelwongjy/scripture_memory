@@ -15,6 +15,13 @@ struct SubmitCardView: View {
     let result:      SubmitResult?
     @FocusState.Binding var focusedField: SubmitField?
     var isCurrentLearning: Bool = false
+    /// See `FlashcardView.showCardLabel` — the pack name is a clue on a card the
+    /// user is being asked to recall.
+    var showCardLabel:     Bool = true
+    /// See `FlashcardView.showsFavoriteToggle`. Entire Verse is still review, so
+    /// it gets the same star in the same corner as the other two modes.
+    var showsFavoriteToggle: Bool = false
+
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -31,10 +38,15 @@ struct SubmitCardView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
             HStack(spacing: 6) {
-                Text(cardLabel)
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(.secondary)
+                if showCardLabel {
+                    Text(cardLabel)
+                        .font(.system(size: 12.5, weight: .medium))
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                }
                 Spacer(minLength: 8)
+                if showsFavoriteToggle { FavoriteStarButton(verse: verse) }
                 if isCurrentLearning { currentBadge }
             }
             .padding(.top, 6)

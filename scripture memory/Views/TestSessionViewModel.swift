@@ -125,7 +125,7 @@ final class TestSessionViewModel: ObservableObject {
 
     // MARK: - Card Label
 
-    func cardLabel(for verse: Verse) -> String { verse.packName }
+    func cardLabel(for verse: Verse) -> String { CardFooter.label(for: verse) }
 
     // MARK: - Reveal State
 

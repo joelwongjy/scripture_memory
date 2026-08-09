@@ -61,6 +61,11 @@ struct TestSessionView: View {
         sessionKind == .srs ? "Review" : "Quiz"
     }
 
+    /// A quiz is drawn from packs the user hand-picked, so naming the pack on the
+    /// card hands them half the answer. The SRS deck is dealt to them and mixes
+    /// everything they're learning, so there the label is orientation, not a clue.
+    private var showsCardLabel: Bool { sessionKind == .srs }
+
     // MARK: - Body
 
     var body: some View {
@@ -90,7 +95,8 @@ struct TestSessionView: View {
                                 cardLabel: vm.cardLabel(for: verse),
                                 width: cardWidth,
                                 height: cardH,
-                                isPeeking: isPeeking
+                                isPeeking: isPeeking,
+                                showCardLabel: showsCardLabel
                             )
                             .allowsHitTesting(false)
                             .transition(.opacity)
@@ -440,7 +446,8 @@ struct TestSessionView: View {
                 verseText: interactive ? $vm.verseInput : .constant(""),
                 result: interactive ? vm.submitResults[verse.id] : nil,
                 focusedField: $submitFocus,
-                isCurrentLearning: learning.isCurrent(verse)
+                isCurrentLearning: learning.isCurrent(verse),
+                showCardLabel: showsCardLabel
             )
             .allowsHitTesting(interactive)
         } else {
@@ -460,6 +467,7 @@ struct TestSessionView: View {
                     vm.activeSection = section
                     DispatchQueue.main.async { focusInput() }
                 } : nil,
+                showCardLabel: showsCardLabel,
                 isCurrentLearning: learning.isCurrent(verse)
             )
         }
@@ -773,6 +781,9 @@ struct TestSessionView: View {
                             .roundedRect(12)
                     }
                     .accessibilityLabel(speech.isListening ? "Stop dictation" : "Dictate verse")
+
+                    submitHintButton
+
                     let isEmpty = vm.titleInput.trimmingCharacters(in: .whitespaces).isEmpty
                               && vm.verseInput.trimmingCharacters(in: .whitespaces).isEmpty
                     Button {
@@ -879,6 +890,40 @@ struct TestSessionView: View {
                 .roundedRect(12)
         }
         .buttonStyle(.plain)
+    }
+
+    /// Entire Verse's hint: types the next word straight into the answer box.
+    private var submitHintButton: some View {
+        Button {
+            fillNextHintWord()
+            HapticEngine.light()
+        } label: {
+            Image(systemName: "lightbulb")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundColor(.primary)
+                .frame(width: 48, height: 48)
+                .background(Color(.secondarySystemGroupedBackground))
+                .roundedRect(12)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Reveal next word")
+    }
+
+    /// Extends whichever box you're in by one word, falling through to the other
+    /// once that one is complete. Mirrors `CardStudyView.fillNextHintWord`.
+    private func fillNextHintWord() {
+        guard let verse = vm.currentVerse else { return }
+        let startWithVerse = submitFocus == .verse
+        let sections: [(target: String, isTitle: Bool)] = startWithVerse
+            ? [(verse.verse, false), (verse.title, true)]
+            : [(verse.title, true), (verse.verse, false)]
+
+        for section in sections {
+            let typed = section.isTitle ? vm.titleInput : vm.verseInput
+            guard let filled = HintFill.next(target: section.target, typed: typed) else { continue }
+            if section.isTitle { vm.titleInput = filled } else { vm.verseInput = filled }
+            return
+        }
     }
 
     // MARK: - Swipe Gesture

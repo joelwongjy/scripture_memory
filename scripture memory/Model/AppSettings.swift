@@ -46,9 +46,22 @@ enum BibleVersion: String, CaseIterable {
         }
     }
 
-    var packs: [Pack] {
-        self == .niv11 ? packsNIV11 : packsNIV84
+    /// Packs that have no NIV 2011 edition in the material we're tested on. Their
+    /// cards stay on NIV 1984 whichever translation is selected — otherwise the
+    /// user would memorise wording that the test doesn't accept.
+    static let niv84OnlyPackNames: Set<String> = ["5 Assurances"]
+
+    /// Built once rather than per access. `packs` is read inside `body` on
+    /// several screens — which means once per frame of any animation running on
+    /// them — and rebuilding 15 pack values each time is enough copying to show
+    /// up as dropped frames in a system transition. The two bundles are fixed for
+    /// the life of the process (see `VerseCatalog`), so this can be a constant.
+    private static let niv11Packs: [Pack] = packsNIV11.map { pack in
+        guard niv84OnlyPackNames.contains(pack.name) else { return pack }
+        return packsNIV84.first { $0.name == pack.name } ?? pack
     }
+
+    var packs: [Pack] { self == .niv11 ? Self.niv11Packs : packsNIV84 }
 }
 
 // MARK: - Home Verse Start Mode

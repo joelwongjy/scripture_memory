@@ -209,7 +209,7 @@ private struct StartingPointScreen: View {
                     }
                 }
             } header: {
-                Text("Already memorizing? Pick where you stopped")
+                Text("Pick where you stopped")
             }
         }
         .navigationTitle(isOnboarding ? "Your Starting Point" : "Current Verse")
@@ -278,18 +278,20 @@ private struct VerseListScreen: View {
                         onSelect(verse)
                         dismiss()
                     } label: {
-                        HStack(alignment: .top, spacing: 12) {
-                            VStack(alignment: .leading, spacing: 3) {
+                        // Reference and title only. You pick your starting point by
+                        // recognising *which card* you stopped at, and the reference
+                        // is what names it — two lines of verse text underneath
+                        // tripled the row height and made the list something you
+                        // scroll through rather than scan.
+                        HStack(spacing: 12) {
+                            VStack(alignment: .leading, spacing: 2) {
                                 Text("\(verse.book) \(verse.reference)")
-                                    .font(.headline)
+                                    .font(.system(size: 15, weight: .semibold))
                                     .foregroundStyle(.primary)
                                 Text(verse.title)
-                                    .font(.subheadline.weight(.medium))
-                                    .foregroundStyle(Color.accentColor)
-                                Text(verse.verse)
-                                    .font(.footnote)
+                                    .font(.system(size: 13))
                                     .foregroundStyle(.secondary)
-                                    .lineLimit(2)
+                                    .lineLimit(1)
                             }
                             Spacer(minLength: 8)
                             if verse.srsKey == selectedKey {
@@ -298,13 +300,10 @@ private struct VerseListScreen: View {
                                     .foregroundStyle(Color.accentColor)
                             }
                         }
-                        .padding(.vertical, 2)
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                 }
-            } footer: {
-                Text("Tap the verse you last memorized up to.")
             }
         }
         .navigationTitle(pack.name)

@@ -58,7 +58,7 @@ struct SRSDashboardView: View {
     private var now:          Date   { Date() }
 
     /// All visible verses flattened in pack order — the linear "learning" sequence.
-    private var ordered:      [Verse] { packs.flatMap(\.verses) }
+    private var ordered:      [Verse] { Catalogue.verses(in: packs) }
 
     /// The verse to feature on Home — the pinned one if the user pinned one, else
     /// the current learning verse — resolved to its pack + index, plus whether
@@ -98,7 +98,10 @@ struct SRSDashboardView: View {
     }
 
     var body: some View {
-        Group {
+        // One scroll view for the whole screen — see `PackListView.body`. Two
+        // alternating scroll views under one `.searchable` is what made Home open
+        // scrolled past its own large title.
+        ScrollView {
             if searchText.isEmpty {
                 dashboard
             } else {
@@ -109,6 +112,7 @@ struct SRSDashboardView: View {
                 )
             }
         }
+        .scrollDismissesKeyboard(.immediately)
         // Swapping the whole screen shouldn't animate — matches Packs.
         .animation(nil, value: searchText.isEmpty)
         .background(Color(.systemGroupedBackground))
@@ -136,25 +140,26 @@ struct SRSDashboardView: View {
     }
 
     private var dashboard: some View {
-        ScrollView {
-            VStack(spacing: Layout.sectionSpacing) {
-                streakCard
-                continueLearningCard
-                goToCurrentVerseCard
-                Text("Daily Review")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(.secondary)
-                    .textCase(.uppercase)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.leading, 4)
-                    .padding(.top, 4)
-                heroCard
-                packsReviewLink
-            }
-            .padding(.horizontal, Layout.edgeMargin)
-            .padding(.top, 8)
-            .padding(.bottom, 24)
+        VStack(spacing: Layout.sectionSpacing) {
+            streakCard
+            continueLearningCard
+            goToCurrentVerseCard
+            // Title Case at 17pt semibold, not 13pt uppercase — the grouped-list
+            // header iOS Settings actually uses now. The small all-caps form is
+            // the older style and reads as a label stuck above a card rather than
+            // as the section's own heading.
+            Text("Daily Review")
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.leading, 4)
+                .padding(.top, 4)
+            heroCard
+            packsReviewLink
         }
+        .padding(.horizontal, Layout.edgeMargin)
+        .padding(.top, 8)
+        .padding(.bottom, 24)
     }
 
     // MARK: - Streak
@@ -227,10 +232,10 @@ struct SRSDashboardView: View {
                     Menu {
                         if cur.isPinned {
                             Button { showPinPicker = true } label: {
-                                Label("Change pinned verse…", systemImage: "pin")
+                                Label("Change verse", systemImage: "pin")
                             }
                             Button { learning.unpin(); HapticEngine.light() } label: {
-                                Label("Back to current verse", systemImage: "arrow.uturn.backward")
+                                Label("Unpin verse", systemImage: "pin.slash")
                             }
                         } else {
                             Button { showPinPicker = true } label: {
@@ -417,8 +422,9 @@ struct SRSDashboardView: View {
             }
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, Layout.cardPadding)
-        .padding(.horizontal, Layout.cardPadding)
+        // A one-line row doesn't need the 20pt inset a tall stack did.
+        .padding(.vertical, 14)
+        .padding(.horizontal, Layout.rowPaddingH)
         .background(
             RoundedRectangle(cornerRadius: Layout.containerRadius, style: .continuous)
                 .fill(Color(.secondarySystemGroupedBackground))
@@ -426,62 +432,86 @@ struct SRSDashboardView: View {
     }
 
     private var heroNoActivePacks: some View {
-        VStack(spacing: 8) {
+        HStack(spacing: 12) {
             Image(systemName: "square.stack.3d.up.slash")
-                .font(.system(size: 36))
+                .font(.system(size: 26))
                 .foregroundStyle(.secondary)
-            Text("No active packs")
-                .font(.system(size: 17, weight: .semibold))
-            Text("Turn on a pack below to start your daily review.")
-                .font(.system(size: 14))
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("No active packs")
+                    .font(.system(size: 16, weight: .semibold))
+                Text("Turn on a pack to start your daily review.")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
         }
     }
 
+    /// One row: what's due, and the button to do it.
+    ///
+    /// This was a stack — a 48pt numeral, a full-width Start button, then the
+    /// breakdown — roughly 200pt tall to say "1 card due today". iOS puts a
+    /// summary like this on one line with the action trailing (Software Update,
+    /// the App Store's Update All, a Reminders smart list): the count reads at a
+    /// glance, the button is still the most prominent thing in the row, and the
+    /// rest of Home moves up to meet it.
     private func heroQueue(agg: Aggregate) -> some View {
-        VStack(spacing: 16) {
-            VStack(spacing: 4) {
-                Text("\(agg.queueSize)")
-                    .font(.system(size: 48, weight: .bold, design: .rounded))
-                    .contentTransition(.numericText())
-                Text(agg.queueSize == 1 ? "card due today" : "cards due today")
-                    .font(.system(size: 14))
-                    .foregroundStyle(.secondary)
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    // Rounded for the numeral only — the label beside it stays on
+                    // the standard face.
+                    Text("\(agg.queueSize)")
+                        .font(.system(size: 26, weight: .bold, design: .rounded))
+                        .contentTransition(.numericText())
+                    Text(agg.queueSize == 1 ? "card due today" : "cards due today")
+                        .font(.system(size: 15))
+                        .foregroundStyle(.secondary)
+                }
+                .accessibilityElement(children: .combine)
+
+                HStack(spacing: 10) {
+                    breakdownChip(label: "Learning", value: agg.learning,     color: .orange)
+                    breakdownChip(label: "Review",   value: agg.review,       color: .blue)
+                    breakdownChip(label: "New",      value: agg.newProjected, color: .green)
+                }
             }
-            .accessibilityElement(children: .combine)
+
+            Spacer(minLength: 8)
 
             Button {
                 startSession(forPacks: activePacks)
             } label: {
-                Label("Start Review", systemImage: "play.fill")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
+                Text("Start")
+                    .font(.system(size: 15, weight: .semibold))
+                    .padding(.horizontal, 6)
             }
             .buttonStyle(.borderedProminent)
-            .controlSize(.large)
+            .controlSize(.regular)
+            .buttonBorderShape(.capsule)
             .tint(.accentColor)
-
-            HStack(spacing: 12) {
-                breakdownChip(label: "Learning", value: agg.learning,     color: .orange)
-                breakdownChip(label: "Review",   value: agg.review,       color: .blue)
-                breakdownChip(label: "New",      value: agg.newProjected, color: .green)
-            }
+            .accessibilityLabel("Start review")
         }
     }
 
+    /// Same row shape as the queue state, so the card doesn't resize as you
+    /// finish a session.
     private func heroCaughtUp(agg: Aggregate) -> some View {
-        VStack(spacing: 8) {
+        HStack(spacing: 12) {
             Image(systemName: "checkmark.seal.fill")
-                .font(.system(size: 36))
+                .font(.system(size: 26))
                 .foregroundStyle(.green)
                 .symbolEffect(.bounce, options: .nonRepeating)
-            Text("All caught up")
-                .font(.system(size: 17, weight: .semibold))
-            Text(caughtUpMessage(agg: agg))
-                .font(.system(size: 14))
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("All caught up")
+                    .font(.system(size: 16, weight: .semibold))
+                Text(caughtUpMessage(agg: agg))
+                    .font(.system(size: 13))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
         }
     }
 
@@ -541,7 +571,11 @@ struct SRSDashboardView: View {
             }
             .font(.system(size: 13))
             .foregroundStyle(.secondary)
-            .frame(maxWidth: .infinity)
+            // Leading, not centred. This sits where a grouped-list *footer* sits,
+            // and iOS aligns those to the section's leading edge — centred, it
+            // read as a standalone button floating under the card.
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.leading, 4)
             .padding(.vertical, 2)
             .contentShape(Rectangle())
         }
@@ -712,18 +746,19 @@ private struct PinVersePicker: View {
                     onPick(verse)
                     dismiss()
                 } label: {
-                    HStack(alignment: .top, spacing: 12) {
-                        VStack(alignment: .leading, spacing: 3) {
+                    // Reference and title only — see the matching picker in
+                    // `LearningSetupView`. You're identifying a card you already
+                    // know, and two lines of body text per row turn a list you'd
+                    // scan into one you have to scroll.
+                    HStack(spacing: 12) {
+                        VStack(alignment: .leading, spacing: 2) {
                             Text("\(verse.book) \(verse.reference)")
-                                .font(.headline)
+                                .font(.system(size: 15, weight: .semibold))
                                 .foregroundStyle(.primary)
                             Text(verse.title)
-                                .font(.subheadline.weight(.medium))
-                                .foregroundStyle(Color.accentColor)
-                            Text(verse.verse)
-                                .font(.footnote)
+                                .font(.system(size: 13))
                                 .foregroundStyle(.secondary)
-                                .lineLimit(2)
+                                .lineLimit(1)
                         }
                         Spacer(minLength: 8)
                         if verse.srsKey == pinnedKey {
@@ -732,7 +767,6 @@ private struct PinVersePicker: View {
                                 .foregroundStyle(Color.accentColor)
                         }
                     }
-                    .padding(.vertical, 2)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)

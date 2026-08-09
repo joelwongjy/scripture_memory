@@ -60,7 +60,7 @@ final class LearningStore: ObservableObject {
     /// ask "is this the current verse?" without the dashboard plumbing it through.
     var visibleOrdered: [Verse] {
         let version = BibleVersion(rawValue: defaults.string(forKey: "bibleVersion") ?? "") ?? .niv84
-        return PackPreferencesStore.shared.visible(from: version.packs).flatMap(\.verses)
+        return Catalogue.verses(in: PackPreferencesStore.shared.visible(from: version.packs))
     }
 
     /// Cheap fingerprint of everything `visibleOrdered` depends on except
