@@ -112,6 +112,8 @@ struct SRSDashboardView: View {
                 )
             }
         }
+        // See `PackListView` — pins the initial offset above the search field.
+        .defaultScrollAnchor(.top)
         .scrollDismissesKeyboard(.immediately)
         // Swapping the whole screen shouldn't animate — matches Packs.
         .animation(nil, value: searchText.isEmpty)

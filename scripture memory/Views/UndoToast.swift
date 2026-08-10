@@ -20,6 +20,15 @@ struct UndoToastState: Identifiable {
 struct UndoToast: View {
     let message: String
     let onUndo: () -> Void
+    /// Swiped away by the user, as distinct from timing out or being undone.
+    var onDismiss: () -> Void = {}
+
+    /// Live finger offset. Downward only — dragging a bottom-edge toast up would
+    /// imply it goes somewhere, and it doesn't.
+    @State private var drag: CGFloat = 0
+
+    /// Past this the toast is gone on release; short of it, it springs back.
+    private static let dismissDistance: CGFloat = 24
 
     var body: some View {
         HStack(spacing: 10) {
@@ -59,7 +68,31 @@ struct UndoToast: View {
             Capsule(style: .continuous)
                 .strokeBorder(Color(.separator).opacity(0.35), lineWidth: 0.5)
         )
+        .offset(y: drag)
+        // Follows the finger down, then either leaves or springs back. `Undo` is
+        // still a plain Button inside this — a drag gesture on the container
+        // doesn't swallow taps on a child button, so both work.
+        .gesture(
+            DragGesture(minimumDistance: 8)
+                .onChanged { value in
+                    // Rubber-banding upward rather than a hard stop, so an
+                    // imprecise swipe still feels like it's tracking the finger.
+                    drag = value.translation.height > 0
+                        ? value.translation.height
+                        : value.translation.height / 4
+                }
+                .onEnded { value in
+                    let travel = value.translation.height + value.predictedEndTranslation.height / 3
+                    if travel > Self.dismissDistance {
+                        HapticEngine.light()
+                        onDismiss()
+                    } else {
+                        withAnimation(AppMotion.control) { drag = 0 }
+                    }
+                }
+        )
         .accessibilityElement(children: .contain)
+        .accessibilityAction(named: "Dismiss") { onDismiss() }
     }
 }
 
@@ -67,9 +100,14 @@ struct UndoToast: View {
 
 extension View {
 
-    /// How long an undo stays available. Long enough to notice and react to,
-    /// short enough not to sit on top of the controls underneath it.
-    private static var undoToastSeconds: Double { 5 }
+    /// How long an undo stays available.
+    ///
+    /// 3s, down from 5. The toast covers the controls underneath it, and marking
+    /// a verse complete is a deliberate tap on a labelled button — the undo is
+    /// there for the misfire you notice immediately, not a window to reconsider
+    /// in. 2s clipped the read-notice-reach sequence a little tight; swipe-down
+    /// dismissal means nobody has to wait this out anyway.
+    private static var undoToastSeconds: Double { 3 }
 
     /// Floats `toast` over the bottom edge until it's undone or times out.
     ///
@@ -78,13 +116,19 @@ extension View {
     func undoToast(_ toast: Binding<UndoToastState?>) -> some View {
         overlay(alignment: .bottom) {
             if let state = toast.wrappedValue {
-                UndoToast(message: state.message) {
-                    state.undo()
-                    HapticEngine.light()
-                    withAnimation(AppMotion.content) {
-                        toast.wrappedValue = nil
+                UndoToast(
+                    message: state.message,
+                    onUndo: {
+                        state.undo()
+                        HapticEngine.light()
+                        withAnimation(AppMotion.content) { toast.wrappedValue = nil }
+                    },
+                    // Swiping away dismisses the toast only — the action it's
+                    // confirming stays done. Undo is the button, not the swipe.
+                    onDismiss: {
+                        withAnimation(AppMotion.content) { toast.wrappedValue = nil }
                     }
-                }
+                )
                 .padding(.horizontal, AppLayout.screenMargin)
                 .padding(.bottom, 10)
                 .id(state.id)

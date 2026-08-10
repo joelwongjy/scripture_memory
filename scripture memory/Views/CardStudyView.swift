@@ -20,6 +20,10 @@ struct CardStudyView: View {
     @State private var shakeOffset:  CGFloat = 0
     @State private var speechTarget: SubmitField = .title
     @State private var isScrubbing           = false
+    /// Set when the Read/Review toggle put us in review — see `returnsToRead`.
+    @State private var enteredReviewFromList = false
+    /// Verse a list tap asked review to open on, consumed by `handleReviewModeChange`.
+    @State private var tappedListIndex: Int?
     @State private var isPeeking             = false
     /// Raw vertical scroll offset of the read-mode list — lets the jump button track
     /// whether the cursor card is actually on screen, not just `currentIndex` (which
@@ -322,10 +326,18 @@ struct CardStudyView: View {
             .frame(maxWidth: max(120, width - 220))
 
             HStack {
-                Button { dismiss() } label: {
-                    Image(systemName: "xmark").studyChromeCircleButton()
+                Button {
+                    if returnsToRead {
+                        HapticEngine.light()
+                        withAnimation(AppMotion.content) { vm.isReviewMode = false }
+                    } else {
+                        dismiss()
+                    }
+                } label: {
+                    Image(systemName: returnsToRead ? "chevron.left" : "xmark")
+                        .studyChromeCircleButton()
                 }
-                .accessibilityLabel("Close")
+                .accessibilityLabel(returnsToRead ? "Back to reading" : "Close")
 
                 Spacer()
 
@@ -488,9 +500,28 @@ struct CardStudyView: View {
                     ScrollView(.vertical, showsIndicators: false) {
                         LazyVStack(spacing: 20) {
                             ForEach(Array(vm.verses.enumerated()), id: \.offset) { index, verse in
-                                makeCard(verse: verse, verseIndex: index, interactive: index == vm.currentIndex)
-                                    .frame(width: cardWidth, height: cardHeight)
-                                    .id(index)
+                                // Tap a verse to review that verse.
+                                //
+                                // This existed once as a way to *select* the card
+                                // review would later open on, and was removed
+                                // because the tap did nothing you could see. Taking
+                                // you straight there is the opposite: the whole
+                                // result is immediate, and the chevron that
+                                // replaces close on this path is the way back.
+                                //
+                                // Completed verses open too — re-drilling something
+                                // you've finished is a normal thing to want.
+                                Button {
+                                    openReview(at: index)
+                                } label: {
+                                    makeCard(verse: verse, verseIndex: index, interactive: index == vm.currentIndex)
+                                        .frame(width: cardWidth, height: cardHeight)
+                                }
+                                // Same press-scale the pack covers use, so a card
+                                // that can be tapped looks like one without adding
+                                // any chrome to say so.
+                                .buttonStyle(CardButtonStyle())
+                                .id(index)
                             }
                         }
                         .scrollTargetLayout()
@@ -1022,6 +1053,10 @@ struct CardStudyView: View {
         CardSwipeConfig.backwardDragProgress(dragWidth: dragOffset.width)
     }
 
+    /// Downward travel that counts as "put the keyboard away" rather than a
+    /// stray vertical wobble during a horizontal swipe.
+    private static let keyboardDismissPull: CGFloat = 40
+
     private var swipeGesture: some Gesture {
         DragGesture()
             .onChanged { value in
@@ -1050,8 +1085,23 @@ struct CardStudyView: View {
                     swipeBackward()
                 } else {
                     withAnimation(AppMotion.control) { dragOffset = .zero }
-                    // Drag started (dismissing keyboard) but wasn't committed — restore focus.
-                    DispatchQueue.main.asyncAfter(deadline: .now() + AppMotion.settleShort) { refocusIfNeeded() }
+                    // A deliberate pull downward is a request to put the keyboard
+                    // away — the gesture that starts it already dismisses it, so
+                    // all that's needed is to stop restoring focus afterwards.
+                    // Everything else here is an uncommitted swipe, which should
+                    // leave you where you were, still typing.
+                    //
+                    // Not in submit mode: there the vertical axis belongs to the
+                    // TextEditor for scrolling and selection.
+                    let pulledDown = !isHorizontal
+                        && studyMode != .submit
+                        && value.translation.height > Self.keyboardDismissPull
+                    if pulledDown {
+                        isInputFocused = false
+                        submitFocus    = nil
+                    } else {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + AppMotion.settleShort) { refocusIfNeeded() }
+                    }
                 }
             }
     }
@@ -1100,17 +1150,44 @@ struct CardStudyView: View {
 
     // MARK: - Focus & Speech
 
+    /// Whether the leading chrome button goes back to the list instead of closing.
+    ///
+    /// It undoes the last step, which is what a back control is for: reading is a
+    /// level above reviewing only when you actually came through it. Open the
+    /// screen straight into review — which Home does, on a setting — and review is
+    /// the top level, so closing stays one tap.
+    ///
+    /// Keyed on how you arrived rather than on whether the keyboard is up. Both
+    /// fix the misfire this came from (entering review focuses the input, which
+    /// hides the Read/Review picker and leaves close as the only visible control),
+    /// but the keyboard comes and goes mid-session — a button that changed meaning
+    /// with it would be the same trap wearing a different hat.
+    private var returnsToRead: Bool { vm.isReviewMode && enteredReviewFromList }
+
+    /// Switch to review on `index`, from a tap on that card in the list.
+    private func openReview(at index: Int) {
+        guard vm.verses.indices.contains(index) else { return }
+        HapticEngine.light()
+        tappedListIndex = index
+        withAnimation(AppMotion.content) { vm.isReviewMode = true }
+    }
+
     private func handleReviewModeChange(_ reviewing: Bool) {
-        // Review opens on the card the list was showing.
+        // Only the toggle and a card tap move this. Opening already in review never
+        // runs this handler, which is exactly the distinction `returnsToRead` needs.
+        enteredReviewFromList = reviewing
+
+        // Which verse review opens on.
         //
-        // Tapping a card in the read list used to be how you chose that, which
-        // meant a tap that scrolled the list a little and otherwise did nothing
-        // visible — the selection it set only mattered later, on a screen you
-        // hadn't switched to yet. The scroll position already says which verse
-        // you're looking at, so read it here instead.
-        if reviewing, vm.verses.indices.contains(visibleListIndex) {
-            vm.currentIndex = visibleListIndex
+        // A tapped card names one outright. Otherwise the toggle was used, and the
+        // scroll position is the best available answer to "which verse were you
+        // looking at" — better than the old approach of having a tap silently set
+        // a selection whose only effect landed on a screen you hadn't reached yet.
+        if reviewing {
+            let target = tappedListIndex ?? visibleListIndex
+            if vm.verses.indices.contains(target) { vm.currentIndex = target }
         }
+        tappedListIndex = nil
         if reviewing && !vm.isCardComplete {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { focusInput() }
         } else {

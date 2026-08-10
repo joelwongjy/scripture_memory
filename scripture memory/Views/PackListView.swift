@@ -38,6 +38,14 @@ struct PackListView: View {
                 )
             }
         }
+        // Start at the top, explicitly.
+        //
+        // A `.navigationBarDrawer(displayMode: .always)` search field is laid out
+        // as part of the scroll content, and SwiftUI's initial content offset
+        // sometimes lands *below* it — the screen opens with the search bar under
+        // the status bar and the large title already scrolled away. Naming the
+        // anchor removes the guess; it's inert when the offset was right anyway.
+        .defaultScrollAnchor(.top)
         .scrollDismissesKeyboard(.immediately)
         .animation(nil, value: searchText.isEmpty)
         .background(Color(.systemGroupedBackground))
@@ -120,6 +128,15 @@ struct PackCover: View {
 
     private static let designWidth:  CGFloat = 340
     private static let designHeight: CGFloat = designWidth * 3 / 5  // 5:3
+
+    /// The one horizontal inset every element on a cover measures from, left and
+    /// right alike.
+    ///
+    /// The printed pack doesn't work this way — its 242 runs nearly to the card
+    /// edge while the title and Navigators mark sit well inside, which is fine on
+    /// a physical card you hold one at a time. Reproduced in a two-column grid it
+    /// just reads as bad centring, so fidelity loses to symmetry here.
+    private static let contentInset: CGFloat = 28
 
     private var isDEP:        Bool  { pack.name.hasPrefix("DEP") }
     private var isTMS180:     Bool  { pack.name.hasPrefix("TMS 180") }
@@ -367,13 +384,13 @@ struct PackCover: View {
                     // 27 medium is the ceiling, not a preference. The cover renders
                     // on a fixed 340pt canvas and scales uniformly, so whether a
                     // title wraps is a property of this number alone — identical on
-                    // an SE and a Pro Max. Measured against the two longest titles
-                    // in the set ("7. The Lordship of Christ" and "1. Assurance of
-                    // Salvation", both 297pt wide here), 28 overruns the line and
-                    // drops them to two, so this is as large as the set goes
-                    // without one cover looking different from the other seven.
+                    // an SE and a Pro Max. The two longest titles in the set
+                    // ("7. The Lordship of Christ" and "1. Assurance of Salvation")
+                    // measure 275pt at this size against the 284 an equal inset
+                    // leaves; 26 needs 286 and drops them to two lines, so this is
+                    // as large as the set goes with symmetric margins.
                     Text(displayTitle)
-                        .font(.system(size: 27, weight: .medium))
+                        .font(.system(size: 25, weight: .medium))
                         .foregroundColor(inkColor)
                         .lineLimit(2)
                         .minimumScaleFactor(0.7)
@@ -385,10 +402,9 @@ struct PackCover: View {
                 // measured off screenshots, 16/12 gave a ~20pt optical gap at the
                 // top against ~13pt at the bottom. These numbers are chosen so the
                 // *ink* sits the same distance from both edges.
-                // Trailing 8, not 16: the longest titles need 297 of the 340pt
-                // canvas' width, and the lockup sits low and right of them, so
-                // there's nothing here for the larger inset to protect.
-                .padding(.leading, 28).padding(.trailing, 8).padding(.top, 18)
+                .padding(.leading, Self.contentInset)
+                .padding(.trailing, Self.contentInset)
+                .padding(.top, 18)
                 Spacer(minLength: 0)
             }
 
@@ -408,7 +424,7 @@ struct PackCover: View {
                              stroke: depGold,
                              fill: fieldColor,
                              width: 1.5)
-                    .padding(.trailing, 9)
+                    .padding(.trailing, Self.contentInset)
                     .padding(.bottom, 6)
 
                 // 62, not 55. The two are sized very differently, so equal-looking
@@ -421,7 +437,7 @@ struct PackCover: View {
                     .italic()
                     .tracking(-0.5)
                     .foregroundColor(depGold)
-                    .padding(.trailing, 68)
+                    .padding(.trailing, Self.contentInset + 59)
                     .padding(.bottom, 62)
 
                 // Clear above the 242, not tucked into it.
@@ -441,7 +457,7 @@ struct PackCover: View {
                     .font(.system(size: 13, weight: .semibold, design: .serif))
                     .italic()
                     .foregroundColor(depGold)
-                    .padding(.trailing, 12)
+                    .padding(.trailing, Self.contentInset + 3)
                     .padding(.bottom, 72)
             }
             // Fill the card. Without this the ZStack shrinks to fit the lockup and
@@ -476,7 +492,7 @@ struct PackCover: View {
                 // 15 against the title's 12 — the 10pt line here has almost no
                 // descender slack, so it needs the larger number to land at the
                 // same optical distance from the edge.
-                .padding(.leading, 28).padding(.bottom, 15)
+                .padding(.leading, Self.contentInset).padding(.bottom, 15)
             }
         }
     }

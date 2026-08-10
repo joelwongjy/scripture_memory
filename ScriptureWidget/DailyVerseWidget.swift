@@ -78,20 +78,24 @@ struct VerseEntryView: View {
     /// Mirrors the app's read-mode flashcard: title (bold serif) → reference
     /// (secondary) → verse (serif) → pack label (caption, bottom).
     ///
-    /// Sizes track the system text styles the HIG points widgets at — roughly
-    /// subheadline/footnote on small, headline/footnote on medium, title3/subhead
-    /// on large — rather than being stretched to whatever fills the card. Nothing
-    /// here drops below 11pt, the smallest style (caption2) the system ships.
+    /// Sizes sit on the iOS text-style ladder rather than being numbers that
+    /// looked right. 11pt is Apple's floor for legibility at arm's length, so
+    /// it's where the *chrome* sits — the verse and its reference are the things
+    /// being read and are sized above it.
+    ///
+    /// The title is deliberately close to the verse rather than towering over it:
+    /// at `title3` it was the loudest thing on a medium widget, when what the
+    /// widget is for is the verse. Bold serif already separates it.
     @ViewBuilder
     private func content(_ v: WidgetVerse) -> some View {
         switch family {
         case .systemSmall:
-            cardLayout(v, titleSize: 13, refSize: 11, verseSize: 11, packSize: 11,
+            cardLayout(v, titleSize: 14, refSize: 12, verseSize: 12, packSize: 11,
                        gap1: 2, gap2: 4, verseSpacing: 1.5, titleLines: 2)
         case .systemLarge:
             largeContent(v)
         default: // systemMedium
-            cardLayout(v, titleSize: 17, refSize: 13, verseSize: 13, packSize: 11,
+            cardLayout(v, titleSize: 17, refSize: 14, verseSize: 15, packSize: 11,
                        gap1: 3, gap2: 6, verseSpacing: 2.5, titleLines: 2)
         }
     }
@@ -142,8 +146,8 @@ struct VerseEntryView: View {
                                  reference: v.fullReference,
                                  verse: v.verse,
                                  baseTitle: 20,
-                                 baseRef: 15,
-                                 baseVerse: 16,
+                                 baseRef: 16,
+                                 baseVerse: 17,
                                  gap1: 4,
                                  gap2: 8,
                                  lineSpacing: 4,

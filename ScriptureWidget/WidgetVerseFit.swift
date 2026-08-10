@@ -82,12 +82,24 @@ struct FittedVerseBlock: View {
     let gap2:        CGFloat
     let lineSpacing: CGFloat
     let titleLines:  Int
-    /// Ceiling on the scale factor. 1.0 = the designed size; the block never
-    /// grows past it, it only shrinks to make a long verse fit.
-    var maxScale:    CGFloat = 1.0
-    /// Floor on the scale factor. Below this, shrinking buys legibility problems
-    /// instead of fit, so the verse truncates instead.
-    var minScale:    CGFloat = 0.78
+    /// Ceiling on the scale factor.
+    ///
+    /// 1.0 — never grow — left a two-line verse sitting in half a card of empty
+    /// space, which is its own kind of hard to read. 1.55 is what made the type
+    /// read as a poster. 1.2 lets a short verse take the room it's given without
+    /// the title outgrowing `title2`, the largest style that still looks like
+    /// widget furniture rather than a headline.
+    var maxScale:    CGFloat = 1.2
+
+    /// Floor on the scale, expressed as a *point size* rather than a ratio.
+    ///
+    /// A fixed ratio was wrong: 0.78 of the small family's verse size is 9.4pt,
+    /// under the 11pt Apple gives as the smallest legible size at arm's length.
+    /// Stated this way the floor means the same thing on every family, and a
+    /// verse too long to fit at 11pt truncates rather than shrinking past it.
+    var minPointSize: CGFloat = 11
+
+    private var minScale: CGFloat { min(maxScale, minPointSize / baseVerse) }
 
     // Broken into statements rather than one expression: as a single chained sum
     // of five calls the type checker gives up on it.
