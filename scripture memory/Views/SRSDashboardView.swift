@@ -122,6 +122,9 @@ struct SRSDashboardView: View {
             placement: .navigationBarDrawer(displayMode: .always),
             prompt: "Search verses"
         )
+        // Build the match index before the field is ever tapped, so the first
+        // character typed isn't the one that pays for it.
+        .task { VerseSearch.prewarm(packs) }
         .fullScreenCover(item: $cover) { c in
             switch c {
             case .review(let s): TestSessionView(session: s, onSessionEnded: { cover = nil })

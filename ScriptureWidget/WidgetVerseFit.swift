@@ -65,12 +65,12 @@ private func measuredLineHeight(_ size: CGFloat) -> CGFloat {
 
 /// The whole verse block — title, reference and body — scaled as one.
 ///
-/// Sizing only the verse was half a fix: a three-word verse grew to fill the
-/// widget while its own title and reference stayed put, so the block came out
-/// bottom-heavy and the heading looked like a caption on its own text. Every
-/// size and gap here moves by a single factor, chosen so the composed block
-/// fills the height it's given — which is what keeps the proportions the same
-/// as the flashcard whether the verse is three words or sixty.
+/// The base sizes are the *designed* sizes for the family: a widget is glanceable
+/// UI, not a poster, so the block is only ever scaled **down**, never up. A short
+/// verse renders at the same type scale as a long one and simply leaves the slack
+/// as whitespace — which is what keeps a two-line verse and a sixty-word verse
+/// looking like the same widget. Every size and gap moves by one factor so the
+/// title never ends up reading as a caption on its own body text.
 struct FittedVerseBlock: View {
     let title:       String
     let reference:   String
@@ -82,9 +82,12 @@ struct FittedVerseBlock: View {
     let gap2:        CGFloat
     let lineSpacing: CGFloat
     let titleLines:  Int
-    /// Ceiling on the scale factor. Without one a very short verse pushes the
-    /// type to a size that reads as a poster rather than a widget.
-    var maxScale:    CGFloat = 1.55
+    /// Ceiling on the scale factor. 1.0 = the designed size; the block never
+    /// grows past it, it only shrinks to make a long verse fit.
+    var maxScale:    CGFloat = 1.0
+    /// Floor on the scale factor. Below this, shrinking buys legibility problems
+    /// instead of fit, so the verse truncates instead.
+    var minScale:    CGFloat = 0.78
 
     // Broken into statements rather than one expression: as a single chained sum
     // of five calls the type checker gives up on it.
@@ -110,15 +113,18 @@ struct FittedVerseBlock: View {
                     .minimumScaleFactor(0.8)
                 Spacer().frame(height: gap1 * k)
                 Text(reference)
-                    .font(.system(size: baseRef * k))
-                    .foregroundStyle(.primary)
+                    .font(.system(size: baseRef * k, weight: .medium))
+                    .foregroundStyle(.secondary)
                     .lineLimit(1).minimumScaleFactor(0.8)
                 Spacer().frame(height: gap2 * k)
                 Text(verse)
                     .font(.system(size: baseVerse * k, design: .serif))
                     .foregroundStyle(.primary)
                     .lineSpacing(lineSpacing * k)
-                    .minimumScaleFactor(0.6)
+                    // Past the shrink floor, truncate rather than keep scaling —
+                    // the HIG asks for legible text, not complete text.
+                    .minimumScaleFactor(0.9)
+                    .truncationMode(.tail)
                 Spacer(minLength: 0)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -128,7 +134,7 @@ struct FittedVerseBlock: View {
     private func scale(width: CGFloat, height: CGFloat) -> CGFloat {
         guard width > 1, height > 1 else { return 1 }
         if totalHeight(scale: maxScale, width: width) <= height { return maxScale }
-        var lo: CGFloat = 0.6, hi = maxScale
+        var lo = minScale, hi = maxScale
         for _ in 0..<12 {
             let mid = (lo + hi) / 2
             if totalHeight(scale: mid, width: width) <= height { lo = mid } else { hi = mid }

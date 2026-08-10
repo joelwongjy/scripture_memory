@@ -33,7 +33,7 @@ struct LearningSetupView: View {
     var body: some View {
         Group {
             if showWelcome {
-                WelcomeScreen { withAnimation(.easeInOut) { showWelcome = false } }
+                WelcomeScreen { withAnimation(AppMotion.content) { showWelcome = false } }
             } else {
                 NavigationStack {
                     StartingPointScreen(

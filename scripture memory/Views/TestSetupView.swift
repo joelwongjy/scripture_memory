@@ -118,8 +118,8 @@ struct TestSetupView: View {
         )
         .listStyle(.insetGrouped)
         .listSectionSpacing(savedSession == nil ? 12 : 22)
-        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: expandedPackIds)
-        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: savedSession != nil)
+        .animation(AppMotion.content, value: expandedPackIds)
+        .animation(AppMotion.content, value: savedSession != nil)
         .background(Color(.systemGroupedBackground))
         .navigationTitle("Quiz")
         .toolbar {

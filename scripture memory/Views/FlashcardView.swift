@@ -235,7 +235,7 @@ struct FlashcardView: View {
                     completedText(words, font: font)
                 } else if isActive {
                     activeText(words: words, revealed: revealed, font: font)
-                        .animation(.easeOut(duration: 0.2), value: revealed)
+                        .animation(AppMotion.control, value: revealed)
                 } else {
                     inactiveText(section: section, words: words, revealed: revealed, font: font)
                 }
@@ -353,7 +353,7 @@ struct FlashcardView: View {
                     Capsule()
                         .fill(Color.green)
                         .frame(width: max(4, geo.size.width * Double(revealed) / Double(max(1, total))))
-                        .animation(.spring(response: 0.4, dampingFraction: 0.7), value: revealed)
+                        .animation(AppMotion.movement, value: revealed)
                 }
             }
             .frame(height: 3)

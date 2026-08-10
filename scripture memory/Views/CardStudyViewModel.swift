@@ -266,7 +266,7 @@ final class CardStudyViewModel: ObservableObject {
             titleDiffs: DiffEngine.buildDiffs(typed: typedTitle, target: verse.titleWords),
             verseDiffs: DiffEngine.buildDiffs(typed: typedVerse, target: verse.verseWords)
         )
-        withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+        withAnimation(AppMotion.content) {
             submitResults[verse.id] = result
         }
         if result.isAllCorrect { ReviewProgress.shared.markComplete(verse.id) }
@@ -278,7 +278,7 @@ final class CardStudyViewModel: ObservableObject {
 
     func retrySubmit() {
         guard let verse = currentVerse else { return }
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+        withAnimation(AppMotion.content) {
             submitResults.removeValue(forKey: verse.id)
         }
         titleInput = ""
@@ -287,7 +287,7 @@ final class CardStudyViewModel: ObservableObject {
 
     func resetCurrentCard() {
         guard let verse = currentVerse else { return }
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+        withAnimation(AppMotion.control) {
             switch studyMode {
             case .submit:
                 submitResults.removeValue(forKey: verse.id)
@@ -352,7 +352,7 @@ final class CardStudyViewModel: ObservableObject {
         } else {
             return
         }
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+        withAnimation(AppMotion.content) {
             switch hinted {
             case .verse: verseRevealedCounts[verse.id] = verseRevealedCounts[verse.id, default: 0] + 1
             case .title: titleRevealedCounts[verse.id] = titleRevealedCounts[verse.id, default: 0] + 1
@@ -397,7 +397,7 @@ final class CardStudyViewModel: ObservableObject {
               !sectionWords[newCount].contains(where: { $0.isLetter || $0.isNumber }) {
             newCount += 1
         }
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+        withAnimation(AppMotion.content) {
             setRevealed(newCount, for: verse.id, section: activeSection)
         }
         if newCount >= sectionWords.count {
@@ -414,7 +414,7 @@ final class CardStudyViewModel: ObservableObject {
         let otherWords    = sectionWords(other, in: verse)
         let otherRevealed = revealedCount(for: verse.id, section: other)
         if otherRevealed < otherWords.count {
-            withAnimation(.easeOut(duration: 0.2)) { activeSection = other }
+            withAnimation(AppMotion.control) { activeSection = other }
         }
     }
 }

@@ -200,7 +200,7 @@ final class TestSessionViewModel: ObservableObject {
             titleDiffs: DiffEngine.buildDiffs(typed: typedTitle, target: verse.titleWords),
             verseDiffs: DiffEngine.buildDiffs(typed: typedVerse, target: verse.verseWords)
         )
-        withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+        withAnimation(AppMotion.content) {
             var next = submitResults
             next[verse.id] = result
             submitResults = next
@@ -224,7 +224,7 @@ final class TestSessionViewModel: ObservableObject {
 
     func retrySubmit() {
         guard let verse = currentVerse else { return }
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+        withAnimation(AppMotion.content) {
             var next = submitResults
             next.removeValue(forKey: verse.id)
             submitResults = next
@@ -288,7 +288,7 @@ final class TestSessionViewModel: ObservableObject {
         } else {
             return
         }
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+        withAnimation(AppMotion.content) {
             switch hinted {
             case .verse: verseRevealedCounts[verse.id] = verseRevealedCounts[verse.id, default: 0] + 1
             case .title: titleRevealedCounts[verse.id] = titleRevealedCounts[verse.id, default: 0] + 1
@@ -430,7 +430,7 @@ final class TestSessionViewModel: ObservableObject {
               !sectionWords[newCount].contains(where: { $0.isLetter || $0.isNumber }) {
             newCount += 1
         }
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+        withAnimation(AppMotion.content) {
             setRevealed(newCount, for: verse.id, section: activeSection)
         }
         saveProgress()
@@ -448,7 +448,7 @@ final class TestSessionViewModel: ObservableObject {
         let otherWords    = sectionWords(other, in: verse)
         let otherRevealed = revealedCount(for: verse.id, section: other)
         if otherRevealed < otherWords.count {
-            withAnimation(.easeOut(duration: 0.2)) { activeSection = other }
+            withAnimation(AppMotion.control) { activeSection = other }
         }
     }
 

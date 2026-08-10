@@ -67,6 +67,14 @@ enum VerseSearch {
         return Array((primary + secondary).prefix(resultLimit))
     }
 
+    /// Build the index ahead of the first query.
+    ///
+    /// Without this the ~490-verse lowercasing above runs inside `body` on the
+    /// first character typed, so the search bar swallowed its own first keystroke.
+    /// The screens call it when they appear, off the interaction path. Cheap to
+    /// call repeatedly — it no-ops once the fingerprint matches.
+    static func prewarm(_ packs: [Pack]) { _ = index(for: packs) }
+
     /// Drop the built index. Call when verse *content* changes under a pack set
     /// that still fingerprints the same — a remote catalog refresh, say, which can
     /// rewrite verse text without changing any pack's name or size.

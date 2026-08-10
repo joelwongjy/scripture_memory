@@ -60,7 +60,7 @@ struct VerseFastScrollOverlay: View {
         .frame(width: Self.thumbSize + Self.thumbTrailingPad + 2,
                height: containerHeight, alignment: .topTrailing)
         .opacity(visible || isDragging ? 1 : 0)
-        .animation(.easeOut(duration: 0.2), value: visible)
+        .animation(AppMotion.control, value: visible)
         .allowsHitTesting(verseCount >= 2)
         .onAppear { flash() }
         .onChange(of: scrollFraction) { _, _ in if !isDragging { flash() } }
@@ -79,7 +79,7 @@ struct VerseFastScrollOverlay: View {
         .frame(width: Self.thumbSize, height: Self.thumbSize)
         .scaleEffect(isDragging ? 1.12 : 1)
         .opacity(isDragging ? 1 : 0.9)
-        .animation(.spring(response: 0.25, dampingFraction: 0.75), value: isDragging)
+        .animation(AppMotion.control, value: isDragging)
         .contentShape(Circle())
         .accessibilityHidden(true)
     }
@@ -144,21 +144,21 @@ struct VerseFastScrollOverlay: View {
             .onEnded { _ in
                 withAnimation(.easeOut(duration: 0.12)) { isDragging = false }
                 lastDragIndex = -1
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { isScrubbing = false }
+                DispatchQueue.main.asyncAfter(deadline: .now() + AppMotion.settle) { isScrubbing = false }
                 flash()
             }
     }
 
     /// Show the thumb and (re)arm the auto-hide timer.
     private func flash() {
-        if !visible { withAnimation(.easeOut(duration: 0.15)) { visible = true } }
+        if !visible { withAnimation(AppMotion.control) { visible = true } }
         hideTask?.cancel()
         hideTask = Task { [delay = Self.hideDelay] in
             try? await Task.sleep(for: delay)
             guard !Task.isCancelled else { return }
             await MainActor.run {
                 guard !isDragging else { return }
-                withAnimation(.easeOut(duration: 0.35)) { visible = false }
+                withAnimation(AppMotion.movement) { visible = false }
             }
         }
     }

@@ -76,18 +76,23 @@ struct VerseEntryView: View {
     }
 
     /// Mirrors the app's read-mode flashcard: title (bold serif) → reference
-    /// (plain) → verse (serif) → pack label (small, bottom).
+    /// (secondary) → verse (serif) → pack label (caption, bottom).
+    ///
+    /// Sizes track the system text styles the HIG points widgets at — roughly
+    /// subheadline/footnote on small, headline/footnote on medium, title3/subhead
+    /// on large — rather than being stretched to whatever fills the card. Nothing
+    /// here drops below 11pt, the smallest style (caption2) the system ships.
     @ViewBuilder
     private func content(_ v: WidgetVerse) -> some View {
         switch family {
         case .systemSmall:
-            cardLayout(v, titleSize: 12, refSize: 10.5, verseSize: 10.5, packSize: 8,
-                       gap1: 3, gap2: 3, verseSpacing: 1, titleLines: 2)
+            cardLayout(v, titleSize: 13, refSize: 11, verseSize: 11, packSize: 11,
+                       gap1: 2, gap2: 4, verseSpacing: 1.5, titleLines: 2)
         case .systemLarge:
             largeContent(v)
         default: // systemMedium
-            cardLayout(v, titleSize: 15, refSize: 13, verseSize: 13, packSize: 9,
-                       gap1: 6, gap2: 5, verseSpacing: 2, titleLines: 2)
+            cardLayout(v, titleSize: 17, refSize: 13, verseSize: 13, packSize: 11,
+                       gap1: 3, gap2: 6, verseSpacing: 2.5, titleLines: 2)
         }
     }
 
@@ -108,16 +113,16 @@ struct VerseEntryView: View {
                              lineSpacing: verseSpacing,
                              titleLines: titleLines)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            Spacer(minLength: 4)
+            Spacer(minLength: 6)
             HStack(spacing: 3) {
                 if entry.isPinned {
                     Image(systemName: "pin.fill")
                         .font(.system(size: packSize, weight: .semibold))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(.tertiary)
                 }
                 Text(v.packName)
                     .font(.system(size: packSize, weight: .medium))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.tertiary)
                     .lineLimit(1)
             }
         }
@@ -136,16 +141,17 @@ struct VerseEntryView: View {
                 FittedVerseBlock(title: v.title,
                                  reference: v.fullReference,
                                  verse: v.verse,
-                                 baseTitle: 18,
-                                 baseRef: 14,
-                                 baseVerse: 15,
-                                 gap1: 5,
-                                 gap2: 7,
+                                 baseTitle: 20,
+                                 baseRef: 15,
+                                 baseVerse: 16,
+                                 gap1: 4,
+                                 gap2: 8,
                                  lineSpacing: 4,
-                                 titleLines: 2,
-                                 maxScale: 1.3)
+                                 titleLines: 2)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                Spacer(minLength: 4)
+                // The verse block claims all the slack above, so this minimum is
+                // the whole gap: too small and the pack label sits on the rule.
+                Spacer(minLength: 10)
                 HStack(spacing: 3) {
                     if entry.isPinned {
                         Image(systemName: "pin.fill")
@@ -160,7 +166,7 @@ struct VerseEntryView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
-            Divider()
+            Divider().padding(.vertical, 10)
 
             // ── Bottom half: retention (centred to fill) ──────────────
             VStack(alignment: .leading, spacing: 0) {
@@ -334,13 +340,15 @@ struct ProgressEntryView: View {
                 .tracking(0.6)
             Spacer().frame(height: 6)
             if let v = entry.verse {
+                // Same type scale as the medium verse widget's large family, so
+                // the two widgets read as one family side by side.
                 Text(v.title)
-                    .font(.system(size: 22, weight: .bold, design: .serif))
+                    .font(.system(size: 20, weight: .bold, design: .serif))
                     .foregroundStyle(.primary)
-                    .lineLimit(1).minimumScaleFactor(0.65)
+                    .lineLimit(1).minimumScaleFactor(0.7)
                 Spacer().frame(height: 3)
                 Text(v.fullReference)
-                    .font(.system(size: 15, weight: .medium))
+                    .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             } else {
@@ -355,7 +363,7 @@ struct ProgressEntryView: View {
             Divider()
             Spacer(minLength: 9)
             StatsColumnsView(streak: entry.streak, dueToday: entry.dueToday, learned: entry.learned,
-                             valueSize: 26, iconSize: 15, labelSize: 12, sepHeight: 38)
+                             valueSize: 22, iconSize: 13, labelSize: 11, sepHeight: 34)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .containerBackground(parchment, for: .widget)

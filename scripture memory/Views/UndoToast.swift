@@ -81,7 +81,7 @@ extension View {
                 UndoToast(message: state.message) {
                     state.undo()
                     HapticEngine.light()
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.9)) {
+                    withAnimation(AppMotion.content) {
                         toast.wrappedValue = nil
                     }
                 }
@@ -95,12 +95,12 @@ extension View {
                 .task(id: state.id) {
                     try? await Task.sleep(for: .seconds(Self.undoToastSeconds))
                     guard !Task.isCancelled else { return }
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.9)) {
+                    withAnimation(AppMotion.content) {
                         toast.wrappedValue = nil
                     }
                 }
             }
         }
-        .animation(.spring(response: 0.35, dampingFraction: 0.85), value: toast.wrappedValue?.id)
+        .animation(AppMotion.content, value: toast.wrappedValue?.id)
     }
 }

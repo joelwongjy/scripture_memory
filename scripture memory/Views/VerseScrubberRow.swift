@@ -4,7 +4,7 @@ import SwiftUI
 struct VerseScrubberRow: View {
 
     private static let knobWidth: CGFloat = 30
-    private static let settleDelay: TimeInterval = 0.4
+    private static let settleDelay: TimeInterval = AppMotion.settle
 
     let verseCount: Int
     @Binding var currentIndex: Int
@@ -86,14 +86,14 @@ struct VerseScrubberRow: View {
                 Capsule()
                     .fill(Color.accentColor)
                     .frame(width: fillW, height: 6)
-                    .animation(.spring(response: 0.3, dampingFraction: 0.8), value: currentIndex)
+                    .animation(AppMotion.content, value: currentIndex)
                 Circle()
                     .fill(Color(.secondarySystemBackground))
                     .overlay(Circle().strokeBorder(Color(.separator), lineWidth: 0.5))
                     .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
                     .frame(width: knobW, height: knobW)
                     .offset(x: knobX)
-                    .animation(.spring(response: 0.3, dampingFraction: 0.8), value: currentIndex)
+                    .animation(AppMotion.content, value: currentIndex)
             }
             .frame(maxHeight: .infinity)
             .contentShape(Rectangle())
