@@ -1,5 +1,58 @@
 import Foundation
 
+// MARK: - New-Card Pacing
+
+/// The period the new-card cap is measured over.
+///
+/// Two a week is the default because that's the pace the printed programmes
+/// set, and it's the one people actually keep. A per-day cap of 1 — the old
+/// default — permits seven new verses a week, which mostly succeeds at turning
+/// the review queue into a backlog.
+enum NewCapUnit: String, CaseIterable {
+    case day
+    case week
+
+    var settingTitle: String { self == .day ? "New cards / day"  : "New cards / week" }
+    var pickerLabel:  String { self == .day ? "Day"              : "Week" }
+}
+
+/// The global new-card allowance: how many, over what period.
+///
+/// One value carrying both halves, rather than an `Int` and a unit travelling
+/// separately — a cap of 2 means nothing without knowing what it's 2 of, and
+/// the queue builder is the last place that should be guessing.
+struct NewCardCap: Equatable {
+    let amount: Int
+    let unit:   NewCapUnit
+
+    static let amountKey = "srs.newCap"
+    static let unitKey   = "srs.newCapUnit"
+    /// Pre-day/week setting. Read only by the migration below.
+    static let legacyDailyKey = "srs.dailyNewCap"
+
+    static let fallback = NewCardCap(amount: 2, unit: .week)
+
+    static func current(_ defaults: UserDefaults = .standard) -> NewCardCap {
+        let amount = defaults.object(forKey: amountKey) as? Int ?? fallback.amount
+        let unit   = (defaults.string(forKey: unitKey).flatMap(NewCapUnit.init(rawValue:))) ?? fallback.unit
+        return NewCardCap(amount: amount, unit: unit)
+    }
+
+    /// Carry a deliberately-set per-day cap over to the new keys.
+    ///
+    /// The default moved from 1/day to 2/week, which is a real slowdown — fine
+    /// for someone who never opened Settings, wrong for someone who chose 5/day
+    /// on purpose. `@AppStorage` only writes its key once the user changes the
+    /// control, so the presence of the old key is exactly the signal that a
+    /// choice was made. Everyone else lands on the new default.
+    static func migrateIfNeeded(_ defaults: UserDefaults = .standard) {
+        guard defaults.object(forKey: amountKey) == nil,
+              let legacy = defaults.object(forKey: legacyDailyKey) as? Int else { return }
+        defaults.set(legacy, forKey: amountKey)
+        defaults.set(NewCapUnit.day.rawValue, forKey: unitKey)
+    }
+}
+
 // MARK: - Study Mode
 
 /// Determines how the user interacts with cards during review.

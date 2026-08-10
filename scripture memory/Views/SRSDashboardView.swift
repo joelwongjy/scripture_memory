@@ -8,7 +8,10 @@ import SwiftUI
 struct SRSDashboardView: View {
 
     @AppStorage("bibleVersion")       private var bibleVersion:   BibleVersion = .niv84
-    @AppStorage("srs.dailyNewCap")    private var dailyNewCap:    Int          = 1
+    @AppStorage(NewCardCap.amountKey) private var newCapAmount:  Int          = NewCardCap.fallback.amount
+    @AppStorage(NewCardCap.unitKey)   private var newCapUnit:    NewCapUnit   = NewCardCap.fallback.unit
+    /// The two stored halves as the one value the queue builder takes.
+    private var newCap: NewCardCap { NewCardCap(amount: newCapAmount, unit: newCapUnit) }
     @AppStorage("srs.dailyReviewCap") private var dailyReviewCap: Int          = 5
     @AppStorage("homeVerseStartMode.v1") private var homeVerseStartMode: HomeVerseStartMode = .read
 
@@ -81,7 +84,7 @@ struct SRSDashboardView: View {
     }
 
     private var globalNewRemaining: Int {
-        SRSQueueBuilder.globalNewRemaining(store: store, dailyNewCap: dailyNewCap, now: now)
+        SRSQueueBuilder.globalNewRemaining(store: store, newCap: newCap, now: now)
     }
 
     /// New cards projected per active pack, with the GLOBAL cap dripped across
@@ -92,7 +95,7 @@ struct SRSDashboardView: View {
         SRSQueueBuilder.projectedNewByPack(
             orderedActivePacks: activePacks,
             store: store,
-            dailyNewCap: dailyNewCap,
+            newCap: newCap,
             now: now
         )
     }
@@ -526,19 +529,22 @@ struct SRSDashboardView: View {
     /// whichever is genuinely soonest.
     private func caughtUpMessage(agg: Aggregate) -> String {
         let next         = nextDueAcrossActivePacks()
-        let newVerseDrip = agg.newCandidates > 0 && dailyNewCap > 0
+        let newVerseDrip = agg.newCandidates > 0 && newCap.amount > 0
         let tomorrow     = Calendar.current.startOfDay(for: now).addingTimeInterval(86_400)
 
         // A card (often a learning step) is still due before midnight.
         if let next, next < tomorrow {
             return "Your next review is in \(formatRelative(next))."
         }
-        // Today's new verses are done, but the daily cap resets at midnight.
+        // New verses for this period are done. When they come back depends on the
+        // period: a weekly cap doesn't reset at midnight, and saying it does is
+        // the kind of small lie that teaches people to stop believing the screen.
         if newVerseDrip {
-            let n = min(dailyNewCap, agg.newCandidates)   // how many actually drip in tomorrow
+            let n    = min(newCap.amount, agg.newCandidates)   // how many actually drip in
+            let when = newCap.unit == .day ? "tomorrow" : "next week"
             return n == 1
-                ? "Come back tomorrow for a new verse."
-                : "Come back tomorrow for \(n) new verses."
+                ? "Come back \(when) for a new verse."
+                : "Come back \(when) for \(n) new verses."
         }
         // Nothing new left to add — just spaced reviews ahead.
         if let next {
@@ -602,7 +608,7 @@ struct SRSDashboardView: View {
         let verses = SRSQueueBuilder.buildAllPacksSession(
             packs: targetPacks,
             store: store,
-            dailyNewCap: dailyNewCap,
+            newCap: newCap,
             dailyReviewCap: dailyReviewCap,
             now: now
         )

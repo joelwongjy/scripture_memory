@@ -16,6 +16,10 @@ struct ScriptureMemoryApp: App {
         // access and cache them, so progress has to be moved onto the permanent
         // card ids while nothing has loaded yet. No-op after the first launch.
         IdentityMigration.runIfNeeded()
+        // Likewise before any view reads the cap: carries a deliberately-chosen
+        // per-day new-card setting onto the day/week keys, so the new 2-a-week
+        // default only lands on people who never picked one.
+        NewCardCap.migrateIfNeeded()
     }
 
     var body: some Scene {

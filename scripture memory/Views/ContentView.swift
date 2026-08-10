@@ -3,7 +3,10 @@ import SwiftUI
 struct ContentView: View {
     @AppStorage("hasOnboardedLearning.v1") private var hasOnboarded = false
     @AppStorage("bibleVersion")            private var bibleVersion: BibleVersion = .niv84
-    @AppStorage("srs.dailyNewCap")         private var dailyNewCap    = 1
+    @AppStorage(NewCardCap.amountKey)      private var newCapAmount   = NewCardCap.fallback.amount
+    @AppStorage(NewCardCap.unitKey)        private var newCapUnit     = NewCardCap.fallback.unit
+    /// The two stored halves as the one value the queue builder takes.
+    private var newCap: NewCardCap { NewCardCap(amount: newCapAmount, unit: newCapUnit) }
     @AppStorage("srs.dailyReviewCap")      private var dailyReviewCap = 5
     @ObservedObject private var learning  = LearningStore.shared
     @ObservedObject private var packPrefs = PackPreferencesStore.shared
@@ -120,7 +123,7 @@ struct ContentView: View {
     private func dailyQueueSize(packs: [Pack]) -> Int {
         let active = packs.filter { SRSStore.shared.isActive($0.name) }
         return SRSQueueBuilder.dueSummary(activePacks: active, store: SRSStore.shared,
-                                          dailyNewCap: dailyNewCap, now: Date()).total
+                                          newCap: newCap, now: Date()).total
     }
 
     private func handleDeepLink(_ url: URL) {
@@ -149,7 +152,7 @@ struct ContentView: View {
         let active = packPrefs.visible(from: bibleVersion.packs).filter { SRSStore.shared.isActive($0.name) }
         let verses = SRSQueueBuilder.buildAllPacksSession(
             packs: active, store: SRSStore.shared,
-            dailyNewCap: dailyNewCap, dailyReviewCap: dailyReviewCap, now: Date()
+            newCap: newCap, dailyReviewCap: dailyReviewCap, now: Date()
         )
         guard !verses.isEmpty else { return }
         TestSessionViewModel.clearPersistedProgress()

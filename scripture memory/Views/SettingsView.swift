@@ -5,7 +5,8 @@ struct SettingsView: View {
     @AppStorage("studyMode")          private var studyMode:    StudyMode    = .firstLetter
     @AppStorage("bibleVersion")       private var bibleVersion: BibleVersion = .niv84
     @AppStorage("hardMode")           private var hardMode:     Bool         = false
-    @AppStorage("srs.dailyNewCap")    private var dailyNewCap:    Int        = 1
+    @AppStorage(NewCardCap.amountKey) private var newCapAmount:  Int        = NewCardCap.fallback.amount
+    @AppStorage(NewCardCap.unitKey)   private var newCapUnit:    NewCapUnit = NewCardCap.fallback.unit
     @AppStorage("srs.dailyReviewCap") private var dailyReviewCap: Int        = 5
     @AppStorage("homeVerseStartMode.v1") private var homeVerseStartMode: HomeVerseStartMode = .read
 
@@ -59,14 +60,25 @@ struct SettingsView: View {
 
             // ── Daily pace ───────────────────────────────────────────────
             Section {
-                capRow(icon: "sparkles", title: "New cards / day",
-                       binding: $dailyNewCap, range: 0...50)
+                capRow(icon: "sparkles", title: newCapUnit.settingTitle,
+                       binding: $newCapAmount, range: 0...50)
+                // The period the cap above is counted over. Two a week is the
+                // pace the printed programmes set; a per-day cap of 1 quietly
+                // permits seven a week, which is how the queue becomes a backlog.
+                Picker(selection: $newCapUnit) {
+                    ForEach(NewCapUnit.allCases, id: \.self) { unit in
+                        Text(unit.pickerLabel).tag(unit)
+                    }
+                } label: {
+                    rowLabel("Count per", "calendar")
+                }
+                .pickerStyle(.segmented)
                 capRow(icon: "arrow.clockwise", title: "Reviews / day",
                        binding: $dailyReviewCap, range: 0...500)
             } header: {
                 Text("Daily Review")
             } footer: {
-                Text("New-card cap is shared across all active packs.")
+                Text("New-card cap is shared across all active packs. A weekly cap resets at the start of the week.")
             }
 
             Section {

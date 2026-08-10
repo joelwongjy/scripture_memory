@@ -75,9 +75,38 @@ final class SRSStore: ObservableObject {
     }
 
     /// Total new cards introduced today across ALL packs.
-    /// This is what the `dailyNewCap` setting gates against.
+    /// This is what a per-day new-card cap gates against.
     func newIntroducedToday(now: Date = Date()) -> Int {
         dailyNewByDate[Self.dayKey(now)]?.values.reduce(0, +) ?? 0
+    }
+
+    /// The same total over the calendar week holding `now` — the week the streak
+    /// strip already draws, so "2 this week" means the week the user can see.
+    ///
+    /// Summed from the per-day buckets rather than counted separately: the daily
+    /// record is already the source of truth, so a cap switched between day and
+    /// week can't end up disagreeing with itself.
+    func newIntroducedThisWeek(now: Date = Date()) -> Int {
+        Self.weekDayKeys(containing: now).reduce(0) { total, key in
+            total + (dailyNewByDate[key]?.values.reduce(0, +) ?? 0)
+        }
+    }
+
+    /// Introduced in `unit`'s current period.
+    func newIntroduced(in unit: NewCapUnit, now: Date = Date()) -> Int {
+        unit == .day ? newIntroducedToday(now: now) : newIntroducedThisWeek(now: now)
+    }
+
+    /// Day keys for the calendar week containing `date`, using the locale's own
+    /// first weekday so the week starts where the user already sees it start.
+    static func weekDayKeys(containing date: Date) -> [String] {
+        let cal = Calendar.current
+        guard let week = cal.dateInterval(of: .weekOfYear, for: date) else {
+            return [dayKey(date)]
+        }
+        return (0..<7).compactMap { offset in
+            cal.date(byAdding: .day, value: offset, to: week.start).map(dayKey)
+        }
     }
 
     /// Earliest upcoming due date across the supplied verses (or nil if none scheduled).

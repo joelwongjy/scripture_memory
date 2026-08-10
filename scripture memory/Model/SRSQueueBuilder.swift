@@ -3,8 +3,9 @@ import Foundation
 /// Assembles a daily review queue from current SRS state.
 ///
 /// Order within a session: **learning → review → new**. New cards are gated by
-/// a GLOBAL daily cap (`dailyNewCap`) shared across all packs — so turning on
-/// 9 packs doesn't multiply the workload, it stays at the cap.
+/// a GLOBAL cap (`NewCardCap`) shared across all packs — so turning on 9 packs
+/// doesn't multiply the workload, it stays at the cap. The cap is measured per
+/// day or per week depending on what the user picked.
 ///
 /// `dailyReviewCap` is per-pack (rarely binds in practice — only matters if a
 /// single pack has hundreds of due reviews on the same day).
@@ -30,7 +31,7 @@ enum SRSQueueBuilder {
         packName: String,
         allVerses: [Verse],
         store: SRSStore,
-        dailyNewCap: Int,
+        newCap: NewCardCap,
         dailyReviewCap: Int,
         now: Date = Date()
     ) -> [Verse] {
@@ -38,7 +39,7 @@ enum SRSQueueBuilder {
         let learning = due.filter { store.state(for: $0)?.phase == .learning }
         let review   = Array(due.filter { store.state(for: $0)?.phase == .review }.prefix(dailyReviewCap))
 
-        let remaining  = globalNewRemaining(store: store, dailyNewCap: dailyNewCap, now: now)
+        let remaining  = globalNewRemaining(store: store, newCap: newCap, now: now)
         let candidates = store.newCandidateCards(in: packName, allVerses: allVerses)
         let newCards   = Array(candidates.prefix(remaining))
 
@@ -52,7 +53,7 @@ enum SRSQueueBuilder {
     static func buildAllPacksSession(
         packs: [Pack],
         store: SRSStore,
-        dailyNewCap: Int,
+        newCap: NewCardCap,
         dailyReviewCap: Int,
         now: Date = Date()
     ) -> [Verse] {
@@ -68,7 +69,7 @@ enum SRSQueueBuilder {
         }
 
         // 2) New cards across packs, gated by the GLOBAL cap.
-        var remaining = globalNewRemaining(store: store, dailyNewCap: dailyNewCap, now: now)
+        var remaining = globalNewRemaining(store: store, newCap: newCap, now: now)
         for pack in packs {
             guard remaining > 0 else { break }
             let candidates = store.newCandidateCards(in: pack.name, allVerses: pack.verses)
@@ -100,9 +101,10 @@ enum SRSQueueBuilder {
         )
     }
 
-    /// Global new cards still introducible today (cap minus total introduced today).
-    static func globalNewRemaining(store: SRSStore, dailyNewCap: Int, now: Date = Date()) -> Int {
-        max(0, dailyNewCap - store.newIntroducedToday(now: now))
+    /// Global new cards still introducible in the cap's current period (cap minus
+    /// however many have already been introduced in it).
+    static func globalNewRemaining(store: SRSStore, newCap: NewCardCap, now: Date = Date()) -> Int {
+        max(0, newCap.amount - store.newIntroduced(in: newCap.unit, now: now))
     }
 
     /// What's due at `now` across the given (already-active) packs — the single
@@ -118,7 +120,7 @@ enum SRSQueueBuilder {
     }
 
     static func dueSummary(activePacks: [Pack], store: SRSStore,
-                           dailyNewCap: Int, now: Date = Date()) -> DueSummary {
+                           newCap: NewCardCap, now: Date = Date()) -> DueSummary {
         var review = 0
         var candidates = 0
         for pack in activePacks {
@@ -126,7 +128,7 @@ enum SRSQueueBuilder {
             review     += c.learning + c.review
             candidates += c.newCandidates
         }
-        let new = min(globalNewRemaining(store: store, dailyNewCap: dailyNewCap, now: now), candidates)
+        let new = min(globalNewRemaining(store: store, newCap: newCap, now: now), candidates)
         return DueSummary(review: review, new: new)
     }
 
@@ -138,10 +140,10 @@ enum SRSQueueBuilder {
     static func projectedNewByPack(
         orderedActivePacks: [Pack],
         store: SRSStore,
-        dailyNewCap: Int,
+        newCap: NewCardCap,
         now: Date = Date()
     ) -> [String: Int] {
-        let budget     = globalNewRemaining(store: store, dailyNewCap: dailyNewCap, now: now)
+        let budget     = globalNewRemaining(store: store, newCap: newCap, now: now)
         let candidates = orderedActivePacks.map {
             store.newCandidateCards(in: $0.name, allVerses: $0.verses).count
         }

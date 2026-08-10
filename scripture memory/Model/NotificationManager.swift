@@ -52,7 +52,7 @@ enum NotificationManager {
         let version = BibleVersion(rawValue: d.string(forKey: "bibleVersion") ?? "") ?? .niv84
         let activePacks = PackPreferencesStore.shared.visible(from: version.packs)
             .filter { SRSStore.shared.isActive($0.name) }
-        let cap = d.object(forKey: "srs.dailyNewCap") as? Int ?? 1
+        let cap = NewCardCap.current(d)
 
         clearPending(center)
 
@@ -67,7 +67,7 @@ enum NotificationManager {
             guard let fire = cal.date(byAdding: .day, value: i, to: firstFire) else { continue }
             let summary = SRSQueueBuilder.dueSummary(activePacks: activePacks,
                                                      store: SRSStore.shared,
-                                                     dailyNewCap: cap, now: fire)
+                                                     newCap: cap, now: fire)
             guard let body = ReminderPlan.reminderBody(review: summary.review, new: summary.new) else { continue }
 
             let content = UNMutableNotificationContent()

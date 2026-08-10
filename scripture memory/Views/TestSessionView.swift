@@ -175,9 +175,15 @@ struct TestSessionView: View {
                 Text(sessionTitle)
                     .font(.system(size: 15, weight: .semibold))
                     .lineLimit(1)
-                Text("\(vm.completedCount) / \(vm.verses.count) done")
+                // Position and progress on one line, rather than two counters in
+                // the same two-line slot. Read/Review already puts position in its
+                // subtitle ("5 of 60"), so this matches it — and the standalone
+                // "1 / 245" under the scrubber goes away, since the thumb already
+                // says roughly where you are and the text was the redundant half.
+                Text("\(vm.currentIndex + 1) of \(vm.verses.count) · \(vm.completedCount) done")
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(.secondary)
+                    .lineLimit(1)
                     .animation(AppMotion.content, value: vm.completedCount)
             }
 
@@ -480,7 +486,8 @@ struct TestSessionView: View {
             verseCount: vm.verses.count,
             currentIndex: $vm.currentIndex,
             isScrubbing: $isScrubbing,
-            showPositionLabel: true,
+            // The count moved to the nav bar subtitle.
+            showPositionLabel: false,
             trackHeight: 34,
             onScrubIndexChange: { vm.persistSession() },
             onStepBack: {
