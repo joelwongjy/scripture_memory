@@ -185,9 +185,13 @@ struct VerseSearchResultsList: View {
                     .lineLimit(1)
                     .truncationMode(.tail)
                     .multilineTextAlignment(.leading)
+                // Secondary, not tertiary. This line says which pack a result came
+                // from, which is the thing that tells two similar hits apart — at
+                // tertiary it was the faintest text in the row despite carrying
+                // more information than the verse preview above it.
                 Text(VerseNumbering.code(for: result.verse) ?? result.pack.name)
                     .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(.secondary)
             }
             Spacer()
             if favorites.isFavorite(result.verse) {
