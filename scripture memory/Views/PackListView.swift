@@ -60,6 +60,8 @@ struct PackListView: View {
             placement: .navigationBarDrawer(displayMode: .always),
             prompt: "Search verses"
         )
+        // See `SRSDashboardView` — index built off the interaction path.
+        .task { VerseSearch.prewarm(visiblePacks) }
         .fullScreenCover(item: $selectedPack) { pack in
             NavigationStack {
                 CardStudyView(packName: pack.name, verses: pack.verses)
@@ -326,24 +328,34 @@ struct PackCover: View {
 
     /// Ink for the DEP/242 lockup.
     ///
-    /// Not gold on every pack, which is what I first assumed. Sampling the
-    /// wordmark on each of the eight shows the warm half (red, orange, yellow,
-    /// green) printed in gold and the cool half (sky, royal, violet) printed in
-    /// white — gold on a blue field is exactly the jarring combination that
-    /// doesn't appear on any real pack. Pack 1's white stock carries it as a pale
-    /// tint of nothing, a watermark.
+    /// Two inks, split by hue, plus a watermark on the white-stock pack.
+    ///
+    /// The warm half (red, orange, yellow, green) all carry the *same* pale
+    /// cream-gold — pack 5's green field has a yellow wordmark, not a green one,
+    /// so this is a second ink rather than a tint of the field. It is much paler
+    /// than a saturated gold: against the yellow pack it's barely a shade lighter
+    /// than the field, which is exactly how that one prints.
+    ///
+    /// The cool half (sky, royal, violet) is *not* white, which is what this
+    /// assumed and what read wrong on packs 6–8. Each carries a lightened version
+    /// of its own field colour: the violet pack's wordmark is periwinkle, the
+    /// royal pack's a pale steel blue, the sky pack's a near-white ice blue.
+    /// Deriving it from the field reproduces all three from one rule.
     ///
     /// Decided by hue rather than by pack name, so a colour edited later in
     /// Supabase picks the right ink on its own.
     private var depGold: Color {
-        if fieldIsLight { return Color(red: 0.90, green: 0.78, blue: 0.72) }
+        if fieldIsLight { return Color(red: 0.91, green: 0.83, blue: 0.78) }
 
         let ui = UIColor(fieldColor)
         var h: CGFloat = 0, s: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
         ui.getHue(&h, saturation: &s, brightness: &b, alpha: &a)
         let degrees = h * 360
         let isCool = degrees >= 185 && degrees <= 300      // sky through violet
-        return isCool ? .white : Color(red: 0.98, green: 0.80, blue: 0.36)
+        // 0.62 toward white, not 1.0: enough separation from the field to read at
+        // a glance while keeping the hue that's plainly there on the printed card.
+        return isCool ? fieldColor.lightened(by: 0.62)
+                      : Color(red: 0.94, green: 0.86, blue: 0.55)
     }
 
     private var depCover: some View {
@@ -352,8 +364,16 @@ struct PackCover: View {
 
             VStack {
                 HStack {
+                    // 27 medium is the ceiling, not a preference. The cover renders
+                    // on a fixed 340pt canvas and scales uniformly, so whether a
+                    // title wraps is a property of this number alone — identical on
+                    // an SE and a Pro Max. Measured against the two longest titles
+                    // in the set ("7. The Lordship of Christ" and "1. Assurance of
+                    // Salvation", both 297pt wide here), 28 overruns the line and
+                    // drops them to two, so this is as large as the set goes
+                    // without one cover looking different from the other seven.
                     Text(displayTitle)
-                        .font(.system(size: 23, weight: .regular))
+                        .font(.system(size: 27, weight: .medium))
                         .foregroundColor(inkColor)
                         .lineLimit(2)
                         .minimumScaleFactor(0.7)
@@ -365,7 +385,10 @@ struct PackCover: View {
                 // measured off screenshots, 16/12 gave a ~20pt optical gap at the
                 // top against ~13pt at the bottom. These numbers are chosen so the
                 // *ink* sits the same distance from both edges.
-                .padding(.leading, 28).padding(.trailing, 16).padding(.top, 18)
+                // Trailing 8, not 16: the longest titles need 297 of the 340pt
+                // canvas' width, and the lockup sits low and right of them, so
+                // there's nothing here for the larger inset to protect.
+                .padding(.leading, 28).padding(.trailing, 8).padding(.top, 18)
                 Spacer(minLength: 0)
             }
 

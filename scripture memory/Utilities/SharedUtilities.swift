@@ -29,6 +29,19 @@ extension Color {
                      brightness: Double(b) * (1 - amount))
     }
 
+    /// The same hue mixed `amount` of the way toward white — a print "tint" of
+    /// the colour. Unlike raising brightness this drops saturation too, so a
+    /// deep violet lightens to periwinkle rather than to a glowing lilac.
+    func lightened(by amount: Double) -> Color {
+        let uic = UIColor(self)
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        uic.getRed(&r, green: &g, blue: &b, alpha: &a)
+        let t = CGFloat(max(0, min(1, amount)))
+        return Color(red:   Double(r + (1 - r) * t),
+                     green: Double(g + (1 - g) * t),
+                     blue:  Double(b + (1 - b) * t))
+    }
+
     /// A desaturated, darker variant suitable for muted pack-cover backgrounds.
     var muted: Color {
         let uic = UIColor(self)
@@ -142,6 +155,41 @@ struct OutlinedText: View {
     }
 }
 
+// MARK: - Motion
+
+/// One motion scale for the whole app, in three tiers by what's moving.
+///
+/// The tiers exist because responsiveness is not one number. Apple's guidance is
+/// that the closer an animation is to the finger, the shorter it has to be: a
+/// control reacting to a tap should read as *caused by* the tap, while something
+/// travelling across the screen is allowed the time its distance implies. Sizing
+/// everything the same is what makes an app feel sluggish — every one of these
+/// used to sit between 0.3 and 0.4s, including a star toggling.
+///
+/// `snappy` rather than `spring(response:dampingFraction:)`: its `duration` is
+/// perceptual — the time to *look* settled — where a spring's response is only
+/// the first quarter-period, so the same number reads much slower.
+enum AppMotion {
+    /// A control answering a tap: press states, toggles, a symbol swapping.
+    /// No overshoot — a control that wobbles reads as slower than it is.
+    static let control  = Animation.snappy(duration: 0.15, extraBounce: 0)
+
+    /// Content changing in place: a card revealing, a row expanding, chrome
+    /// showing or hiding.
+    static let content  = Animation.snappy(duration: 0.22, extraBounce: 0.05)
+
+    /// Something crossing the screen: paging, scrubbing, a toast arriving.
+    static let movement = Animation.snappy(duration: 0.28, extraBounce: 0.08)
+
+    /// How long to wait before treating `movement` as finished — the settle
+    /// guards that re-enable input after an animated jump. Kept just past
+    /// `movement` so it tracks the tier instead of drifting from it.
+    static let settle: TimeInterval = 0.3
+
+    /// The same, for `control`-length changes.
+    static let settleShort: TimeInterval = 0.16
+}
+
 // MARK: - Card Button Style
 
 /// Press-to-scale feedback for tappable pack cards.
@@ -149,7 +197,7 @@ struct CardButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
-            .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
+            .animation(AppMotion.control, value: configuration.isPressed)
     }
 }
 
@@ -251,14 +299,14 @@ struct PeekHoldButton: View {
             guard !hintSeen else { return }
             try? await Task.sleep(for: .milliseconds(700))   // let the screen settle
             guard !hintSeen else { return }
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) { showHint = true }
+            withAnimation(AppMotion.movement) { showHint = true }
             try? await Task.sleep(for: .seconds(4))
             dismissHint()
         }
     }
 
     private func dismissHint() {
-        if showHint { withAnimation(.easeOut(duration: 0.25)) { showHint = false } }
+        if showHint { withAnimation(AppMotion.control) { showHint = false } }
         hintSeen = true
     }
 }
@@ -328,13 +376,20 @@ struct FavoriteStarButton: View {
     var body: some View {
         let isFavorite = favorites.isFavorite(verse)
         return Button {
-            favorites.toggle(verse)
+            // Explicitly animated, and fast. The store is an ObservableObject, so
+            // without a `withAnimation` around the mutation the symbol swap fell
+            // back to SwiftUI's default animation — around twice this long, on the
+            // one control in the app that most needs to feel instant.
             HapticEngine.light()
+            withAnimation(AppMotion.control) { favorites.toggle(verse) }
         } label: {
             Image(systemName: isFavorite ? "star.fill" : "star")
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(isFavorite ? AnyShapeStyle(.yellow) : AnyShapeStyle(.tertiary))
-                .contentTransition(.symbolEffect(.replace))
+                // `.offUp` over the default `.downUp`: one glyph leaves as the
+                // other arrives instead of the two crossing, which halves the
+                // distance the swap has to cover.
+                .contentTransition(.symbolEffect(.replace.offUp))
                 // 30pt target: the card footer can't spare the full 44, and the
                 // control sits alone in its corner with nothing to mis-hit.
                 .frame(width: 30, height: 30)
@@ -473,6 +528,6 @@ func triggerShake(_ offset: Binding<CGFloat>) {
         try? await Task.sleep(for: .milliseconds(70))
         withAnimation(.interpolatingSpring(stiffness: 600, damping: 12)) { offset.wrappedValue = -8 }
         try? await Task.sleep(for: .milliseconds(70))
-        withAnimation(.spring()) { offset.wrappedValue = 0 }
+        withAnimation(AppMotion.content) { offset.wrappedValue = 0 }
     }
 }

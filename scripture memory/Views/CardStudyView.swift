@@ -136,9 +136,9 @@ struct CardStudyView: View {
     private func jumpToCurrentVerse() {
         guard let i = currentVerseIndexInPack, i != vm.currentIndex else { return }
         isScrubbing = true
-        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) { vm.currentIndex = i }
+        withAnimation(AppMotion.movement) { vm.currentIndex = i }
         HapticEngine.light()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { isScrubbing = false }
+        DispatchQueue.main.asyncAfter(deadline: .now() + AppMotion.settle) { isScrubbing = false }
     }
 
     /// Sends the read list back to the first card. `scrollPosition` only scrolls on a
@@ -148,7 +148,7 @@ struct CardStudyView: View {
     private func scrollListToTop() {
         verticalScrollTarget = nil
         DispatchQueue.main.async {
-            withAnimation(.easeInOut(duration: 0.25)) { verticalScrollTarget = 0 }
+            withAnimation(AppMotion.content) { verticalScrollTarget = 0 }
         }
     }
 
@@ -245,7 +245,7 @@ struct CardStudyView: View {
                                     .zIndex(200)
                             }
                         }
-                        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: showGoToCurrent)
+                        .animation(AppMotion.content, value: showGoToCurrent)
                     }
                 }
 
@@ -317,7 +317,7 @@ struct CardStudyView: View {
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(.secondary)
                     .contentTransition(.numericText())
-                    .animation(.easeOut(duration: 0.15), value: positionLabel)
+                    .animation(AppMotion.control, value: positionLabel)
             }
             .frame(maxWidth: max(120, width - 220))
 
@@ -372,7 +372,7 @@ struct CardStudyView: View {
                                 vm.setFavoritesFilter(!vm.isFavoritesFiltered)
                                 if !vm.isReviewMode { scrollListToTop() }
                                 HapticEngine.light()
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                                DispatchQueue.main.asyncAfter(deadline: .now() + AppMotion.settle) {
                                     isScrubbing = false
                                 }
                             } label: {
@@ -389,7 +389,7 @@ struct CardStudyView: View {
         .padding(.horizontal, AppLayout.screenMargin)
         .padding(.top, 12)
         .padding(.bottom, 12)
-        .animation(.easeInOut(duration: 0.18), value: isEditing)
+        .animation(AppMotion.control, value: isEditing)
     }
 
     /// True whenever either text input has keyboard focus.
@@ -568,7 +568,7 @@ struct CardStudyView: View {
                     // Tap-on-card or external nav — keep scroll position in sync.
                     // Thumb drag sets isScrubbing, so skip to avoid a duplicate scroll.
                     guard !isScrubbing else { return }
-                    withAnimation(.easeInOut(duration: 0.22)) { verticalScrollTarget = newIndex }
+                    withAnimation(AppMotion.content) { verticalScrollTarget = newIndex }
                 }
                 // Bottom-trailing to match the single-card view (aligned to the layout
                 // margin). Visibility tracks the cursor card's scroll position, so the
@@ -585,14 +585,14 @@ struct CardStudyView: View {
                             HapticEngine.light()
                             isScrubbing = true
                             if vm.currentIndex != i { vm.currentIndex = i }
-                            withAnimation(.easeInOut(duration: 0.3)) { verticalScrollTarget = i }
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { isScrubbing = false }
+                            withAnimation(AppMotion.movement) { verticalScrollTarget = i }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + AppMotion.settle) { isScrubbing = false }
                         })
                         .padding(.trailing, AppLayout.screenMargin)
                         .padding(.bottom, 12)
                     }
                 }
-                .animation(.spring(response: 0.35, dampingFraction: 0.8),
+                .animation(AppMotion.content,
                            value: showJumpInList(cardHeight: cardHeight, viewportHeight: outerGeo.size.height))
             }
         }
@@ -688,7 +688,7 @@ struct CardStudyView: View {
                 isScrubbing = true
                 stepBackward()
                 HapticEngine.light()
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + AppMotion.settle) {
                     isScrubbing = false
                     refocusIfNeeded()
                 }
@@ -697,7 +697,7 @@ struct CardStudyView: View {
                 isScrubbing = true
                 stepForward()
                 HapticEngine.light()
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + AppMotion.settle) {
                     isScrubbing = false
                     refocusIfNeeded()
                 }
@@ -724,8 +724,8 @@ struct CardStudyView: View {
         }
         .padding(.horizontal, AppLayout.screenMargin)
         .padding(.bottom, 24)
-        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: vm.isReviewMode)
-        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: vm.isCardComplete)
+        .animation(AppMotion.content, value: vm.isReviewMode)
+        .animation(AppMotion.content, value: vm.isCardComplete)
     }
 
     /// Active-card controls with the always-present hold-to-peek button anchored
@@ -775,7 +775,7 @@ struct CardStudyView: View {
             isScrubbing = true
             stepForward()
             HapticEngine.light()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + AppMotion.settle) {
                 isScrubbing = false
                 refocusIfNeeded()
             }
@@ -810,7 +810,7 @@ struct CardStudyView: View {
             HapticEngine.success()
             isScrubbing = true
             stepForward()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + AppMotion.settle) {
                 isScrubbing = false
                 refocusIfNeeded()
             }
@@ -1049,9 +1049,9 @@ struct CardStudyView: View {
                           vm.currentIndex > 0 {
                     swipeBackward()
                 } else {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 1.0)) { dragOffset = .zero }
+                    withAnimation(AppMotion.control) { dragOffset = .zero }
                     // Drag started (dismissing keyboard) but wasn't committed — restore focus.
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { refocusIfNeeded() }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + AppMotion.settleShort) { refocusIfNeeded() }
                 }
             }
     }
@@ -1061,10 +1061,10 @@ struct CardStudyView: View {
         isCardFlying = true
         flyDirection = -1
         HapticEngine.light()
-        withAnimation(.easeOut(duration: 0.2)) {
+        withAnimation(AppMotion.control) {
             dragOffset = CGSize(width: -CardSwipeConfig.flyWidth, height: dragOffset.height)
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { commitSwipe() }
+        DispatchQueue.main.asyncAfter(deadline: .now() + AppMotion.settleShort) { commitSwipe() }
     }
 
     private func swipeBackward() {
@@ -1072,10 +1072,10 @@ struct CardStudyView: View {
         isCardFlying = true
         flyDirection = 1
         HapticEngine.light()
-        withAnimation(.easeOut(duration: 0.2)) {
+        withAnimation(AppMotion.control) {
             dragOffset = CGSize(width: CardSwipeConfig.prevCardOffset, height: 0)
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { commitSwipe() }
+        DispatchQueue.main.asyncAfter(deadline: .now() + AppMotion.settleShort) { commitSwipe() }
     }
 
     private func commitSwipe() {
@@ -1095,7 +1095,7 @@ struct CardStudyView: View {
         }
         // Refocus immediately so the keyboard comes back before its dismiss animation finishes.
         if vm.isReviewMode && !vm.isCardComplete { focusInput() }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { isScrubbing = false }
+        DispatchQueue.main.asyncAfter(deadline: .now() + AppMotion.settle) { isScrubbing = false }
     }
 
     // MARK: - Focus & Speech
@@ -1112,7 +1112,7 @@ struct CardStudyView: View {
             vm.currentIndex = visibleListIndex
         }
         if reviewing && !vm.isCardComplete {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { focusInput() }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { focusInput() }
         } else {
             if speech.isListening { speech.stopListening() }
             isInputFocused = false
@@ -1217,7 +1217,7 @@ private struct JumpToCurrentButton: View {
             onExpandedShown()
             try? await Task.sleep(for: .seconds(1))
             guard !Task.isCancelled else { return }
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { expanded = false }
+            withAnimation(AppMotion.movement) { expanded = false }
         }
     }
 }

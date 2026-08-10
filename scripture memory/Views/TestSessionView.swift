@@ -160,7 +160,7 @@ struct TestSessionView: View {
             speech.startListening()
         }
         .task {
-            try? await Task.sleep(for: .milliseconds(300))
+            try? await Task.sleep(for: .milliseconds(200))
             focusInput()
         }
     }
@@ -178,7 +178,7 @@ struct TestSessionView: View {
                 Text("\(vm.completedCount) / \(vm.verses.count) done")
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(.secondary)
-                    .animation(.spring(response: 0.3), value: vm.completedCount)
+                    .animation(AppMotion.content, value: vm.completedCount)
             }
 
             HStack {
@@ -235,8 +235,8 @@ struct TestSessionView: View {
         .padding(.horizontal, AppLayout.screenMargin)
         .padding(.top, 12)
         .padding(.bottom, 12)
-        .animation(.easeInOut(duration: 0.18), value: isInputFocused)
-        .animation(.easeInOut(duration: 0.18), value: submitFocus)
+        .animation(AppMotion.control, value: isInputFocused)
+        .animation(AppMotion.control, value: submitFocus)
         .sheet(isPresented: $showVerseSelector) {
             verseSelectorSheet
         }
@@ -252,7 +252,7 @@ struct TestSessionView: View {
                         isScrubbing    = true
                         vm.currentIndex = i
                         showVerseSelector = false
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { isScrubbing = false }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + AppMotion.settle) { isScrubbing = false }
                     } label: {
                         HStack(spacing: 10) {
                             Text("\(verse.book) \(verse.reference)")
@@ -304,7 +304,7 @@ struct TestSessionView: View {
                     .background(Color(.secondarySystemBackground), in: Circle())
             }
         }
-        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: vm.sessionScore)
+        .animation(AppMotion.content, value: vm.sessionScore)
     }
 
     // MARK: - Progress Dots
@@ -324,7 +324,7 @@ struct TestSessionView: View {
                     Capsule()
                         .fill(Color.accentColor)
                         .frame(width: max(6, geo.size.width * CGFloat(vm.completedCount) / CGFloat(max(1, vm.verses.count))))
-                        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: vm.completedCount)
+                        .animation(AppMotion.movement, value: vm.completedCount)
                 }
             }
             .frame(height: 6)
@@ -348,9 +348,9 @@ struct TestSessionView: View {
                             .fill(dotColor(submitted: submitted, correct: correct))
                             .frame(width: dotSize, height: dotSize)
                             .scaleEffect(isCurrent ? 1.4 : 1.0)
-                            .animation(.spring(response: 0.25, dampingFraction: 0.7), value: isCurrent)
-                            .animation(.spring(response: 0.3,  dampingFraction: 0.8), value: submitted)
-                            .animation(.spring(response: 0.3,  dampingFraction: 0.8), value: correct)
+                            .animation(AppMotion.control, value: isCurrent)
+                            .animation(AppMotion.content, value: submitted)
+                            .animation(AppMotion.content, value: correct)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .center)
@@ -487,13 +487,13 @@ struct TestSessionView: View {
                 isScrubbing = true
                 vm.goBackward()
                 HapticEngine.light()
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { isScrubbing = false }
+                DispatchQueue.main.asyncAfter(deadline: .now() + AppMotion.settle) { isScrubbing = false }
             },
             onStepForward: {
                 isScrubbing = true
                 vm.goForward()
                 HapticEngine.light()
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { isScrubbing = false }
+                DispatchQueue.main.asyncAfter(deadline: .now() + AppMotion.settle) { isScrubbing = false }
             }
         )
     }
@@ -567,10 +567,10 @@ struct TestSessionView: View {
         .padding(.horizontal, AppLayout.screenMargin)
         .padding(.bottom, 24)
         .padding(.top, 6)
-        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: vm.isCardComplete)
-        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: vm.isCardAnswered)
-        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: vm.isSessionComplete)
-        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: vm.completedCount)
+        .animation(AppMotion.content, value: vm.isCardComplete)
+        .animation(AppMotion.content, value: vm.isCardAnswered)
+        .animation(AppMotion.content, value: vm.isSessionComplete)
+        .animation(AppMotion.content, value: vm.completedCount)
     }
 
     /// Active-card controls (every state except the finished-session summary),
@@ -613,7 +613,7 @@ struct TestSessionView: View {
             isScrubbing = true
             vm.goForward()
             HapticEngine.light()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + AppMotion.settle) {
                 isScrubbing = false
                 refocusIfNeeded()
             }
@@ -754,7 +754,7 @@ struct TestSessionView: View {
                             isScrubbing = true
                             vm.goForward()
                             HapticEngine.light()
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + AppMotion.settle) {
                                 isScrubbing = false
                                 refocusIfNeeded()
                             }
@@ -967,9 +967,9 @@ struct TestSessionView: View {
                           vm.currentIndex > 0 {
                     swipeBackward()
                 } else {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 1.0)) { dragOffset = .zero }
+                    withAnimation(AppMotion.control) { dragOffset = .zero }
                     // Drag started (dismissing keyboard) but wasn't committed — restore focus.
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { refocusIfNeeded() }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + AppMotion.settleShort) { refocusIfNeeded() }
                 }
             }
     }
@@ -979,10 +979,10 @@ struct TestSessionView: View {
         isCardFlying = true
         flyDirection = -1
         HapticEngine.light()
-        withAnimation(.easeOut(duration: 0.2)) {
+        withAnimation(AppMotion.control) {
             dragOffset = CGSize(width: -CardSwipeConfig.flyWidth, height: dragOffset.height)
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { commitSwipe() }
+        DispatchQueue.main.asyncAfter(deadline: .now() + AppMotion.settleShort) { commitSwipe() }
     }
 
     private func swipeBackward() {
@@ -990,10 +990,10 @@ struct TestSessionView: View {
         isCardFlying = true
         flyDirection = 1
         HapticEngine.light()
-        withAnimation(.easeOut(duration: 0.2)) {
+        withAnimation(AppMotion.control) {
             dragOffset = CGSize(width: CardSwipeConfig.prevCardOffset, height: 0)
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { commitSwipe() }
+        DispatchQueue.main.asyncAfter(deadline: .now() + AppMotion.settleShort) { commitSwipe() }
     }
 
     private func commitSwipe() {
@@ -1012,7 +1012,7 @@ struct TestSessionView: View {
         }
         // Refocus immediately so the keyboard comes back before its dismiss animation finishes.
         if !vm.isCardComplete && !vm.isSessionComplete { focusInput() }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { isScrubbing = false }
+        DispatchQueue.main.asyncAfter(deadline: .now() + AppMotion.settle) { isScrubbing = false }
     }
 
     // MARK: - Focus & Speech
@@ -1159,7 +1159,7 @@ struct TestSessionView: View {
         if vm.currentIndex < vm.verses.count - 1 {
             isScrubbing = true
             vm.goForward()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + AppMotion.settle) {
                 isScrubbing = false
                 refocusIfNeeded()
             }
@@ -1199,7 +1199,7 @@ struct TestSessionView: View {
         isScrubbing = true
         vm.currentIndex = idx
         HapticEngine.light()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { isScrubbing = false }
+        DispatchQueue.main.asyncAfter(deadline: .now() + AppMotion.settle) { isScrubbing = false }
     }
 }
 
