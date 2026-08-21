@@ -141,7 +141,7 @@ struct TestSetupView: View {
         } message: {
             Text("You have an unfinished session. Starting a new one will overwrite it.")
         }
-        .safeAreaInset(edge: .bottom) {
+        .safeAreaInset(edge: .bottom, spacing: 0) {
             if !selectedVerseIds.isEmpty { bottomBar }
         }
         .fullScreenCover(item: $activeSession) { session in
@@ -178,9 +178,7 @@ struct TestSetupView: View {
 
             Spacer()
 
-            Image(systemName: "chevron.right")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(.secondary)
+            RowChevron()
         }
         .padding(.vertical, 3)
         .listRowInsets(EdgeInsets(top: 2, leading: 16, bottom: 2, trailing: 14))
@@ -293,11 +291,7 @@ struct TestSetupView: View {
                 }
                 HapticEngine.light()
             } label: {
-                Image(systemName: allSelected  ? "checkmark.circle.fill"
-                                 : someSelected ? "minus.circle.fill"
-                                 : "circle")
-                    .font(.system(size: 22))
-                    .foregroundStyle(someSelected ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.secondary))
+                SelectionCircle(isSelected: allSelected, mixed: someSelected && !allSelected, size: 22)
                     .frame(width: 44, height: 50)
             }
             .buttonStyle(.plain)
@@ -308,31 +302,13 @@ struct TestSetupView: View {
                 if isExpanded { expandedPackIds.remove(pack.id) }
                 else          { expandedPackIds.insert(pack.id) }
             } label: {
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        // One line, truncated. The 180-series names are long
-                        // enough to wrap, and a two-line row here makes the pack
-                        // list ragged for a tail everyone can already predict.
-                        Text(pack.name)
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.primary)
-                            .lineLimit(1)
-                            .truncationMode(.tail)
-                        Text(selectedInPack > 0
-                             ? "\(selectedInPack) of \(pack.verses.count) verses"
-                             : "\(pack.verses.count) verses")
-                            .font(.system(size: 12))
-                            .foregroundColor(.secondary)
-                    }
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(.secondary)
+                PackRowLabel(pack: pack,
+                             detail: selectedInPack > 0 ? "\(selectedInPack) of \(pack.verses.count) verses" : nil) {
+                    RowChevron()
                         .rotationEffect(isExpanded ? .degrees(90) : .zero)
                         .frame(width: 44, height: 50)
                 }
                 .frame(maxHeight: .infinity)
-                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .accessibilityLabel(isExpanded ? "Collapse \(pack.name)" : "Expand \(pack.name) to pick individual verses")
@@ -355,34 +331,12 @@ struct TestSetupView: View {
             else          { selectedVerseIds.insert(verse.id) }
             HapticEngine.light()
         } label: {
-            HStack(spacing: 10) {
-                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 19))
-                    .foregroundStyle(isSelected ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.secondary))
-
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: 6) {
-                        // The card's printed number — how the verse is referred to
-                        // out loud and how it's found in the booklet — so it leads.
-                        if let code = VerseNumbering.code(for: verse) {
-                            Text(code)
-                                .font(.system(size: 11, weight: .bold, design: .monospaced))
-                                .foregroundStyle(.secondary)
-                        }
-                        Text(verse.title)
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(.primary)
-                            .lineLimit(1)
-                    }
-                    Text("\(verse.book) \(verse.reference)")
-                        .font(.system(size: 12))
-                        .foregroundColor(.secondary)
-                }
-
-                Spacer()
-            }
-            .contentShape(Rectangle())
+            VerseRowLabel(verse: verse, leading: {
+                SelectionCircle(isSelected: isSelected)
+            }, trailing: {})
             .padding(.vertical, 2)
+            // Room for the "up to here" control overlaid at the trailing edge.
+            .padding(.trailing, 34)
         }
         .buttonStyle(.plain)
         .overlay(alignment: .trailing) { upToHereButton(verse) }
@@ -470,6 +424,10 @@ struct TestSetupView: View {
     // MARK: - Bottom Bar
 
     private var bottomBar: some View {
+        BottomActionBar { bottomBarContent }
+    }
+
+    private var bottomBarContent: some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 1) {
                 Text("\(selectedCount)")
@@ -548,10 +506,7 @@ struct TestSetupView: View {
             .buttonBorderShape(.capsule)
             .tint(.accentColor)
         }
-        .padding(.horizontal, AppLayout.screenMargin)
-        .padding(.vertical, 14)
-        .background(Color(.systemBackground))
-        .overlay(Rectangle().fill(Color(.separator).opacity(0.4)).frame(height: 0.5), alignment: .top)
+        .padding(.vertical, 4)
     }
 
     /// The card count, tappable to type a value directly instead of stepping there

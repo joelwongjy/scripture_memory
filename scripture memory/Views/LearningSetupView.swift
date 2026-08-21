@@ -101,18 +101,11 @@ private struct WelcomeScreen: View {
             .frame(maxWidth: .infinity)
         }
         .safeAreaInset(edge: .bottom) {
-            Button(action: onContinue) {
-                Text("Continue")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
-            }
-            .controlSize(.large)
-            .buttonStyle(.borderedProminent)
-            .buttonBorderShape(.capsule)
-            .tint(.accentColor)
-            .padding(.horizontal, 20)
-            .padding(.top, 12)
-            .padding(.bottom, 8)
+            // Floating, not barred — a hero screen has nothing scrolling under it.
+            PrimaryActionButton(title: "Continue", action: onContinue)
+                .padding(.horizontal, AppLayout.screenMargin)
+                .padding(.top, 12)
+                .padding(.bottom, 8)
         }
     }
 }
@@ -181,36 +174,12 @@ private struct StartingPointScreen: View {
                 }
             }
 
-            Section {
-                ForEach(packs) { pack in
-                    NavigationLink {
-                        VerseListScreen(pack: pack,
-                                        selectedKey: pending?.srsKey,
-                                        onSelect: { pending = $0 })
-                    } label: {
-                        HStack {
-                            Text(pack.name)
-                                .foregroundStyle(.primary)
-                                .lineLimit(1)
-                            Spacer()
-                            // The first verse is represented by "Start from the beginning"
-                            // above (which carries its own check), so only badge a pack for
-                            // a specific, non-first verse — otherwise both would show a check.
-                            if let v = pending,
-                               v.srsKey != ordered.first?.srsKey,
-                               pack.verses.contains(where: { $0.srsKey == v.srsKey }) {
-                                Text("\(v.book) \(v.reference)")
-                                    .font(.footnote.weight(.semibold))
-                                    .foregroundStyle(Color.accentColor)
-                                    .lineLimit(1)
-                                checkmark
-                            }
-                        }
-                    }
-                }
-            } header: {
-                Text("Pick where you stopped")
-            }
+            // The first verse is represented by "Start from the beginning" above
+            // (which carries its own check), so a pack is only badged for a
+            // specific, non-first verse — otherwise both would show a check.
+            PackVersePicker(packs: packs,
+                            selectedKey: pending?.srsKey == ordered.first?.srsKey ? nil : pending?.srsKey,
+                            header: "Pick where you stopped") { pending = $0 }
         }
         .navigationTitle(isOnboarding ? "Your Starting Point" : "Current Verse")
         .navigationBarTitleDisplayMode(.inline)
@@ -225,30 +194,13 @@ private struct StartingPointScreen: View {
     }
 
     private var confirmBar: some View {
-        // A pinned footer bar (hairline + frosted material) rather than a bare
-        // floating button, so list rows scroll under a clear bar instead of
-        // bleeding behind the button — the standard Apple bottom-CTA pattern.
-        VStack(spacing: 0) {
-            Divider()
-            Button {
+        BottomActionBar {
+            PrimaryActionButton(title: "Confirm", isEnabled: pending != nil) {
                 guard let pending else { return }
                 HapticEngine.light()
                 onPick(pending)
-            } label: {
-                Text("Confirm")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
             }
-            .controlSize(.large)
-            .buttonStyle(.borderedProminent)
-            .buttonBorderShape(.capsule)
-            .tint(.accentColor)
-            .disabled(pending == nil)
-            .padding(.horizontal, 20)
-            .padding(.top, 12)
-            .padding(.bottom, 8)
         }
-        .background(.bar)
     }
 
     private func isSelected(_ verse: Verse?) -> Bool {
@@ -256,57 +208,5 @@ private struct StartingPointScreen: View {
         return verse.srsKey == pending.srsKey
     }
 
-    private var checkmark: some View {
-        Image(systemName: "checkmark")
-            .font(.system(size: 14, weight: .semibold))
-            .foregroundStyle(Color.accentColor)
-    }
-}
-
-private struct VerseListScreen: View {
-    let pack: Pack
-    var selectedKey: String?
-    var onSelect: (Verse) -> Void
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        List {
-            Section {
-                ForEach(pack.verses) { verse in
-                    Button {
-                        HapticEngine.light()
-                        onSelect(verse)
-                        dismiss()
-                    } label: {
-                        // Reference and title only. You pick your starting point by
-                        // recognising *which card* you stopped at, and the reference
-                        // is what names it — two lines of verse text underneath
-                        // tripled the row height and made the list something you
-                        // scroll through rather than scan.
-                        HStack(spacing: 12) {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("\(verse.book) \(verse.reference)")
-                                    .font(.system(size: 15, weight: .semibold))
-                                    .foregroundStyle(.primary)
-                                Text(verse.title)
-                                    .font(.system(size: 13))
-                                    .foregroundStyle(.secondary)
-                                    .lineLimit(1)
-                            }
-                            Spacer(minLength: 8)
-                            if verse.srsKey == selectedKey {
-                                Image(systemName: "checkmark")
-                                    .font(.system(size: 16, weight: .semibold))
-                                    .foregroundStyle(Color.accentColor)
-                            }
-                        }
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-        }
-        .navigationTitle(pack.name)
-        .navigationBarTitleDisplayMode(.inline)
-    }
+    private var checkmark: some View { SelectionCheckmark() }
 }

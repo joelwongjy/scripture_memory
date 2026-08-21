@@ -341,9 +341,7 @@ struct SRSDashboardView: View {
                             .foregroundStyle(.secondary)
                     }
                     Spacer(minLength: 8)
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(.tertiary)
+                    RowChevron()
                 }
                 .padding(.horizontal, Layout.rowPaddingH)
                 .padding(.vertical, 12)
@@ -683,12 +681,7 @@ struct PacksReviewView: View {
                         get: { store.isActive(pack.name) },
                         set: { store.setActive(pack.name, $0) }
                     )) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(pack.name)
-                            Text("\(pack.verses.count) verses")
-                                .font(.footnote)
-                                .foregroundStyle(.secondary)
-                        }
+                        PackRowLabel(pack: pack)
                     }
                     .tint(.accentColor)
                 }
@@ -719,22 +712,11 @@ private struct PinVersePicker: View {
     var body: some View {
         NavigationStack {
             List {
+                PackVersePicker(packs: packs, selectedKey: pinnedKey, marker: .pin) { verse in
+                    onPick(verse)
+                    dismiss()
+                }
                 Section {
-                    ForEach(packs) { pack in
-                        NavigationLink {
-                            verseList(pack)
-                        } label: {
-                            HStack {
-                                Text(pack.name).foregroundStyle(.primary)
-                                Spacer()
-                                if pack.verses.contains(where: { $0.srsKey == pinnedKey }) {
-                                    Image(systemName: "pin.fill")
-                                        .font(.footnote)
-                                        .foregroundStyle(Color.accentColor)
-                                }
-                            }
-                        }
-                    }
                 } footer: {
                     Text("Pick a verse to feature on your Home screen and widget. This doesn't change your learning progress.")
                 }
@@ -747,43 +729,5 @@ private struct PinVersePicker: View {
                 }
             }
         }
-    }
-
-    private func verseList(_ pack: Pack) -> some View {
-        List {
-            ForEach(pack.verses) { verse in
-                Button {
-                    HapticEngine.light()
-                    onPick(verse)
-                    dismiss()
-                } label: {
-                    // Reference and title only — see the matching picker in
-                    // `LearningSetupView`. You're identifying a card you already
-                    // know, and two lines of body text per row turn a list you'd
-                    // scan into one you have to scroll.
-                    HStack(spacing: 12) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("\(verse.book) \(verse.reference)")
-                                .font(.system(size: 15, weight: .semibold))
-                                .foregroundStyle(.primary)
-                            Text(verse.title)
-                                .font(.system(size: 13))
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                        }
-                        Spacer(minLength: 8)
-                        if verse.srsKey == pinnedKey {
-                            Image(systemName: "pin.fill")
-                                .font(.system(size: 15, weight: .semibold))
-                                .foregroundStyle(Color.accentColor)
-                        }
-                    }
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .navigationTitle(pack.name)
-        .navigationBarTitleDisplayMode(.inline)
     }
 }
