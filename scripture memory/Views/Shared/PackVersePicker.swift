@@ -15,8 +15,9 @@ struct PackVersePicker: View {
     let packs: [Pack]
     var selectedKey: String?
     var marker: Marker = .checkmark
-    /// Shown above the pack rows.
+    /// Shown above / below the pack rows.
     var header: String? = nil
+    var footer: String? = nil
     var onSelect: (Verse) -> Void
 
     enum Marker {
@@ -53,6 +54,8 @@ struct PackVersePicker: View {
             }
         } header: {
             if let header { Text(header) }
+        } footer: {
+            if let footer { Text(footer) }
         }
     }
 }

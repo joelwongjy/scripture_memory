@@ -712,13 +712,10 @@ private struct PinVersePicker: View {
     var body: some View {
         NavigationStack {
             List {
-                PackVersePicker(packs: packs, selectedKey: pinnedKey, marker: .pin) { verse in
+                PackVersePicker(packs: packs, selectedKey: pinnedKey, marker: .pin,
+                                footer: "Pick a verse to feature on your Home screen and widget. This doesn't change your learning progress.") { verse in
                     onPick(verse)
                     dismiss()
-                }
-                Section {
-                } footer: {
-                    Text("Pick a verse to feature on your Home screen and widget. This doesn't change your learning progress.")
                 }
             }
             .navigationTitle("Pin a Verse")
