@@ -83,10 +83,27 @@ struct ContentView: View {
         .onAppear {
             syncWidget()
             if !hasOnboarded {
-                // Already-studying users skip the "Welcome to the app" hero and
-                // just set their starting point; fresh installs get the full intro.
-                cover = .onboarding(showsWelcome: SRSStore.shared.states.isEmpty)
+                if hasRestoredProgress {
+                    // A reinstall with progress already back from iCloud: there's
+                    // nothing to set up, and asking "where have you got to?"
+                    // would overwrite the answer we just restored.
+                    hasOnboarded = true
+                } else {
+                    // Already-studying users skip the "Welcome to the app" hero and
+                    // just set their starting point; fresh installs get the full intro.
+                    cover = .onboarding(showsWelcome: SRSStore.shared.states.isEmpty)
+                }
             }
+        }
+        // iCloud usually lands a moment *after* first appear on a fresh install.
+        // If the onboarding cover is up and progress arrives underneath it, the
+        // setup question is moot — take it down.
+        .onReceive(NotificationCenter.default.publisher(for: ProgressStorage.didChangeExternally)) { _ in
+            if case .onboarding = cover, hasRestoredProgress {
+                hasOnboarded = true
+                cover = nil
+            }
+            syncWidget()
         }
         .onChange(of: learning.learntKeys) { _, _ in syncWidget() }
         .onChange(of: learning.pinnedKey)  { _, _ in syncWidget() }
@@ -101,6 +118,12 @@ struct ContentView: View {
             if phase == .active || phase == .background { syncWidget() }
         }
         .onOpenURL { handleDeepLink($0) }
+    }
+
+    /// Anything that only exists once someone has studied — a learning cursor or
+    /// a scheduled card. Empty on a true first install.
+    private var hasRestoredProgress: Bool {
+        !learning.learntKeys.isEmpty || !SRSStore.shared.states.isEmpty
     }
 
     /// Mirror the current learning verse + streak + due-count + week into the App Group.

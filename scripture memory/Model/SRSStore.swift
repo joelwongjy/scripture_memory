@@ -3,16 +3,8 @@ import Combine
 
 /// Persists per-card SRS state and the "new cards introduced today" counter.
 ///
-/// **Storage:** primary backing is `NSUbiquitousKeyValueStore` (iCloud KV). A local
-/// `UserDefaults` mirror is also written so the very first launch — before iCloud
-/// has hydrated — still has data, and subsequent launches work offline.
-///
-/// **Conflict policy:** last-writer-wins via the `didChangeExternallyNotification`.
-/// Acceptable for a single-user app across the user's own devices.
-///
-/// **Required entitlement:** `com.apple.developer.ubiquity-kvstore-identifier`
-/// = `$(TeamIdentifierPrefix)$(CFBundleIdentifier)` — enabled via Xcode's
-/// "iCloud → Key-value storage" capability.
+/// **Storage:** `ProgressStorage` — iCloud key-value store with a local mirror.
+/// Last-writer-wins on external change.
 @MainActor
 final class SRSStore: ObservableObject {
 
@@ -32,22 +24,22 @@ final class SRSStore: ObservableObject {
     /// the exceptions. New packs are therefore active automatically.
     @Published private(set) var inactivePackNames: Set<String> = []
 
-    private let kvStore = NSUbiquitousKeyValueStore.default
-    private let local   = UserDefaults.standard
+    private let storage: ProgressStorage
 
-    private static let statesKey      = "srs.cardStates.v1"
-    private static let dailyNewKey    = "srs.dailyNewByDate.v1"
+    private static let statesKey        = "srs.cardStates.v1"
+    private static let dailyNewKey      = "srs.dailyNewByDate.v1"
     private static let inactivePacksKey = "srs.inactivePackNames.v1"
+    private static let allKeys = [statesKey, dailyNewKey, inactivePacksKey]
 
-    private init() {
+    private init(storage: ProgressStorage = .shared) {
+        self.storage = storage
         load()
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(externalChange(_:)),
-            name: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
-            object: kvStore
+            name: ProgressStorage.didChangeExternally,
+            object: nil
         )
-        kvStore.synchronize()
     }
 
     // MARK: - Public Queries
@@ -231,39 +223,26 @@ final class SRSStore: ObservableObject {
 
     private func persist() {
         pruneDailyNew()
-        if let data = try? JSONEncoder().encode(states) {
-            kvStore.set(data, forKey: Self.statesKey)
-            local.set(data, forKey: Self.statesKey)
-        }
-        if let data = try? JSONEncoder().encode(dailyNewByDate) {
-            kvStore.set(data, forKey: Self.dailyNewKey)
-            local.set(data, forKey: Self.dailyNewKey)
-        }
-        if let data = try? JSONEncoder().encode(Array(inactivePackNames)) {
-            kvStore.set(data, forKey: Self.inactivePacksKey)
-            local.set(data, forKey: Self.inactivePacksKey)
-        }
-        kvStore.synchronize()
+        storage.encode(states, forKey: Self.statesKey)
+        storage.encode(dailyNewByDate, forKey: Self.dailyNewKey)
+        storage.encode(Array(inactivePackNames), forKey: Self.inactivePacksKey)
     }
 
     private func load() {
-        // Prefer iCloud — fall back to local cache when iCloud hasn't hydrated yet.
-        if let data = kvStore.data(forKey: Self.statesKey) ?? local.data(forKey: Self.statesKey),
-           let decoded = try? JSONDecoder().decode([String: SRSCardState].self, from: data) {
+        if let decoded = storage.decode([String: SRSCardState].self, forKey: Self.statesKey) {
             states = decoded
         }
-        if let data = kvStore.data(forKey: Self.dailyNewKey) ?? local.data(forKey: Self.dailyNewKey),
-           let decoded = try? JSONDecoder().decode([String: [String: Int]].self, from: data) {
+        if let decoded = storage.decode([String: [String: Int]].self, forKey: Self.dailyNewKey) {
             dailyNewByDate = decoded
         }
-        if let data = kvStore.data(forKey: Self.inactivePacksKey) ?? local.data(forKey: Self.inactivePacksKey),
-           let decoded = try? JSONDecoder().decode([String].self, from: data) {
+        if let decoded = storage.decode([String].self, forKey: Self.inactivePacksKey) {
             inactivePackNames = Set(decoded)
         }
     }
 
     @objc private func externalChange(_ note: Notification) {
-        // Last-writer-wins. Reload everything from iCloud.
-        Task { @MainActor in self.load() }
+        guard note.affectsAny(of: Self.allKeys) else { return }
+        // Last-writer-wins: take iCloud's copy wholesale.
+        load()
     }
 }

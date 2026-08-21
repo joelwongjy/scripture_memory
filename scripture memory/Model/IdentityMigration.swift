@@ -27,10 +27,11 @@ enum IdentityMigration {
         // again next launch.
         guard !map.isEmpty else { return }
 
-        migrateStringArray("learning.learntKeys.v1", map: map, defaults: defaults)
-        migrateStringArray("favorites.verseKeys.v1", map: map, defaults: defaults)
-        migrateString("learning.pinnedKey.v1", map: map, defaults: defaults)
+        migrateStringArray("learning.learntKeys.v1", map: map, defaults: defaults, cloud: cloud)
+        migrateStringArray("favorites.verseKeys.v1", map: map, defaults: defaults, cloud: cloud)
+        migrateString("learning.pinnedKey.v1", map: map, defaults: defaults, cloud: cloud)
         migrateCardStates(map: map, defaults: defaults, cloud: cloud)
+        cloud.synchronize()
 
         defaults.set(true, forKey: completionKey)
     }
@@ -58,20 +59,31 @@ enum IdentityMigration {
         return map
     }
 
+    /// These live in both stores (see `ProgressStorage`); each copy is rewritten
+    /// where it's found so neither side can re-introduce old keys.
     private static func migrateStringArray(_ key: String, map: [String: String],
-                                           defaults: UserDefaults) {
-        guard let stored = defaults.stringArray(forKey: key), !stored.isEmpty else { return }
+                                           defaults: UserDefaults,
+                                           cloud: NSUbiquitousKeyValueStore) {
         // Anything unmapped is kept as-is rather than dropped: it may belong to a
         // pack that's temporarily missing from the catalog, and silently deleting
         // someone's progress is far worse than carrying a stale key.
-        let migrated = stored.map { map[$0] ?? $0 }
-        defaults.set(Array(Set(migrated)), forKey: key)
+        if let stored = defaults.stringArray(forKey: key), !stored.isEmpty {
+            defaults.set(Array(Set(stored.map { map[$0] ?? $0 })), forKey: key)
+        }
+        if let stored = cloud.array(forKey: key) as? [String], !stored.isEmpty {
+            cloud.set(Array(Set(stored.map { map[$0] ?? $0 })), forKey: key)
+        }
     }
 
     private static func migrateString(_ key: String, map: [String: String],
-                                      defaults: UserDefaults) {
-        guard let stored = defaults.string(forKey: key), let uid = map[stored] else { return }
-        defaults.set(uid, forKey: key)
+                                      defaults: UserDefaults,
+                                      cloud: NSUbiquitousKeyValueStore) {
+        if let stored = defaults.string(forKey: key), let uid = map[stored] {
+            defaults.set(uid, forKey: key)
+        }
+        if let stored = cloud.string(forKey: key), let uid = map[stored] {
+            cloud.set(uid, forKey: key)
+        }
     }
 
     /// SRS schedules, which live in iCloud as well as locally.
