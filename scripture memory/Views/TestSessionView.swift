@@ -16,7 +16,6 @@ struct TestSessionView: View {
     @State private var dragOffset:   CGSize  = .zero
     @State private var isCardFlying          = false
     @State private var flyDirection: Int     = 0
-    @State private var shakeOffset:  CGFloat = 0
     @State private var speechTarget: SubmitField = .title
     @State private var isScrubbing           = false
     @State private var isPeeking             = false
@@ -608,7 +607,10 @@ struct TestSessionView: View {
                 } else if studyMode == .submit {
                     submitControls
                 } else {
-                    inputField
+                    RecallInputField(vm: vm, studyMode: studyMode,
+                                     isListening: speech.isListening,
+                                     isFocused: $isInputFocused,
+                                     onToggleSpeech: toggleSpeech)
                 }
             }
             .frame(maxWidth: .infinity)
@@ -779,17 +781,9 @@ struct TestSessionView: View {
                 }
             } else {
                 HStack(spacing: 10) {
-                    Button { toggleSpeech() } label: {
-                        Image(systemName: speech.isListening ? "mic.fill" : "mic")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundStyle(speech.isListening ? Color.white : Color.primary)
-                            .frame(width: StudyControlMetrics.buttonSize, height: StudyControlMetrics.buttonSize)
-                            .background(speech.isListening ? Color.red : Color(.secondarySystemGroupedBackground))
-                            .roundedRect(StudyControlMetrics.cornerRadius)
-                    }
-                    .accessibilityLabel(speech.isListening ? "Stop dictation" : "Dictate verse")
+                    DictationTile(isListening: speech.isListening, action: toggleSpeech)
 
-                    submitHintButton
+                    HintButton { vm.fillNextHintWord(startingWithVerse: submitFocus == .verse) }
 
                     let isEmpty = vm.titleInput.trimmingCharacters(in: .whitespaces).isEmpty
                               && vm.verseInput.trimmingCharacters(in: .whitespaces).isEmpty
@@ -812,126 +806,6 @@ struct TestSessionView: View {
     }
 
     // MARK: - Input Field
-
-    private var inputField: some View {
-        HStack(spacing: 10) {
-            HStack(spacing: 10) {
-                dictationButton
-
-                TextField(studyMode.inputPlaceholder, text: $vm.inputText)
-                    .font(.system(size: 17))
-                    .focused($isInputFocused)
-                    .autocorrectionDisabled()
-                    .textInputAutocapitalization(.never)
-                    .onChange(of: vm.inputText) { _, newValue in
-                        guard !newValue.isEmpty else { return }
-                        switch studyMode {
-                        case .firstLetter:
-                            let correct = vm.processFirstLetterInput(newValue)
-                            DispatchQueue.main.async { vm.inputText = "" }
-                            if correct {
-                                HapticEngine.light()
-                            } else {
-                                // Deliberately unscored — a mistyped letter is as likely a
-                                // fat finger as a memory lapse. Same for full word below.
-                                // See `TestSessionViewModel.recordMistake`.
-                                HapticEngine.error(); triggerShake($shakeOffset)
-                            }
-                        case .fullWord:
-                            if vm.processFullWordInput(newValue) {
-                                HapticEngine.light()
-                            } else if newValue.hasSuffix(" ") {
-                                HapticEngine.error(); triggerShake($shakeOffset)
-                            }
-                        case .submit:
-                            break
-                        }
-                    }
-                    // Keyboard dismissal lives in the top bar ("Done") — a single,
-                    // reliable affordance instead of a second keyboard-toolbar one.
-            }
-            .padding(14)
-            .background(Color(.secondarySystemGroupedBackground))
-            .roundedRect(StudyControlMetrics.cornerRadius)
-            .overlay(RoundedRectangle(cornerRadius: StudyControlMetrics.cornerRadius, style: .continuous).stroke(Color(.separator).opacity(0.5), lineWidth: 0.5))
-            .offset(x: shakeOffset)
-
-            hintButton
-        }
-    }
-
-    /// Speak the verse instead of typing it. Takes the slot the decorative
-    /// "character.cursor.ibeam" glyph used to occupy inside the text field: the
-    /// control row (peek, field, hint) has no width left for a fourth button, and
-    /// that glyph was ornament. Entire Verse mode keeps its own larger mic in
-    /// `submitControls` — this field only exists in the two typing modes.
-    ///
-    /// A `Button`, so pressing it doesn't resign the field's first responder and
-    /// dismiss the keyboard mid-verse.
-    private var dictationButton: some View {
-        Button { toggleSpeech() } label: {
-            Image(systemName: speech.isListening ? "mic.fill" : "mic")
-                .font(.system(size: 16))
-                .foregroundStyle(speech.isListening ? Color.red : Color.secondary)
-                .contentTransition(.symbolEffect(.replace))
-                .frame(width: 22, height: 22)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(speech.isListening ? "Stop dictation" : "Dictate verse")
-    }
-
-    /// Reveals the next hidden word (verse first, then title). Wrapped in a
-    /// Button so the touch is a recognized tap target and doesn't resign the
-    /// keyboard's first responder.
-    private var hintButton: some View {
-        Button {
-            vm.revealHint()
-            HapticEngine.light()
-        } label: {
-            Image(systemName: "lightbulb")
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(Color.primary)
-                .frame(width: StudyControlMetrics.buttonSize, height: StudyControlMetrics.buttonSize)
-                .background(Color(.secondarySystemGroupedBackground))
-                .roundedRect(StudyControlMetrics.cornerRadius)
-        }
-        .buttonStyle(.plain)
-    }
-
-    /// Entire Verse's hint: types the next word straight into the answer box.
-    private var submitHintButton: some View {
-        Button {
-            fillNextHintWord()
-            HapticEngine.light()
-        } label: {
-            Image(systemName: "lightbulb")
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(Color.primary)
-                .frame(width: StudyControlMetrics.buttonSize, height: StudyControlMetrics.buttonSize)
-                .background(Color(.secondarySystemGroupedBackground))
-                .roundedRect(StudyControlMetrics.cornerRadius)
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Reveal next word")
-    }
-
-    /// Extends whichever box you're in by one word, falling through to the other
-    /// once that one is complete. Mirrors `CardStudyView.fillNextHintWord`.
-    private func fillNextHintWord() {
-        guard let verse = vm.currentVerse else { return }
-        let startWithVerse = submitFocus == .verse
-        let sections: [(target: String, isTitle: Bool)] = startWithVerse
-            ? [(verse.verse, false), (verse.title, true)]
-            : [(verse.title, true), (verse.verse, false)]
-
-        for section in sections {
-            let typed = section.isTitle ? vm.titleInput : vm.verseInput
-            guard let filled = HintFill.next(target: section.target, typed: typed) else { continue }
-            if section.isTitle { vm.titleInput = filled } else { vm.verseInput = filled }
-            return
-        }
-    }
 
     // MARK: - Swipe Gesture
 

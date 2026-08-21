@@ -17,65 +17,26 @@ private struct SessionProgress: Codable {
 
 // MARK: - Test Session View Model
 
-/// Owns all non-visual state and business logic for a scored test session.
-/// Progress is automatically persisted to UserDefaults so sessions survive
-/// dismissal and app restarts.
+/// A scored quiz or review session: `RecallCardViewModel` plus mistake counts,
+/// completion, and persistence — progress is written to UserDefaults on every
+/// change so a session survives dismissal and app restarts.
 @MainActor
-final class TestSessionViewModel: ObservableObject {
+final class TestSessionViewModel: RecallCardViewModel {
 
     // MARK: - Initialisation
 
-    let verses: [Verse]
-
     init(verses: [Verse]) {
-        self.verses = verses
+        super.init(verses: verses)
         restoreProgress()
     }
 
     // MARK: - Published State
 
-    @Published var currentIndex  = 0 {
-        didSet { if currentIndex != oldValue { syncActiveSection() } }
-    }
-    @Published var activeSection: CardSection = .title
-
-    @Published private(set) var titleRevealedCounts: [Int: Int]          = [:]
-    @Published private(set) var verseRevealedCounts: [Int: Int]          = [:]
-    @Published private(set) var submitResults:       [Int: SubmitResult]  = [:]
     @Published private(set) var mistakeCounts:       [Int: Int]          = [:]
     /// Verse IDs correctly submitted — persisted so submit-mode progress survives dismissal.
     @Published private(set) var completedVerseIds:   Set<Int>            = []
 
-    @Published var inputText  = ""
-    @Published var titleInput = ""
-    @Published var verseInput = ""
-
     // MARK: - Derived State
-
-    var currentVerse: Verse? {
-        verses.indices.contains(currentIndex) ? verses[currentIndex] : nil
-    }
-
-    var isCardComplete: Bool {
-        guard let verse = currentVerse else { return false }
-        switch studyMode {
-        case .submit:
-            return submitResults[verse.id]?.isAllCorrect == true
-        default:
-            return titleRevealedCounts[verse.id, default: 0] >= verse.titleWords.count
-                && verseRevealedCounts[verse.id, default: 0] >= verse.verseWords.count
-        }
-    }
-
-    /// True once the current card has been answered — submitted in entire-verse
-    /// mode (right *or* wrong) or fully revealed in first-letter / full-word mode.
-    /// Unlike `isCardComplete` (perfect-only in submit mode), a submitted-but-
-    /// imperfect card counts as answered, so peek can hide once the answer is shown.
-    var isCardAnswered: Bool {
-        guard let verse = currentVerse else { return false }
-        if studyMode == .submit { return submitResults[verse.id] != nil }
-        return isCardComplete
-    }
 
     var isSessionComplete: Bool {
         guard !verses.isEmpty else { return false }
@@ -103,37 +64,12 @@ final class TestSessionViewModel: ObservableObject {
     /// True once the user has pressed Submit for this verse (even with mistakes).
     func hasSubmitted(_ verse: Verse) -> Bool { submitResults[verse.id] != nil }
 
-    var studyMode: StudyMode {
-        StudyMode(rawValue: UserDefaults.standard.string(forKey: "studyMode") ?? "") ?? .firstLetter
-    }
-
-    // MARK: - Navigation
-
-    func goForward() {
-        guard currentIndex < verses.count - 1 else { return }
-        currentIndex += 1
-        saveProgress()
-    }
-
-    func goBackward() {
-        guard currentIndex > 0 else { return }
-        currentIndex -= 1
-        saveProgress()
-    }
-
-    func clearInputs() { inputText = ""; titleInput = ""; verseInput = "" }
+    /// Every progress mutation in the base class lands here — persist it.
+    override func progressDidChange() { saveProgress() }
 
     // MARK: - Card Label
 
     func cardLabel(for verse: Verse) -> String { CardFooter.label(for: verse) }
-
-    // MARK: - Reveal State
-
-    func revealedCount(for verseId: Int, section: CardSection) -> Int {
-        section == .title
-            ? titleRevealedCounts[verseId, default: 0]
-            : verseRevealedCounts[verseId, default: 0]
-    }
 
     // MARK: - Mistake Tracking
 
@@ -154,160 +90,29 @@ final class TestSessionViewModel: ObservableObject {
 
     // MARK: - Input Processing
 
+    /// On top of the shared scoring: count the mistakes and remember a perfect
+    /// submission, which is what the session's score and completion read.
     @discardableResult
-    func processFirstLetterInput(_ text: String) -> Bool {
-        guard let typed = text.last, let verse = currentVerse else { return false }
-        let words    = sectionWords(activeSection, in: verse)
-        let revealed = revealedCount(for: verse.id, section: activeSection)
-        guard revealed < words.count else { return false }
-        let target = words[revealed]
-        guard let expected = target.first(where: { $0.isLetter || $0.isNumber }) else {
-            advance(verse: verse, sectionWords: words, revealed: revealed)
-            return true
-        }
-        if typed.lowercased() == String(expected).lowercased() {
-            advance(verse: verse, sectionWords: words, revealed: revealed)
-            return true
-        }
-        return false
-    }
-
-    @discardableResult
-    func processFullWordInput(_ text: String) -> Bool {
-        guard text.hasSuffix(" "), let verse = currentVerse else { return false }
-        let typed    = String(text.dropLast()).trimmingCharacters(in: .whitespaces)
-        guard !typed.isEmpty else { inputText = ""; return false }
-        let words    = sectionWords(activeSection, in: verse)
-        let revealed = revealedCount(for: verse.id, section: activeSection)
-        guard revealed < words.count else { return false }
-        if DiffEngine.normalizedMatch(typed, words[revealed]) {
-            advance(verse: verse, sectionWords: words, revealed: revealed)
-            inputText = ""
-            return true
-        }
-        inputText = ""
-        return false
-    }
-
-    @discardableResult
-    func handleSubmit() -> SubmitResult? {
-        guard let verse = currentVerse else { return nil }
-        let typedTitle = titleInput.trimmingCharacters(in: .whitespacesAndNewlines).wordTokens
-        let typedVerse = verseInput.trimmingCharacters(in: .whitespacesAndNewlines).wordTokens
-        guard !typedTitle.isEmpty || !typedVerse.isEmpty else { return nil }
-
-        let result = SubmitResult(
-            titleDiffs: DiffEngine.buildDiffs(typed: typedTitle, target: verse.titleWords),
-            verseDiffs: DiffEngine.buildDiffs(typed: typedVerse, target: verse.verseWords)
-        )
-        withAnimation(AppMotion.content) {
-            var next = submitResults
-            next[verse.id] = result
-            submitResults = next
-        }
+    override func handleSubmit() -> SubmitResult? {
+        guard let verse = currentVerse, let result = super.handleSubmit() else { return nil }
 
         // Count mistakes from wrong/missing/extra diffs
         let totalMistakes = result.titleDiffs.filter { $0.kind != .correct }.count
                           + result.verseDiffs.filter { $0.kind != .correct }.count
         for _ in 0..<totalMistakes { recordMistake() }
 
-        if result.isAllCorrect {
-            completedVerseIds.insert(verse.id)
-        }
-        StreakStore.shared.recordToday()   // submitting a verse counts toward the streak
+        if result.isAllCorrect { completedVerseIds.insert(verse.id) }
         saveProgress()
-        titleInput = ""
-        verseInput = ""
         return result
     }
 
-    func retrySubmit() {
+    override func retrySubmit() {
         guard let verse = currentVerse else { return }
-        withAnimation(AppMotion.content) {
-            var next = submitResults
-            next.removeValue(forKey: verse.id)
-            submitResults = next
-        }
+        super.retrySubmit()
         // Reset this card's mistakes so the score reflects the new attempt
         mistakeCounts.removeValue(forKey: verse.id)
         completedVerseIds.remove(verse.id)
         saveProgress()
-        titleInput = ""
-        verseInput = ""
-    }
-
-    // MARK: - Dictation
-
-    /// How many words of the running transcript have already been matched. The
-    /// recognizer re-emits the *whole* transcript on every partial result, so
-    /// without this each update would replay the verse from the beginning.
-    private var spokenWordsConsumed = 0
-
-    /// Drops dictation bookkeeping — call when a listening session starts or the
-    /// card changes, both of which restart the transcript.
-    func resetDictation() { spokenWordsConsumed = 0 }
-
-    /// Feeds a dictation transcript through the same reveal path typing uses: each
-    /// newly spoken word that matches the next hidden word reveals it, crossing from
-    /// title to verse exactly as typing does.
-    ///
-    /// Only words past the ones already handled are considered, and the count never
-    /// rewinds. Speech arrives as a growing and occasionally *revised* transcript,
-    /// and revealing is one-way — re-matching a revised prefix would double-advance
-    /// the verse. A spoken word that doesn't match is consumed rather than retried,
-    /// so one misheard word can't wedge the card.
-    func processDictation(_ transcript: String) {
-        let spoken = transcript.split(whereSeparator: { $0 == " " || $0.isNewline }).map(String.init)
-        guard spoken.count > spokenWordsConsumed else { return }
-        for word in spoken[spokenWordsConsumed...] {
-            guard let verse = currentVerse else { break }
-            let words    = sectionWords(activeSection, in: verse)
-            let revealed = revealedCount(for: verse.id, section: activeSection)
-            guard revealed < words.count else { break }
-            if DiffEngine.normalizedMatch(word, words[revealed]) {
-                advance(verse: verse, sectionWords: words, revealed: revealed)
-            }
-        }
-        spokenWordsConsumed = spoken.count
-    }
-
-    // MARK: - Hint
-
-    /// Reveals the next hidden word as a hint — in the section the user is
-    /// currently on (active), falling back to the other section once the
-    /// active one is fully revealed.
-    func revealHint() {
-        guard let verse = currentVerse else { return }
-        let other: CardSection = activeSection == .title ? .verse : .title
-        let hinted: CardSection
-        if revealedCount(for: verse.id, section: activeSection) < sectionWords(activeSection, in: verse).count {
-            hinted = activeSection
-        } else if revealedCount(for: verse.id, section: other) < sectionWords(other, in: verse).count {
-            hinted = other
-        } else {
-            return
-        }
-        withAnimation(AppMotion.content) {
-            switch hinted {
-            case .verse: verseRevealedCounts[verse.id] = verseRevealedCounts[verse.id, default: 0] + 1
-            case .title: titleRevealedCounts[verse.id] = titleRevealedCounts[verse.id, default: 0] + 1
-            }
-        }
-        saveProgress()
-        // If the hint just finished the section the user was typing in,
-        // move the highlight to the other section (if it still has words).
-        if hinted == activeSection,
-           revealedCount(for: verse.id, section: hinted) >= sectionWords(hinted, in: verse).count {
-            switchSectionIfNeeded(verse: verse)
-        }
-    }
-
-    /// Points the highlight at the first incomplete section of the current card.
-    private func syncActiveSection() {
-        guard let verse = currentVerse else { return }
-        let titleDone = titleRevealedCounts[verse.id, default: 0] >= verse.titleWords.count
-        let target: CardSection = titleDone ? .verse : .title
-        if activeSection != target { activeSection = target }
     }
 
     // MARK: - Session Reset (Try Again)
@@ -405,47 +210,6 @@ final class TestSessionViewModel: ObservableObject {
         default:
             return titleRevealedCounts[verse.id, default: 0] >= verse.titleWords.count
                 && verseRevealedCounts[verse.id, default: 0] >= verse.verseWords.count
-        }
-    }
-
-    private func sectionWords(_ section: CardSection, in verse: Verse) -> [String] {
-        section == .title ? verse.titleWords : verse.verseWords
-    }
-
-    private func setRevealed(_ count: Int, for verseId: Int, section: CardSection) {
-        switch section {
-        case .title: titleRevealedCounts[verseId] = count
-        case .verse: verseRevealedCounts[verseId] = count
-        }
-    }
-
-    private func advance(verse: Verse, sectionWords: [String], revealed: Int) {
-        var newCount = revealed + 1
-        // Auto-skip pure-punctuation tokens (e.g. a standalone "-" with spaces around
-        // it) — they have no first letter to type, so they must not swallow the
-        // keystroke meant for the next real word.
-        while newCount < sectionWords.count,
-              !sectionWords[newCount].contains(where: { $0.isLetter || $0.isNumber }) {
-            newCount += 1
-        }
-        withAnimation(AppMotion.content) {
-            setRevealed(newCount, for: verse.id, section: activeSection)
-        }
-        saveProgress()
-        if newCount >= sectionWords.count {
-            switchSectionIfNeeded(verse: verse)
-            if isCardComplete {
-                StreakStore.shared.recordToday()
-            }
-        }
-    }
-
-    private func switchSectionIfNeeded(verse: Verse) {
-        let other         = activeSection == .title ? CardSection.verse : .title
-        let otherWords    = sectionWords(other, in: verse)
-        let otherRevealed = revealedCount(for: verse.id, section: other)
-        if otherRevealed < otherWords.count {
-            withAnimation(AppMotion.control) { activeSection = other }
         }
     }
 
