@@ -4,7 +4,9 @@ import Combine
 /// Tracks daily study activity and derives the user's current streak.
 ///
 /// A "day" counts once the user starts a learning or review session that day.
-/// Persisted locally (a set of `yyyy-MM-dd` day keys).
+/// Persisted through `ProgressStorage` (a set of `yyyy-MM-dd` day keys). Days
+/// are facts, so an external copy is **unioned** in rather than replacing ours —
+/// a day studied on either device stays studied.
 @MainActor
 final class StreakStore: ObservableObject {
 
@@ -12,11 +14,27 @@ final class StreakStore: ObservableObject {
 
     @Published private(set) var days: Set<String> = []
 
-    private let defaults = UserDefaults.standard
+    private let storage: ProgressStorage
     private static let storageKey = "streak.days.v1"
 
-    private init() {
-        days = Set(defaults.stringArray(forKey: Self.storageKey) ?? [])
+    private init(storage: ProgressStorage = .shared) {
+        self.storage = storage
+        days = Set(storage.stringArray(forKey: Self.storageKey) ?? [])
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(externalChange(_:)),
+            name: ProgressStorage.didChangeExternally,
+            object: nil
+        )
+    }
+
+    @objc private func externalChange(_ note: Notification) {
+        guard note.affectsAny(of: [Self.storageKey]) else { return }
+        let incoming = Set(storage.stringArray(forKey: Self.storageKey) ?? [])
+        let merged = days.union(incoming)
+        guard merged != days else { return }
+        days = merged
+        if merged != incoming { persist() }   // our side had days iCloud lacked
     }
 
     /// Mark today as active. Idempotent.
@@ -28,7 +46,11 @@ final class StreakStore: ObservableObject {
         if days.count > 400 {
             days = Set(days.sorted().suffix(400))
         }
-        defaults.set(Array(days), forKey: Self.storageKey)
+        persist()
+    }
+
+    private func persist() {
+        storage.set(Array(days), forKey: Self.storageKey)
     }
 
     /// Consecutive days ending today (or yesterday, if today isn't done yet — the

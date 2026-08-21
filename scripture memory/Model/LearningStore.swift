@@ -35,13 +35,36 @@ final class LearningStore: ObservableObject {
     /// never touches `learntKeys`, so clearing it returns to the cursor.
     @Published private(set) var pinnedKey: String?
 
-    private let defaults = UserDefaults.standard
+    private let storage: ProgressStorage
     private static let storageKey    = "learning.learntKeys.v1"
     private static let pinStorageKey = "learning.pinnedKey.v1"
 
-    private init() {
-        learntKeys = Set(defaults.stringArray(forKey: Self.storageKey) ?? [])
-        pinnedKey  = defaults.string(forKey: Self.pinStorageKey)
+    private init(storage: ProgressStorage = .shared) {
+        self.storage = storage
+        learntKeys = Set(storage.stringArray(forKey: Self.storageKey) ?? [])
+        pinnedKey  = storage.string(forKey: Self.pinStorageKey)
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(externalChange(_:)),
+            name: ProgressStorage.didChangeExternally,
+            object: nil
+        )
+    }
+
+    /// iCloud delivered another device's (or this device's pre-reinstall) copy.
+    /// Last-writer-wins: take it wholesale.
+    @objc private func externalChange(_ note: Notification) {
+        if note.affectsAny(of: [Self.storageKey]) {
+            let incoming = Set(storage.stringArray(forKey: Self.storageKey) ?? [])
+            if incoming != learntKeys { learntKeys = incoming }
+        }
+        if note.affectsAny(of: [Self.pinStorageKey]) {
+            let incoming = storage.string(forKey: Self.pinStorageKey)
+            if incoming != pinnedKey {
+                pinnedKey = incoming
+                NotificationCenter.default.post(name: .featuredVerseDidChange, object: nil)
+            }
+        }
     }
 
     func isLearnt(_ verse: Verse) -> Bool { learntKeys.contains(verse.srsKey) }
@@ -59,7 +82,7 @@ final class LearningStore: ObservableObject {
     /// the model layer (pack order/visibility + Bible version) so *any* screen can
     /// ask "is this the current verse?" without the dashboard plumbing it through.
     var visibleOrdered: [Verse] {
-        let version = BibleVersion(rawValue: defaults.string(forKey: "bibleVersion") ?? "") ?? .niv84
+        let version = BibleVersion(rawValue: UserDefaults.standard.string(forKey: "bibleVersion") ?? "") ?? .niv84
         return Catalogue.verses(in: PackPreferencesStore.shared.visible(from: version.packs))
     }
 
@@ -69,7 +92,7 @@ final class LearningStore: ObservableObject {
     /// verse list, so this gates the cache without the heavy recompute.
     private var currentInputToken: Int {
         var h = Hasher()
-        h.combine(defaults.string(forKey: "bibleVersion") ?? "")
+        h.combine(UserDefaults.standard.string(forKey: "bibleVersion") ?? "")
         h.combine(PackPreferencesStore.shared.order)
         h.combine(PackPreferencesStore.shared.hidden)
         return h.finalize()
@@ -114,7 +137,7 @@ final class LearningStore: ObservableObject {
     func pin(_ verse: Verse) {
         guard !verse.srsKey.isEmpty else { return }
         pinnedKey = verse.srsKey
-        defaults.set(verse.srsKey, forKey: Self.pinStorageKey)
+        storage.set(verse.srsKey, forKey: Self.pinStorageKey)
         NotificationCenter.default.post(name: .featuredVerseDidChange, object: nil)
     }
 
@@ -122,7 +145,7 @@ final class LearningStore: ObservableObject {
     func unpin() {
         guard pinnedKey != nil else { return }
         pinnedKey = nil
-        defaults.removeObject(forKey: Self.pinStorageKey)
+        storage.removeObject(forKey: Self.pinStorageKey)
         NotificationCenter.default.post(name: .featuredVerseDidChange, object: nil)
     }
 
@@ -179,6 +202,6 @@ final class LearningStore: ObservableObject {
     }
 
     private func persist() {
-        defaults.set(Array(learntKeys), forKey: Self.storageKey)
+        storage.set(Array(learntKeys), forKey: Self.storageKey)
     }
 }

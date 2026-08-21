@@ -17,11 +17,26 @@ final class FavoritesStore: ObservableObject {
 
     @Published private(set) var keys: Set<String>
 
-    private let defaults = UserDefaults.standard
+    private let storage: ProgressStorage
     private static let storageKey = "favorites.verseKeys.v1"
 
-    private init() {
-        keys = Set(defaults.stringArray(forKey: Self.storageKey) ?? [])
+    private init(storage: ProgressStorage = .shared) {
+        self.storage = storage
+        keys = Set(storage.stringArray(forKey: Self.storageKey) ?? [])
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(externalChange(_:)),
+            name: ProgressStorage.didChangeExternally,
+            object: nil
+        )
+    }
+
+    @objc private func externalChange(_ note: Notification) {
+        guard note.affectsAny(of: [Self.storageKey]) else { return }
+        let incoming = Set(storage.stringArray(forKey: Self.storageKey) ?? [])
+        guard incoming != keys else { return }
+        keys = incoming
+        cachedVerses = nil
     }
 
     func isFavorite(_ verse: Verse) -> Bool {
@@ -87,6 +102,6 @@ final class FavoritesStore: ObservableObject {
 
     private func persist() {
         cachedVerses = nil
-        defaults.set(Array(keys), forKey: Self.storageKey)
+        storage.set(Array(keys), forKey: Self.storageKey)
     }
 }
