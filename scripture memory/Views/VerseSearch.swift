@@ -164,48 +164,16 @@ struct VerseSearchResultsList: View {
     }
 
     private func row(_ result: VerseSearchResult) -> some View {
-        HStack(spacing: 14) {
-            VStack(alignment: .leading, spacing: 3) {
-                HStack(spacing: 6) {
-                    Text("\(result.verse.book) \(result.verse.reference)")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(.primary)
-                    if let pinned = result.verse.pinnedVersion {
-                        Text("(\(pinned))")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                Text(result.verse.title)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(.primary)
-                Text(result.verse.verse)
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-                    .multilineTextAlignment(.leading)
-                // Secondary, not tertiary. This line says which pack a result came
-                // from, which is the thing that tells two similar hits apart — at
-                // tertiary it was the faintest text in the row despite carrying
-                // more information than the verse preview above it.
-                Text(VerseNumbering.code(for: result.verse) ?? result.pack.name)
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(.secondary)
-            }
-            Spacer()
+        VerseRowLabel(verse: result.verse, showsPreview: true) {
             if favorites.isFavorite(result.verse) {
                 Image(systemName: "star.fill")
                     .font(.system(size: 12))
                     .foregroundStyle(.yellow)
                     .accessibilityLabel("Favourite")
             }
-            Image(systemName: "chevron.right")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(.secondary)
+            RowChevron()
         }
         .padding(.horizontal, AppLayout.screenMargin)
         .padding(.vertical, 11)
-        .contentShape(Rectangle())
     }
 }

@@ -131,14 +131,15 @@ struct SettingsView: View {
                 } label: {
                     HStack(spacing: 8) {
                         rowLabel("Current verse", "bookmark.fill")
+                            // The title is two words; the reference is the one
+                            // that should give way, not wrap the title mid-phrase.
+                            .fixedSize()
                         Spacer()
                         Text(currentLearningLabel)
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
                             .truncationMode(.tail)
-                        Image(systemName: "chevron.right")
-                            .font(.footnote.weight(.semibold))
-                            .foregroundStyle(.tertiary)
+                        RowChevron()
                     }
                     .contentShape(Rectangle())
                 }
