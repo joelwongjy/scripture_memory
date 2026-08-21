@@ -5,10 +5,6 @@ import Foundation
 /// Codable bridge for `[Int: SubmitResult]` used by pack review files and test session snapshots.
 enum SubmitResultPersistence {
 
-    struct Blob: Codable {
-        var results: [String: StoredResult]
-    }
-
     struct StoredResult: Codable {
         var titleDiffs: [StoredWord]
         var verseDiffs: [StoredWord]
@@ -18,18 +14,6 @@ enum SubmitResultPersistence {
         var text: String
         var kind: String
         var correction: String?
-    }
-
-    // MARK: - Data blob (pack per-pack key)
-
-    static func encodeToData(_ dict: [Int: SubmitResult]) -> Data? {
-        let results = encodeToMap(dict)
-        return try? JSONEncoder().encode(Blob(results: results))
-    }
-
-    static func decodeFromData(_ data: Data, validVerseIds: Set<Int>) -> [Int: SubmitResult] {
-        guard let blob = try? JSONDecoder().decode(Blob.self, from: data) else { return [:] }
-        return decodeFromMap(blob.results, validVerseIds: validVerseIds)
     }
 
     // MARK: - Inline dictionary (session `SessionProgress` JSON)

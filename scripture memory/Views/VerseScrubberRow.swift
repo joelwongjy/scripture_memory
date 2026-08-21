@@ -41,7 +41,7 @@ struct VerseScrubberRow: View {
                 let canNext = currentIndex < verseCount - 1
 
                 Button(action: onStepBack) {
-                    Image(systemName: "chevron.left").studyScrubberChevronButton()
+                    Image(systemName: "chevron.left").studyChromeCircleButton()
                 }
                 .disabled(!canPrev && !canStepBeyondStart)
                 .opacity(canPrev || canStepBeyondStart ? 1 : 0.3)
@@ -52,7 +52,7 @@ struct VerseScrubberRow: View {
                     .accessibilityValue("\(currentIndex + 1) of \(verseCount)")
 
                 Button(action: onStepForward) {
-                    Image(systemName: "chevron.right").studyScrubberChevronButton()
+                    Image(systemName: "chevron.right").studyChromeCircleButton()
                 }
                 .disabled(!canNext && !canStepBeyondEnd)
                 .opacity(canNext || canStepBeyondEnd ? 1 : 0.3)
@@ -62,7 +62,7 @@ struct VerseScrubberRow: View {
             if showPositionLabel {
                 Text("\(currentIndex + 1) / \(verseCount)")
                     .font(.system(size: 11, weight: .medium, design: .monospaced))
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(Color.secondary)
             }
         }
     }

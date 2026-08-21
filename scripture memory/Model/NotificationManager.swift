@@ -68,7 +68,7 @@ enum NotificationManager {
             let summary = SRSQueueBuilder.dueSummary(activePacks: activePacks,
                                                      store: SRSStore.shared,
                                                      newCap: cap,
-                                                     dailyReviewCap: d.object(forKey: "srs.dailyReviewCap") as? Int ?? 5,
+                                                     dailyReviewCap: d.object(forKey: NewCardCap.dailyReviewCapKey) as? Int ?? NewCardCap.dailyReviewCapDefault,
                                                      now: fire)
             guard let body = ReminderPlan.reminderBody(review: summary.review, new: summary.new) else { continue }
 

@@ -26,6 +26,11 @@ struct NewCardCap: Equatable {
     let unit:   NewCapUnit
 
     static let amountKey = "srs.newCap"
+    /// The daily *review* ceiling. Not part of `NewCardCap` itself, but read
+    /// alongside it everywhere the two caps are applied, so the key and its
+    /// default live here rather than being re-typed at each call site.
+    static let dailyReviewCapKey     = "srs.dailyReviewCap"
+    static let dailyReviewCapDefault = 5
     static let unitKey   = "srs.newCapUnit"
     /// Pre-day/week setting. Read only by the migration below.
     static let legacyDailyKey = "srs.dailyNewCap"

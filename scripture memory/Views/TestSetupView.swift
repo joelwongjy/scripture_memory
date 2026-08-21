@@ -169,10 +169,10 @@ struct TestSetupView: View {
             VStack(alignment: .leading, spacing: 1) {
                 Text("Session in Progress")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.primary)
+                    .foregroundStyle(Color.primary)
                 Text("\(session.verses.count) cards · \(packsText)")
                     .font(.system(size: 12))
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(Color.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
@@ -213,7 +213,7 @@ struct TestSetupView: View {
             shortcutRow(
                 title: "Up to current verse",
                 detail: learning.currentVerse.flatMap { VerseNumbering.code(for: $0) }
-                    ?? verseCount(upToCurrent.count)
+                    ?? Wording.verses(upToCurrent.count)
             ) { select(upToCurrent) }
         }
 
@@ -237,8 +237,6 @@ struct TestSetupView: View {
         }
     }
 
-    private func verseCount(_ n: Int) -> String { "\(n) \(n == 1 ? "verse" : "verses")" }
-
     /// A plain title-and-value row, the shape iOS uses for exactly this. No icon:
     /// coloured glyphs down the left edge implied unrelated kinds of thing, when
     /// these are just two ways of filling the same selection.
@@ -255,7 +253,7 @@ struct TestSetupView: View {
                 Spacer()
                 Text(detail)
                     .font(.system(size: 15))
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(Color.secondary)
             }
             .contentShape(Rectangle())
         }
@@ -434,7 +432,7 @@ struct TestSetupView: View {
                     .font(.system(size: 22, weight: .bold, design: .monospaced))
                 Text("verses")
                     .font(.system(size: 11))
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(Color.secondary)
             }
             .frame(minWidth: 55, alignment: .leading)
 
@@ -477,7 +475,7 @@ struct TestSetupView: View {
                 HStack(spacing: 6) {
                     Text("cards to quiz")
                         .font(.system(size: 11))
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(Color.secondary)
                     Button {
                         setCount(selectedCount)
                         HapticEngine.light()

@@ -213,7 +213,6 @@ final class TestSessionViewModel: ObservableObject {
 
         if result.isAllCorrect {
             completedVerseIds.insert(verse.id)
-            ReviewProgress.shared.markComplete(verse.id)
         }
         StreakStore.shared.recordToday()   // submitting a verse counts toward the streak
         saveProgress()
@@ -301,7 +300,6 @@ final class TestSessionViewModel: ObservableObject {
            revealedCount(for: verse.id, section: hinted) >= sectionWords(hinted, in: verse).count {
             switchSectionIfNeeded(verse: verse)
         }
-        if isCardComplete { ReviewProgress.shared.markComplete(verse.id) }
     }
 
     /// Points the highlight at the first incomplete section of the current card.
@@ -437,7 +435,6 @@ final class TestSessionViewModel: ObservableObject {
         if newCount >= sectionWords.count {
             switchSectionIfNeeded(verse: verse)
             if isCardComplete {
-                ReviewProgress.shared.markComplete(verse.id)
                 StreakStore.shared.recordToday()
             }
         }

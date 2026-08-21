@@ -43,23 +43,13 @@ final class FavoritesStore: ObservableObject {
         !verse.srsKey.isEmpty && keys.contains(verse.srsKey)
     }
 
-    @discardableResult
-    func toggle(_ verse: Verse) -> Bool {
-        guard !verse.srsKey.isEmpty else { return false }
-        let nowFavorite: Bool
+    func toggle(_ verse: Verse) {
+        guard !verse.srsKey.isEmpty else { return }
         if keys.contains(verse.srsKey) {
             keys.remove(verse.srsKey)
-            nowFavorite = false
         } else {
             keys.insert(verse.srsKey)
-            nowFavorite = true
         }
-        persist()
-        return nowFavorite
-    }
-
-    func remove(_ verse: Verse) {
-        guard keys.remove(verse.srsKey) != nil else { return }
         persist()
     }
 
@@ -92,12 +82,6 @@ final class FavoritesStore: ObservableObject {
         guard !verses.isEmpty else { return nil }
         return Pack(name: Self.packName, color: "#E5A50A",
                     accentText: "\u{2605}", verses: verses)
-    }
-
-    func clear() {
-        guard !keys.isEmpty else { return }
-        keys = []
-        persist()
     }
 
     private func persist() {

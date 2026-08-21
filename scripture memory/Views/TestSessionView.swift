@@ -182,7 +182,7 @@ struct TestSessionView: View {
                 // says roughly where you are and the text was the redundant half.
                 Text("\(vm.currentIndex + 1) of \(vm.verses.count) · \(vm.completedCount) done")
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(Color.secondary)
                     .lineLimit(1)
                     .animation(AppMotion.content, value: vm.completedCount)
             }
@@ -219,7 +219,7 @@ struct TestSessionView: View {
                     } label: {
                         Text("Done")
                             .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.accentColor)
+                            .foregroundStyle(Color.accentColor)
                     }
                     .accessibilityLabel("Close keyboard")
                 } else {
@@ -263,12 +263,12 @@ struct TestSessionView: View {
                         HStack(spacing: 10) {
                             Text("\(verse.book) \(verse.reference)")
                                 .font(.system(size: 16))
-                                .foregroundColor(i == vm.currentIndex ? .accentColor : .primary)
+                                .foregroundStyle(i == vm.currentIndex ? Color.accentColor : Color.primary)
                             Spacer()
                             if i == vm.currentIndex {
                                 Image(systemName: "checkmark")
                                     .font(.system(size: 11, weight: .semibold))
-                                    .foregroundColor(.accentColor)
+                                    .foregroundStyle(Color.accentColor)
                             }
                         }
                         .contentShape(Rectangle())
@@ -627,16 +627,16 @@ struct TestSessionView: View {
         } label: {
             HStack(spacing: 8) {
                 Image(systemName: "checkmark.circle.fill")
-                    .foregroundColor(.green)
+                    .foregroundStyle(Color.green)
                     .font(.system(size: 18))
                 Text("Next")
                     .font(.system(size: 16, weight: .semibold))
             }
-            .foregroundColor(.primary)
+            .foregroundStyle(Color.primary)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 14.6)
             .background(Color(.secondarySystemGroupedBackground))
-            .roundedRect(12)
+            .roundedRect(StudyControlMetrics.cornerRadius)
         }
         .disabled(vm.currentIndex >= vm.verses.count - 1)
         .opacity(vm.currentIndex >= vm.verses.count - 1 ? 0.5 : 1)
@@ -658,10 +658,10 @@ struct TestSessionView: View {
         } label: {
             Label("Complete", systemImage: "checkmark.circle.fill")
                 .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(.white)
+                .foregroundStyle(Color.white)
                 .frame(maxWidth: .infinity).padding(.vertical, 12)
                 .background(Color.green)
-                .roundedRect(12)
+                .roundedRect(StudyControlMetrics.cornerRadius)
         }
         .accessibilityLabel("Mark current verse as complete")
         .transition(.scale.combined(with: .opacity))
@@ -678,7 +678,7 @@ struct TestSessionView: View {
 
             Text("Session Complete!")
                 .font(.system(size: 20, weight: .bold))
-                .foregroundColor(.primary)
+                .foregroundStyle(Color.primary)
 
             // Mistakes are only tracked in Entire Verse (submit) mode, so a
             // score is meaningless in first-letter / full-word sessions.
@@ -686,20 +686,20 @@ struct TestSessionView: View {
                 if vm.sessionScore == 0 {
                     Text("Perfect!")
                         .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(.green)
+                        .foregroundStyle(Color.green)
                 } else {
                     Text("Score: \(vm.sessionScore)")
                         .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(.red)
+                        .foregroundStyle(Color.red)
                 }
 
                 Text("\(vm.perfectCount) of \(vm.verses.count) perfect")
                     .font(.system(size: 14))
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(Color.secondary)
             } else {
                 Text("\(vm.verses.count) verses reviewed")
                     .font(.system(size: 14))
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(Color.secondary)
             }
 
             HStack(spacing: 12) {
@@ -708,11 +708,11 @@ struct TestSessionView: View {
                 } label: {
                     Text("Try Again")
                         .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.primary)
+                        .foregroundStyle(Color.primary)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
                         .background(Color(.secondarySystemGroupedBackground))
-                        .roundedRect(12)
+                        .roundedRect(StudyControlMetrics.cornerRadius)
                 }
 
                 Button {
@@ -722,11 +722,11 @@ struct TestSessionView: View {
                 } label: {
                     Text("Done")
                         .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.white)
+                        .foregroundStyle(Color.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
                         .background(Color.accentColor)
-                        .roundedRect(12)
+                        .roundedRect(StudyControlMetrics.cornerRadius)
                 }
             }
         }
@@ -752,10 +752,10 @@ struct TestSessionView: View {
                         Button { vm.retrySubmit() } label: {
                             Label("Try Again", systemImage: "arrow.counterclockwise")
                                 .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(.primary)
+                                .foregroundStyle(Color.primary)
                                 .frame(maxWidth: .infinity).padding(.vertical, 12)
                                 .background(Color(.secondarySystemGroupedBackground))
-                                .roundedRect(12)
+                                .roundedRect(StudyControlMetrics.cornerRadius)
                         }
                         Button {
                             isScrubbing = true
@@ -768,10 +768,10 @@ struct TestSessionView: View {
                         } label: {
                             Text("Next")
                                 .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(.white)
+                                .foregroundStyle(Color.white)
                                 .frame(maxWidth: .infinity).padding(.vertical, 12)
                                 .background(Color.accentColor)
-                                .roundedRect(12)
+                                .roundedRect(StudyControlMetrics.cornerRadius)
                         }
                         .disabled(vm.currentIndex >= vm.verses.count - 1)
                         .opacity(vm.currentIndex >= vm.verses.count - 1 ? 0.5 : 1)
@@ -782,10 +782,10 @@ struct TestSessionView: View {
                     Button { toggleSpeech() } label: {
                         Image(systemName: speech.isListening ? "mic.fill" : "mic")
                             .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(speech.isListening ? .white : .primary)
-                            .frame(width: 48, height: 48)
+                            .foregroundStyle(speech.isListening ? Color.white : Color.primary)
+                            .frame(width: StudyControlMetrics.buttonSize, height: StudyControlMetrics.buttonSize)
                             .background(speech.isListening ? Color.red : Color(.secondarySystemGroupedBackground))
-                            .roundedRect(12)
+                            .roundedRect(StudyControlMetrics.cornerRadius)
                     }
                     .accessibilityLabel(speech.isListening ? "Stop dictation" : "Dictate verse")
 
@@ -800,10 +800,10 @@ struct TestSessionView: View {
                         result?.isAllCorrect == true ? HapticEngine.success() : HapticEngine.error()
                     } label: {
                         Text("Submit")
-                            .font(.system(size: 16, weight: .semibold)).foregroundColor(.white)
+                            .font(.system(size: 16, weight: .semibold)).foregroundStyle(Color.white)
                             .frame(maxWidth: .infinity).padding(.vertical, 12)
                             .background(isEmpty ? Color(.systemGray3) : Color.accentColor)
-                            .roundedRect(12)
+                            .roundedRect(StudyControlMetrics.cornerRadius)
                     }
                     .disabled(isEmpty)
                 }
@@ -852,8 +852,8 @@ struct TestSessionView: View {
             }
             .padding(14)
             .background(Color(.secondarySystemGroupedBackground))
-            .roundedRect(12)
-            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Color(.separator).opacity(0.5), lineWidth: 0.5))
+            .roundedRect(StudyControlMetrics.cornerRadius)
+            .overlay(RoundedRectangle(cornerRadius: StudyControlMetrics.cornerRadius, style: .continuous).stroke(Color(.separator).opacity(0.5), lineWidth: 0.5))
             .offset(x: shakeOffset)
 
             hintButton
@@ -872,7 +872,7 @@ struct TestSessionView: View {
         Button { toggleSpeech() } label: {
             Image(systemName: speech.isListening ? "mic.fill" : "mic")
                 .font(.system(size: 16))
-                .foregroundColor(speech.isListening ? .red : .secondary)
+                .foregroundStyle(speech.isListening ? Color.red : Color.secondary)
                 .contentTransition(.symbolEffect(.replace))
                 .frame(width: 22, height: 22)
                 .contentShape(Rectangle())
@@ -891,10 +891,10 @@ struct TestSessionView: View {
         } label: {
             Image(systemName: "lightbulb")
                 .font(.system(size: 18, weight: .semibold))
-                .foregroundColor(.primary)
-                .frame(width: 48, height: 48)
+                .foregroundStyle(Color.primary)
+                .frame(width: StudyControlMetrics.buttonSize, height: StudyControlMetrics.buttonSize)
                 .background(Color(.secondarySystemGroupedBackground))
-                .roundedRect(12)
+                .roundedRect(StudyControlMetrics.cornerRadius)
         }
         .buttonStyle(.plain)
     }
@@ -907,10 +907,10 @@ struct TestSessionView: View {
         } label: {
             Image(systemName: "lightbulb")
                 .font(.system(size: 18, weight: .semibold))
-                .foregroundColor(.primary)
-                .frame(width: 48, height: 48)
+                .foregroundStyle(Color.primary)
+                .frame(width: StudyControlMetrics.buttonSize, height: StudyControlMetrics.buttonSize)
                 .background(Color(.secondarySystemGroupedBackground))
-                .roundedRect(12)
+                .roundedRect(StudyControlMetrics.cornerRadius)
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Reveal next word")

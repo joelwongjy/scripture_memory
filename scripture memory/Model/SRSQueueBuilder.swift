@@ -71,30 +71,6 @@ enum SRSQueueBuilder {
         }
     }
 
-    // MARK: - Single-pack session (drill button)
-
-    /// Builds the verse list for a single pack's session. New cards still respect
-    /// the GLOBAL daily cap, so drilling one pack doesn't blow past today's quota.
-    static func buildSession(
-        packName: String,
-        allVerses: [Verse],
-        store: SRSStore,
-        newCap: NewCardCap,
-        dailyReviewCap: Int,
-        policy: NewCardPolicy? = nil,
-        now: Date = Date()
-    ) -> [Verse] {
-        let policy = policy ?? .current
-        let slice = reviewSlice(allVerses: allVerses, packName: packName, store: store,
-                                dailyReviewCap: dailyReviewCap, policy: policy, now: now)
-
-        let remaining  = globalNewRemaining(store: store, newCap: newCap, now: now)
-        let candidates = policy.fresh(in: allVerses, store: store)
-        let newCards   = Array(candidates.prefix(remaining))
-
-        return slice + newCards
-    }
-
     /// One pack's learning + review cards for a session: everything in learning,
     /// then due reviews up to the cap, then known backlog into what's left of it.
     private static func reviewSlice(

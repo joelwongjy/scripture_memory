@@ -1,13 +1,4 @@
 import SwiftUI
-
-// MARK: - Card Section
-
-/// Identifies which part of a flashcard — title or verse — is currently being studied.
-enum CardSection: Hashable {
-    case title
-    case verse
-}
-
 // MARK: - Card Study View Model
 
 /// Owns all non-visual state and business logic for a card study session.
@@ -81,17 +72,6 @@ final class CardStudyViewModel: ObservableObject {
         guard let verse = currentVerse else { return false }
         if studyMode == .submit { return submitResults[verse.id] != nil }
         return isCardComplete
-    }
-
-    var canReset: Bool {
-        guard isReviewMode, let verse = currentVerse else { return false }
-        switch studyMode {
-        case .submit:
-            return submitResults[verse.id] != nil
-        default:
-            return titleRevealedCounts[verse.id, default: 0] > 0
-                || verseRevealedCounts[verse.id, default: 0] > 0
-        }
     }
 
     // Reads the current study mode from UserDefaults to stay in sync with @AppStorage in views.
@@ -269,7 +249,6 @@ final class CardStudyViewModel: ObservableObject {
         withAnimation(AppMotion.content) {
             submitResults[verse.id] = result
         }
-        if result.isAllCorrect { ReviewProgress.shared.markComplete(verse.id) }
         StreakStore.shared.recordToday()   // submitting a verse counts toward the streak
         titleInput = ""
         verseInput = ""
@@ -364,7 +343,6 @@ final class CardStudyViewModel: ObservableObject {
            revealedCount(for: verse.id, section: hinted) >= sectionWords(hinted, in: verse).count {
             switchSectionIfNeeded(verse: verse)
         }
-        if isCardComplete { ReviewProgress.shared.markComplete(verse.id) }
     }
 
     /// Points the highlight at the first incomplete section of the current card.
@@ -403,7 +381,6 @@ final class CardStudyViewModel: ObservableObject {
         if newCount >= sectionWords.count {
             switchSectionIfNeeded(verse: verse)
             if isCardComplete {
-                ReviewProgress.shared.markComplete(verse.id)
                 StreakStore.shared.recordToday()   // finishing a verse counts toward the streak
             }
         }

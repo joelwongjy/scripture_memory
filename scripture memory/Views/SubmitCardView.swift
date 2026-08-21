@@ -41,7 +41,7 @@ struct SubmitCardView: View {
                 if showCardLabel {
                     Text(cardLabel)
                         .font(.system(size: 12.5, weight: .medium))
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(Color.secondary)
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
                 }
@@ -94,7 +94,7 @@ struct SubmitCardView: View {
                     if verseText.isEmpty {
                         Text("Verse")
                             .font(.system(size: 15, design: .serif))
-                            .foregroundColor(.secondary.opacity(0.45))
+                            .foregroundStyle(Color.secondary.opacity(0.45))
                             .padding(.top, 8)
                             .allowsHitTesting(false)
                     }
@@ -132,20 +132,20 @@ struct SubmitCardView: View {
             switch group.kind {
             case .correct:
                 let joined = group.words.map(\.text).joined(separator: " ")
-                return acc + Text(joined + sep).foregroundColor(.green).font(font)
+                return acc + Text(joined + sep).foregroundStyle(Color.green).font(font)
             case .wrong:
                 let wrong       = group.words.map(\.text).joined(separator: " ")
                 let corrections = group.words.compactMap(\.correction).joined(separator: " ")
-                let crossed     = Text(wrong + " ").strikethrough().foregroundColor(.red.opacity(0.5)).font(font)
+                let crossed     = Text(wrong + " ").strikethrough().foregroundStyle(Color.red.opacity(0.5)).font(font)
                 return corrections.isEmpty
                     ? acc + crossed
-                    : acc + crossed + Text(corrections + sep).foregroundColor(.red).font(font)
+                    : acc + crossed + Text(corrections + sep).foregroundStyle(Color.red).font(font)
             case .missing:
                 let joined = group.words.map(\.text).joined(separator: " ")
-                return acc + Text(joined + sep).foregroundColor(.secondary.opacity(0.5)).font(font)
+                return acc + Text(joined + sep).foregroundStyle(Color.secondary.opacity(0.5)).font(font)
             case .extra:
                 let joined = group.words.map(\.text).joined(separator: " ")
-                return acc + Text(joined + sep).strikethrough().foregroundColor(.red.opacity(0.5)).font(font)
+                return acc + Text(joined + sep).strikethrough().foregroundStyle(Color.red.opacity(0.5)).font(font)
             }
         }
         .lineSpacing(5)

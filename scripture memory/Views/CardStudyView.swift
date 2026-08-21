@@ -319,7 +319,7 @@ struct CardStudyView: View {
                     .lineLimit(1)
                 Text(positionLabel)
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(Color.secondary)
                     .contentTransition(.numericText())
                     .animation(AppMotion.control, value: positionLabel)
             }
@@ -351,7 +351,7 @@ struct CardStudyView: View {
                     } label: {
                         Text("Done")
                             .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.accentColor)
+                            .foregroundStyle(Color.accentColor)
                     }
                     .accessibilityLabel("Close keyboard")
                 } else {
@@ -813,16 +813,16 @@ struct CardStudyView: View {
         } label: {
             HStack(spacing: 8) {
                 Image(systemName: "checkmark.circle.fill")
-                    .foregroundColor(.green)
+                    .foregroundStyle(Color.green)
                     .font(.system(size: 18))
                     .symbolEffect(.bounce, options: .nonRepeating)
                 Text("Next")
                     .font(.system(size: 16, weight: .semibold))
             }
-            .foregroundColor(.primary)
+            .foregroundStyle(Color.primary)
             .frame(maxWidth: .infinity).padding(.vertical, 12)
             .background(Color(.secondarySystemGroupedBackground))
-            .roundedRect(12)
+            .roundedRect(StudyControlMetrics.cornerRadius)
         }
         .disabled(!canAdvance)
         .opacity(canAdvance ? 1 : 0.5)
@@ -850,10 +850,10 @@ struct CardStudyView: View {
             // plus its position on the cursor verse already carry the meaning.
             Label("Complete", systemImage: "checkmark.circle.fill")
                 .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(.white)
+                .foregroundStyle(Color.white)
                 .frame(maxWidth: .infinity).padding(.vertical, 12)
                 .background(Color.green)
-                .roundedRect(12)
+                .roundedRect(StudyControlMetrics.cornerRadius)
         }
         .accessibilityLabel("Mark verse as complete and continue")
     }
@@ -869,10 +869,10 @@ struct CardStudyView: View {
         } label: {
             Label("Try Again", systemImage: "arrow.counterclockwise")
                 .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(.primary)
+                .foregroundStyle(Color.primary)
                 .frame(maxWidth: .infinity).padding(.vertical, 12)
                 .background(Color(.secondarySystemGroupedBackground))
-                .roundedRect(12)
+                .roundedRect(StudyControlMetrics.cornerRadius)
         }
     }
 
@@ -885,10 +885,10 @@ struct CardStudyView: View {
                     Button { vm.retrySubmit() } label: {
                         Label("Try Again", systemImage: "arrow.counterclockwise")
                             .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.primary)
+                            .foregroundStyle(Color.primary)
                             .frame(maxWidth: .infinity).padding(.vertical, 12)
                             .background(Color(.secondarySystemGroupedBackground))
-                            .roundedRect(12)
+                            .roundedRect(StudyControlMetrics.cornerRadius)
                     }
                     if offersMarkLearnt { markLearntButton }
                 }
@@ -897,10 +897,10 @@ struct CardStudyView: View {
                     Button { toggleSpeech() } label: {
                         Image(systemName: speech.isListening ? "mic.fill" : "mic")
                             .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(speech.isListening ? .white : .primary)
-                            .frame(width: 48, height: 48)
+                            .foregroundStyle(speech.isListening ? Color.white : Color.primary)
+                            .frame(width: StudyControlMetrics.buttonSize, height: StudyControlMetrics.buttonSize)
                             .background(speech.isListening ? Color.red : Color(.secondarySystemGroupedBackground))
-                            .roundedRect(12)
+                            .roundedRect(StudyControlMetrics.cornerRadius)
                     }
                     .accessibilityLabel(speech.isListening ? "Stop dictation" : "Dictate verse")
 
@@ -914,10 +914,10 @@ struct CardStudyView: View {
                         result?.isAllCorrect == true ? HapticEngine.success() : HapticEngine.error()
                     } label: {
                         Text("Submit")
-                            .font(.system(size: 16, weight: .semibold)).foregroundColor(.white)
+                            .font(.system(size: 16, weight: .semibold)).foregroundStyle(Color.white)
                             .frame(maxWidth: .infinity).padding(.vertical, 12)
                             .background(isEmpty ? Color(.systemGray3) : Color.accentColor)
-                            .roundedRect(12)
+                            .roundedRect(StudyControlMetrics.cornerRadius)
                     }
                     .disabled(isEmpty)
                 }
@@ -936,10 +936,10 @@ struct CardStudyView: View {
         } label: {
             Image(systemName: "lightbulb")
                 .font(.system(size: 18, weight: .semibold))
-                .foregroundColor(.primary)
-                .frame(width: 48, height: 48)
+                .foregroundStyle(Color.primary)
+                .frame(width: StudyControlMetrics.buttonSize, height: StudyControlMetrics.buttonSize)
                 .background(Color(.secondarySystemGroupedBackground))
-                .roundedRect(12)
+                .roundedRect(StudyControlMetrics.cornerRadius)
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Reveal next word")
@@ -996,8 +996,8 @@ struct CardStudyView: View {
             }
             .padding(14)
             .background(Color(.secondarySystemGroupedBackground))
-            .roundedRect(12)
-            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Color(.separator).opacity(0.5), lineWidth: 0.5))
+            .roundedRect(StudyControlMetrics.cornerRadius)
+            .overlay(RoundedRectangle(cornerRadius: StudyControlMetrics.cornerRadius, style: .continuous).stroke(Color(.separator).opacity(0.5), lineWidth: 0.5))
             .offset(x: shakeOffset)
 
             hintButton
@@ -1016,7 +1016,7 @@ struct CardStudyView: View {
         Button { toggleSpeech() } label: {
             Image(systemName: speech.isListening ? "mic.fill" : "mic")
                 .font(.system(size: 16))
-                .foregroundColor(speech.isListening ? .red : .secondary)
+                .foregroundStyle(speech.isListening ? Color.red : Color.secondary)
                 .contentTransition(.symbolEffect(.replace))
                 .frame(width: 22, height: 22)
                 .contentShape(Rectangle())
@@ -1035,10 +1035,10 @@ struct CardStudyView: View {
         } label: {
             Image(systemName: "lightbulb")
                 .font(.system(size: 18, weight: .semibold))
-                .foregroundColor(.primary)
-                .frame(width: 48, height: 48)
+                .foregroundStyle(Color.primary)
+                .frame(width: StudyControlMetrics.buttonSize, height: StudyControlMetrics.buttonSize)
                 .background(Color(.secondarySystemGroupedBackground))
-                .roundedRect(12)
+                .roundedRect(StudyControlMetrics.cornerRadius)
         }
         .buttonStyle(.plain)
     }
@@ -1233,70 +1233,6 @@ struct CardStudyView: View {
         }
     }
 
-}
-
-// MARK: - Jump-to-current button
-
-/// The floating "Jump to current verse" shortcut: shows its full label for a
-/// second, then shrinks to just the icon. It's its own view so each appearance
-/// gets fresh `expanded` state — the collapse re-arms every time it's shown — and
-/// it fades (never scales) in, so the expanded pill is tappable immediately.
-private struct JumpToCurrentButton: View {
-    let action: () -> Void
-    /// Whether this appearance gets the labelled pill. The label teaches what the
-    /// button is; once that's landed, re-teaching it every time the button comes
-    /// back (which is every time you navigate away from the cursor verse) is just
-    /// noise — and it briefly covers the card underneath.
-    var startExpanded: Bool = true
-    /// Fired as soon as the pill is shown, so the owner can suppress it from here on.
-    var onExpandedShown: () -> Void = {}
-
-    @State private var expanded: Bool
-
-    init(startExpanded: Bool = true,
-         onExpandedShown: @escaping () -> Void = {},
-         action: @escaping () -> Void) {
-        self.startExpanded    = startExpanded
-        self.onExpandedShown  = onExpandedShown
-        self.action           = action
-        _expanded             = State(initialValue: startExpanded)
-    }
-
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 6) {
-                Image(systemName: "bookmark.fill")
-                    .font(.system(size: expanded ? 12 : 15, weight: .bold))
-                if expanded {
-                    Text("Jump to current verse")
-                        .font(.system(size: 13, weight: .semibold))
-                        .fixedSize()
-                }
-            }
-            .foregroundStyle(.white)
-            .padding(.horizontal, expanded ? 14 : 0)
-            .padding(.vertical, expanded ? 10 : 0)
-            // Collapsed form stays a 44pt circular tap target (Apple minimum).
-            .frame(minWidth: expanded ? 0 : 44, minHeight: expanded ? 0 : 44)
-            .background(Capsule().fill(Color.accentColor))
-            .shadow(color: .black.opacity(0.22), radius: 6, x: 0, y: 3)
-            .contentShape(Capsule())
-        }
-        .accessibilityLabel("Jump to current verse")
-        // Fade only — a `.scale` transition hit-tests its shrunken geometry while
-        // springing in, so the expanded pill would miss taps for its whole life.
-        .transition(.opacity)
-        .task {
-            guard expanded else { return }
-            // Claim the one expanded showing up front, not after the collapse —
-            // navigating away inside that first second cancels this task, and the
-            // label would otherwise be owed all over again.
-            onExpandedShown()
-            try? await Task.sleep(for: .seconds(1))
-            guard !Task.isCancelled else { return }
-            withAnimation(AppMotion.movement) { expanded = false }
-        }
-    }
 }
 
 #Preview {

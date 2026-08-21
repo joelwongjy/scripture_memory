@@ -12,7 +12,7 @@ struct SRSDashboardView: View {
     @AppStorage(NewCardCap.unitKey)   private var newCapUnit:    NewCapUnit   = NewCardCap.fallback.unit
     /// The two stored halves as the one value the queue builder takes.
     private var newCap: NewCardCap { NewCardCap(amount: newCapAmount, unit: newCapUnit) }
-    @AppStorage("srs.dailyReviewCap") private var dailyReviewCap: Int          = 5
+    @AppStorage(NewCardCap.dailyReviewCapKey) private var dailyReviewCap: Int  = NewCardCap.dailyReviewCapDefault
     @AppStorage("homeVerseStartMode.v1") private var homeVerseStartMode: HomeVerseStartMode = .read
     /// Read here so the counts re-render when the Settings toggle flips.
     @AppStorage(SRSQueueBuilder.NewCardPolicy.reviewsKnownKey)
@@ -45,19 +45,9 @@ struct SRSDashboardView: View {
 
     // MARK: - Design Tokens (iOS-standard continuous corners + 8/12/16 spacing)
 
-    private enum Layout {
-        // Corners/margins come from the app-wide tokens so the hero card and
-        // packs container always match the rest of the app (and the system
-        // `.insetGrouped` sections in Settings).
-        static let containerRadius: CGFloat = AppLayout.groupedRadius
-        static let buttonRadius:    CGFloat = AppLayout.controlRadius
-        static let chipRadius:      CGFloat = 8
-        static let cardPadding:     CGFloat = 20
-        static let rowPaddingH:     CGFloat = 16
-        static let rowPaddingV:     CGFloat = 12
-        static let sectionSpacing:  CGFloat = 16
-        static let edgeMargin:      CGFloat = AppLayout.screenMargin
-    }
+    private static let cardPadding:    CGFloat = 20
+    private static let rowPaddingH:    CGFloat = 16
+    private static let sectionSpacing: CGFloat = 16
 
     private var packs:        [Pack] { packPrefs.visible(from: bibleVersion.packs) }
     private var activePacks:  [Pack] { packs.filter { store.isActive($0.name) } }
@@ -139,10 +129,7 @@ struct SRSDashboardView: View {
             case .learning(let force): learningSession(forceCurrent: force)
             case .verse(let r):
                 // Read mode in its own pack, like tapping the verse from Packs.
-                NavigationStack {
-                    CardStudyView(packName: r.pack.name, verses: r.pack.verses, initialIndex: r.verseIndex)
-                        .toolbar(.hidden, for: .navigationBar)
-                }
+                CardStudyCover(packName: r.pack.name, verses: r.pack.verses, initialIndex: r.verseIndex)
             }
         }
         .sheet(isPresented: $showPinPicker) {
@@ -151,7 +138,7 @@ struct SRSDashboardView: View {
     }
 
     private var dashboard: some View {
-        VStack(spacing: Layout.sectionSpacing) {
+        VStack(spacing: Self.sectionSpacing) {
             streakCard
             continueLearningCard
             goToCurrentVerseCard
@@ -168,7 +155,7 @@ struct SRSDashboardView: View {
             heroCard
             packsReviewLink
         }
-        .padding(.horizontal, Layout.edgeMargin)
+        .padding(.horizontal, AppLayout.screenMargin)
         .padding(.top, 8)
         .padding(.bottom, 24)
         // Cold launch on device can open with the large title collapsed — the
@@ -209,11 +196,11 @@ struct SRSDashboardView: View {
                 }
             }
         }
-        .padding(.horizontal, Layout.rowPaddingH)
+        .padding(.horizontal, Self.rowPaddingH)
         .padding(.vertical, 11)
         .frame(maxWidth: .infinity)
         .background(
-            RoundedRectangle(cornerRadius: Layout.containerRadius, style: .continuous)
+            RoundedRectangle(cornerRadius: AppLayout.groupedRadius, style: .continuous)
                 .fill(Color(.secondarySystemGroupedBackground))
         )
         .accessibilityElement(children: .combine)
@@ -273,14 +260,14 @@ struct SRSDashboardView: View {
                         VStack(alignment: .leading, spacing: 6) {
                             Text(v.title)
                                 .font(.system(size: 16, weight: .bold, design: .serif))
-                                .foregroundColor(.primary)
+                                .foregroundStyle(Color.primary)
                                 .multilineTextAlignment(.leading)
                             Text("\(v.book) \(v.reference)")
                                 .font(.system(size: 14, design: .serif))
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(Color.secondary)
                             Text(v.verse)
                                 .font(.system(size: 15, design: .serif))
-                                .foregroundColor(.primary)
+                                .foregroundStyle(Color.primary)
                                 .lineSpacing(4)
                                 .multilineTextAlignment(.leading)
                                 .fixedSize(horizontal: false, vertical: true)
@@ -309,13 +296,13 @@ struct SRSDashboardView: View {
             .padding(18)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
-                RoundedRectangle(cornerRadius: Layout.containerRadius, style: .continuous)
+                RoundedRectangle(cornerRadius: AppLayout.groupedRadius, style: .continuous)
                     .fill(flashcardBackground)
                     .shadow(color: .black.opacity(0.13), radius: 14, x: 0, y: 7)
                     .shadow(color: .black.opacity(0.05), radius: 2,  x: 0, y: 1)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: Layout.containerRadius, style: .continuous)
+                RoundedRectangle(cornerRadius: AppLayout.groupedRadius, style: .continuous)
                     .strokeBorder(Color(.separator).opacity(0.4), lineWidth: 0.5)
             )
         } else if !ordered.isEmpty {
@@ -349,11 +336,11 @@ struct SRSDashboardView: View {
                     Spacer(minLength: 8)
                     RowChevron()
                 }
-                .padding(.horizontal, Layout.rowPaddingH)
+                .padding(.horizontal, Self.rowPaddingH)
                 .padding(.vertical, 12)
                 .frame(maxWidth: .infinity)
                 .background(
-                    RoundedRectangle(cornerRadius: Layout.containerRadius, style: .continuous)
+                    RoundedRectangle(cornerRadius: AppLayout.groupedRadius, style: .continuous)
                         .fill(Color(.secondarySystemGroupedBackground))
                 )
                 .contentShape(Rectangle())
@@ -377,10 +364,10 @@ struct SRSDashboardView: View {
             }
             Spacer()
         }
-        .padding(Layout.cardPadding)
+        .padding(Self.cardPadding)
         .frame(maxWidth: .infinity)
         .background(
-            RoundedRectangle(cornerRadius: Layout.containerRadius, style: .continuous)
+            RoundedRectangle(cornerRadius: AppLayout.groupedRadius, style: .continuous)
                 .fill(Color(.secondarySystemGroupedBackground))
         )
     }
@@ -391,21 +378,16 @@ struct SRSDashboardView: View {
         // pinned (the "Go to current verse" shortcut); otherwise open whatever
         // Home features (the pinned verse, else the cursor).
         if let cur = forceCurrent ? currentLearning() : displayedLearning() {
-            // Wrap in a NavigationStack (chrome hidden) so the keyboard's "Done"
-            // toolbar renders — matching how PackListView presents the card.
             // A pinned verse is a spotlight, not a progression step, so it gets
             // neither cross-pack stepping nor "Mark as Learnt".
-            NavigationStack {
-                CardStudyView(
-                    packName: cur.pack.name,
-                    verses: cur.pack.verses,
-                    initialIndex: cur.indexInPack,
-                    initialReviewMode: homeVerseStartMode.opensInReview,
-                    adjacentPack: cur.isPinned ? nil : { name, forward in adjacentPack(after: name, forward: forward) },
-                    onMarkLearnt: cur.isPinned ? nil : { learning.markLearnt($0) }
-                )
-                .toolbar(.hidden, for: .navigationBar)
-            }
+            CardStudyCover(
+                packName: cur.pack.name,
+                verses: cur.pack.verses,
+                initialIndex: cur.indexInPack,
+                initialReviewMode: homeVerseStartMode.opensInReview,
+                adjacentPack: cur.isPinned ? nil : { name, forward in adjacentPack(after: name, forward: forward) },
+                onMarkLearnt: cur.isPinned ? nil : { learning.markLearnt($0) }
+            )
         }
     }
 
@@ -436,9 +418,9 @@ struct SRSDashboardView: View {
         .frame(maxWidth: .infinity)
         // A one-line row doesn't need the 20pt inset a tall stack did.
         .padding(.vertical, 14)
-        .padding(.horizontal, Layout.rowPaddingH)
+        .padding(.horizontal, Self.rowPaddingH)
         .background(
-            RoundedRectangle(cornerRadius: Layout.containerRadius, style: .continuous)
+            RoundedRectangle(cornerRadius: AppLayout.groupedRadius, style: .continuous)
                 .fill(Color(.secondarySystemGroupedBackground))
         )
     }
@@ -534,7 +516,7 @@ struct SRSDashboardView: View {
     private func caughtUpMessage(agg: Aggregate) -> String {
         let next         = nextDueAcrossActivePacks()
         let newVerseDrip = agg.newCandidates > 0 && newCap.amount > 0
-        let tomorrow     = Calendar.current.startOfDay(for: now).addingTimeInterval(86_400)
+        let tomorrow     = Calendar.current.startOfDay(for: now).addingTimeInterval(SRSStore.secondsPerDay)
 
         // A card (often a learning step) is still due before midnight.
         if let next, next < tomorrow {
@@ -662,75 +644,8 @@ struct SRSDashboardView: View {
         if dt <= 0 { return "now" }
         if dt < 60 { return "<1m" }
         if dt < 3_600 { return "\(Int(dt / 60))m" }
-        if dt < 86_400 { return "\(Int(dt / 3_600))h" }
-        let days = Int(dt / 86_400)
+        if dt < SRSStore.secondsPerDay { return "\(Int(dt / 3_600))h" }
+        let days = Int(dt / SRSStore.secondsPerDay)
         return days == 1 ? "1 day" : "\(days) days"
-    }
-}
-
-// MARK: - Packs in Review
-
-/// Dedicated screen for choosing which packs are included in Daily Review.
-/// Every pack is on by default; this is the rarely-needed place to turn some off.
-struct PacksReviewView: View {
-    @AppStorage("bibleVersion") private var bibleVersion: BibleVersion = .niv84
-    @ObservedObject private var store     = SRSStore.shared
-    @ObservedObject private var packPrefs = PackPreferencesStore.shared
-
-    private var packs: [Pack] { packPrefs.visible(from: bibleVersion.packs) }
-
-    var body: some View {
-        List {
-            Section {
-                ForEach(packs) { pack in
-                    Toggle(isOn: Binding(
-                        get: { store.isActive(pack.name) },
-                        set: { store.setActive(pack.name, $0) }
-                    )) {
-                        PackRowLabel(pack: pack)
-                    }
-                    .tint(.accentColor)
-                }
-            } header: {
-                // Top, not footer — the tip is useless after a 15-pack scroll.
-                // Footnote/secondary so it reads as a caption, not a heading.
-                Text("All packs are reviewed by default. Turn one off to skip its verses in Daily Review.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .textCase(nil)
-            }
-        }
-        .navigationTitle("Packs in Review")
-        .navigationBarTitleDisplayMode(.inline)
-    }
-}
-
-// MARK: - Pin Verse Picker
-
-/// A lightweight pack → verse drill-down for choosing which verse to pin to Home.
-/// Tapping a verse pins it immediately and dismisses — no progress is changed.
-private struct PinVersePicker: View {
-    let packs:     [Pack]
-    var pinnedKey: String?
-    var onPick:    (Verse) -> Void
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        NavigationStack {
-            List {
-                PackVersePicker(packs: packs, selectedKey: pinnedKey, marker: .pin,
-                                footer: "Pick a verse to feature on your Home screen and widget. This doesn't change your learning progress.") { verse in
-                    onPick(verse)
-                    dismiss()
-                }
-            }
-            .navigationTitle("Pin a Verse")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-            }
-        }
     }
 }

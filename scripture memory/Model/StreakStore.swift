@@ -71,9 +71,6 @@ final class StreakStore: ObservableObject {
         return streak
     }
 
-    /// Whether today is already recorded (drives the "studied today" affordance).
-    var didStudyToday: Bool { days.contains(Self.dayKey(Date())) }
-
     /// The 7 days of the current calendar week (Duolingo-style row) — single-letter
     /// weekday initial + studied / today / future state.
     func thisWeek() -> [(initial: String, done: Bool, isToday: Bool, isFuture: Bool)] {
@@ -88,13 +85,12 @@ final class StreakStore: ObservableObject {
         for _ in 0..<7 {
             let d = cal.startOfDay(for: day)
             out.append((fmt.string(from: d), days.contains(Self.dayKey(d)), d == today, d > today))
-            day = cal.date(byAdding: .day, value: 1, to: day) ?? day.addingTimeInterval(86_400)
+            day = cal.date(byAdding: .day, value: 1, to: day) ?? day.addingTimeInterval(SRSStore.secondsPerDay)
         }
         return out
     }
 
-    static func dayKey(_ date: Date) -> String {
-        let c = Calendar.current.dateComponents([.year, .month, .day], from: date)
-        return String(format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
-    }
+    /// The `yyyy-MM-dd` key a date is filed under. One definition, shared with
+    /// `SRSStore`, so streak days and SRS days can never disagree.
+    static func dayKey(_ date: Date) -> String { SRSStore.dayKey(date) }
 }

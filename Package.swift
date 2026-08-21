@@ -22,7 +22,7 @@ let package = Package(
                 "SRSCardState.swift",
                 "SRSMath.swift",
                 "DiffEngine.swift",
-                "DiffResult.swift",
+                "SubmitResult.swift",
                 "TextTokens.swift",
                 "SpellingVariants.swift",
                 "ReminderPlan.swift",

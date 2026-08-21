@@ -1,5 +1,5 @@
 //
-//  App.swift
+//  ScriptureMemoryApp.swift
 //  Scripture Memory
 //
 //  The top-level definition of the Scripture Memory app.
