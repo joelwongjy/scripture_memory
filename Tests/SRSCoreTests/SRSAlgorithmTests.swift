@@ -36,6 +36,30 @@ final class SRSAlgorithmTests: XCTestCase {
         XCTAssertEqual(dueOffset(s), 4 * day, accuracy: 0.001)
     }
 
+    // MARK: - Known cards (verses learnt before the starting point)
+
+    func testKnownCardStartsInReviewAndIsDueNow() {
+        let s = SRSCardState.knownCard(key: "k", now: now)
+        XCTAssertEqual(s.phase, .review)
+        XCTAssertEqual(s.interval, SRSConfig.default.knownCardInterval, accuracy: 1e-9)
+        XCTAssertEqual(dueOffset(s), 0, accuracy: 0.001)
+    }
+
+    func testKnownCardGoodGoesOutAboutAWeekNotTenMinutes() {
+        let s = updateSRS(state: .knownCard(key: "k", now: now), grade: .good, now: now)
+        XCTAssertEqual(s.phase, .review)
+        // 3 days × 2.5 ease — a verse the user already knew shouldn't restart at
+        // the one-minute learning steps.
+        XCTAssertEqual(s.interval, 7.5, accuracy: 1e-9)
+        XCTAssertEqual(dueOffset(s), 7.5 * day, accuracy: 0.001)
+    }
+
+    func testKnownCardAgainLapsesBackToLearning() {
+        let s = updateSRS(state: .knownCard(key: "k", now: now), grade: .again, now: now)
+        XCTAssertEqual(s.phase, .learning)
+        XCTAssertEqual(s.lapses, 1)
+    }
+
     func testNewCardAgainResetsToFirstStep() {
         let s = updateSRS(state: .newCard(key: "k", now: now), grade: .again, now: now)
         XCTAssertEqual(s.phase, .learning)
