@@ -1120,7 +1120,7 @@ struct TestSessionView: View {
                 // finished card to Good so ending the session still schedules it.
                 let grade = suggestedGradeFor(verse) ?? .good
                 if let prior = SRSStore.shared.state(for: verse) { preGradeStates[verse.id] = prior }
-                SRSStore.shared.grade(verse: verse, grade: grade)
+                SRSStore.shared.grade(verse: verse, grade: grade, alreadyKnew: learning.isLearnt(verse))
                 sessionGrades[verse.id] = grade
                 gradedAny = true
             }
@@ -1143,12 +1143,12 @@ struct TestSessionView: View {
             if let current = SRSStore.shared.state(for: verse) {
                 preGradeStates[verse.id] = current
             }
-            SRSStore.shared.grade(verse: verse, grade: grade)
+            SRSStore.shared.grade(verse: verse, grade: grade, alreadyKnew: learning.isLearnt(verse))
         } else {
             // Re-grade. Restore from captured prior state, or a fresh
             // new-card state for cards that had no state at session start.
             let prior = preGradeStates[verse.id]
-                ?? SRSCardState.newCard(key: verse.srsKey, now: Date())
+                ?? SRSStore.initialState(key: verse.srsKey, alreadyKnew: learning.isLearnt(verse), now: Date())
             SRSStore.shared.regrade(verse: verse, grade: grade, from: prior)
         }
         if firstGradeInSession { gradedOrder.append(verse.id) }
@@ -1188,10 +1188,12 @@ struct TestSessionView: View {
               let idx = vm.verses.firstIndex(where: { $0.id == lastId }) else { return }
         let verse = vm.verses[idx]
 
-        // A nil captured state means the card was brand-new, so revert removes its
-        // state and hands back the consumed daily-new slot.
+        // A nil captured state means the card had no schedule before, so revert
+        // removes its state — and hands back the consumed new-card slot, unless it
+        // was a verse the user already knew (those never took one).
         let prior = preGradeStates[lastId]
-        SRSStore.shared.revert(verse: verse, to: prior, wasNewlyIntroduced: prior == nil)
+        SRSStore.shared.revert(verse: verse, to: prior,
+                               wasNewlyIntroduced: prior == nil && !learning.isLearnt(verse))
 
         if autoLearntIds.remove(lastId) != nil {
             learning.unmarkLearnt(verse)

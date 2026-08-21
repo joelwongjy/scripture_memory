@@ -8,6 +8,8 @@ struct SettingsView: View {
     @AppStorage(NewCardCap.amountKey) private var newCapAmount:  Int        = NewCardCap.fallback.amount
     @AppStorage(NewCardCap.unitKey)   private var newCapUnit:    NewCapUnit = NewCardCap.fallback.unit
     @AppStorage("srs.dailyReviewCap") private var dailyReviewCap: Int        = 5
+    @AppStorage(SRSQueueBuilder.NewCardPolicy.reviewsKnownKey)
+    private var reviewsKnownVerses = SRSQueueBuilder.NewCardPolicy.reviewsKnownDefault
     @AppStorage("homeVerseStartMode.v1") private var homeVerseStartMode: HomeVerseStartMode = .read
 
     @AppStorage(NotificationManager.Keys.enabled) private var reminderEnabled = false
@@ -75,10 +77,13 @@ struct SettingsView: View {
                 .pickerStyle(.segmented)
                 capRow(icon: "arrow.clockwise", title: "Reviews / day",
                        binding: $dailyReviewCap, range: 0...500)
+                Toggle(isOn: $reviewsKnownVerses) {
+                    rowLabel("Review earlier verses", "checkmark.circle")
+                }
             } header: {
                 Text("Daily Review")
             } footer: {
-                Text("New-card cap is shared across all active packs. A weekly cap resets at the start of the week.")
+                Text("New cards start from your current verse. \"Review earlier verses\" also brings the verses before it — the ones you already knew — into your daily review, a few at a time.")
             }
 
             Section {
