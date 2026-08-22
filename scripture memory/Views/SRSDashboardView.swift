@@ -168,6 +168,9 @@ struct SRSDashboardView: View {
         .padding(.horizontal, Layout.edgeMargin)
         .padding(.top, 8)
         .padding(.bottom, 24)
+        // Cold launch on device can open with the large title collapsed — the
+        // search drawer lands after the first layout. See `InitialScrollTopPin`.
+        .pinsInitialScrollOffsetToTop()
     }
 
     // MARK: - Streak

@@ -102,6 +102,8 @@ struct PackListView: View {
         }
         .padding(.horizontal, AppLayout.screenMargin)
         .padding(.vertical, 12)
+        // See `SRSDashboardView.dashboard` — same cold-launch offset race.
+        .pinsInitialScrollOffsetToTop()
     }
 
     private func packTile(_ pack: Pack) -> some View {
