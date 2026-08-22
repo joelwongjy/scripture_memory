@@ -97,15 +97,17 @@ struct SRSDashboardView: View {
         // One scroll view for the whole screen — see `PackListView.body`. Two
         // alternating scroll views under one `.searchable` is what made Home open
         // scrolled past its own large title.
-        ScrollView {
-            if searchText.isEmpty {
-                dashboard
-            } else {
-                VerseSearchResultsList(
-                    query:   searchText,
-                    results: VerseSearch.results(for: searchText, in: packs),
-                    onSelect: { cover = .verse($0) }
-                )
+        MountAfterFirstFrame {
+            ScrollView {
+                if searchText.isEmpty {
+                    dashboard
+                } else {
+                    VerseSearchResultsList(
+                        query:   searchText,
+                        results: VerseSearch.results(for: searchText, in: packs),
+                        onSelect: { cover = .verse($0) }
+                    )
+                }
             }
         }
         // See `PackListView` — pins the initial offset above the search field.
@@ -115,6 +117,7 @@ struct SRSDashboardView: View {
         .animation(nil, value: searchText.isEmpty)
         .background(Color(.systemGroupedBackground))
         .navigationTitle("Home")
+        .navigationBarTitleDisplayMode(.large)
         .searchable(
             text: $searchText,
             placement: .navigationBarDrawer(displayMode: .always),
@@ -158,9 +161,6 @@ struct SRSDashboardView: View {
         .padding(.horizontal, AppLayout.screenMargin)
         .padding(.top, 8)
         .padding(.bottom, 24)
-        // Cold launch on device can open with the large title collapsed — the
-        // search drawer lands after the first layout. See `InitialScrollTopPin`.
-        .pinsInitialScrollOffsetToTop()
     }
 
     // MARK: - Streak

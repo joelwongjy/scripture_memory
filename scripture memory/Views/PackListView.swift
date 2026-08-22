@@ -27,15 +27,17 @@ struct PackListView: View {
         // results swapping *inside* it. Two alternating scroll views left
         // `.searchable` bound to whichever mounted first, so the screen opened
         // already scrolled past its own large title.
-        ScrollView {
-            if searchText.isEmpty {
-                packGrid
-            } else {
-                VerseSearchResultsList(
-                    query:   searchText,
-                    results: VerseSearch.results(for: searchText, in: visiblePacks),
-                    onSelect: { searchSelected = $0 }
-                )
+        MountAfterFirstFrame {
+            ScrollView {
+                if searchText.isEmpty {
+                    packGrid
+                } else {
+                    VerseSearchResultsList(
+                        query:   searchText,
+                        results: VerseSearch.results(for: searchText, in: visiblePacks),
+                        onSelect: { searchSelected = $0 }
+                    )
+                }
             }
         }
         // Start at the top, explicitly.
@@ -50,6 +52,7 @@ struct PackListView: View {
         .animation(nil, value: searchText.isEmpty)
         .background(Color(.systemGroupedBackground))
         .navigationTitle("Packs")
+        .navigationBarTitleDisplayMode(.large)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
@@ -96,8 +99,6 @@ struct PackListView: View {
         }
         .padding(.horizontal, AppLayout.screenMargin)
         .padding(.vertical, 12)
-        // See `SRSDashboardView.dashboard` — same cold-launch offset race.
-        .pinsInitialScrollOffsetToTop()
     }
 
     private func packTile(_ pack: Pack) -> some View {
