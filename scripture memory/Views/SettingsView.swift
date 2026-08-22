@@ -83,7 +83,7 @@ struct SettingsView: View {
             } header: {
                 Text("Daily Review")
             } footer: {
-                Text("New cards start from your current verse. \"Review earlier verses\" also brings the verses before it — the ones you already knew — into your daily review, a few at a time.")
+                Text("New cards start at your current verse. Earlier verses are reviewed a few at a time.")
             }
 
             Section {
