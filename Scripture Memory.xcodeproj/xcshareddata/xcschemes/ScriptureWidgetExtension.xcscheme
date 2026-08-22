@@ -19,7 +19,7 @@
                BlueprintIdentifier = "A1B2C3D4E5F600000000A003"
                BuildableName = "ScriptureWidgetExtension.appex"
                BlueprintName = "ScriptureWidgetExtension"
-               ReferencedContainer = "container:scripture memory.xcodeproj">
+               ReferencedContainer = "container:Scripture Memory.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
          <BuildActionEntry
@@ -33,7 +33,7 @@
                BlueprintIdentifier = "53709C072DBE80FE000BA559"
                BuildableName = "Scripture Memory.app"
                BlueprintName = "Scripture Memory"
-               ReferencedContainer = "container:scripture memory.xcodeproj">
+               ReferencedContainer = "container:Scripture Memory.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -64,7 +64,7 @@
             BlueprintIdentifier = "53709C072DBE80FE000BA559"
             BuildableName = "Scripture Memory.app"
             BlueprintName = "Scripture Memory"
-            ReferencedContainer = "container:scripture memory.xcodeproj">
+            ReferencedContainer = "container:Scripture Memory.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
       <EnvironmentVariables>
@@ -100,7 +100,7 @@
             BlueprintIdentifier = "53709C072DBE80FE000BA559"
             BuildableName = "Scripture Memory.app"
             BlueprintName = "Scripture Memory"
-            ReferencedContainer = "container:scripture memory.xcodeproj">
+            ReferencedContainer = "container:Scripture Memory.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

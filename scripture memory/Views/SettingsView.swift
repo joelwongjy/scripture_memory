@@ -133,7 +133,8 @@ struct SettingsView: View {
                         rowLabel("Current verse", "bookmark.fill")
                             // The title is two words; the reference is the one
                             // that should give way, not wrap the title mid-phrase.
-                            .fixedSize()
+                            .lineLimit(1)
+                            .layoutPriority(1)
                         Spacer()
                         Text(currentLearningLabel)
                             .foregroundStyle(.secondary)
