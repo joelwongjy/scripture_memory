@@ -17,7 +17,6 @@ struct CardStudyView: View {
     @State private var dragOffset:   CGSize  = .zero
     @State private var isCardFlying          = false
     @State private var flyDirection: Int     = 0
-    @State private var shakeOffset:  CGFloat = 0
     @State private var speechTarget: SubmitField = .title
     @State private var isScrubbing           = false
     /// Set when the Read/Review toggle put us in review — see `returnsToRead`.
@@ -319,7 +318,7 @@ struct CardStudyView: View {
                     .lineLimit(1)
                 Text(positionLabel)
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(Color.secondary)
                     .contentTransition(.numericText())
                     .animation(AppMotion.control, value: positionLabel)
             }
@@ -351,7 +350,7 @@ struct CardStudyView: View {
                     } label: {
                         Text("Done")
                             .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.accentColor)
+                            .foregroundStyle(Color.accentColor)
                     }
                     .accessibilityLabel("Close keyboard")
                 } else {
@@ -790,7 +789,10 @@ struct CardStudyView: View {
                 } else if studyMode == .submit {
                     submitControls
                 } else {
-                    inputField
+                    RecallInputField(vm: vm, studyMode: studyMode,
+                                     isListening: speech.isListening,
+                                     isFocused: $isInputFocused,
+                                     onToggleSpeech: toggleSpeech)
                 }
             }
             .frame(maxWidth: .infinity)
@@ -813,16 +815,16 @@ struct CardStudyView: View {
         } label: {
             HStack(spacing: 8) {
                 Image(systemName: "checkmark.circle.fill")
-                    .foregroundColor(.green)
+                    .foregroundStyle(Color.green)
                     .font(.system(size: 18))
                     .symbolEffect(.bounce, options: .nonRepeating)
                 Text("Next")
                     .font(.system(size: 16, weight: .semibold))
             }
-            .foregroundColor(.primary)
+            .foregroundStyle(Color.primary)
             .frame(maxWidth: .infinity).padding(.vertical, 12)
             .background(Color(.secondarySystemGroupedBackground))
-            .roundedRect(12)
+            .roundedRect(StudyControlMetrics.cornerRadius)
         }
         .disabled(!canAdvance)
         .opacity(canAdvance ? 1 : 0.5)
@@ -850,10 +852,10 @@ struct CardStudyView: View {
             // plus its position on the cursor verse already carry the meaning.
             Label("Complete", systemImage: "checkmark.circle.fill")
                 .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(.white)
+                .foregroundStyle(Color.white)
                 .frame(maxWidth: .infinity).padding(.vertical, 12)
                 .background(Color.green)
-                .roundedRect(12)
+                .roundedRect(StudyControlMetrics.cornerRadius)
         }
         .accessibilityLabel("Mark verse as complete and continue")
     }
@@ -869,10 +871,10 @@ struct CardStudyView: View {
         } label: {
             Label("Try Again", systemImage: "arrow.counterclockwise")
                 .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(.primary)
+                .foregroundStyle(Color.primary)
                 .frame(maxWidth: .infinity).padding(.vertical, 12)
                 .background(Color(.secondarySystemGroupedBackground))
-                .roundedRect(12)
+                .roundedRect(StudyControlMetrics.cornerRadius)
         }
     }
 
@@ -885,26 +887,18 @@ struct CardStudyView: View {
                     Button { vm.retrySubmit() } label: {
                         Label("Try Again", systemImage: "arrow.counterclockwise")
                             .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.primary)
+                            .foregroundStyle(Color.primary)
                             .frame(maxWidth: .infinity).padding(.vertical, 12)
                             .background(Color(.secondarySystemGroupedBackground))
-                            .roundedRect(12)
+                            .roundedRect(StudyControlMetrics.cornerRadius)
                     }
                     if offersMarkLearnt { markLearntButton }
                 }
             } else {
                 HStack(spacing: 10) {
-                    Button { toggleSpeech() } label: {
-                        Image(systemName: speech.isListening ? "mic.fill" : "mic")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(speech.isListening ? .white : .primary)
-                            .frame(width: 48, height: 48)
-                            .background(speech.isListening ? Color.red : Color(.secondarySystemGroupedBackground))
-                            .roundedRect(12)
-                    }
-                    .accessibilityLabel(speech.isListening ? "Stop dictation" : "Dictate verse")
+                    DictationTile(isListening: speech.isListening, action: toggleSpeech)
 
-                    submitHintButton
+                    HintButton { vm.fillNextHintWord(startingWithVerse: submitFocus == .verse) }
                     let isEmpty = vm.titleInput.trimmingCharacters(in: .whitespaces).isEmpty
                               && vm.verseInput.trimmingCharacters(in: .whitespaces).isEmpty
                     Button {
@@ -914,133 +908,15 @@ struct CardStudyView: View {
                         result?.isAllCorrect == true ? HapticEngine.success() : HapticEngine.error()
                     } label: {
                         Text("Submit")
-                            .font(.system(size: 16, weight: .semibold)).foregroundColor(.white)
+                            .font(.system(size: 16, weight: .semibold)).foregroundStyle(Color.white)
                             .frame(maxWidth: .infinity).padding(.vertical, 12)
                             .background(isEmpty ? Color(.systemGray3) : Color.accentColor)
-                            .roundedRect(12)
+                            .roundedRect(StudyControlMetrics.cornerRadius)
                     }
                     .disabled(isEmpty)
                 }
             }
         }
-    }
-
-    /// Entire Verse's hint: types the next word straight into the answer box.
-    ///
-    /// A `Button` (not a bare tap target) so pressing it doesn't resign the
-    /// editor's first responder and dismiss the keyboard mid-verse.
-    private var submitHintButton: some View {
-        Button {
-            fillNextHintWord()
-            HapticEngine.light()
-        } label: {
-            Image(systemName: "lightbulb")
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundColor(.primary)
-                .frame(width: 48, height: 48)
-                .background(Color(.secondarySystemGroupedBackground))
-                .roundedRect(12)
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Reveal next word")
-    }
-
-    /// Extends whichever box you're in by one word, falling through to the other
-    /// once that one is complete — so repeated taps walk the whole card without
-    /// having to move focus by hand.
-    private func fillNextHintWord() {
-        guard let verse = vm.currentVerse else { return }
-        let startWithVerse = submitFocus == .verse
-        let sections: [(target: String, isTitle: Bool)] = startWithVerse
-            ? [(verse.verse, false), (verse.title, true)]
-            : [(verse.title, true), (verse.verse, false)]
-
-        for section in sections {
-            let typed = section.isTitle ? vm.titleInput : vm.verseInput
-            guard let filled = HintFill.next(target: section.target, typed: typed) else { continue }
-            if section.isTitle { vm.titleInput = filled } else { vm.verseInput = filled }
-            return
-        }
-    }
-
-    /// First-letter and full-word modes share this single text field.
-    private var inputField: some View {
-        HStack(spacing: 10) {
-            HStack(spacing: 10) {
-                dictationButton
-
-                TextField(studyMode.inputPlaceholder, text: $vm.inputText)
-                    .font(.system(size: 17))
-                    .focused($isInputFocused)
-                    .autocorrectionDisabled()
-                    .textInputAutocapitalization(.never)
-                    .onChange(of: vm.inputText) { _, newValue in
-                        guard !newValue.isEmpty else { return }
-                        switch studyMode {
-                        case .firstLetter:
-                            let correct = vm.processFirstLetterInput(newValue)
-                            DispatchQueue.main.async { vm.inputText = "" }
-                            if correct { HapticEngine.light() } else { HapticEngine.error(); triggerShake($shakeOffset) }
-                        case .fullWord:
-                            if vm.processFullWordInput(newValue) {
-                                HapticEngine.light()
-                            } else if newValue.hasSuffix(" ") {
-                                HapticEngine.error(); triggerShake($shakeOffset)
-                            }
-                        case .submit:
-                            break
-                        }
-                    }
-                    // Keyboard dismissal lives in the top bar ("Done") — a single,
-                    // reliable affordance instead of a second keyboard-toolbar one.
-            }
-            .padding(14)
-            .background(Color(.secondarySystemGroupedBackground))
-            .roundedRect(12)
-            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Color(.separator).opacity(0.5), lineWidth: 0.5))
-            .offset(x: shakeOffset)
-
-            hintButton
-        }
-    }
-
-    /// Speak the verse instead of typing it. Takes the slot the decorative
-    /// "character.cursor.ibeam" glyph used to occupy inside the text field: the
-    /// control row (peek, field, hint) has no width left for a fourth button, and
-    /// that glyph was ornament. Entire Verse mode keeps its own larger mic in
-    /// `submitControls` — this field only exists in the two typing modes.
-    ///
-    /// A `Button`, so pressing it doesn't resign the field's first responder and
-    /// dismiss the keyboard mid-verse.
-    private var dictationButton: some View {
-        Button { toggleSpeech() } label: {
-            Image(systemName: speech.isListening ? "mic.fill" : "mic")
-                .font(.system(size: 16))
-                .foregroundColor(speech.isListening ? .red : .secondary)
-                .contentTransition(.symbolEffect(.replace))
-                .frame(width: 22, height: 22)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(speech.isListening ? "Stop dictation" : "Dictate verse")
-    }
-
-    /// Reveals the next hidden word (verse first, then title). Wrapped in a
-    /// Button so the touch is a recognized tap target and doesn't resign the
-    /// keyboard's first responder.
-    private var hintButton: some View {
-        Button {
-            vm.revealHint()
-            HapticEngine.light()
-        } label: {
-            Image(systemName: "lightbulb")
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundColor(.primary)
-                .frame(width: 48, height: 48)
-                .background(Color(.secondarySystemGroupedBackground))
-                .roundedRect(12)
-        }
-        .buttonStyle(.plain)
     }
 
     // MARK: - Swipe Gesture
@@ -1233,70 +1109,6 @@ struct CardStudyView: View {
         }
     }
 
-}
-
-// MARK: - Jump-to-current button
-
-/// The floating "Jump to current verse" shortcut: shows its full label for a
-/// second, then shrinks to just the icon. It's its own view so each appearance
-/// gets fresh `expanded` state — the collapse re-arms every time it's shown — and
-/// it fades (never scales) in, so the expanded pill is tappable immediately.
-private struct JumpToCurrentButton: View {
-    let action: () -> Void
-    /// Whether this appearance gets the labelled pill. The label teaches what the
-    /// button is; once that's landed, re-teaching it every time the button comes
-    /// back (which is every time you navigate away from the cursor verse) is just
-    /// noise — and it briefly covers the card underneath.
-    var startExpanded: Bool = true
-    /// Fired as soon as the pill is shown, so the owner can suppress it from here on.
-    var onExpandedShown: () -> Void = {}
-
-    @State private var expanded: Bool
-
-    init(startExpanded: Bool = true,
-         onExpandedShown: @escaping () -> Void = {},
-         action: @escaping () -> Void) {
-        self.startExpanded    = startExpanded
-        self.onExpandedShown  = onExpandedShown
-        self.action           = action
-        _expanded             = State(initialValue: startExpanded)
-    }
-
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 6) {
-                Image(systemName: "bookmark.fill")
-                    .font(.system(size: expanded ? 12 : 15, weight: .bold))
-                if expanded {
-                    Text("Jump to current verse")
-                        .font(.system(size: 13, weight: .semibold))
-                        .fixedSize()
-                }
-            }
-            .foregroundStyle(.white)
-            .padding(.horizontal, expanded ? 14 : 0)
-            .padding(.vertical, expanded ? 10 : 0)
-            // Collapsed form stays a 44pt circular tap target (Apple minimum).
-            .frame(minWidth: expanded ? 0 : 44, minHeight: expanded ? 0 : 44)
-            .background(Capsule().fill(Color.accentColor))
-            .shadow(color: .black.opacity(0.22), radius: 6, x: 0, y: 3)
-            .contentShape(Capsule())
-        }
-        .accessibilityLabel("Jump to current verse")
-        // Fade only — a `.scale` transition hit-tests its shrunken geometry while
-        // springing in, so the expanded pill would miss taps for its whole life.
-        .transition(.opacity)
-        .task {
-            guard expanded else { return }
-            // Claim the one expanded showing up front, not after the collapse —
-            // navigating away inside that first second cancels this task, and the
-            // label would otherwise be owed all over again.
-            onExpandedShown()
-            try? await Task.sleep(for: .seconds(1))
-            guard !Task.isCancelled else { return }
-            withAnimation(AppMotion.movement) { expanded = false }
-        }
-    }
 }
 
 #Preview {

@@ -68,7 +68,7 @@ struct FlashcardView: View {
                         // booklet, so it has to be readable at a glance.
                         Text(cardLabel)
                             .font(.system(size: 12.5, weight: .medium))
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(Color.secondary)
                             .lineLimit(1)
                             .minimumScaleFactor(0.8)
                     }
@@ -280,7 +280,7 @@ struct FlashcardView: View {
         words.enumerated().reduce(Text("")) { acc, pair in
             let (i, word) = pair
             let sep = i < words.count - 1 ? " " : ""
-            return acc + Text(word + sep).foregroundColor(.primary).font(font)
+            return acc + Text(word + sep).foregroundStyle(Color.primary).font(font)
         }
     }
 
@@ -290,16 +290,16 @@ struct FlashcardView: View {
             return words.prefix(revealed).enumerated().reduce(Text("")) { acc, pair in
                 let (i, word) = pair
                 let sep = i < revealed - 1 ? " " : ""
-                return acc + Text(word + sep).foregroundColor(.primary).font(font)
+                return acc + Text(word + sep).foregroundStyle(Color.primary).font(font)
             }
         }
         return words.enumerated().reduce(Text("")) { acc, pair in
             let (i, word) = pair
             let sep = i < words.count - 1 ? " " : ""
             if i < revealed {
-                return acc + Text(word + sep).foregroundColor(.primary).font(font)
+                return acc + Text(word + sep).foregroundStyle(Color.primary).font(font)
             } else if i == revealed {
-                return acc + Text(masked(word) + sep).foregroundColor(.accentColor).font(font)
+                return acc + Text(masked(word) + sep).foregroundStyle(Color.accentColor).font(font)
             } else {
                 // Semantic `.tertiary` adapts to both modes instead of the old
                 // hardcoded `.gray.opacity(0.28)`, which fell below AA in dark.
@@ -360,7 +360,7 @@ struct FlashcardView: View {
 
             Text("\(revealed)/\(total)")
                 .font(.system(size: 10, weight: .medium, design: .monospaced))
-                .foregroundColor(.secondary)
+                .foregroundStyle(Color.secondary)
         }
     }
 }

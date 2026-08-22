@@ -37,7 +37,7 @@ struct Verse: Hashable, Codable, Identifiable {
     /// those fall back to the legacy key via `srsKey`.
     let cardUid: String?
 
-    /// Owning pack's name. Not present in JSON — injected by `ModelData`
+    /// Owning pack's name. Not present in JSON — injected by `BundledPacks`
     /// after decode so the legacy key can still be built.
     var packName: String = ""
 

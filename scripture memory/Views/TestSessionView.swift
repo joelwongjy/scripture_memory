@@ -16,7 +16,6 @@ struct TestSessionView: View {
     @State private var dragOffset:   CGSize  = .zero
     @State private var isCardFlying          = false
     @State private var flyDirection: Int     = 0
-    @State private var shakeOffset:  CGFloat = 0
     @State private var speechTarget: SubmitField = .title
     @State private var isScrubbing           = false
     @State private var isPeeking             = false
@@ -182,7 +181,7 @@ struct TestSessionView: View {
                 // says roughly where you are and the text was the redundant half.
                 Text("\(vm.currentIndex + 1) of \(vm.verses.count) · \(vm.completedCount) done")
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(Color.secondary)
                     .lineLimit(1)
                     .animation(AppMotion.content, value: vm.completedCount)
             }
@@ -219,7 +218,7 @@ struct TestSessionView: View {
                     } label: {
                         Text("Done")
                             .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.accentColor)
+                            .foregroundStyle(Color.accentColor)
                     }
                     .accessibilityLabel("Close keyboard")
                 } else {
@@ -263,12 +262,12 @@ struct TestSessionView: View {
                         HStack(spacing: 10) {
                             Text("\(verse.book) \(verse.reference)")
                                 .font(.system(size: 16))
-                                .foregroundColor(i == vm.currentIndex ? .accentColor : .primary)
+                                .foregroundStyle(i == vm.currentIndex ? Color.accentColor : Color.primary)
                             Spacer()
                             if i == vm.currentIndex {
                                 Image(systemName: "checkmark")
                                     .font(.system(size: 11, weight: .semibold))
-                                    .foregroundColor(.accentColor)
+                                    .foregroundStyle(Color.accentColor)
                             }
                         }
                         .contentShape(Rectangle())
@@ -608,7 +607,10 @@ struct TestSessionView: View {
                 } else if studyMode == .submit {
                     submitControls
                 } else {
-                    inputField
+                    RecallInputField(vm: vm, studyMode: studyMode,
+                                     isListening: speech.isListening,
+                                     isFocused: $isInputFocused,
+                                     onToggleSpeech: toggleSpeech)
                 }
             }
             .frame(maxWidth: .infinity)
@@ -627,16 +629,16 @@ struct TestSessionView: View {
         } label: {
             HStack(spacing: 8) {
                 Image(systemName: "checkmark.circle.fill")
-                    .foregroundColor(.green)
+                    .foregroundStyle(Color.green)
                     .font(.system(size: 18))
                 Text("Next")
                     .font(.system(size: 16, weight: .semibold))
             }
-            .foregroundColor(.primary)
+            .foregroundStyle(Color.primary)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 14.6)
             .background(Color(.secondarySystemGroupedBackground))
-            .roundedRect(12)
+            .roundedRect(StudyControlMetrics.cornerRadius)
         }
         .disabled(vm.currentIndex >= vm.verses.count - 1)
         .opacity(vm.currentIndex >= vm.verses.count - 1 ? 0.5 : 1)
@@ -658,10 +660,10 @@ struct TestSessionView: View {
         } label: {
             Label("Complete", systemImage: "checkmark.circle.fill")
                 .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(.white)
+                .foregroundStyle(Color.white)
                 .frame(maxWidth: .infinity).padding(.vertical, 12)
                 .background(Color.green)
-                .roundedRect(12)
+                .roundedRect(StudyControlMetrics.cornerRadius)
         }
         .accessibilityLabel("Mark current verse as complete")
         .transition(.scale.combined(with: .opacity))
@@ -678,7 +680,7 @@ struct TestSessionView: View {
 
             Text("Session Complete!")
                 .font(.system(size: 20, weight: .bold))
-                .foregroundColor(.primary)
+                .foregroundStyle(Color.primary)
 
             // Mistakes are only tracked in Entire Verse (submit) mode, so a
             // score is meaningless in first-letter / full-word sessions.
@@ -686,20 +688,20 @@ struct TestSessionView: View {
                 if vm.sessionScore == 0 {
                     Text("Perfect!")
                         .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(.green)
+                        .foregroundStyle(Color.green)
                 } else {
                     Text("Score: \(vm.sessionScore)")
                         .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(.red)
+                        .foregroundStyle(Color.red)
                 }
 
                 Text("\(vm.perfectCount) of \(vm.verses.count) perfect")
                     .font(.system(size: 14))
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(Color.secondary)
             } else {
                 Text("\(vm.verses.count) verses reviewed")
                     .font(.system(size: 14))
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(Color.secondary)
             }
 
             HStack(spacing: 12) {
@@ -708,11 +710,11 @@ struct TestSessionView: View {
                 } label: {
                     Text("Try Again")
                         .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.primary)
+                        .foregroundStyle(Color.primary)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
                         .background(Color(.secondarySystemGroupedBackground))
-                        .roundedRect(12)
+                        .roundedRect(StudyControlMetrics.cornerRadius)
                 }
 
                 Button {
@@ -722,11 +724,11 @@ struct TestSessionView: View {
                 } label: {
                     Text("Done")
                         .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.white)
+                        .foregroundStyle(Color.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
                         .background(Color.accentColor)
-                        .roundedRect(12)
+                        .roundedRect(StudyControlMetrics.cornerRadius)
                 }
             }
         }
@@ -752,10 +754,10 @@ struct TestSessionView: View {
                         Button { vm.retrySubmit() } label: {
                             Label("Try Again", systemImage: "arrow.counterclockwise")
                                 .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(.primary)
+                                .foregroundStyle(Color.primary)
                                 .frame(maxWidth: .infinity).padding(.vertical, 12)
                                 .background(Color(.secondarySystemGroupedBackground))
-                                .roundedRect(12)
+                                .roundedRect(StudyControlMetrics.cornerRadius)
                         }
                         Button {
                             isScrubbing = true
@@ -768,10 +770,10 @@ struct TestSessionView: View {
                         } label: {
                             Text("Next")
                                 .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(.white)
+                                .foregroundStyle(Color.white)
                                 .frame(maxWidth: .infinity).padding(.vertical, 12)
                                 .background(Color.accentColor)
-                                .roundedRect(12)
+                                .roundedRect(StudyControlMetrics.cornerRadius)
                         }
                         .disabled(vm.currentIndex >= vm.verses.count - 1)
                         .opacity(vm.currentIndex >= vm.verses.count - 1 ? 0.5 : 1)
@@ -779,17 +781,9 @@ struct TestSessionView: View {
                 }
             } else {
                 HStack(spacing: 10) {
-                    Button { toggleSpeech() } label: {
-                        Image(systemName: speech.isListening ? "mic.fill" : "mic")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(speech.isListening ? .white : .primary)
-                            .frame(width: 48, height: 48)
-                            .background(speech.isListening ? Color.red : Color(.secondarySystemGroupedBackground))
-                            .roundedRect(12)
-                    }
-                    .accessibilityLabel(speech.isListening ? "Stop dictation" : "Dictate verse")
+                    DictationTile(isListening: speech.isListening, action: toggleSpeech)
 
-                    submitHintButton
+                    HintButton { vm.fillNextHintWord(startingWithVerse: submitFocus == .verse) }
 
                     let isEmpty = vm.titleInput.trimmingCharacters(in: .whitespaces).isEmpty
                               && vm.verseInput.trimmingCharacters(in: .whitespaces).isEmpty
@@ -800,10 +794,10 @@ struct TestSessionView: View {
                         result?.isAllCorrect == true ? HapticEngine.success() : HapticEngine.error()
                     } label: {
                         Text("Submit")
-                            .font(.system(size: 16, weight: .semibold)).foregroundColor(.white)
+                            .font(.system(size: 16, weight: .semibold)).foregroundStyle(Color.white)
                             .frame(maxWidth: .infinity).padding(.vertical, 12)
                             .background(isEmpty ? Color(.systemGray3) : Color.accentColor)
-                            .roundedRect(12)
+                            .roundedRect(StudyControlMetrics.cornerRadius)
                     }
                     .disabled(isEmpty)
                 }
@@ -812,126 +806,6 @@ struct TestSessionView: View {
     }
 
     // MARK: - Input Field
-
-    private var inputField: some View {
-        HStack(spacing: 10) {
-            HStack(spacing: 10) {
-                dictationButton
-
-                TextField(studyMode.inputPlaceholder, text: $vm.inputText)
-                    .font(.system(size: 17))
-                    .focused($isInputFocused)
-                    .autocorrectionDisabled()
-                    .textInputAutocapitalization(.never)
-                    .onChange(of: vm.inputText) { _, newValue in
-                        guard !newValue.isEmpty else { return }
-                        switch studyMode {
-                        case .firstLetter:
-                            let correct = vm.processFirstLetterInput(newValue)
-                            DispatchQueue.main.async { vm.inputText = "" }
-                            if correct {
-                                HapticEngine.light()
-                            } else {
-                                // Deliberately unscored — a mistyped letter is as likely a
-                                // fat finger as a memory lapse. Same for full word below.
-                                // See `TestSessionViewModel.recordMistake`.
-                                HapticEngine.error(); triggerShake($shakeOffset)
-                            }
-                        case .fullWord:
-                            if vm.processFullWordInput(newValue) {
-                                HapticEngine.light()
-                            } else if newValue.hasSuffix(" ") {
-                                HapticEngine.error(); triggerShake($shakeOffset)
-                            }
-                        case .submit:
-                            break
-                        }
-                    }
-                    // Keyboard dismissal lives in the top bar ("Done") — a single,
-                    // reliable affordance instead of a second keyboard-toolbar one.
-            }
-            .padding(14)
-            .background(Color(.secondarySystemGroupedBackground))
-            .roundedRect(12)
-            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Color(.separator).opacity(0.5), lineWidth: 0.5))
-            .offset(x: shakeOffset)
-
-            hintButton
-        }
-    }
-
-    /// Speak the verse instead of typing it. Takes the slot the decorative
-    /// "character.cursor.ibeam" glyph used to occupy inside the text field: the
-    /// control row (peek, field, hint) has no width left for a fourth button, and
-    /// that glyph was ornament. Entire Verse mode keeps its own larger mic in
-    /// `submitControls` — this field only exists in the two typing modes.
-    ///
-    /// A `Button`, so pressing it doesn't resign the field's first responder and
-    /// dismiss the keyboard mid-verse.
-    private var dictationButton: some View {
-        Button { toggleSpeech() } label: {
-            Image(systemName: speech.isListening ? "mic.fill" : "mic")
-                .font(.system(size: 16))
-                .foregroundColor(speech.isListening ? .red : .secondary)
-                .contentTransition(.symbolEffect(.replace))
-                .frame(width: 22, height: 22)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(speech.isListening ? "Stop dictation" : "Dictate verse")
-    }
-
-    /// Reveals the next hidden word (verse first, then title). Wrapped in a
-    /// Button so the touch is a recognized tap target and doesn't resign the
-    /// keyboard's first responder.
-    private var hintButton: some View {
-        Button {
-            vm.revealHint()
-            HapticEngine.light()
-        } label: {
-            Image(systemName: "lightbulb")
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundColor(.primary)
-                .frame(width: 48, height: 48)
-                .background(Color(.secondarySystemGroupedBackground))
-                .roundedRect(12)
-        }
-        .buttonStyle(.plain)
-    }
-
-    /// Entire Verse's hint: types the next word straight into the answer box.
-    private var submitHintButton: some View {
-        Button {
-            fillNextHintWord()
-            HapticEngine.light()
-        } label: {
-            Image(systemName: "lightbulb")
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundColor(.primary)
-                .frame(width: 48, height: 48)
-                .background(Color(.secondarySystemGroupedBackground))
-                .roundedRect(12)
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Reveal next word")
-    }
-
-    /// Extends whichever box you're in by one word, falling through to the other
-    /// once that one is complete. Mirrors `CardStudyView.fillNextHintWord`.
-    private func fillNextHintWord() {
-        guard let verse = vm.currentVerse else { return }
-        let startWithVerse = submitFocus == .verse
-        let sections: [(target: String, isTitle: Bool)] = startWithVerse
-            ? [(verse.verse, false), (verse.title, true)]
-            : [(verse.title, true), (verse.verse, false)]
-
-        for section in sections {
-            let typed = section.isTitle ? vm.titleInput : vm.verseInput
-            guard let filled = HintFill.next(target: section.target, typed: typed) else { continue }
-            if section.isTitle { vm.titleInput = filled } else { vm.verseInput = filled }
-            return
-        }
-    }
 
     // MARK: - Swipe Gesture
 

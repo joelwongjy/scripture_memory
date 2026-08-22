@@ -7,7 +7,6 @@ import SwiftUI
 class SpeechRecognizer: ObservableObject {
     @Published var transcript = ""
     @Published var isListening = false
-    @Published var permissionDenied = false
 
     /// Why dictation couldn't start, for the UI to show. Every failure path below
     /// used to just return, leaving the mic button un-lit and the user with no idea
@@ -23,14 +22,6 @@ class SpeechRecognizer: ObservableObject {
         recognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
     }
 
-    func toggleListening() {
-        if isListening {
-            stopListening()
-        } else {
-            startListening()
-        }
-    }
-
     func startListening() {
         guard !isListening else { return }
         errorMessage = nil
@@ -42,7 +33,6 @@ class SpeechRecognizer: ObservableObject {
                 case .authorized:
                     self.requestMicAndBegin()
                 default:
-                    self.permissionDenied = true
                     self.errorMessage = "Speech recognition permission was denied. Enable it in Settings › Privacy › Speech Recognition."
                 }
             }
@@ -66,7 +56,6 @@ class SpeechRecognizer: ObservableObject {
                 if granted {
                     self.beginRecognition()
                 } else {
-                    self.permissionDenied = true
                     self.errorMessage = "Microphone access was denied. Enable it in Settings › Privacy › Microphone."
                 }
             }
@@ -143,26 +132,6 @@ class SpeechRecognizer: ObservableObject {
         } catch {
             errorMessage = "Couldn't start the microphone. Another app may be using it."
             stopListening()
-        }
-    }
-}
-
-// MARK: - Error Presentation
-
-extension View {
-    /// Reports a failed dictation start. Without it the mic button simply doesn't
-    /// light up and the user is left guessing.
-    func speechErrorAlert(_ speech: SpeechRecognizer) -> some View {
-        alert(
-            "Dictation Unavailable",
-            isPresented: Binding(
-                get: { speech.errorMessage != nil },
-                set: { if !$0 { speech.errorMessage = nil } }
-            )
-        ) {
-            Button("OK", role: .cancel) { }
-        } message: {
-            Text(speech.errorMessage ?? "")
         }
     }
 }

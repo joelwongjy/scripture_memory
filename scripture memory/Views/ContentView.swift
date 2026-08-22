@@ -7,7 +7,7 @@ struct ContentView: View {
     @AppStorage(NewCardCap.unitKey)        private var newCapUnit     = NewCardCap.fallback.unit
     /// The two stored halves as the one value the queue builder takes.
     private var newCap: NewCardCap { NewCardCap(amount: newCapAmount, unit: newCapUnit) }
-    @AppStorage("srs.dailyReviewCap")      private var dailyReviewCap = 5
+    @AppStorage(NewCardCap.dailyReviewCapKey) private var dailyReviewCap = NewCardCap.dailyReviewCapDefault
     @ObservedObject private var learning  = LearningStore.shared
     @ObservedObject private var packPrefs = PackPreferencesStore.shared
     @Environment(\.scenePhase) private var scenePhase
@@ -72,10 +72,7 @@ struct ContentView: View {
             case .read(let pack, let index):
                 // Open the verse in Read mode, in its pack (chrome hidden so the
                 // card's own top bar shows; NavigationStack lets its keyboard work).
-                NavigationStack {
-                    CardStudyView(packName: pack.name, verses: pack.verses, initialIndex: index)
-                        .toolbar(.hidden, for: .navigationBar)
-                }
+                CardStudyCover(packName: pack.name, verses: pack.verses, initialIndex: index)
             case .review(let session):
                 TestSessionView(session: session, onSessionEnded: { cover = nil })
             }

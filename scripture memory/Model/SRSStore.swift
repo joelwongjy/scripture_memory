@@ -10,6 +10,9 @@ final class SRSStore: ObservableObject {
 
     static let shared = SRSStore()
 
+    /// One day, in seconds — the unit every due-date and streak calculation counts in.
+    static let secondsPerDay: TimeInterval = 86_400
+
     /// Card state map, keyed by `Verse.srsKey`.
     @Published private(set) var states: [String: SRSCardState] = [:]
 
@@ -101,14 +104,6 @@ final class SRSStore: ObservableObject {
         }
     }
 
-    /// Earliest upcoming due date across the supplied verses (or nil if none scheduled).
-    func nextDue(in verses: [Verse], now: Date = Date()) -> Date? {
-        verses
-            .compactMap { states[$0.srsKey]?.due }
-            .filter { $0 > now }
-            .min()
-    }
-
     // MARK: - Active Packs
 
     func isActive(_ packName: String) -> Bool {
@@ -179,20 +174,11 @@ final class SRSStore: ObservableObject {
         persist()
     }
 
-    /// Wipe all SRS state. `ReviewProgress.completedIds` is intentionally untouched.
+    /// Wipe all SRS state.
     /// Active-pack opt-ins are preserved — they're a UI preference, not progress.
     func resetAll() {
         states = [:]
         dailyNewByDate = [:]
-        persist()
-    }
-
-    func resetPack(_ packName: String) {
-        let prefix = "\(packName)#"
-        states = states.filter { !$0.key.hasPrefix(prefix) }
-        for date in dailyNewByDate.keys {
-            dailyNewByDate[date]?.removeValue(forKey: packName)
-        }
         persist()
     }
 
