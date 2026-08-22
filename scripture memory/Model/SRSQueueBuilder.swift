@@ -7,8 +7,10 @@ import Foundation
 /// doesn't multiply the workload, it stays at the cap. The cap is measured per
 /// day or per week depending on what the user picked.
 ///
-/// `dailyReviewCap` is per-pack (rarely binds in practice — only matters if a
-/// single pack has hundreds of due reviews on the same day).
+/// `dailyReviewCap` is GLOBAL too: at most that many review cards a day across
+/// every pack — due ones first, then (per `NewCardPolicy`) the known backlog —
+/// dripped in pack order. Learning-phase cards are never capped; they're
+/// minutes from being due again and leaving them out would stall them.
 ///
 /// **Where new cards start** is decided by `NewCardPolicy`: the drip begins at
 /// the learning cursor, not at the first verse of the first pack. Verses before
@@ -64,24 +66,28 @@ enum SRSQueueBuilder {
         let newToday:       Int   // Already introduced from this pack today
         let totalScheduled: Int   // Cards in this pack that have an SRS state
 
-        /// Review cards this pack contributes to a session: due ones first, then
-        /// known backlog filling whatever the per-pack cap leaves.
-        func reviewServed(cap: Int) -> Int {
-            min(review, cap) + min(known, max(0, cap - review))
-        }
     }
 
-    /// One pack's learning + review cards for a session: everything in learning,
-    /// then due reviews up to the cap, then known backlog into what's left of it.
-    private static func reviewSlice(
-        allVerses: [Verse], packName: String, store: SRSStore,
-        dailyReviewCap: Int, policy: NewCardPolicy, now: Date
+    /// The review cards a session serves, across `packs` in order: every learning
+    /// card, then due reviews until the global cap is spent, then known backlog
+    /// into whatever it leaves. `DueSummary` and the dashboard count from this
+    /// same function so the number on Home is the session the Start button opens.
+    static func reviewCards(
+        packs: [Pack], store: SRSStore, dailyReviewCap: Int,
+        policy: NewCardPolicy, now: Date
     ) -> [Verse] {
-        let due      = store.dueCards(in: packName, allVerses: allVerses, now: now)
-        let learning = due.filter { store.state(for: $0)?.phase == .learning }
-        let review   = Array(due.filter { store.state(for: $0)?.phase == .review }.prefix(dailyReviewCap))
-        let known    = Array(policy.known(in: allVerses, store: store).prefix(max(0, dailyReviewCap - review.count)))
-        return learning + review + known
+        var learning: [Verse] = []
+        var review:   [Verse] = []
+        var known:    [Verse] = []
+        for pack in packs {
+            let due = store.dueCards(in: pack.name, allVerses: pack.verses, now: now)
+            learning += due.filter { store.state(for: $0)?.phase == .learning }
+            review   += due.filter { store.state(for: $0)?.phase == .review }
+            known    += policy.known(in: pack.verses, store: store)
+        }
+        let cappedReview = review.prefix(max(0, dailyReviewCap))
+        let cappedKnown  = known.prefix(max(0, dailyReviewCap - cappedReview.count))
+        return learning + cappedReview + cappedKnown
     }
 
     // MARK: - All-packs merged session
@@ -99,12 +105,9 @@ enum SRSQueueBuilder {
         let policy = policy ?? .current
         var session: [Verse] = []
 
-        // 1) Learning + review (+ known backlog) per pack, review capped per-pack.
-        for pack in packs {
-            session.append(contentsOf: reviewSlice(
-                allVerses: pack.verses, packName: pack.name, store: store,
-                dailyReviewCap: dailyReviewCap, policy: policy, now: now))
-        }
+        // 1) Learning + review (+ known backlog), review capped globally.
+        session.append(contentsOf: reviewCards(
+            packs: packs, store: store, dailyReviewCap: dailyReviewCap, policy: policy, now: now))
 
         // 2) New cards across packs, gated by the GLOBAL cap.
         var remaining = globalNewRemaining(store: store, newCap: newCap, now: now)
@@ -164,16 +167,9 @@ enum SRSQueueBuilder {
                            newCap: NewCardCap, dailyReviewCap: Int,
                            policy: NewCardPolicy? = nil, now: Date = Date()) -> DueSummary {
         let policy = policy ?? .current
-        var review = 0
-        var candidates = 0
-        for pack in activePacks {
-            let c = counts(packName: pack.name, allVerses: pack.verses, store: store, policy: policy, now: now)
-            // Due reviews are always counted in full (matches the session, where
-            // the cap effectively never binds on them); the known backlog only
-            // counts for the slots it'll actually get today.
-            review     += c.learning + c.review + min(c.known, max(0, dailyReviewCap - c.review))
-            candidates += c.newCandidates
-        }
+        let review = reviewCards(packs: activePacks, store: store, dailyReviewCap: dailyReviewCap,
+                                 policy: policy, now: now).count
+        let candidates = activePacks.reduce(0) { $0 + policy.fresh(in: $1.verses, store: store).count }
         let new = min(globalNewRemaining(store: store, newCap: newCap, now: now), candidates)
         return DueSummary(review: review, new: new)
     }

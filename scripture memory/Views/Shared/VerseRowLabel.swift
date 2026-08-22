@@ -8,15 +8,16 @@ import SwiftUI
 /// the card number went. This is the single layout they all use now:
 ///
 /// ```
-/// 1 John 5:11-12              5A-1
+/// 5A-1   1 John 5:11-12
 /// Assurance of Salvation
 /// [optional one-line verse preview]
 /// ```
 ///
-/// Reference leads because it's how a verse is *named* — it's what you scan a
-/// list for. The card's printed number sits at the trailing edge of that line
-/// in monospace, where a code reads as a code. Accessories (a checkmark, a pin,
-/// a favourite star, a disclosure chevron) go in `trailing`; a selection control
+/// The card's printed number leads, in monospace and its own column: picking
+/// from a list, the number is what you're looking for — you remember which
+/// card you were on, not which passage was printed on it. The reference names
+/// it; the title says what it's about. Accessories (a checkmark, a pin, a
+/// favourite star, a disclosure chevron) go in `trailing`; a selection control
 /// goes in `leading`.
 struct VerseRowLabel<Leading: View, Trailing: View>: View {
     let verse: Verse
@@ -29,21 +30,29 @@ struct VerseRowLabel<Leading: View, Trailing: View>: View {
         HStack(spacing: Self.accessorySpacing) {
             leading
             VStack(alignment: .leading, spacing: 2) {
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                HStack(alignment: .center, spacing: 8) {
+                    // The card's printed number leads: it's what you're looking
+                    // for in a list you're picking from — you remember the card,
+                    // not which passage was on it. A minimum width keeps the
+                    // references flush down the list; a longer code widens it.
+                    if let code = VerseNumbering.code(for: verse) {
+                        Text(code)
+                            .font(Self.codeFont)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .fixedSize()
+                            .frame(minWidth: Self.codeColumnWidth, alignment: .leading)
+                    }
                     Text("\(verse.book) \(verse.reference)")
                         .font(Self.referenceFont)
                         .foregroundStyle(.primary)
+                        .lineLimit(1)
                     if let pinned = verse.pinnedVersion {
                         Text("(\(pinned))")
                             .font(.system(size: 10, weight: .bold))
                             .foregroundStyle(.secondary)
                     }
-                    Spacer(minLength: 4)
-                    if let code = VerseNumbering.code(for: verse) {
-                        Text(code)
-                            .font(Self.codeFont)
-                            .foregroundStyle(.secondary)
-                    }
+                    Spacer(minLength: 0)
                 }
                 Text(verse.title)
                     .font(Self.titleFont)
@@ -71,6 +80,12 @@ struct VerseRowLabel<Leading: View, Trailing: View>: View {
     static var previewFont:   Font { .system(size: 12) }
     static var codeFont:      Font { .system(size: 11, weight: .bold, design: .monospaced) }
     static var accessorySpacing: CGFloat { 12 }
+
+    /// Minimum width of the leading card-number column, so references align.
+    /// A longer code (TMS 60's "TMS 60 A-10") pushes past it rather than being
+    /// squeezed — alignment matters within a pack, where codes are equal length.
+    static var codeColumnWidth: CGFloat { 44 }
+
 }
 
 extension VerseRowLabel where Leading == EmptyView, Trailing == EmptyView {

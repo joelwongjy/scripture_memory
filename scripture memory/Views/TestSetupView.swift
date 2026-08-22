@@ -101,7 +101,7 @@ struct TestSetupView: View {
 
                     case .verse(let verse, _):
                         verseRow(verse)
-                            .listRowInsets(EdgeInsets(top: 4, leading: 52, bottom: 4, trailing: 16))
+                            .listRowInsets(EdgeInsets(top: 4, leading: 40, bottom: 4, trailing: 8))
                     }
                 }
             }
@@ -334,7 +334,7 @@ struct TestSetupView: View {
             }, trailing: {})
             .padding(.vertical, 2)
             // Room for the "up to here" control overlaid at the trailing edge.
-            .padding(.trailing, 34)
+            .padding(.trailing, 30)
         }
         .buttonStyle(.plain)
         .overlay(alignment: .trailing) { upToHereButton(verse) }
@@ -379,7 +379,7 @@ struct TestSetupView: View {
             Image(systemName: "arrow.up.to.line")
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(.tertiary)
-                .frame(width: 34, height: 36)
+                .frame(width: 30, height: 36)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
