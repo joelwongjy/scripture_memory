@@ -67,7 +67,9 @@ enum NotificationManager {
             guard let fire = cal.date(byAdding: .day, value: i, to: firstFire) else { continue }
             let summary = SRSQueueBuilder.dueSummary(activePacks: activePacks,
                                                      store: SRSStore.shared,
-                                                     newCap: cap, now: fire)
+                                                     newCap: cap,
+                                                     dailyReviewCap: d.object(forKey: "srs.dailyReviewCap") as? Int ?? 5,
+                                                     now: fire)
             guard let body = ReminderPlan.reminderBody(review: summary.review, new: summary.new) else { continue }
 
             let content = UNMutableNotificationContent()

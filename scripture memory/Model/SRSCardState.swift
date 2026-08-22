@@ -61,6 +61,24 @@ struct SRSCardState: Codable, Equatable {
             lastReviewed: nil
         )
     }
+
+    /// Initial state for a verse the user already knew before the app met it —
+    /// one before their starting point. It skips the learning steps and starts
+    /// in review with a short interval, so the first Good sends it out about a
+    /// week rather than ten minutes.
+    static func knownCard(key: String, now: Date, config: SRSConfig = .default) -> SRSCardState {
+        SRSCardState(
+            key:          key,
+            phase:        .review,
+            interval:     config.knownCardInterval,
+            ease:         config.startingEase,
+            reps:         1,
+            lapses:       0,
+            learningStep: 0,
+            due:          now,
+            lastReviewed: nil
+        )
+    }
 }
 
 // MARK: - Config
@@ -87,6 +105,8 @@ struct SRSConfig {
     var hardIntervalMultiplier: Double = 1.2
     /// Extra multiplier for Easy grade in review phase.
     var easyMultiplier:       Double = 1.3
+    /// Interval (days) a verse the user already knew starts review with.
+    var knownCardInterval:    Double = 3.0
 
     static let `default` = SRSConfig()
 }

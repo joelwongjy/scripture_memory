@@ -146,7 +146,8 @@ struct ContentView: View {
     private func dailyQueueSize(packs: [Pack]) -> Int {
         let active = packs.filter { SRSStore.shared.isActive($0.name) }
         return SRSQueueBuilder.dueSummary(activePacks: active, store: SRSStore.shared,
-                                          newCap: newCap, now: Date()).total
+                                          newCap: newCap, dailyReviewCap: dailyReviewCap,
+                                          now: Date()).total
     }
 
     private func handleDeepLink(_ url: URL) {

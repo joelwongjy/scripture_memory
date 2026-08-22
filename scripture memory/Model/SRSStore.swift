@@ -124,20 +124,29 @@ final class SRSStore: ObservableObject {
     // MARK: - Mutation
 
     /// Grades a card. Creates initial state if none exists.
-    /// Bumps the daily-new counter the FIRST time a brand-new card is graded.
+    ///
+    /// A first grade on a brand-new card bumps the new-card counter. A first grade
+    /// on a card the user `alreadyKnew` (learnt before their starting point — see
+    /// `NewCardPolicy`) seeds it straight into review instead, and doesn't count
+    /// as a new card: it was never one.
     @discardableResult
-    func grade(verse: Verse, grade: SRSGrade, now: Date = Date()) -> SRSCardState {
+    func grade(verse: Verse, grade: SRSGrade, alreadyKnew: Bool = false, now: Date = Date()) -> SRSCardState {
         let key = verse.srsKey
         let isFirstGrade = (states[key] == nil)
-        let prior = states[key] ?? SRSCardState.newCard(key: key, now: now)
+        let prior = states[key] ?? Self.initialState(key: key, alreadyKnew: alreadyKnew, now: now)
         let next = updateSRS(state: prior, grade: grade, now: now)
         states[key] = next
 
-        if isFirstGrade && !verse.packName.isEmpty {
+        if isFirstGrade && !alreadyKnew && !verse.packName.isEmpty {
             bumpDailyNew(packName: verse.packName, now: now)
         }
         persist()
         return next
+    }
+
+    /// The state a never-graded card is graded *from*.
+    static func initialState(key: String, alreadyKnew: Bool, now: Date) -> SRSCardState {
+        alreadyKnew ? .knownCard(key: key, now: now) : .newCard(key: key, now: now)
     }
 
     /// Re-grade a card from a KNOWN pre-grade state. Used when the user swipes

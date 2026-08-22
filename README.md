@@ -8,7 +8,7 @@ An iOS app for memorizing Bible verses with spaced repetition. Built with SwiftU
 ![WidgetKit](https://img.shields.io/badge/WidgetKit-✓-5856D6?logo=apple&logoColor=white)
 <br />
 [![CI](https://github.com/joelwongjy/scripture_memory/actions/workflows/ci.yml/badge.svg)](https://github.com/joelwongjy/scripture_memory/actions/workflows/ci.yml)
-![Tests](https://img.shields.io/badge/tests-74%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-86%20passing-brightgreen)
 ![Dependencies](https://img.shields.io/badge/dependencies-0-success)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 

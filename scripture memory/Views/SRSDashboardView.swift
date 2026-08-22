@@ -14,6 +14,9 @@ struct SRSDashboardView: View {
     private var newCap: NewCardCap { NewCardCap(amount: newCapAmount, unit: newCapUnit) }
     @AppStorage("srs.dailyReviewCap") private var dailyReviewCap: Int          = 5
     @AppStorage("homeVerseStartMode.v1") private var homeVerseStartMode: HomeVerseStartMode = .read
+    /// Read here so the counts re-render when the Settings toggle flips.
+    @AppStorage(SRSQueueBuilder.NewCardPolicy.reviewsKnownKey)
+    private var reviewsKnownVerses = SRSQueueBuilder.NewCardPolicy.reviewsKnownDefault
 
     @ObservedObject private var store     = SRSStore.shared
     @ObservedObject private var packPrefs = PackPreferencesStore.shared
@@ -641,7 +644,7 @@ struct SRSDashboardView: View {
                 now: now
             )
             agg.learning    += c.learning
-            agg.review      += c.review
+            agg.review      += c.reviewServed(cap: dailyReviewCap)
             totalCandidates += c.newCandidates
         }
         agg.newProjected  = min(globalNewRemaining, totalCandidates)
