@@ -83,7 +83,7 @@ struct SettingsView: View {
             } header: {
                 Text("Daily Review")
             } footer: {
-                Text("New cards start at your current verse. Earlier verses are reviewed a few at a time.")
+                Text("Both caps count across all packs. New cards start at your current verse.")
             }
 
             Section {

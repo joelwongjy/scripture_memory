@@ -615,17 +615,14 @@ struct SRSDashboardView: View {
 
     private func aggregate() -> Aggregate {
         var agg = Aggregate()
-        var totalCandidates = 0
-        for pack in activePacks {
-            let c = SRSQueueBuilder.counts(
-                packName: pack.name,
-                allVerses: pack.verses,
-                store: store,
-                now: now
-            )
-            agg.learning    += c.learning
-            agg.review      += c.reviewServed(cap: dailyReviewCap)
-            totalCandidates += c.newCandidates
+        // Count the very cards the session would serve, so Home and Start agree.
+        let served = SRSQueueBuilder.reviewCards(
+            packs: activePacks, store: store, dailyReviewCap: dailyReviewCap,
+            policy: .current, now: now)
+        agg.learning = served.filter { store.state(for: $0)?.phase == .learning }.count
+        agg.review   = served.count - agg.learning
+        let totalCandidates = activePacks.reduce(0) {
+            $0 + SRSQueueBuilder.NewCardPolicy.current.fresh(in: $1.verses, store: store).count
         }
         agg.newProjected  = min(globalNewRemaining, totalCandidates)
         agg.newCandidates = totalCandidates
