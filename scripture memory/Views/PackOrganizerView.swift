@@ -67,13 +67,8 @@ struct PackOrganizerView: View {
     private func row(_ pack: Pack) -> some View {
         let isHidden = store.isHidden(pack.name)
         return HStack(spacing: 8) {
-            Text(pack.name)
-                .font(.body)
-                .foregroundStyle(.primary)
-                .lineLimit(1)
-                .truncationMode(.tail)
-
-            Spacer(minLength: 4)
+            PackRowLabel(pack: pack)
+                .opacity(isHidden ? 0.5 : 1)
 
             Button {
                 store.setHidden(pack.name, !isHidden)
