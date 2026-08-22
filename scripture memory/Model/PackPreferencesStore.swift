@@ -12,13 +12,29 @@ final class PackPreferencesStore: ObservableObject {
     @Published private(set) var order:  [String]      = []
     @Published private(set) var hidden: Set<String>   = []
 
-    private let defaults = UserDefaults.standard
+    private let storage: ProgressStorage
     private static let orderKey  = "packs.order.v1"
     private static let hiddenKey = "packs.hidden.v1"
 
-    private init() {
-        order  = defaults.stringArray(forKey: Self.orderKey) ?? []
-        hidden = Set(defaults.stringArray(forKey: Self.hiddenKey) ?? [])
+    private init(storage: ProgressStorage = .shared) {
+        self.storage = storage
+        load()
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(externalChange(_:)),
+            name: ProgressStorage.didChangeExternally,
+            object: nil
+        )
+    }
+
+    private func load() {
+        order  = storage.stringArray(forKey: Self.orderKey) ?? []
+        hidden = Set(storage.stringArray(forKey: Self.hiddenKey) ?? [])
+    }
+
+    @objc private func externalChange(_ note: Notification) {
+        guard note.affectsAny(of: [Self.orderKey, Self.hiddenKey]) else { return }
+        load()
     }
 
     func isHidden(_ name: String) -> Bool { hidden.contains(name) }
@@ -37,22 +53,22 @@ final class PackPreferencesStore: ObservableObject {
 
     func setHidden(_ name: String, _ isHidden: Bool) {
         if isHidden { hidden.insert(name) } else { hidden.remove(name) }
-        defaults.set(Array(hidden), forKey: Self.hiddenKey)
+        storage.set(Array(hidden), forKey: Self.hiddenKey)
     }
 
     /// Reorder from an `.onMove` over the currently-arranged pack list.
     func move(arranged packs: [Pack], from source: IndexSet, to destination: Int) {
         let names = PackArranger.movedOrder(arranged: packs.map(\.name), from: source, to: destination)
         order = names
-        defaults.set(order, forKey: Self.orderKey)
+        storage.set(order, forKey: Self.orderKey)
     }
 
     /// Restore the default arrangement: natural pack order, nothing hidden.
     func reset() {
         order = []
         hidden = []
-        defaults.removeObject(forKey: Self.orderKey)
-        defaults.removeObject(forKey: Self.hiddenKey)
+        storage.removeObject(forKey: Self.orderKey)
+        storage.removeObject(forKey: Self.hiddenKey)
     }
 
     /// Whether anything has been customised (drives the Reset button's enabled state).
