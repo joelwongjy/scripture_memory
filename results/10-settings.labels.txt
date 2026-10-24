@@ -1,0 +1,48 @@
+Application | Scripture Memory |  | 0,0 402x874
+                            Heading | Settings |  | 16,120 133x41
+                                          Heading | Study Mode |  | 16,168 370x40
+                                          Button | First Letter |  | 16,208 370x52
+                                          Button | Full Word |  | 16,260 370x52
+                                          Button | Entire Verse |  | 16,312 370x52
+                                          StaticText | Type the first letter of each word to reveal it. |  | 16,364 370x30
+                                          CheckBox | Hard Mode | 0 | 16,412 370x52
+                                            StaticText | Hard Mode |  | 72,427 85x20
+                                            CheckBox |  | 0 | 309,424 63x28
+                                            Image | Hide |  | 30,426 29x23
+                                          StaticText | Hides all hints — no word placeholders shown during review. |  | 16,464 370x46
+                                          Heading | Daily Review |  | 16,509 370x40
+                                          Image | Sparkle |  | 34,568 20x25
+                                          StaticText | New cards / week |  | 34,568 172x25
+                                          StaticText | 2 |  | 260,570 10x20
+                                          Slider | New cards / week | 2 | 276,564 94x32
+                                            Button | New cards / week, Decrement | 2 | 276,564 47x32
+                                            Button | New cards / week, Increment | 2 | 323,564 47x32
+                                            RadioButton | Day |  | 32,627 169x32
+                                            RadioButton | Week | 1 | 201,627 169x32
+                                          Image | Refresh |  | 35,692 19x23
+                                          StaticText | Reviews / day |  | 35,692 141x23
+                                          StaticText | 5 |  | 260,694 10x20
+                                          Slider | Reviews / day | 5 | 276,688 94x32
+                                            Button | Reviews / day, Decrement | 5 | 276,688 47x32
+                                            Button | Reviews / day, Increment | 5 | 323,688 47x32
+                                          CheckBox | Review earlier verses | 1 | 16,735 370x52
+                                            StaticText | Review earlier verses |  | 72,750 160x20
+                                            CheckBox |  | 1 | 309,747 63x28
+                                            Image | Selected |  | 33,750 22x22
+                                          StaticText | Both caps count across all packs. New cards start at your current verse. |  | 16,787 370x46
+                                          Heading | Reminders |  | 16,832 370x40
+                                          CheckBox | Daily Reminder | 0 | 16,873 370x52
+                                            StaticText | Daily Reminder |  | 72,888 114x20
+                                            CheckBox |  | 0 | 309,885 63x28
+                                            Image | bell.badge |  | 34,887 21x23
+                                    Slider | Vertical scroll bar, 3 pages | 0% | 369,116 30x675
+                                    Slider | Vertical scroll bar, 3 pages | 0% | 369,116 30x675
+                  Group | Tab Bar |  | 0,791 402x83
+                        RadioButton | Home |  | 25,795 98x54
+                          Image | home |  | 57,801 33x28
+                        RadioButton | Packs |  | 110,795 98x54
+                          Image | Album |  | 144,800 30x31
+                        RadioButton | Quiz |  | 194,795 98x54
+                          Image | selected |  | 229,801 27x27
+                        RadioButton | Settings | 1 | 279,795 98x54
+                          Image | gearshape.fill |  | 314,801 28x28

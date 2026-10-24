@@ -1,0 +1,59 @@
+Application | Scripture Memory |  | 0,0 402x874
+                            Button | Home |  | 16,62 44x44
+                            Heading | Packs in Review |  | 138,74 126x21
+                                          Heading | All packs are reviewed by default. Turn one off to skip its verses in Daily Review. |  | 16,116 370x54
+                                          CheckBox | 5 Assurances, 5 verses | 1 | 16,170 370x67
+                                            StaticText | 5 Assurances |  | 32,185 101x19
+                                            StaticText | 5 verses |  | 32,206 51x16
+                                            CheckBox |  | 1 | 309,189 63x28
+                                          CheckBox | TMS 60, 60 verses | 1 | 16,237 370x67
+                                            StaticText | TMS 60 |  | 32,252 58x19
+                                            StaticText | 60 verses |  | 32,273 60x16
+                                            CheckBox |  | 1 | 309,256 63x28
+                                          CheckBox | DEP 1: Assurance of Salvation, 18 verses | 1 | 16,304 370x67
+                                            StaticText | DEP 1: Assurance of Salvation |  | 32,319 221x19
+                                            StaticText | 18 verses |  | 32,340 58x16
+                                            CheckBox |  | 1 | 309,323 63x28
+                                          CheckBox | DEP 2: Quiet Time, 26 verses | 1 | 16,371 370x67
+                                            StaticText | DEP 2: Quiet Time |  | 32,386 134x19
+                                            StaticText | 26 verses |  | 32,407 59x16
+                                            CheckBox |  | 1 | 309,390 63x28
+                                          CheckBox | DEP 3: The Word, 37 verses | 1 | 16,438 370x67
+                                            StaticText | DEP 3: The Word |  | 32,453 126x19
+                                            StaticText | 37 verses |  | 32,474 59x16
+                                            CheckBox |  | 1 | 309,457 63x28
+                                          CheckBox | DEP 4: Prayer, 32 verses | 1 | 16,505 370x67
+                                            StaticText | DEP 4: Prayer |  | 32,520 102x19
+                                            StaticText | 32 verses |  | 32,541 59x16
+                                            CheckBox |  | 1 | 309,524 63x28
+                                          CheckBox | DEP 5: Fellowship, 30 verses | 1 | 16,572 370x67
+                                            StaticText | DEP 5: Fellowship |  | 32,587 132x19
+                                            StaticText | 30 verses |  | 32,608 60x16
+                                            CheckBox |  | 1 | 309,591 63x28
+                                          CheckBox | DEP 6: Witnessing, 55 verses | 1 | 16,639 370x67
+                                            StaticText | DEP 6: Witnessing |  | 32,654 137x19
+                                            StaticText | 55 verses |  | 32,675 59x16
+                                            CheckBox |  | 1 | 309,658 63x28
+                                          CheckBox | DEP 7: The Lordship of Christ, 26 verses | 1 | 16,706 370x67
+                                            StaticText | DEP 7: The Lordship of Christ |  | 32,721 217x19
+                                            StaticText | 26 verses |  | 32,742 59x16
+                                            CheckBox |  | 1 | 309,725 63x28
+                                          CheckBox | DEP 8: World Vision, 18 verses | 1 | 16,773 370x67
+                                            StaticText | DEP 8: World Vision |  | 32,788 147x19
+                                            StaticText | 18 verses |  | 32,809 58x16
+                                            CheckBox |  | 1 | 309,792 63x28
+                                          CheckBox | TMS 180 · Getting to Know God, 36 verses | 1 | 16,840 370x67
+                                            StaticText | TMS 180 · Getting to Know God |  | 32,855 233x19
+                                            StaticText | 36 verses |  | 32,876 60x16
+                                            CheckBox |  | 1 | 309,859 63x28
+                                    Slider | Vertical scroll bar, 2 pages | 0% | 369,116 30x675
+                                    Slider | Vertical scroll bar, 2 pages | 0% | 369,116 30x675
+                  Group | Tab Bar |  | 0,791 402x83
+                        RadioButton | Home | 1 | 25,795 98x54
+                          Image | home |  | 57,801 33x28
+                        RadioButton | Packs |  | 110,795 98x54
+                          Image | Album |  | 144,800 30x31
+                        RadioButton | Quiz |  | 194,795 98x54
+                          Image | selected |  | 229,801 27x27
+                        RadioButton | Settings |  | 279,795 98x54
+                          Image | gearshape.fill |  | 314,801 28x28

@@ -1,0 +1,94 @@
+Application | Scripture Memory |  | 0,0 402x874
+                            Heading | Quiz |  | 16,120 72x41
+                                          Button | Up to current verse, 5A-5 |  | 16,168 370x52
+                                            StaticText | Up to current verse |  | 32,184 140x19
+                                            StaticText | 5A-5 |  | 335,185 35x18
+                                          Button | Select all verses in 5 Assurances |  | 43,247 22x22
+                                            Image | circle |  | 43,247 22x22
+                                          Button | Expand 5 Assurances to pick individual verses |  | 76,233 302x50
+                                            StaticText | 5 Assurances |  | 76,240 101x19
+                                            StaticText | 5 verses |  | 76,261 51x16
+                                            Image | Forward |  | 354,253 6x11
+                                          Button | Select all verses in TMS 60 |  | 43,299 22x22
+                                            Image | circle |  | 43,299 22x22
+                                          Button | Collapse TMS 60 |  | 76,285 302x50
+                                            StaticText | TMS 60 |  | 76,292 58x19
+                                            StaticText | 60 verses |  | 76,313 60x16
+                                            Image | Forward |  | 351,308 11x6
+                                          Button | Christ the Center, 2 Corinthians 5:17 | Not selected | 56,344 292x36
+                                            Image | circle |  | 58,352 20x20
+                                            StaticText | TMS 60 A-1 |  | 91,346 68x13
+                                            StaticText | 2 Corinthians 5:17 |  | 167,344 129x18
+                                            StaticText | Christ the Center |  | 91,364 104x16
+                                          Button | Christ the Center, 2 Corinthians 5:17 | Not selected | 348,344 30x36
+                                          Button | Christ the Center, Galatians 2:20 | Not selected | 56,396 292x36
+                                            Image | circle |  | 58,404 20x20
+                                            StaticText | TMS 60 A-2 |  | 91,398 68x13
+                                            StaticText | Galatians 2:20 |  | 167,396 104x18
+                                            StaticText | Christ the Center |  | 91,416 104x16
+                                          Button | Christ the Center, Galatians 2:20 | Not selected | 348,396 30x36
+                                          Button | Obedience to Christ, Romans 12:1 | Not selected | 56,448 292x36
+                                            Image | circle |  | 58,456 20x20
+                                            StaticText | TMS 60 A-3 |  | 91,450 68x13
+                                            StaticText | Romans 12:1 |  | 167,448 90x18
+                                            StaticText | Obedience to Christ |  | 91,468 121x16
+                                          Button | Obedience to Christ, Romans 12:1 | Not selected | 348,448 30x36
+                                          Button | Obedience to Christ, John 14:21 | Not selected | 56,500 292x36
+                                            Image | circle |  | 58,508 20x20
+                                            StaticText | TMS 60 A-4 |  | 91,502 68x13
+                                            StaticText | John 14:21 |  | 167,500 77x18
+                                            StaticText | Obedience to Christ |  | 91,520 121x16
+                                          Button | Obedience to Christ, John 14:21 | Not selected | 348,500 30x36
+                                          Button | The Word, 2 Timothy 3:16 | Not selected | 56,552 292x36
+                                            Image | circle |  | 58,560 20x20
+                                            StaticText | TMS 60 A-5 |  | 91,554 68x13
+                                            StaticText | 2 Timothy 3:16 |  | 167,552 106x18
+                                            StaticText | The Word |  | 91,572 59x16
+                                          Button | The Word, 2 Timothy 3:16 | Not selected | 348,552 30x36
+                                          Button | The Word, Joshua 1:8 | Not selected | 56,604 292x36
+                                            Image | circle |  | 58,612 20x20
+                                            StaticText | TMS 60 A-6 |  | 91,606 68x13
+                                            StaticText | Joshua 1:8 |  | 167,604 77x18
+                                            StaticText | The Word |  | 91,624 59x16
+                                          Button | The Word, Joshua 1:8 | Not selected | 348,604 30x36
+                                          Button | Prayer, John 15:7 | Not selected | 56,656 292x36
+                                            Image | circle |  | 58,664 20x20
+                                            StaticText | TMS 60 A-7 |  | 91,658 68x13
+                                            StaticText | John 15:7 |  | 167,656 69x18
+                                            StaticText | Prayer |  | 91,676 39x16
+                                          Button | Prayer, John 15:7 | Not selected | 348,656 30x36
+                                          Button | Prayer, Philippians 4:6-7 | Not selected | 56,708 292x36
+                                            Image | circle |  | 58,716 20x20
+                                            StaticText | TMS 60 A-8 |  | 91,710 68x13
+                                            StaticText | Philippians 4:6-7 |  | 167,708 122x18
+                                            StaticText | Prayer |  | 91,728 39x16
+                                          Button | Prayer, Philippians 4:6-7 | Not selected | 348,708 30x36
+                                          Button | Fellowship, Matthew 18:20 | Not selected | 56,760 292x36
+                                            Image | circle |  | 58,768 20x20
+                                            StaticText | TMS 60 A-9 |  | 91,762 68x13
+                                            StaticText | Matthew 18:20 |  | 167,760 107x18
+                                            StaticText | Fellowship |  | 91,780 64x16
+                                          Button | Fellowship, Matthew 18:20 | Not selected | 348,760 30x36
+                                          Button | Fellowship, Hebrews 10:24-25 | Not selected | 56,812 292x36
+                                            Image | circle |  | 58,820 20x20
+                                            StaticText | TMS 60 A-10 |  | 91,814 75x13
+                                            StaticText | Hebrews 10:24-25 |  | 174,812 133x18
+                                            StaticText | Fellowship |  | 91,832 64x16
+                                          Button | Fellowship, Hebrews 10:24-25 | Not selected | 348,812 30x36
+                                          Button | Witnessing, Matthew 4:19 | Not selected | 56,864 292x36
+                                            Image | circle |  | 58,872 20x20
+                                            StaticText | TMS 60 A-11 |  | 91,866 75x13
+                                            StaticText | Matthew 4:19 |  | 174,864 98x18
+                                            StaticText | Witnessing |  | 91,884 67x16
+                                          Button | Witnessing, Matthew 4:19 | Not selected | 348,864 30x36
+                                    Slider | Vertical scroll bar, 7 pages | 0% | 369,116 30x675
+                                    Slider | Vertical scroll bar, 7 pages | 0% | 369,116 30x675
+                  Group | Tab Bar |  | 0,791 402x83
+                        RadioButton | Home |  | 25,795 98x54
+                          Image | home |  | 57,801 33x28
+                        RadioButton | Packs |  | 110,795 98x54
+                          Image | Album |  | 144,800 30x31
+                        RadioButton | Quiz | 1 | 194,795 98x54
+                          Image | selected |  | 229,801 27x27
+                        RadioButton | Settings |  | 279,795 98x54
+                          Image | gearshape.fill |  | 314,801 28x28

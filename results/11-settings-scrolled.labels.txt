@@ -1,0 +1,58 @@
+Application | Scripture Memory |  | 0,0 402x874
+                            Heading | Settings |  | 168,74 67x21
+                                          CheckBox | Hard Mode | 0 | 16,-40 370x52
+                                            StaticText | Hard Mode |  | 72,-25 85x20
+                                            CheckBox |  | 0 | 309,-28 63x28
+                                            Image | Hide |  | 30,-26 29x23
+                                          StaticText | Hides all hints — no word placeholders shown during review. |  | 16,12 370x46
+                                          Heading | Daily Review |  | 16,57 370x40
+                                          Image | Sparkle |  | 34,116 20x25
+                                          StaticText | New cards / week |  | 34,116 172x25
+                                          StaticText | 2 |  | 260,118 10x20
+                                          Slider | New cards / week | 2 | 276,112 94x32
+                                            Button | New cards / week, Decrement | 2 | 276,112 47x32
+                                            Button | New cards / week, Increment | 2 | 323,112 47x32
+                                            RadioButton | Day |  | 32,174 169x32
+                                            RadioButton | Week | 1 | 201,174 169x32
+                                          Image | Refresh |  | 35,240 19x23
+                                          StaticText | Reviews / day |  | 35,240 141x23
+                                          StaticText | 5 |  | 260,241 10x20
+                                          Slider | Reviews / day | 5 | 276,235 94x32
+                                            Button | Reviews / day, Decrement | 5 | 276,235 47x32
+                                            Button | Reviews / day, Increment | 5 | 323,235 47x32
+                                          CheckBox | Review earlier verses | 1 | 16,283 370x52
+                                            StaticText | Review earlier verses |  | 72,298 160x20
+                                            CheckBox |  | 1 | 309,295 63x28
+                                            Image | Selected |  | 33,298 22x22
+                                          StaticText | Both caps count across all packs. New cards start at your current verse. |  | 16,335 370x46
+                                          Heading | Reminders |  | 16,380 370x40
+                                          CheckBox | Daily Reminder | 0 | 16,421 370x52
+                                            StaticText | Daily Reminder |  | 72,436 114x20
+                                            CheckBox |  | 0 | 309,433 63x28
+                                            Image | bell.badge |  | 34,435 21x23
+                                          StaticText | Sent at this time on days you have verses due. |  | 16,473 370x30
+                                          Heading | Bible Version |  | 16,502 370x40
+                                          Button | NIV 1984 |  | 16,543 370x52
+                                          Button | NIV 2011 |  | 16,595 370x52
+                                          Heading | Learning |  | 16,664 370x40
+                                          Button | Current verse, Proverbs 3:5-6 |  | 16,704 370x52
+                                            Image | Bookmark |  | 37,719 14x23
+                                            StaticText | Current verse |  | 37,719 139x23
+                                            StaticText | Proverbs 3:5-6 |  | 237,720 115x20
+                                            Image | Forward |  | 363,725 6x11
+                                          StaticText | Opens in |  | 72,772 68x20
+                                          PopUpButton | Opens in, Read |  | 32,765 338x34
+                                            StaticText | Read |  | 315,772 39x20
+                                          Image | Bookmark |  | 32,773 24x20
+                                          StaticText | Your current verse shows on Home; everything before it counts as learnt. Choose whether tapping it opens to read or review. |  | 16,808 370x62
+                                    Slider | Vertical scroll bar, 3 pages | 57% | 369,116 30x675
+                                    Slider | Vertical scroll bar, 3 pages | 57% | 369,116 30x675
+                  Group | Tab Bar |  | 0,791 402x83
+                        RadioButton | Home |  | 25,795 98x54
+                          Image | home |  | 57,801 33x28
+                        RadioButton | Packs |  | 110,795 98x54
+                          Image | Album |  | 144,800 30x31
+                        RadioButton | Quiz |  | 194,795 98x54
+                          Image | selected |  | 229,801 27x27
+                        RadioButton | Settings | 1 | 279,795 98x54
+                          Image | gearshape.fill |  | 314,801 28x28

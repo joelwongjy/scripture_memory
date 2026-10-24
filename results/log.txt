@@ -1,0 +1,40 @@
+[18:33:30] Booting E952A9B0-CC78-435C-BF08-06AD47FE1076:     iPhone 17 Pro (E952A9B0-CC78-435C-BF08-06AD47FE1076) (Shutdown) 
+[18:41:02] shot 01-home
+[18:41:04] recording 02-search-home
+[18:41:07] tap 'Search verses' at 201 191
+[18:41:22] no element labelled '=Cancel'
+[18:41:33] tap 'Close' at 364 92
+[18:41:36] stopped 02-search-home
+[18:41:39] tap '=Packs' at 159 822
+[18:41:48] shot 03-packs
+[18:41:50] recording 04-search-packs
+[18:41:57] tap 'Search verses' at 201 191
+[18:42:06] no element labelled '=Cancel'
+[18:42:15] tap 'Close' at 364 92
+[18:42:17] stopped 04-search-packs
+[18:42:25] tap '5 Assurances' at 106 294
+[18:42:42] shot 05-pack-read-list
+[18:42:58] tap '=Review' at 294 801
+[18:43:05] shot 06-pack-review-card
+[18:43:16] tap 'Reveal next word' at 362 791
+[18:43:29] tap 'Reveal next word' at 362 791
+[18:43:37] shot 07-pack-review-hinted
+[18:43:42] no element labelled '=Close'
+[18:43:51] tap 'Back to reading' at 38 96
+[18:44:07] tap '=Close' at 38 96
+[18:44:19] tap '=Quiz' at 243 822
+[18:44:26] shot 08-quiz
+[18:44:31] tap 'Expand TMS 60' at 227 310
+[18:44:36] shot 09-quiz-expanded
+[18:44:41] tap '=Settings' at 328 822
+[18:44:48] shot 10-settings
+[18:44:58] shot 11-settings-scrolled
+[18:45:04] tap '=Home' at 74 822
+[18:45:09] tap 'Reviewing all' at 201 680
+[18:45:19] shot 12-packs-in-review
+[18:45:26] tap '=Home' at 38 84
+[18:45:47] tap '=Open' at 275 474
+[18:47:23] shot 13-review-session
+[18:47:24] recording 14-review-swipe
+[18:47:34] stopped 14-review-swipe
+[18:47:34] done
