@@ -8,6 +8,12 @@ expect() {   # expect "what" "regex"
   if echo "$text" | grep -Eq -- "$2"; then echo "PASS | $1" | tee -a results/assertions.txt
   else echo "FAIL | $1 | wanted /$2/ | saw: $(echo "$text" | head -40 | tr '\n' '~' | cut -c1-500)" | tee -a results/assertions.txt; fi
 }
+expect_not() {   # expect_not "what" "regex"
+  local text; text=$(axe describe-ui --udid "$UDID" 2>/dev/null | python3 .github/smoke/alltext.py)
+  if echo "$text" | grep -Eq -- "$2"; then echo "FAIL | $1 | found /$2/" | tee -a results/assertions.txt
+  else echo "PASS | $1" | tee -a results/assertions.txt; fi
+}
+due_is() { echo "^$1\$|(^|[^0-9])$1,? cards? due"; }
 fact() { python3 -c "import json,sys; print(json.load(open('results/facts-$1.json'))['$2'])"; }
 fresh_install() { xcrun simctl uninstall "$UDID" "$BUNDLE" 2>/dev/null; xcrun simctl install "$UDID" "$APP"; }
 open_review() { openurl "scripturememory://review" 3; tap_label "=Open" "" 4 || true; }
@@ -22,11 +28,12 @@ if [ "$DEVICE" = iphone ]; then
   shot far-home
   expect "Home shows the current verse (#120), not verse 1" "$(fact far cursor_ref)"
   expect "Home's position reads like the pack position" "$(fact far cursor_pos)"
-  expect "Daily review: 7 due (5 already-known + 2 new)" "^7$"
+  expect "Daily review: 7 due (5 already-known + 2 new)" "$(due_is 7)"
   expect "Breakdown: 5 Review" "5 Review"
   expect "Breakdown: 2 New" "2 New"
   open_review; shot far-review-first-card
-  expect "Review starts with the most recent known verse (#119), not verse 1" "$(fact far first_review_ref)"
+  expect "Review starts with the most recent known verse (#119)" "$(fact far first_review_ref)"
+  expect_not "Review doesn't start from verse 1" "1 John 5:11-12"
   tap_label "Close session" "" 2
   # Pack opens at the current verse, keeps place across open/back and reopen
   tap_label "=Packs"; tap_label "$(fact far cursor_pack)" "" 3; shot far-pack-opens
@@ -46,7 +53,7 @@ if [ "$DEVICE" = iphone ]; then
   launch 8
   tap_label "=Home" "" 1 || true
   shot due-home
-  expect "Daily review: 10 due (3 learning + 5 review cap + 2 new)" "^10$"
+  expect "Daily review: 10 due (3 learning + 5 review cap + 2 new)" "$(due_is 10)"
   expect "Breakdown: 3 Learning" "3 Learning"
   expect "Breakdown: 5 Review (capped from 7)" "5 Review"
   expect "Streak not yet earned today (opening the app doesn't count)" "0 day streak"
@@ -61,7 +68,7 @@ if [ "$DEVICE" = iphone ]; then
   tap_label "Close session" "" 3; shot due-celebration
   expect "Streak celebration appears after leaving the session" "day streak!"
   tap_label "=Continue" "" 2; shot due-home-after
-  expect "Home count drops by the one card rated (10 -> 9)" "^9$"
+  expect "Home count drops by the one card rated (10 -> 9)" "$(due_is 9)"
   expect "Streak is now 1 day" "1 day streak"
   tap_label "1 day streak" "" 3; shot streak-screen
   expect "Streak screen shows best streak" "Best streak"

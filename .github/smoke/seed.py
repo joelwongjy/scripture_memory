@@ -34,7 +34,7 @@ if scenario == "far":
     pack_len = len(next(p for p in packs if p["name"] == cur_pack)["verses"])
     facts = {"cursor_ref": f'{cur["book"]} {cur["reference"]}', "cursor_pack": cur_pack,
              "cursor_pos": f"{cur_i + 1} of {pack_len}", "first_review_ref": f'{last_known["book"]} {last_known["reference"]}',
-             "tap_ref": f'{ordered[121][2]["book"]} {ordered[121][2]["reference"]}', "tap_pos": f"{ordered[121][1] + 1} of {pack_len}"}
+             "tap_ref": f'{ordered[120][2]["book"]} {ordered[120][2]["reference"]}', "tap_pos": f"{ordered[120][1] + 1} of {pack_len}"}
 
 elif scenario == "due":
     learnt = [v["cardUid"] for _, _, v in ordered[:10]]
