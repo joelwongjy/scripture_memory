@@ -32,7 +32,7 @@ struct ContentView: View {
     var body: some View {
         TabView {
             NavigationStack {
-                SRSDashboardView()
+                HomeView()
             }
             .tabItem {
                 Image(systemName: "house.fill")
@@ -141,8 +141,7 @@ struct ContentView: View {
 
     /// Cards due today across active packs — the same number Home shows.
     private func dailyQueueSize(packs: [Pack]) -> Int {
-        let active = packs.filter { SRSStore.shared.isActive($0.name) }
-        return SRSQueueBuilder.dueSummary(activePacks: active, store: SRSStore.shared,
+        return SRSQueueBuilder.dueSummary(activePacks: SRSStore.shared.activePacks(packs), store: SRSStore.shared,
                                           newCap: newCap, dailyReviewCap: dailyReviewCap,
                                           now: Date()).total
     }
@@ -170,13 +169,10 @@ struct ContentView: View {
 
     /// `scripturememory://review` — starts today's review across active packs.
     private func openReview() {
-        let active = packPrefs.visible(from: bibleVersion.packs).filter { SRSStore.shared.isActive($0.name) }
-        let verses = SRSQueueBuilder.buildAllPacksSession(
-            packs: active, store: SRSStore.shared,
-            newCap: newCap, dailyReviewCap: dailyReviewCap, now: Date()
-        )
-        guard !verses.isEmpty else { return }
+        let active = SRSStore.shared.activePacks(packPrefs.visible(from: bibleVersion.packs))
+        guard let session = TestSession.dailyReview(activePacks: active, newCap: newCap,
+                                                    dailyReviewCap: dailyReviewCap) else { return }
         TestSessionViewModel.clearPersistedProgress()
-        cover = .review(TestSession(verses: verses, kind: .srs))
+        cover = .review(session)
     }
 }

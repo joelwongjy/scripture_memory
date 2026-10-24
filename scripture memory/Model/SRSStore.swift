@@ -92,6 +92,11 @@ final class SRSStore: ObservableObject {
 
     // MARK: - Active Packs
 
+    /// The packs in `packs` that are in daily review, in the same order.
+    func activePacks(_ packs: [Pack]) -> [Pack] {
+        packs.filter { isActive($0.name) }
+    }
+
     func isActive(_ packName: String) -> Bool {
         !inactivePackNames.contains(packName)
     }

@@ -19,6 +19,14 @@ extension View {
     func roundedRect(_ radius: CGFloat) -> some View {
         clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
     }
+
+    /// The white rounded panel Home's cards sit on, matching grouped-list sections.
+    func groupedPanel() -> some View {
+        background(
+            RoundedRectangle(cornerRadius: AppLayout.groupedRadius, style: .continuous)
+                .fill(Color(.secondarySystemGroupedBackground))
+        )
+    }
 }
 
 /// The shared 48×48 control-button metrics used across the study/review bottom

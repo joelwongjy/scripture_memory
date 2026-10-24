@@ -71,7 +71,7 @@ struct PackListView: View {
             placement: .navigationBarDrawer(displayMode: .always),
             prompt: "Search verses"
         )
-        // See `SRSDashboardView` — index built off the interaction path.
+        // See `HomeView` — index built off the interaction path.
         .task { VerseSearch.prewarm(visiblePacks) }
         .fullScreenCover(item: $selectedPack) { pack in
             CardStudyCover(packName: pack.name, verses: pack.verses)
