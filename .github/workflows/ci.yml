@@ -25,10 +25,12 @@ jobs:
     # the Linux test job can't see (SwiftUI, WidgetKit, the Xcode project).
     steps:
       - uses: actions/checkout@v4
+      - name: Select Xcode 26
+        # The app icon is an Icon Composer `.icon`, which Xcode 16 can't compile.
+        run: sudo xcode-select -s /Applications/Xcode_26.3.app
       - name: Xcode version
         run: |
           echo "::notice::$(xcodebuild -version | tr '\n' ' ')"
-          echo "::notice::Installed: $(ls /Applications | grep Xcode | tr '\n' ' ')"
       - name: Build
         run: |
           xcodebuild build \
