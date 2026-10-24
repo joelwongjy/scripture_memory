@@ -4,12 +4,10 @@ import SwiftUI
 struct VerseScrubberRow: View {
 
     private static let knobWidth: CGFloat = 30
-    private static let settleDelay: TimeInterval = AppMotion.settle
 
     let verseCount: Int
     @Binding var currentIndex: Int
     @Binding var isScrubbing: Bool
-    var showPositionLabel: Bool
     /// Test session uses a shorter track; pack study uses a slightly taller hit target.
     var trackHeight: CGFloat = 34
     /// Called when the user drags the scrubber to a new index (e.g. persist test session).
@@ -35,35 +33,27 @@ struct VerseScrubberRow: View {
     }
 
     private var scrubberContent: some View {
-        VStack(spacing: showPositionLabel ? 6 : 0) {
-            HStack(spacing: 10) {
-                let canPrev = currentIndex > 0
-                let canNext = currentIndex < verseCount - 1
+        HStack(spacing: 10) {
+            let canPrev = currentIndex > 0
+            let canNext = currentIndex < verseCount - 1
 
-                Button(action: onStepBack) {
-                    Image(systemName: "chevron.left").studyChromeCircleButton()
-                }
-                .disabled(!canPrev && !canStepBeyondStart)
-                .opacity(canPrev || canStepBeyondStart ? 1 : 0.3)
-                .accessibilityLabel("Previous verse")
-
-                scrubTrack
-                    .accessibilityLabel("Verse position")
-                    .accessibilityValue("\(currentIndex + 1) of \(verseCount)")
-
-                Button(action: onStepForward) {
-                    Image(systemName: "chevron.right").studyChromeCircleButton()
-                }
-                .disabled(!canNext && !canStepBeyondEnd)
-                .opacity(canNext || canStepBeyondEnd ? 1 : 0.3)
-                .accessibilityLabel("Next verse")
+            Button(action: onStepBack) {
+                Image(systemName: "chevron.left").studyChromeCircleButton()
             }
+            .disabled(!canPrev && !canStepBeyondStart)
+            .opacity(canPrev || canStepBeyondStart ? 1 : 0.3)
+            .accessibilityLabel("Previous verse")
 
-            if showPositionLabel {
-                Text("\(currentIndex + 1) / \(verseCount)")
-                    .font(.system(size: 11, weight: .medium, design: .monospaced))
-                    .foregroundStyle(Color.secondary)
+            scrubTrack
+                .accessibilityLabel("Verse position")
+                .accessibilityValue("\(currentIndex + 1) of \(verseCount)")
+
+            Button(action: onStepForward) {
+                Image(systemName: "chevron.right").studyChromeCircleButton()
             }
+            .disabled(!canNext && !canStepBeyondEnd)
+            .opacity(canNext || canStepBeyondEnd ? 1 : 0.3)
+            .accessibilityLabel("Next verse")
         }
     }
 
@@ -111,7 +101,7 @@ struct VerseScrubberRow: View {
                         }
                     }
                     .onEnded { _ in
-                        DispatchQueue.main.asyncAfter(deadline: .now() + Self.settleDelay) {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + AppMotion.settle) {
                             isScrubbing = false
                         }
                     }

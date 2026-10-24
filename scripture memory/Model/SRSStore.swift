@@ -47,26 +47,14 @@ final class SRSStore: ObservableObject {
 
     // MARK: - Public Queries
 
-    func state(for key: String) -> SRSCardState? { states[key] }
-
     func state(for verse: Verse) -> SRSCardState? { states[verse.srsKey] }
 
-    /// Cards that are due NOW (or earlier) in the given pack.
-    func dueCards(in packName: String, allVerses: [Verse], now: Date = Date()) -> [Verse] {
-        allVerses.filter { v in
+    /// Cards among `verses` that are due now (or earlier).
+    func dueCards(in verses: [Verse], now: Date = Date()) -> [Verse] {
+        verses.filter { v in
             guard let s = states[v.srsKey] else { return false }
             return s.due <= now
         }
-    }
-
-    /// Cards in the pack with no SRS state yet.
-    func newCandidateCards(in packName: String, allVerses: [Verse]) -> [Verse] {
-        allVerses.filter { states[$0.srsKey] == nil }
-    }
-
-    /// New cards already introduced today for the given pack.
-    func newIntroducedToday(in packName: String, now: Date = Date()) -> Int {
-        dailyNewByDate[Self.dayKey(now)]?[packName] ?? 0
     }
 
     /// Total new cards introduced today across ALL packs.

@@ -30,7 +30,6 @@ struct StudyControlTile: View {
 
 /// Reveals (or types in) the next hidden word.
 struct HintButton: View {
-    var accessibilityLabel = "Reveal next word"
     let action: () -> Void
 
     var body: some View {
@@ -38,7 +37,7 @@ struct HintButton: View {
             action()
             HapticEngine.light()
         }
-        .accessibilityLabel(accessibilityLabel)
+        .accessibilityLabel("Reveal next word")
     }
 }
 

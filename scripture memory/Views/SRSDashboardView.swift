@@ -80,19 +80,6 @@ struct SRSDashboardView: View {
         SRSQueueBuilder.globalNewRemaining(store: store, newCap: newCap, now: now)
     }
 
-    /// New cards projected per active pack, with the GLOBAL cap dripped across
-    /// packs in list order. Without this, every pack independently shows the
-    /// full remaining cap (e.g. three packs each reading "2 new" when only 2
-    /// new cards will actually be served today).
-    private var projectedNewByPack: [String: Int] {
-        SRSQueueBuilder.projectedNewByPack(
-            orderedActivePacks: activePacks,
-            store: store,
-            newCap: newCap,
-            now: now
-        )
-    }
-
     var body: some View {
         // One scroll view for the whole screen — see `PackListView.body`. Two
         // alternating scroll views under one `.searchable` is what made Home open

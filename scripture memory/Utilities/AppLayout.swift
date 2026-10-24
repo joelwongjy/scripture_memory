@@ -12,8 +12,6 @@ enum AppLayout {
     /// matched to the iOS 26 system `.insetGrouped` section corners so the Daily
     /// dashboard's white panels line up with Settings / Review.
     static let groupedRadius: CGFloat = 20
-    /// Corner radius for buttons and control chips.
-    static let controlRadius: CGFloat = 12
 }
 
 extension View {

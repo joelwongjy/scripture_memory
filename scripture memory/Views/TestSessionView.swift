@@ -94,7 +94,6 @@ struct TestSessionView: View {
                                 cardLabel: vm.cardLabel(for: verse),
                                 width: cardWidth,
                                 height: cardH,
-                                isPeeking: isPeeking,
                                 showCardLabel: showsCardLabel
                             )
                             .allowsHitTesting(false)
@@ -164,8 +163,6 @@ struct TestSessionView: View {
         }
     }
 
-    /// A text field is focused (keyboard up). Used to pin the card below the top
-    /// bar so the verse title isn't covered when the keyboard pushes content up.
     // MARK: - Top Bar
 
     private var topBar: some View {
@@ -485,8 +482,6 @@ struct TestSessionView: View {
             verseCount: vm.verses.count,
             currentIndex: $vm.currentIndex,
             isScrubbing: $isScrubbing,
-            // The count moved to the nav bar subtitle.
-            showPositionLabel: false,
             trackHeight: 34,
             onScrubIndexChange: { vm.persistSession() },
             onStepBack: {
@@ -561,7 +556,7 @@ struct TestSessionView: View {
                       vm.completedCount == vm.verses.count {
                 // Quiz (non-SRS) has no grading, so it keeps an explicit end button.
                 Button {
-                    endSession()
+                    finishSession()
                 } label: {
                     Text("End Session").font(.headline).frame(maxWidth: .infinity)
                 }
@@ -718,9 +713,7 @@ struct TestSessionView: View {
                 }
 
                 Button {
-                    vm.clearProgress()
-                    onSessionEnded?()
-                    dismiss()
+                    finishSession()
                 } label: {
                     Text("Done")
                         .font(.system(size: 16, weight: .semibold))
@@ -804,8 +797,6 @@ struct TestSessionView: View {
             }
         }
     }
-
-    // MARK: - Input Field
 
     // MARK: - Swipe Gesture
 
@@ -982,24 +973,8 @@ struct TestSessionView: View {
         return suggestedGrade(isAllCorrect: allCorrect, mistakes: vm.mistakes(for: verse.id))
     }
 
-    /// Ends the session. In SRS, any card that's finished but still ungraded — e.g.
-    /// the user typed the last card and tapped "End Session" instead of a grade —
-    /// gets its suggested grade applied first, so the review actually counts
-    /// (schedules the card) instead of silently dropping.
-    private func endSession() {
-        if sessionKind == .srs {
-            var gradedAny = false
-            for verse in vm.verses where sessionGrades[verse.id] == nil && vm.isVerseComplete(verse) {
-                // First-letter mode has no auto-suggestion; default an ungraded-but-
-                // finished card to Good so ending the session still schedules it.
-                let grade = suggestedGradeFor(verse) ?? .good
-                if let prior = SRSStore.shared.state(for: verse) { preGradeStates[verse.id] = prior }
-                SRSStore.shared.grade(verse: verse, grade: grade, alreadyKnew: learning.isLearnt(verse))
-                sessionGrades[verse.id] = grade
-                gradedAny = true
-            }
-            if gradedAny { StreakStore.shared.recordToday() }
-        }
+    /// Clears saved progress and closes the session.
+    private func finishSession() {
         vm.clearProgress()
         onSessionEnded?()
         dismiss()
@@ -1046,9 +1021,7 @@ struct TestSessionView: View {
             }
         } else {
             // Last card — close the session.
-            vm.clearProgress()
-            onSessionEnded?()
-            dismiss()
+            finishSession()
         }
     }
 

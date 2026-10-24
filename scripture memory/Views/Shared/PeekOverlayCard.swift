@@ -7,7 +7,6 @@ struct PeekOverlayCard: View {
     let cardLabel: String
     let width:     CGFloat
     let height:    CGFloat
-    let isPeeking: Bool
     /// Matches the card underneath — see `FlashcardView.showCardLabel`.
     var showCardLabel: Bool = true
 
@@ -48,7 +47,5 @@ struct PeekOverlayCard: View {
         }
         .flashcardStyle()
         .frame(width: width, height: height)
-        .transition(.opacity)
-        .animation(.easeInOut(duration: 0.1), value: isPeeking)
     }
 }

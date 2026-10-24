@@ -104,23 +104,12 @@ struct CardStudyView: View {
         return vm.verses.firstIndex { $0.srsKey == key }
     }
 
-    /// Is the card on screen the current stopped verse? Gates the Mark-as-Learnt
-    /// button so completing it *anywhere* lets you advance the cursor.
+    /// Is the card on screen the verse the learning cursor is parked on? Only that
+    /// card offers "Complete" (instead of Next).
     private var isCurrentLearningVerse: Bool {
         guard let v = vm.currentVerse, let key = learning.currentKey else { return false }
         return v.srsKey == key
     }
-
-    /// Offer "Mark as Complete" only on the verse the cursor is actually parked on.
-    ///
-    /// This used to also fire whenever `onMarkLearnt` was supplied — but that hook is
-    /// set for the entire Continue-Learning session, so every card in it offered to
-    /// mark a verse complete, including ones already learnt and ones nowhere near
-    /// the cursor. On those the button was at best a no-op (`markLearnt` ignores an
-    /// already-learnt verse) and at worst misleading, and it displaced the Next
-    /// button you actually wanted. The hook decides *what marking does*, not
-    /// *whether there's anything to mark*.
-    private var offersMarkLearnt: Bool { isCurrentLearningVerse }
 
     /// Float the "Current verse" shortcut when this pack holds the current stopped
     /// verse and we're parked on a different card.
@@ -227,7 +216,6 @@ struct CardStudyView: View {
                                     cardLabel: vm.cardLabel(for: verse),
                                     width: cardWidth,
                                     height: cardH,
-                                    isPeeking: isPeeking,
                                     showCardLabel: showsCardLabel
                                 )
                                 .allowsHitTesting(false)
@@ -444,7 +432,7 @@ struct CardStudyView: View {
                 let goingBack = dragOffset.width > 0
                 // Peek is rendered as an overlay in `body` (consistent across
                 // all modes); the underlying card never swaps for peek.
-                let frontCard = makeCard(verse: verse, verseIndex: vm.currentIndex, interactive: true, isPeeking: false)
+                let frontCard = makeCard(verse: verse, verseIndex: vm.currentIndex, interactive: true)
                     .offset(x: goingBack ? 0 : dragOffset.width,
                             y: goingBack ? backwardDragProgress * 12 : dragOffset.height * 0.1)
                     .scaleEffect(goingBack ? 1.0 - backwardDragProgress * 0.05 : 1.0)
@@ -638,17 +626,15 @@ struct CardStudyView: View {
     }
 
     @ViewBuilder
-    private func makeCard(verse: Verse, verseIndex: Int, interactive: Bool, isPeeking: Bool = false) -> some View {
+    private func makeCard(verse: Verse, verseIndex: Int, interactive: Bool) -> some View {
         let hasResult = vm.submitResults[verse.id] != nil
         let isBehind = verseIndex < vm.currentIndex
         let isAhead = verseIndex > vm.currentIndex
         let isDirectNext = verseIndex == vm.currentIndex + 1
         let isDirectPrev = verseIndex == vm.currentIndex - 1
 
-        // NOTE: deliberately does NOT include `!isPeeking`. Peek must NOT
-        // swap the SubmitCardView out — that would destroy the focused
-        // TextField and dismiss the keyboard. Peek is rendered as an overlay
-        // in `body` instead. See bug fix above.
+        // Peek is drawn as an overlay in `body`, never by swapping this card:
+        // replacing the SubmitCardView would destroy the focused text field.
         let showSubmitSurface = studyMode == .submit && vm.isReviewMode
             && (interactive || (isDirectNext && !hasResult) || (isDirectPrev && !hasResult))
 
@@ -666,35 +652,27 @@ struct CardStudyView: View {
             )
             .allowsHitTesting(interactive)
         } else {
-            // Submit + Review stack: never read mode behind the front card while peeking (full verse).
-            let forceMaskedPeek = studyMode == .submit && vm.isReviewMode && !interactive
+            // Submit + Review stack: cards behind the front one stay fully masked.
+            let forceMasked = studyMode == .submit && vm.isReviewMode && !interactive
                 && ((isAhead && (!isDirectNext || hasResult)) || isBehind)
-            let titleRev = isPeeking ? verse.titleWords.count
-                : (forceMaskedPeek ? 0 : vm.revealedCount(for: verse.id, section: .title))
-            let verseRev = isPeeking ? verse.verseWords.count
-                : (forceMaskedPeek ? 0 : vm.revealedCount(for: verse.id, section: .verse))
+            let titleRev = forceMasked ? 0 : vm.revealedCount(for: verse.id, section: .title)
+            let verseRev = forceMasked ? 0 : vm.revealedCount(for: verse.id, section: .verse)
             FlashcardView(
                 verse: verse,
                 cardLabel: vm.cardLabel(for: verse),
-                isReviewMode: isPeeking ? false : (forceMaskedPeek ? true : vm.isReviewMode),
+                isReviewMode: vm.isReviewMode,
                 titleRevealedCount: titleRev,
                 verseRevealedCount: verseRev,
                 activeSection: vm.activeSection,
-                onSectionTap: interactive && vm.isReviewMode && !isPeeking ? { section in
+                onSectionTap: interactive && vm.isReviewMode ? { section in
                     vm.activeSection = section
                     DispatchQueue.main.async { focusInput() }
                 } : nil,
                 showCardLabel: showsCardLabel,
                 isCurrentLearning: learning.isCurrent(verse),
                 onMarkComplete: vm.isReviewMode ? nil : { markVerseComplete(verse) },
-                // Review: always, on the card being answered. Starring is "come
-                // back to this one", and the moment you know that is the moment
-                // you couldn't recall it.
-                //
-                // Read: on every card. Showing it only when already filled kept
-                // the list clean and made un-starring possible, but left no way to
-                // star a verse *from* the list — the obvious place to do it while
-                // reading a pack.
+                // Review: on the card being answered (the moment you can't recall
+                // it is when you want to star it). Read: on every card.
                 showsFavoriteToggle: vm.isReviewMode ? interactive : true
             )
         }
@@ -707,9 +685,7 @@ struct CardStudyView: View {
             verseCount: vm.verses.count,
             currentIndex: $vm.currentIndex,
             isScrubbing: $isScrubbing,
-            showPositionLabel: false,
             trackHeight: 44,
-            onScrubIndexChange: nil,
             canStepBeyondStart: canCrossBackward,
             canStepBeyondEnd: canCrossForward,
             // Stepping lands on a new card to answer, so the keyboard comes back with
@@ -784,7 +760,7 @@ struct CardStudyView: View {
                     // icon keeps the completion signal.
                     HStack(spacing: 10) {
                         tryAgainButton
-                        if offersMarkLearnt { markLearntButton } else { nextButton }
+                        if isCurrentLearningVerse { markLearntButton } else { nextButton }
                     }
                 } else if studyMode == .submit {
                     submitControls
@@ -892,7 +868,7 @@ struct CardStudyView: View {
                             .background(Color(.secondarySystemGroupedBackground))
                             .roundedRect(StudyControlMetrics.cornerRadius)
                     }
-                    if offersMarkLearnt { markLearntButton }
+                    if isCurrentLearningVerse { markLearntButton }
                 }
             } else {
                 HStack(spacing: 10) {

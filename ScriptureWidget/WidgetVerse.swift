@@ -1,9 +1,8 @@
 import Foundation
 
-/// A verse the widget can render. Decoded from the bundled `verseData.json`
-/// (for the specific-verse picker) and also reconstructed from the shared App
-/// Group (for the live "current learning verse"). `packName` is injected after
-/// decode, mirroring how the app builds its own `Verse`.
+/// A verse the widget can render: decoded from the verse catalogue, or rebuilt
+/// from the snapshot the app writes into the shared App Group. `packName` is
+/// injected after decode, mirroring how the app builds its own `Verse`.
 struct WidgetVerse: Decodable, Hashable, Identifiable {
     let title:     String
     let verse:     String
@@ -38,8 +37,8 @@ private struct WidgetPack: Decodable {
     let verses: [WidgetVerse]
 }
 
-/// The verse catalogue — used by the configuration picker and as a fallback
-/// when no current learning verse is available yet.
+/// The verse catalogue — the fallback when the app hasn't shared a current
+/// learning verse yet.
 ///
 /// Prefers the catalog the app downloaded into the shared App Group, and only
 /// falls back to the copy bundled with the widget. Before this, the picker was
@@ -103,10 +102,6 @@ enum VerseLibrary {
         packs.flatMap { pack in
             pack.verses.map { var v = $0; v.packName = pack.name; return v }
         }
-    }
-
-    static func verse(id: String) -> WidgetVerse? {
-        allVerses.first { $0.id == id }
     }
 }
 

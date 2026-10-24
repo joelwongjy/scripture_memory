@@ -4,12 +4,12 @@ import SwiftUI
 
 private enum PackListItem: Identifiable {
     case packHeader(Pack)
-    case verse(Verse, packId: String)
+    case verse(Verse)
 
     var id: String {
         switch self {
         case .packHeader(let p): return "pack_\(p.id)"
-        case .verse(let v, _):  return "verse_\(v.id)"
+        case .verse(let v):     return "verse_\(v.id)"
         }
     }
 }
@@ -71,7 +71,7 @@ struct TestSetupView: View {
             items.append(.packHeader(pack))
             if expandedPackIds.contains(pack.id) {
                 for verse in pack.verses {
-                    items.append(.verse(verse, packId: pack.id))
+                    items.append(.verse(verse))
                 }
             }
         }
@@ -99,7 +99,7 @@ struct TestSetupView: View {
                         packHeaderRow(pack)
                             .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 8))
 
-                    case .verse(let verse, _):
+                    case .verse(let verse):
                         verseRow(verse)
                             .listRowInsets(EdgeInsets(top: 4, leading: 40, bottom: 4, trailing: 8))
                     }

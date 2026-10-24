@@ -131,8 +131,6 @@ final class LearningStore: ObservableObject {
         return current(in: ordered).map { ($0.verse, false) }
     }
 
-    func isPinned(_ verse: Verse) -> Bool { pinnedKey != nil && pinnedKey == verse.srsKey }
-
     /// Pin `verse` to Home/widget. Does not change learning progress.
     func pin(_ verse: Verse) {
         guard !verse.srsKey.isEmpty else { return }

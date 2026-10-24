@@ -58,9 +58,6 @@ final class TestSessionViewModel: RecallCardViewModel {
     var perfectCount:   Int { verses.filter { mistakes(for: $0.id) == 0 && isComplete($0) }.count }
     var completedCount: Int { verses.filter { isComplete($0) }.count }
 
-    /// Public accessor so views can colour per-verse progress dots.
-    func isVerseComplete(_ verse: Verse) -> Bool { isComplete(verse) }
-
     /// True once the user has pressed Submit for this verse (even with mistakes).
     func hasSubmitted(_ verse: Verse) -> Bool { submitResults[verse.id] != nil }
 
