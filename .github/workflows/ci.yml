@@ -26,7 +26,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Xcode version
-        run: xcodebuild -version
+        run: echo "::notice::$(xcodebuild -version | tr '\n' ' ')"
       - name: Build
         run: |
           xcodebuild build \
@@ -36,4 +36,8 @@ jobs:
             -configuration Debug \
             CODE_SIGNING_ALLOWED=NO > build.log 2>&1 && status=0 || status=$?
           grep -E "error:|warning:|BUILD (SUCCEEDED|FAILED)" build.log | sort -u || true
+          # Surface compiler errors as annotations on the run.
+          grep -E "^/.+:[0-9]+:[0-9]+: error: " build.log | sort -u | head -50 \
+            | sed -E "s#^$PWD/##; s#^([^:]+):([0-9]+):[0-9]+: error: (.*)#::error file=\1,line=\2::\3#" || true
+          grep -E "^(error|xcodebuild: error):" build.log | sort -u | head -20 | sed -E "s#^#::error::#" || true
           exit $status
