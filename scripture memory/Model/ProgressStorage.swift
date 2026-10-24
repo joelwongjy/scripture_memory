@@ -48,7 +48,7 @@ final class ProgressStorage {
 
     // MARK: - Reads (iCloud first, mirror second)
 
-    func data(forKey key: String) -> Data? {
+    private func data(forKey key: String) -> Data? {
         read(key, cloud.data(forKey:), local.data(forKey:))
     }
 
@@ -80,10 +80,6 @@ final class ProgressStorage {
 
     // MARK: - Writes (both, always)
 
-    func set(_ value: Data?, forKey key: String) {
-        write(value, forKey: key)
-    }
-
     func set(_ value: String?, forKey key: String) {
         write(value, forKey: key)
     }
@@ -101,10 +97,6 @@ final class ProgressStorage {
     func removeObject(forKey key: String) {
         write(nil, forKey: key)
     }
-
-    /// Push pending writes to iCloud. Called automatically after each write; the
-    /// explicit form exists for callers batching several keys.
-    func synchronize() { cloud.synchronize() }
 
     private func write(_ value: Any?, forKey key: String) {
         if let value {

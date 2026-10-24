@@ -1,0 +1,112 @@
+import SwiftUI
+
+/// Shared prev / scrub track / next row used by pack study and test session.
+struct VerseScrubberRow: View {
+
+    private static let knobWidth: CGFloat = 30
+
+    let verseCount: Int
+    @Binding var currentIndex: Int
+    @Binding var isScrubbing: Bool
+    /// Test session uses a shorter track; pack study uses a slightly taller hit target.
+    var trackHeight: CGFloat = 34
+    /// Called when the user drags the scrubber to a new index (e.g. persist test session).
+    var onScrubIndexChange: (() -> Void)?
+
+    /// When set, the prev/next chevrons stay enabled at the very start/end so a
+    /// "Continue Learning" session can roll into the adjacent pack.
+    var canStepBeyondStart = false
+    var canStepBeyondEnd   = false
+
+    let onStepBack: () -> Void
+    let onStepForward: () -> Void
+
+    var body: some View {
+        // A one-verse session has nothing to scrub to — a lone centred knob (plus
+        // a stray fill stub) just reads as broken — so collapse the control unless
+        // cross-pack stepping keeps the chevrons meaningful.
+        if verseCount <= 1 && !canStepBeyondStart && !canStepBeyondEnd {
+            EmptyView()
+        } else {
+            scrubberContent
+        }
+    }
+
+    private var scrubberContent: some View {
+        HStack(spacing: 10) {
+            let canPrev = currentIndex > 0
+            let canNext = currentIndex < verseCount - 1
+
+            Button(action: onStepBack) {
+                Image(systemName: "chevron.left").studyChromeCircleButton()
+            }
+            .disabled(!canPrev && !canStepBeyondStart)
+            .opacity(canPrev || canStepBeyondStart ? 1 : 0.3)
+            .accessibilityLabel("Previous verse")
+
+            scrubTrack
+                .accessibilityLabel("Verse position")
+                .accessibilityValue("\(currentIndex + 1) of \(verseCount)")
+
+            Button(action: onStepForward) {
+                Image(systemName: "chevron.right").studyChromeCircleButton()
+            }
+            .disabled(!canNext && !canStepBeyondEnd)
+            .opacity(canNext || canStepBeyondEnd ? 1 : 0.3)
+            .accessibilityLabel("Next verse")
+        }
+    }
+
+    private var scrubTrack: some View {
+        GeometryReader { geo in
+            let w = geo.size.width
+            let knobW = Self.knobWidth
+            let knobX: CGFloat = verseCount > 1
+                ? CGFloat(currentIndex) / CGFloat(verseCount - 1) * (w - knobW)
+                : (w - knobW) / 2
+            let progress = verseCount > 1 ? CGFloat(currentIndex) / CGFloat(verseCount - 1) : 0
+            // Single verse: run the fill to the centred knob instead of leaving a
+            // stray stub pinned to the left edge.
+            let fillW = verseCount > 1 ? (knobW / 2 + progress * (w - knobW)) : (knobX + knobW / 2)
+
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(Color(.systemGray5))
+                    .frame(height: 6)
+                Capsule()
+                    .fill(Color.accentColor)
+                    .frame(width: fillW, height: 6)
+                    .animation(AppMotion.content, value: currentIndex)
+                Circle()
+                    .fill(Color(.secondarySystemBackground))
+                    .overlay(Circle().strokeBorder(Color(.separator), lineWidth: 0.5))
+                    .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
+                    .frame(width: knobW, height: knobW)
+                    .offset(x: knobX)
+                    .animation(AppMotion.content, value: currentIndex)
+            }
+            .frame(maxHeight: .infinity)
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { value in
+                        isScrubbing = true
+                        guard w > 0, verseCount > 0 else { return }
+                        let fraction = max(0, min(1, value.location.x / w))
+                        let newIndex = Int(round(fraction * CGFloat(max(verseCount - 1, 0))))
+                        if newIndex != currentIndex, (0..<verseCount).contains(newIndex) {
+                            currentIndex = newIndex
+                            onScrubIndexChange?()
+                            HapticEngine.light()
+                        }
+                    }
+                    .onEnded { _ in
+                        DispatchQueue.main.asyncAfter(deadline: .now() + AppMotion.settle) {
+                            isScrubbing = false
+                        }
+                    }
+            )
+        }
+        .frame(height: trackHeight)
+    }
+}

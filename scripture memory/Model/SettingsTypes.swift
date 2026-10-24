@@ -66,6 +66,13 @@ enum StudyMode: String, CaseIterable {
     case fullWord
     case submit
 
+    static let storageKey = "studyMode"
+
+    /// The saved choice, for code outside a view (views use `@AppStorage`).
+    static func saved(_ defaults: UserDefaults = .standard) -> StudyMode {
+        StudyMode(rawValue: defaults.string(forKey: storageKey) ?? "") ?? .firstLetter
+    }
+
     var displayName: String {
         switch self {
         case .firstLetter: return "First Letter"
@@ -96,6 +103,13 @@ enum StudyMode: String, CaseIterable {
 enum BibleVersion: String, CaseIterable {
     case niv84 = "NIV84"
     case niv11 = "NIV11"
+
+    static let storageKey = "bibleVersion"
+
+    /// The saved choice, for code outside a view (views use `@AppStorage`).
+    static func saved(_ defaults: UserDefaults = .standard) -> BibleVersion {
+        BibleVersion(rawValue: defaults.string(forKey: storageKey) ?? "") ?? .niv84
+    }
 
     var displayName: String {
         switch self {
@@ -134,6 +148,8 @@ enum BibleVersion: String, CaseIterable {
 enum HomeVerseStartMode: String, CaseIterable {
     case read
     case review
+
+    static let storageKey = "homeVerseStartMode.v1"
 
     var displayName: String {
         switch self {

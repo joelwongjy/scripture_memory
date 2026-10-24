@@ -4,8 +4,7 @@ import Foundation
 
 /// Computes word-level diffs between a typed answer and the target using edit distance.
 ///
-/// Pure, Foundation-only (no UIKit) so it can be unit-tested in CI. The haptic
-/// helper that used to share this file now lives in `Utilities/HapticEngine.swift`.
+/// Pure, Foundation-only (no UIKit) so it can be unit-tested in CI.
 enum DiffEngine {
 
     // MARK: Public

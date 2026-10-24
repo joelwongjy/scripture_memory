@@ -4,5 +4,5 @@ import Foundation
 /// correction can supersede the bundled JSON. Read once at first access and
 /// held for the life of the process — see `VerseCatalog` for why updates are
 /// deliberately deferred to the next launch.
-var packsNIV84: [Pack] = VerseCatalog.packs(edition: "NIV84", bundledFile: "verseData.json")
-var packsNIV11: [Pack] = VerseCatalog.packs(edition: "NIV11", bundledFile: "verseDataNIV11.json")
+let packsNIV84: [Pack] = VerseCatalog.packs(edition: "NIV84", bundledFile: "verseData.json")
+let packsNIV11: [Pack] = VerseCatalog.packs(edition: "NIV11", bundledFile: "verseDataNIV11.json")

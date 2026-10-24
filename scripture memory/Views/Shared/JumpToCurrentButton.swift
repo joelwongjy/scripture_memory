@@ -8,23 +8,19 @@ import SwiftUI
 /// it fades (never scales) in, so the expanded pill is tappable immediately.
 struct JumpToCurrentButton: View {
     let action: () -> Void
-    /// Whether this appearance gets the labelled pill. The label teaches what the
-    /// button is; once that's landed, re-teaching it every time the button comes
-    /// back (which is every time you navigate away from the cursor verse) is just
-    /// noise — and it briefly covers the card underneath.
-    var startExpanded: Bool = true
     /// Fired as soon as the pill is shown, so the owner can suppress it from here on.
-    var onExpandedShown: () -> Void = {}
+    let onExpandedShown: () -> Void
 
     @State private var expanded: Bool
 
+    /// `startExpanded`: whether this appearance gets the labelled pill. Once the
+    /// label has taught what the button is, showing it again is just noise.
     init(startExpanded: Bool = true,
          onExpandedShown: @escaping () -> Void = {},
          action: @escaping () -> Void) {
-        self.startExpanded    = startExpanded
-        self.onExpandedShown  = onExpandedShown
-        self.action           = action
-        _expanded             = State(initialValue: startExpanded)
+        self.onExpandedShown = onExpandedShown
+        self.action          = action
+        _expanded            = State(initialValue: startExpanded)
     }
 
     var body: some View {

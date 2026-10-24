@@ -17,11 +17,11 @@ An iOS app for memorizing Bible verses with spaced repetition. Built with SwiftU
 - **Spaced repetition.** An SM-2 style scheduler decides when each verse is due. Intervals get longer as a verse sticks and shorter when you miss it.
 - **Practice modes.** A read mode for studying, plus three recall modes that have you type the verse with increasing difficulty: First Letter, Full Word, and Entire Verse.
 - **Type or speak.** Recite verses out loud with on-device speech recognition, or type them. Typed answers get a word-level diff marking missing, extra, and wrong words.
-- **Streaks and daily limits.** A weekly activity strip, and configurable caps for new cards and reviews per day.
+- **Streaks and daily limits.** A weekly activity strip, a cap on new cards per day or per week, and a daily review cap.
 - **Home-screen widgets.** A verse widget and a progress widget, each deep-linking back into the app.
 - **Two translations.** NIV 1984 and NIV 2011, switchable at any time. Progress is shared across both. Only TMS 60 has an NIV 2011 edition; every other pack stays on NIV 1984 under either setting.
 - **iCloud sync.** Review progress syncs across devices. No account required.
-- **Offline.** No network calls, no third-party SDKs, no tracking.
+- **Works offline.** The only network call is a read-only check for verse corrections. No third-party SDKs, no tracking.
 
 ## Screenshots
 
@@ -61,17 +61,17 @@ Typed answers are compared against the target with a word-level diff ([`DiffEngi
 
 ## Content
 
-483 verses across 15 packs, in both translations, from The Navigators' discipleship material:
+487 verses across 15 packs, in both translations, from The Navigators' discipleship material:
 
 - **Topical Memory System** — `TMS 60` and the five `TMS 180` series.
 - **Design for Discipleship** — 8 packs (`DEP 1`–`DEP 8`).
 - **5 Assurances** — a short starter pack.
 
-Verses are stored as JSON: [`verseData.json`](scripture%20memory/Resources/verseData.json) (NIV 1984) and [`verseDataNIV11.json`](scripture%20memory/Resources/verseDataNIV11.json) (NIV 2011).
+Verses are stored as JSON: [`verseData.json`](scripture%20memory/Resources/verseData.json) (NIV 1984) and [`verseDataNIV11.json`](scripture%20memory/Resources/verseDataNIV11.json) (NIV 2011). Corrections can be published from Supabase without an app update; see [`supabase/README.md`](supabase/README.md).
 
 ## Requirements
 
-- macOS with Xcode 15+
+- macOS with Xcode 26+ (the app icon is an Icon Composer `.icon`)
 - iOS 17+ device or simulator
 - Swift 5.9+
 
@@ -89,13 +89,13 @@ To run on a device, set your own development team under *Signing & Capabilities*
 
 ## Tests
 
-The scheduling, diffing, tokenizing, and pack-ordering logic lives in a pure-Foundation Swift package (`SRSCore`) with 74 unit tests. It has no UI dependencies, so the suite runs without Xcode or a simulator:
+The scheduling, diffing, tokenizing, and pack-ordering logic lives in a pure-Foundation Swift package (`SRSCore`) with 86 unit tests. It has no UI dependencies, so the suite runs without Xcode or a simulator:
 
 ```bash
 swift test
 ```
 
-This is what [CI](.github/workflows/ci.yml) runs on every push, in a `swift:6.0` Linux container.
+[CI](.github/workflows/ci.yml) runs this on every push in a `swift:6.0` Linux container, and also builds the app with Xcode on macOS and reports the Release app size.
 
 ## Project structure
 
@@ -103,21 +103,29 @@ This is what [CI](.github/workflows/ci.yml) runs on every push, in a `swift:6.0`
 scripture_memory/
 ├── Package.swift                  # SRSCore — pure logic, Linux-testable
 ├── Scripture Memory.xcodeproj/    # the iOS app
+├── AppInfo.plist                  # app Info.plist (Supabase URL/key for corrections)
 ├── scripture memory/
-│   ├── App.swift                  # entry point
+│   ├── ScriptureMemoryApp.swift   # entry point
 │   ├── Model/                     # scheduler, diff, stores, queues (mostly pure)
-│   ├── Views/                     # SwiftUI screens (Home, Packs, Quiz, Settings)
+│   ├── Views/                     # one folder per screen, plus Shared/
+│   │   ├── Home/  Packs/  Quiz/  Settings/  Onboarding/
+│   │   ├── Study/                 # reading and reviewing a pack
+│   │   ├── TestSession/           # quiz and daily review sessions
+│   │   └── Shared/                # cards, controls and pieces used by several screens
 │   ├── Utilities/                 # haptics, widget bridge, helpers
 │   └── Resources/                 # the verse catalogues (JSON)
 ├── ScriptureWidget/               # WidgetKit extension (verse + progress widgets)
-└── Tests/SRSCoreTests/            # 74 tests against SRSCore
+├── Tests/SRSCoreTests/            # 86 tests against SRSCore
+├── Scripts/                       # verse data and Supabase seeding scripts
+├── supabase/                      # schema and notes for the verse-corrections catalog
+└── docs/                          # screenshots
 ```
 
 The app and widget share data through an App Group: the app writes a snapshot (current verse, streak, due count, weekly activity) and the widget reads it back.
 
 ## Privacy
 
-The app collects no data. There is no networking, there are no third-party SDKs, and there is no account. Data stays on the device (`UserDefaults`) and in your own iCloud. The App Store privacy label is "Data Not Collected".
+The app collects no data. Its only network request downloads verse corrections and sends nothing about the user; there are no third-party SDKs and no account. Data stays on the device (`UserDefaults`) and in your own iCloud. The App Store privacy label is "Data Not Collected".
 
 ## License
 

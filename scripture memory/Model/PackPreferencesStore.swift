@@ -3,7 +3,7 @@ import Combine
 
 /// Persists the user's custom pack ordering and hidden packs (by pack name).
 /// Layered on top of the built-in pack list so order/visibility survive launches
-/// and apply consistently across Packs, Daily, and Review.
+/// and apply consistently across the app.
 @MainActor
 final class PackPreferencesStore: ObservableObject {
 

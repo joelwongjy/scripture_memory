@@ -8,9 +8,7 @@ class SpeechRecognizer: ObservableObject {
     @Published var transcript = ""
     @Published var isListening = false
 
-    /// Why dictation couldn't start, for the UI to show. Every failure path below
-    /// used to just return, leaving the mic button un-lit and the user with no idea
-    /// whether they'd mis-tapped, been denied, or hit something broken.
+    /// Why dictation couldn't start, for the UI to show.
     @Published var errorMessage: String?
 
     private var recognizer: SFSpeechRecognizer?

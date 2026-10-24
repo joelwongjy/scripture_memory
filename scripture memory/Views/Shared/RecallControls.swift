@@ -30,7 +30,6 @@ struct StudyControlTile: View {
 
 /// Reveals (or types in) the next hidden word.
 struct HintButton: View {
-    var accessibilityLabel = "Reveal next word"
     let action: () -> Void
 
     var body: some View {
@@ -38,7 +37,7 @@ struct HintButton: View {
             action()
             HapticEngine.light()
         }
-        .accessibilityLabel(accessibilityLabel)
+        .accessibilityLabel("Reveal next word")
     }
 }
 
@@ -135,5 +134,69 @@ struct RecallInputField: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(isListening ? "Stop dictation" : "Dictate verse")
+    }
+}
+
+// MARK: - Action buttons
+
+extension View {
+    /// The full-width label shared by the action buttons under the card (Next,
+    /// Try Again, Complete, Submit).
+    func studyActionLabel(foreground: Color = .primary,
+                          background: Color = Color(.secondarySystemGroupedBackground)) -> some View {
+        font(.system(size: 16, weight: .semibold))
+            .foregroundStyle(foreground)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .background(background)
+            .roundedRect(StudyControlMetrics.cornerRadius)
+    }
+}
+
+/// Resets the card for another attempt.
+struct TryAgainButton: View {
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Label("Try Again", systemImage: "arrow.counterclockwise")
+                .studyActionLabel()
+        }
+    }
+}
+
+/// Marks the current learning verse complete, which advances the learning cursor.
+struct MarkCompleteButton: View {
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            // Short label: it shares the row with "Try Again", and the checkmark
+            // plus its position on the cursor verse carry the meaning.
+            Label("Complete", systemImage: "checkmark.circle.fill")
+                .studyActionLabel(foreground: .white, background: .green)
+        }
+    }
+}
+
+/// Entire Verse's controls before the answer is checked: mic, hint, Submit.
+struct SubmitAnswerRow: View {
+    let isListening: Bool
+    let canSubmit: Bool
+    let onToggleSpeech: () -> Void
+    let onHint: () -> Void
+    let onSubmit: () -> Void
+
+    var body: some View {
+        HStack(spacing: 10) {
+            DictationTile(isListening: isListening, action: onToggleSpeech)
+            HintButton(action: onHint)
+            Button(action: onSubmit) {
+                Text("Submit")
+                    .studyActionLabel(foreground: .white,
+                                      background: canSubmit ? .accentColor : Color(.systemGray3))
+            }
+            .disabled(!canSubmit)
+        }
     }
 }

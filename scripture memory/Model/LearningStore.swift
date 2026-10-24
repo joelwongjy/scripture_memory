@@ -82,7 +82,7 @@ final class LearningStore: ObservableObject {
     /// the model layer (pack order/visibility + Bible version) so *any* screen can
     /// ask "is this the current verse?" without the dashboard plumbing it through.
     var visibleOrdered: [Verse] {
-        let version = BibleVersion(rawValue: UserDefaults.standard.string(forKey: "bibleVersion") ?? "") ?? .niv84
+        let version = BibleVersion.saved()
         return Catalogue.verses(in: PackPreferencesStore.shared.visible(from: version.packs))
     }
 
@@ -92,7 +92,7 @@ final class LearningStore: ObservableObject {
     /// verse list, so this gates the cache without the heavy recompute.
     private var currentInputToken: Int {
         var h = Hasher()
-        h.combine(UserDefaults.standard.string(forKey: "bibleVersion") ?? "")
+        h.combine(UserDefaults.standard.string(forKey: BibleVersion.storageKey) ?? "")
         h.combine(PackPreferencesStore.shared.order)
         h.combine(PackPreferencesStore.shared.hidden)
         return h.finalize()
@@ -130,8 +130,6 @@ final class LearningStore: ObservableObject {
         }
         return current(in: ordered).map { ($0.verse, false) }
     }
-
-    func isPinned(_ verse: Verse) -> Bool { pinnedKey != nil && pinnedKey == verse.srsKey }
 
     /// Pin `verse` to Home/widget. Does not change learning progress.
     func pin(_ verse: Verse) {

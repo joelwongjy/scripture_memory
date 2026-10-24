@@ -2,7 +2,7 @@ import SwiftUI
 
 struct ContentView: View {
     @AppStorage("hasOnboardedLearning.v1") private var hasOnboarded = false
-    @AppStorage("bibleVersion")            private var bibleVersion: BibleVersion = .niv84
+    @AppStorage(BibleVersion.storageKey)            private var bibleVersion: BibleVersion = .niv84
     @AppStorage(NewCardCap.amountKey)      private var newCapAmount   = NewCardCap.fallback.amount
     @AppStorage(NewCardCap.unitKey)        private var newCapUnit     = NewCardCap.fallback.unit
     /// The two stored halves as the one value the queue builder takes.
@@ -32,36 +32,24 @@ struct ContentView: View {
     var body: some View {
         TabView {
             NavigationStack {
-                SRSDashboardView()
+                HomeView()
             }
-            .tabItem {
-                Image(systemName: "house.fill")
-                Text("Home")
-            }
+            .tabItem { Label("Home", systemImage: "house.fill") }
 
             NavigationStack {
                 PackListView()
             }
-            .tabItem {
-                Image(systemName: "rectangle.stack.fill")
-                Text("Packs")
-            }
+            .tabItem { Label("Packs", systemImage: "rectangle.stack.fill") }
 
             NavigationStack {
                 TestSetupView()
             }
-            .tabItem {
-                Image(systemName: "checkmark.circle.fill")
-                Text("Quiz")
-            }
+            .tabItem { Label("Quiz", systemImage: "checkmark.circle.fill") }
 
             NavigationStack {
                 SettingsView()
             }
-            .tabItem {
-                Image(systemName: "gearshape")
-                Text("Settings")
-            }
+            .tabItem { Label("Settings", systemImage: "gearshape") }
         }
         .fullScreenCover(item: $cover) { c in
             switch c {
@@ -126,7 +114,7 @@ struct ContentView: View {
     /// Mirror the current learning verse + streak + due-count + week into the App Group.
     private func syncWidget() {
         let visible   = packPrefs.visible(from: bibleVersion.packs)
-        let displayed = learning.displayed(in: visible.flatMap(\.verses))
+        let displayed = learning.displayed(in: Catalogue.verses(in: visible))
         let week      = StreakStore.shared.thisWeek().map {
             WidgetBridge.WeekDay(letter: $0.initial, done: $0.done, today: $0.isToday)
         }
@@ -141,8 +129,7 @@ struct ContentView: View {
 
     /// Cards due today across active packs — the same number Home shows.
     private func dailyQueueSize(packs: [Pack]) -> Int {
-        let active = packs.filter { SRSStore.shared.isActive($0.name) }
-        return SRSQueueBuilder.dueSummary(activePacks: active, store: SRSStore.shared,
+        return SRSQueueBuilder.dueSummary(activePacks: SRSStore.shared.activePacks(packs), store: SRSStore.shared,
                                           newCap: newCap, dailyReviewCap: dailyReviewCap,
                                           now: Date()).total
     }
@@ -170,13 +157,10 @@ struct ContentView: View {
 
     /// `scripturememory://review` — starts today's review across active packs.
     private func openReview() {
-        let active = packPrefs.visible(from: bibleVersion.packs).filter { SRSStore.shared.isActive($0.name) }
-        let verses = SRSQueueBuilder.buildAllPacksSession(
-            packs: active, store: SRSStore.shared,
-            newCap: newCap, dailyReviewCap: dailyReviewCap, now: Date()
-        )
-        guard !verses.isEmpty else { return }
-        TestSessionViewModel.clearPersistedProgress()
-        cover = .review(TestSession(verses: verses, kind: .srs))
+        let active = SRSStore.shared.activePacks(packPrefs.visible(from: bibleVersion.packs))
+        guard let session = TestSession.dailyReview(activePacks: active, newCap: newCap,
+                                                    dailyReviewCap: dailyReviewCap) else { return }
+        TestSessionViewModel.clearPersistedProgress(for: .srs)
+        cover = .review(session)
     }
 }

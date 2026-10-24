@@ -25,20 +25,24 @@ struct VerseProvider: TimelineProvider {
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<VerseEntry>) -> Void) {
-        // The app reloads us whenever the featured verse changes; this re-poll is a safety net.
-        let next = Calendar.current.date(byAdding: .hour, value: 6, to: Date()) ?? Date().addingTimeInterval(21_600)
-        completion(Timeline(entries: [resolve()], policy: .after(next)))
+        completion(Timeline(entries: [resolve()], policy: .after(nextRefresh())))
     }
 
     /// The widget mirrors whatever the app is featuring — a pinned verse or the
     /// live cursor — both chosen in-app, so the widget itself has no configuration.
     private func resolve() -> VerseEntry {
         let snap  = SharedStore.snapshot()
-        let verse = SharedStore.displayedVerse() ?? VerseLibrary.allVerses.first
-        return VerseEntry(date: Date(), verse: verse, isPinned: SharedStore.isPinned(),
+        let verse = snap?.featuredVerse ?? VerseLibrary.allVerses.first
+        return VerseEntry(date: Date(), verse: verse, isPinned: snap?.isPinned ?? false,
                           streak: snap?.streak ?? 0, dueToday: snap?.dueToday ?? 0,
                           learned: snap?.learned ?? 0, week: snap?.week ?? [])
     }
+}
+
+/// When to ask for a fresh timeline. The app reloads the widgets whenever what
+/// they show changes; this re-poll is only a safety net.
+private func nextRefresh() -> Date {
+    Calendar.current.date(byAdding: .hour, value: 6, to: Date()) ?? Date().addingTimeInterval(21_600)
 }
 
 // MARK: - Appearance
@@ -118,17 +122,22 @@ struct VerseEntryView: View {
                              titleLines: titleLines)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             Spacer(minLength: 6)
-            HStack(spacing: 3) {
-                if entry.isPinned {
-                    Image(systemName: "pin.fill")
-                        .font(.system(size: packSize, weight: .semibold))
-                        .foregroundStyle(.tertiary)
-                }
-                Text(v.packName)
-                    .font(.system(size: packSize, weight: .medium))
+            packLabel(v, size: packSize)
+        }
+    }
+
+    /// The pack name under the verse, with a pin when the verse is pinned.
+    private func packLabel(_ v: WidgetVerse, size: CGFloat) -> some View {
+        HStack(spacing: 3) {
+            if entry.isPinned {
+                Image(systemName: "pin.fill")
+                    .font(.system(size: size, weight: .semibold))
                     .foregroundStyle(.tertiary)
-                    .lineLimit(1)
             }
+            Text(v.packName)
+                .font(.system(size: size, weight: .medium))
+                .foregroundStyle(.tertiary)
+                .lineLimit(1)
         }
     }
 
@@ -156,17 +165,7 @@ struct VerseEntryView: View {
                 // The verse block claims all the slack above, so this minimum is
                 // the whole gap: too small and the pack label sits on the rule.
                 Spacer(minLength: 10)
-                HStack(spacing: 3) {
-                    if entry.isPinned {
-                        Image(systemName: "pin.fill")
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(.tertiary)
-                    }
-                    Text(v.packName)
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(.tertiary)
-                        .lineLimit(1)
-                }
+                packLabel(v, size: 11)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
@@ -249,7 +248,7 @@ struct VerseEntryView: View {
 // MARK: - Shared stats row
 
 /// Three stat columns (streak · due today · learned) split by thin separators.
-/// Shared by the large verse widget and the progress widget; sizes are tunable.
+/// Used by the progress widget.
 struct StatsColumnsView: View {
     let streak:   Int
     let dueToday: Int
@@ -320,13 +319,12 @@ struct ProgressProvider: TimelineProvider {
     func placeholder(in context: Context) -> ProgressEntry { entry() }
     func getSnapshot(in context: Context, completion: @escaping (ProgressEntry) -> Void) { completion(entry()) }
     func getTimeline(in context: Context, completion: @escaping (Timeline<ProgressEntry>) -> Void) {
-        let next = Calendar.current.date(byAdding: .hour, value: 6, to: Date()) ?? Date().addingTimeInterval(21_600)
-        completion(Timeline(entries: [entry()], policy: .after(next)))
+        completion(Timeline(entries: [entry()], policy: .after(nextRefresh())))
     }
     private func entry() -> ProgressEntry {
         let snap = SharedStore.snapshot()
         return ProgressEntry(date: Date(),
-                             verse: SharedStore.displayedVerse() ?? VerseLibrary.allVerses.first,
+                             verse: snap?.featuredVerse ?? VerseLibrary.allVerses.first,
                              streak: snap?.streak ?? 0,
                              dueToday: snap?.dueToday ?? 0,
                              learned: snap?.learned ?? 0)
@@ -344,8 +342,8 @@ struct ProgressEntryView: View {
                 .tracking(0.6)
             Spacer().frame(height: 6)
             if let v = entry.verse {
-                // Same type scale as the medium verse widget's large family, so
-                // the two widgets read as one family side by side.
+                // Same type scale as the verse widget, so the two read as one
+                // family side by side.
                 Text(v.title)
                     .font(.system(size: 20, weight: .bold, design: .serif))
                     .foregroundStyle(.primary)

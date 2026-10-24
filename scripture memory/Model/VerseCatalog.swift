@@ -20,14 +20,14 @@ enum VerseCatalog {
 
     /// Packs for one edition, from the newest catalog available on disk.
     static func packs(edition: String, bundledFile: String) -> [Pack] {
-        if let cached = cachedDocument(), let packs = cached.editions[edition], !packs.isEmpty {
+        if let cached = cachedDocument, let packs = cached.editions[edition], !packs.isEmpty {
             return withPackNames(packs)
         }
         return withPackNames(bundledPacks(bundledFile))
     }
 
     /// Back-fills `Verse.packName`, which isn't in the JSON (it's implied by
-    /// nesting) but is half of every `srsKey`.
+    /// nesting).
     private static func withPackNames(_ packs: [Pack]) -> [Pack] {
         packs.map { pack in
             Pack(name: pack.name, color: pack.color, accentText: pack.accentText,
@@ -107,7 +107,7 @@ enum VerseCatalog {
     /// Parsed once per launch. A corrupt or truncated cache is discarded rather
     /// than crashed on — the bundle is always there to fall back to, and a bad
     /// download must never be able to brick the app.
-    private static let cachedDocumentOnce: Document? = {
+    private static let cachedDocument: Document? = {
         guard let url = cacheURL, let data = try? Data(contentsOf: url) else { return nil }
         do {
             let document = try JSONDecoder().decode(Document.self, from: data)
@@ -122,24 +122,18 @@ enum VerseCatalog {
         }
     }()
 
-    private static func cachedDocument() -> Document? { cachedDocumentOnce }
-
     /// Version written by a refresh during this session, if any.
     ///
-    /// `cachedDocumentOnce` is parsed once per launch and deliberately doesn't
-    /// re-read the file — the running session must keep the catalog it started
-    /// with. But that makes it the wrong thing to ask "have I already got this?":
-    /// after a download it still reports the *old* version, so the next check
-    /// would decide it was out of date and fetch the whole catalog again. With
-    /// the refresh now also running on every resume, that repeated for the life
-    /// of the session.
+    /// Needed because `cachedDocument` is read once per launch: after a download
+    /// it still reports the old version, and without this every resume would
+    /// fetch the whole catalog again.
     private static var downloadedVersion: Int?
 
     /// Version of the catalog on disk — what the refresh compares against to
     /// decide whether there's anything to download. Distinct from the version
     /// *in use*, which is whatever was read at launch.
     static var installedVersion: Int {
-        downloadedVersion ?? cachedDocument()?.catalogVersion ?? 0
+        downloadedVersion ?? cachedDocument?.catalogVersion ?? 0
     }
 
     // MARK: - Refresh

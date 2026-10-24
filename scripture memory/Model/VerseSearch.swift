@@ -1,4 +1,4 @@
-import SwiftUI
+import Foundation
 
 // MARK: - Result
 
@@ -75,11 +75,6 @@ enum VerseSearch {
     /// call repeatedly — it no-ops once the fingerprint matches.
     static func prewarm(_ packs: [Pack]) { _ = index(for: packs) }
 
-    /// Drop the built index. Call when verse *content* changes under a pack set
-    /// that still fingerprints the same — a remote catalog refresh, say, which can
-    /// rewrite verse text without changing any pack's name or size.
-    static func invalidate() { cached = nil }
-
     private static func result(_ entry: Entry, in packs: [Pack]) -> VerseSearchResult {
         let pack = packs[entry.packIndex]
         return VerseSearchResult(verse: pack.verses[entry.verseIndex],
@@ -87,7 +82,7 @@ enum VerseSearch {
     }
 
     private static func index(for packs: [Pack]) -> [Entry] {
-        let token = fingerprint(packs)
+        let token = Catalogue.fingerprint(packs)
         if let cached, cached.token == token { return cached.entries }
 
         var entries: [Entry] = []
@@ -104,18 +99,5 @@ enum VerseSearch {
         }
         cached = (token, entries)
         return entries
-    }
-
-    /// Cheap stand-in for "is this the same catalogue?" — pack names and sizes.
-    /// Hashing ~15 short strings beats rebuilding ~490 lowercased entries, and the
-    /// two things that change the pack set in practice (translation, pack
-    /// order/visibility) both move it.
-    private static func fingerprint(_ packs: [Pack]) -> Int {
-        var hasher = Hasher()
-        for pack in packs {
-            hasher.combine(pack.name)
-            hasher.combine(pack.verses.count)
-        }
-        return hasher.finalize()
     }
 }

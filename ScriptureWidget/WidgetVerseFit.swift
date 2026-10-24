@@ -1,18 +1,10 @@
 import SwiftUI
 import UIKit
 
-/// Measure-to-fit sizing for widget verse text.
+/// Text measurement for fitting the verse into the widget.
 ///
-/// The widget set every verse at a fixed point size with a `minimumScaleFactor`,
-/// which only ever shrinks — so a long verse squeezed down to fit while a short
-/// one stayed small with half the widget empty around it. This finds the largest
-/// size that still fits the space the layout actually leaves, so short verses
-/// grow into it. Same approach as `VerseFit` in the app, which is what the
-/// flashcards use.
-///
-/// Duplicated rather than shared because the widget is a separate target with
-/// its own bundle and can't see the app's sources — the same reason
-/// `WidgetVerse` restates `Verse`.
+/// Duplicated from the app's `VerseFit` because the widget is a separate target
+/// and can't see the app's sources.
 enum WidgetVerseFit {
 
     /// Rendered height of `text` at `size` (serif) with `lineSpacing`, wrapped to `width`.
@@ -29,22 +21,6 @@ enum WidgetVerseFit {
         return ceil(rect.height)
     }
 
-    /// Largest size in `min...max` whose text fits `width × height`.
-    static func fontSize(_ text: String, width: CGFloat, height: CGFloat,
-                         lineSpacing: CGFloat, minSize: CGFloat, maxSize: CGFloat) -> CGFloat {
-        guard width > 1, height > 1, !text.isEmpty else { return maxSize }
-        if Self.height(text, width: width, size: maxSize, lineSpacing: lineSpacing) <= height { return maxSize }
-        var lo = minSize, hi = maxSize
-        for _ in 0..<12 {
-            let mid = (lo + hi) / 2
-            if Self.height(text, width: width, size: mid, lineSpacing: lineSpacing) <= height {
-                lo = mid
-            } else {
-                hi = mid
-            }
-        }
-        return (lo * 2).rounded(.down) / 2
-    }
 }
 
 /// Height of a bold serif line (the title), wrapped and capped to `maxLines`.
@@ -65,12 +41,9 @@ private func measuredLineHeight(_ size: CGFloat) -> CGFloat {
 
 /// The whole verse block — title, reference and body — scaled as one.
 ///
-/// The base sizes are the *designed* sizes for the family: a widget is glanceable
-/// UI, not a poster, so the block is only ever scaled **down**, never up. A short
-/// verse renders at the same type scale as a long one and simply leaves the slack
-/// as whitespace — which is what keeps a two-line verse and a sixty-word verse
-/// looking like the same widget. Every size and gap moves by one factor so the
-/// title never ends up reading as a caption on its own body text.
+/// The base sizes are the designed sizes for the family. The block scales between
+/// `minPointSize` and `maxScale` to fit, and every size and gap moves by the same
+/// factor so the title never ends up reading as a caption on its own body text.
 struct FittedVerseBlock: View {
     let title:       String
     let reference:   String

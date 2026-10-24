@@ -16,7 +16,6 @@ enum ReminderPlan {
     }
 
     /// The next time the reminder would fire at `hour:minute` strictly after `now`.
-    /// Used for display and tests; the live notification uses a repeating trigger.
     static func nextFireDate(hour: Int, minute: Int, after now: Date,
                              calendar: Calendar = .current) -> Date? {
         let (h, m) = normalizedTime(hour: hour, minute: minute)

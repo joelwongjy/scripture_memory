@@ -20,8 +20,6 @@ final class SRSStore: ObservableObject {
     /// Outer key is `yyyy-MM-dd` (device-local). Inner key is pack name.
     @Published private(set) var dailyNewByDate: [String: [String: Int]] = [:]
 
-    /// Packs the user has opted into for daily review. Off by default —
-    /// the user explicitly turns on the packs they're memorizing.
     /// Packs the user has turned OFF for review. Opt-OUT model: every pack is
     /// active by default (users learn all packs in order), so we only persist
     /// the exceptions. New packs are therefore active automatically.
@@ -47,26 +45,14 @@ final class SRSStore: ObservableObject {
 
     // MARK: - Public Queries
 
-    func state(for key: String) -> SRSCardState? { states[key] }
-
     func state(for verse: Verse) -> SRSCardState? { states[verse.srsKey] }
 
-    /// Cards that are due NOW (or earlier) in the given pack.
-    func dueCards(in packName: String, allVerses: [Verse], now: Date = Date()) -> [Verse] {
-        allVerses.filter { v in
+    /// Cards among `verses` that are due now (or earlier).
+    func dueCards(in verses: [Verse], now: Date = Date()) -> [Verse] {
+        verses.filter { v in
             guard let s = states[v.srsKey] else { return false }
             return s.due <= now
         }
-    }
-
-    /// Cards in the pack with no SRS state yet.
-    func newCandidateCards(in packName: String, allVerses: [Verse]) -> [Verse] {
-        allVerses.filter { states[$0.srsKey] == nil }
-    }
-
-    /// New cards already introduced today for the given pack.
-    func newIntroducedToday(in packName: String, now: Date = Date()) -> Int {
-        dailyNewByDate[Self.dayKey(now)]?[packName] ?? 0
     }
 
     /// Total new cards introduced today across ALL packs.
@@ -105,6 +91,11 @@ final class SRSStore: ObservableObject {
     }
 
     // MARK: - Active Packs
+
+    /// The packs in `packs` that are in daily review, in the same order.
+    func activePacks(_ packs: [Pack]) -> [Pack] {
+        packs.filter { isActive($0.name) }
+    }
 
     func isActive(_ packName: String) -> Bool {
         !inactivePackNames.contains(packName)
@@ -175,7 +166,7 @@ final class SRSStore: ObservableObject {
     }
 
     /// Wipe all SRS state.
-    /// Active-pack opt-ins are preserved — they're a UI preference, not progress.
+    /// Inactive-pack choices are preserved — they're a UI preference, not progress.
     func resetAll() {
         states = [:]
         dailyNewByDate = [:]

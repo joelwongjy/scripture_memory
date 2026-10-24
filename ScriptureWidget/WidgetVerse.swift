@@ -1,9 +1,8 @@
 import Foundation
 
-/// A verse the widget can render. Decoded from the bundled `verseData.json`
-/// (for the specific-verse picker) and also reconstructed from the shared App
-/// Group (for the live "current learning verse"). `packName` is injected after
-/// decode, mirroring how the app builds its own `Verse`.
+/// A verse the widget can render: decoded from the verse catalogue, or rebuilt
+/// from the snapshot the app writes into the shared App Group. `packName` is
+/// injected after decode, mirroring how the app builds its own `Verse`.
 struct WidgetVerse: Decodable, Hashable, Identifiable {
     let title:     String
     let verse:     String
@@ -38,8 +37,8 @@ private struct WidgetPack: Decodable {
     let verses: [WidgetVerse]
 }
 
-/// The verse catalogue — used by the configuration picker and as a fallback
-/// when no current learning verse is available yet.
+/// The verse catalogue — the fallback when the app hasn't shared a current
+/// learning verse yet.
 ///
 /// Prefers the catalog the app downloaded into the shared App Group, and only
 /// falls back to the copy bundled with the widget. Before this, the picker was
@@ -72,7 +71,7 @@ enum VerseLibrary {
         // The edition the app is showing; fall back to NIV84, then to whatever
         // the file happens to contain.
         let preferred = UserDefaults(suiteName: SharedStore.appGroup)?
-            .string(forKey: "widget.edition.v1")
+            .string(forKey: SharedStore.editionKey)
         var packs = preferred.flatMap { doc.editions[$0] }
             ?? doc.editions["NIV84"]
             ?? doc.editions.values.first
@@ -104,10 +103,6 @@ enum VerseLibrary {
             pack.verses.map { var v = $0; v.packName = pack.name; return v }
         }
     }
-
-    static func verse(id: String) -> WidgetVerse? {
-        allVerses.first { $0.id == id }
-    }
 }
 
 /// Reads the live snapshot the app writes into the shared App Group: current
@@ -115,6 +110,7 @@ enum VerseLibrary {
 enum SharedStore {
     static let appGroup    = "group.joel.scripture-memory"
     static let snapshotKey = "widget.snapshot.v1"
+    static let editionKey  = "widget.edition.v1"
 
     struct SharedVerse: Codable {
         var title, verse, book, reference, packName: String
@@ -139,15 +135,15 @@ enum SharedStore {
         return s
     }
 
-    /// The verse the app is featuring — pinned if the user pinned one, otherwise
-    /// the live current-learning verse. The app writes whichever into the snapshot.
-    static func displayedVerse() -> WidgetVerse? {
-        guard let s = snapshot()?.verse else { return nil }
+}
+
+extension SharedStore.Snapshot {
+    /// The verse the app is featuring: the pinned one, or the current learning
+    /// verse (`isPinned` says which).
+    var featuredVerse: WidgetVerse? {
+        guard let s = verse else { return nil }
         var v = WidgetVerse(title: s.title, verse: s.verse, book: s.book, reference: s.reference)
         v.packName = s.packName
         return v
     }
-
-    /// Whether `displayedVerse()` is a user-pinned spotlight (vs the live cursor).
-    static func isPinned() -> Bool { snapshot()?.isPinned ?? false }
 }

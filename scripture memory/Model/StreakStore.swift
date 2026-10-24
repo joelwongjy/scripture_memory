@@ -3,7 +3,7 @@ import Combine
 
 /// Tracks daily study activity and derives the user's current streak.
 ///
-/// A "day" counts once the user starts a learning or review session that day.
+/// A "day" counts once the user opens the app that day.
 /// Persisted through `ProgressStorage` (a set of `yyyy-MM-dd` day keys). Days
 /// are facts, so an external copy is **unioned** in rather than replacing ours —
 /// a day studied on either device stays studied.

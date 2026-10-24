@@ -30,9 +30,8 @@ struct ScriptureMemoryApp: App {
                     // verse on Home keeps it alive (the scenePhase handler below covers
                     // returning from the background later the same day).
                     StreakStore.shared.recordToday()
-                    // Re-arm the daily reminder from saved settings on every
-                    // launch (the OS keeps the repeating trigger, but this keeps
-                    // it in sync if permission or the time changed out of band).
+                    // Re-arm the week of daily reminders from saved settings, in
+                    // case permission or the time changed while we were closed.
                     await NotificationManager.refreshFromSettings()
                     // Pick up any published verse corrections. Writes a cache
                     // file and nothing else — this launch keeps the catalog it
