@@ -26,7 +26,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Xcode version
-        run: echo "::notice::$(xcodebuild -version | tr '\n' ' ')"
+        run: |
+          echo "::notice::$(xcodebuild -version | tr '\n' ' ')"
+          echo "::notice::Installed: $(ls /Applications | grep Xcode | tr '\n' ' ')"
       - name: Build
         run: |
           xcodebuild build \
@@ -39,5 +41,6 @@ jobs:
           # Surface compiler errors as annotations on the run.
           grep -E "^/.+:[0-9]+:[0-9]+: error: " build.log | sort -u | head -50 \
             | sed -E "s#^$PWD/##; s#^([^:]+):([0-9]+):[0-9]+: error: (.*)#::error file=\1,line=\2::\3#" || true
-          grep -E "^(error|xcodebuild: error):" build.log | sort -u | head -20 | sed -E "s#^#::error::#" || true
+          grep -E "error:" build.log | grep -vE "^/.+:[0-9]+:[0-9]+: error: " | sort -u | head -20 | sed -E "s#^ *#::error::#" || true
+          [ $status -eq 0 ] || tail -15 build.log | sed -E "s#^ *#::warning::#"
           exit $status
