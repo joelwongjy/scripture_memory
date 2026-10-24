@@ -26,14 +26,17 @@ enum Catalogue {
         return flattened
     }
 
-    /// Cheap stand-in for "is this the same pack set?" — names and sizes. The
-    /// three things that change it in practice (translation, pack order, pack
-    /// visibility) all move one or the other.
+    /// Cheap stand-in for "is this the same pack set?": each pack's name, size
+    /// and first verse. Names and sizes catch pack order and visibility changes;
+    /// the first verse's id and text tell the two translations apart, which have
+    /// identical pack names and sizes.
     static func fingerprint(_ packs: [Pack]) -> Int {
         var hasher = Hasher()
         for pack in packs {
             hasher.combine(pack.name)
             hasher.combine(pack.verses.count)
+            hasher.combine(pack.verses.first?.id)
+            hasher.combine(pack.verses.first?.verse)
         }
         return hasher.finalize()
     }
