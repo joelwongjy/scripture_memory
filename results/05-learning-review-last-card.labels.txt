@@ -1,0 +1,61 @@
+Application | Scripture Memory |  | 0,0 402x874
+                            Heading | Home |  | 16,120 94x41
+                            TextField |  | Search verses | 16,169 370x44
+                              Image | Search |  | 28,181 20x19
+                                      StaticText | 1 day streak |  | 16,236 370x46
+                                        Image | Flame |  | 34,248 16x21
+                                        StaticText | 1 day streak |  | 62,250 86x18
+                                        Image | Flame |  | 358,255 7x9
+                                      StaticText | CONTINUE LEARNING |  | 34,318 129x14
+                                      StaticText | 5 of 5 |  | 310,318 34x14
+                                      PopUpButton | Verse options |  | 350,316 18x18
+                                          Image | More |  | 350,316 18x18
+                                      Button | Practice Proverbs 3:5-6 |  | 34,344 334x158
+                                        StaticText | Assurance of Guidance |  | 34,344 186x19
+                                        StaticText | Proverbs 3:5-6 |  | 34,369 94x17
+                                        StaticText | Trust in the Lord with all your heart and lean not on your own understanding; in all your ways acknowledge him, and he will make your paths straight. |  | 34,392 326x84
+                                        StaticText | 5 Assurances |  | 34,488 73x13
+                                        StaticText | Practice |  | 306,488 49x14
+                                        Image | Forward |  | 362,490 6x10
+                                      StaticText | Daily Review |  | 20,540 100x20
+                                      StaticText | 6, cards due today |  | 32,591 134x31
+                                        StaticText | 6 |  | 32,591 17x31
+                                        StaticText | cards due today |  | 55,601 110x18
+                                      Button | Start review |  | 298,600 72x32
+                                      StaticText | 0 Learning |  | 42,626 62x14
+                                      StaticText | 4 Review |  | 124,626 52x14
+                                      StaticText | 2 New |  | 196,626 36x14
+                                      Button | Packs in review, Reviewing all 15 packs |  | 16,670 370x20
+                                        StaticText | Reviewing all 15 packs |  | 20,672 135x16
+                                        Image | Forward |  | 161,675 6x10
+                                    Slider | Vertical scroll bar, 1 page | 0% | 369,176 30x615
+                                    Slider | Vertical scroll bar, 1 page | 0% | 369,176 30x615
+                  Group | Tab Bar |  | 0,791 402x83
+                        RadioButton | Home | 1 | 25,795 98x54
+                          Image | home |  | 57,801 33x28
+                        RadioButton | Packs |  | 110,795 98x54
+                          Image | Album |  | 144,800 30x31
+                        RadioButton | Quiz |  | 194,795 98x54
+                          Image | selected |  | 229,801 27x27
+                        RadioButton | Settings |  | 279,795 98x54
+                          Image | gearshape.fill |  | 314,801 28x28
+                    StaticText | 5 Assurances |  | 153,79 97x18
+                    StaticText | 5 of 5 |  | 184,99 34x14
+                    Button | Close |  | 16,74 44x44
+                    Button | Shuffle | Off | 342,74 44x44
+                    StaticText | Proverbs 3:5-6 |  | 36,264 129x22
+                    TextField |  | Title | 36,295 330x22
+                      Slider | Vertical scroll bar, 1 page | 0% | 338,330 30x170
+                    StaticText | Verse |  | 36,338 39x18
+                    Button | Add to favourites |  | 268,505 30x30
+                    Image | Current verse |  | 312,516 6x9
+                    StaticText | Current verse |  | 323,515 36x11
+                    Button | Previous verse |  | 16,669 44x44
+                    GenericElement | Verse position | 5 of 5 | 70,669 262x44
+                    Button | Next verse |  | 342,669 44x44
+                    Button | Peek at answer |  | 16,719 48x48
+                    Button | Dictate verse |  | 74,719 48x48
+                    Button | Reveal next word |  | 132,719 48x48
+                    Button | Submit |  | 190,721 196x43
+                      RadioButton | Read |  | 16,785 185x32
+                      RadioButton | Review | 1 | 201,785 185x32

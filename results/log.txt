@@ -1,0 +1,37 @@
+[18:08:34] Booting E952A9B0-CC78-435C-BF08-06AD47FE1076:     iPhone 17 Pro (E952A9B0-CC78-435C-BF08-06AD47FE1076) (Shutdown) 
+[18:12:22] shot 01-home
+[18:12:29] tap '=Packs' at 159 822
+[18:12:38] shot 02-tab-Packs
+[18:12:47] tap '=Quiz' at 243 822
+[18:12:54] shot 03-tab-Quiz
+[18:13:00] tap '=Settings' at 328 822
+[18:13:06] shot 04-tab-Settings
+[18:13:10] tap '=Home' at 74 822
+[18:13:14] tap 'Practice' at 201 423
+[18:13:24] shot 05-learning-review-last-card
+[18:13:29] swipe 340 380 40 380 2.5
+[18:13:37] shot 06-after-swipe-forward
+                                        StaticText | 5 Assurances |  | 34,488 73x13
+                    StaticText | TMS 60 |  | 173,79 56x18
+[18:13:43] tap '=Close' at 38 96
+[18:13:49] shot 07-home-after-learning
+[18:13:51] tap '=Quiz' at 243 822
+[18:13:59] tap 'Up to current verse' at 201 194
+[18:14:06] shot 08-quiz-selected
+[18:14:17] tap '=Start' at 346 754
+[18:14:36] shot 09-quiz-session-start
+[18:14:55] tap '=Submit' at 288 792
+[18:15:12] shot 10-quiz-one-card-done
+[18:15:23] tap 'Close session' at 38 96
+[18:15:33] shot 11-quiz-tab-after-leaving
+[18:15:47] tap '=Open' at 275 474
+[18:16:09] shot 12-review-start
+[18:16:21] tap '=Submit' at 288 792
+[18:16:29] shot 13-review-rating-buttons
+[18:16:56] tap 'Close session' at 38 96
+[18:17:07] tap '=Quiz' at 52 140
+[18:17:25] shot 14-quiz-tab-after-review
+[18:17:32] tap 'Session in Progress' at 134 186
+[18:17:44] shot 15-quiz-resumed
+[18:17:57] tap 'Close session' at 38 96
+[18:17:59] done

@@ -1,0 +1,44 @@
+Application | Scripture Memory |  | 0,0 402x874
+                            Heading | Settings |  | 16,120 133x41
+                                          Heading | Study Mode |  | 16,168 370x40
+                                          Button | First Letter |  | 16,208 370x52
+                                          Button | Full Word |  | 16,260 370x52
+                                          Button | Entire Verse |  | 16,312 370x52
+                                          StaticText | Type the full verse on the card, then tap Submit to check all at once. |  | 16,364 370x46
+                                          CheckBox | Hard Mode | 0 | 16,428 370x52
+                                            StaticText | Hard Mode |  | 72,444 85x20
+                                            CheckBox |  | 0 | 309,440 63x28
+                                            Image | Hide |  | 30,442 29x23
+                                          StaticText | Hides all hints — no word placeholders shown during review. |  | 16,480 370x46
+                                          Heading | Daily Review |  | 16,525 370x40
+                                          Image | Sparkle |  | 34,584 20x25
+                                          StaticText | New cards / week |  | 34,584 172x25
+                                          StaticText | 2 |  | 260,586 10x20
+                                          Slider | New cards / week | 2 | 276,580 94x32
+                                            Button | New cards / week, Decrement | 2 | 276,580 47x32
+                                            Button | New cards / week, Increment | 2 | 323,580 47x32
+                                            RadioButton | Day |  | 32,643 169x32
+                                            RadioButton | Week | 1 | 201,643 169x32
+                                          Image | Refresh |  | 35,708 19x23
+                                          StaticText | Reviews / day |  | 35,708 141x23
+                                          StaticText | 5 |  | 260,710 10x20
+                                          Slider | Reviews / day | 5 | 276,704 94x32
+                                            Button | Reviews / day, Decrement | 5 | 276,704 47x32
+                                            Button | Reviews / day, Increment | 5 | 323,704 47x32
+                                          CheckBox | Review earlier verses | 1 | 16,751 370x52
+                                            StaticText | Review earlier verses |  | 72,766 160x20
+                                            CheckBox |  | 1 | 309,763 63x28
+                                            Image | Selected |  | 33,766 22x22
+                                          StaticText | Both caps count across all packs. New cards start at your current verse. |  | 16,803 370x46
+                                          Heading | Reminders |  | 16,848 370x40
+                                    Slider | Vertical scroll bar, 3 pages | 0% | 369,116 30x675
+                                    Slider | Vertical scroll bar, 3 pages | 0% | 369,116 30x675
+                  Group | Tab Bar |  | 0,791 402x83
+                        RadioButton | Home |  | 25,795 98x54
+                          Image | home |  | 57,801 33x28
+                        RadioButton | Packs |  | 110,795 98x54
+                          Image | Album |  | 144,800 30x31
+                        RadioButton | Quiz |  | 194,795 98x54
+                          Image | selected |  | 229,801 27x27
+                        RadioButton | Settings | 1 | 279,795 98x54
+                          Image | gearshape.fill |  | 314,801 28x28
