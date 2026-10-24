@@ -14,7 +14,8 @@ import SwiftUI
 /// so the bar is configured in the first frame and only the scrolling part waits.
 struct MountAfterFirstFrame<Content: View>: View {
     @ViewBuilder var content: () -> Content
-    @State private var isMounted = false
+    // SMOKE EXPERIMENT ONLY (not for merge): skip the delay with a launch argument.
+    @State private var isMounted = ProcessInfo.processInfo.arguments.contains("-SMNoMountDelay")
 
     var body: some View {
         ZStack {
