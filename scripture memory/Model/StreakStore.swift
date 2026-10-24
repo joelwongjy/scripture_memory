@@ -3,7 +3,8 @@ import Combine
 
 /// Tracks daily study activity and derives the user's current streak.
 ///
-/// A "day" counts once the user opens the app that day.
+/// A day counts once the user practises that day: finishes or submits a card,
+/// rates a review, or marks a verse complete. Opening the app doesn't count.
 /// Persisted through `ProgressStorage` (a set of `yyyy-MM-dd` day keys). Days
 /// are facts, so an external copy is **unioned** in rather than replacing ours —
 /// a day studied on either device stays studied.
@@ -13,6 +14,10 @@ final class StreakStore: ObservableObject {
     static let shared = StreakStore()
 
     @Published private(set) var days: Set<String> = []
+
+    /// Set to the new streak length when today's first practice extends the
+    /// streak; the celebration overlay shows it and clears it.
+    @Published var celebration: Int?
 
     private let storage: ProgressStorage
     private static let storageKey = "streak.days.v1"
@@ -37,11 +42,13 @@ final class StreakStore: ObservableObject {
         if merged != incoming { persist() }   // our side had days iCloud lacked
     }
 
-    /// Mark today as active. Idempotent.
+    /// Mark today as practised. Idempotent; the first call of the day raises the
+    /// celebration.
     func recordToday(_ now: Date = Date()) {
         let key = Self.dayKey(now)
         guard !days.contains(key) else { return }
         days.insert(key)
+        celebration = current
         // Keep ~400 days so the set can't grow unbounded.
         if days.count > 400 {
             days = Set(days.sorted().suffix(400))
@@ -69,6 +76,42 @@ final class StreakStore: ObservableObject {
             day = prev
         }
         return streak
+    }
+
+    /// Whether today has been practised yet. While it hasn't, a running streak
+    /// is "at risk": still alive, but it ends at midnight.
+    var isTodayDone: Bool { days.contains(Self.dayKey(Date())) }
+
+    /// Days practised, in all (within the kept window of about 400 days).
+    var totalDays: Int { days.count }
+
+    /// The longest run of consecutive practised days on record.
+    var longest: Int {
+        let cal = Calendar.current
+        let dates = days.compactMap(Self.date(fromKey:)).sorted()
+        var best = 0, run = 0
+        var previous: Date?
+        for d in dates {
+            if let p = previous, cal.dateComponents([.day], from: p, to: d).day == 1 { run += 1 } else { run = 1 }
+            best = max(best, run)
+            previous = d
+        }
+        return best
+    }
+
+    /// Whether the given calendar day was practised.
+    func isDone(_ date: Date) -> Bool { days.contains(Self.dayKey(date)) }
+
+    /// The next streak milestone above `current`, Duolingo-style.
+    var nextMilestone: Int {
+        let milestones = [3, 7, 14, 30, 50, 100, 200, 365, 500, 1000]
+        return milestones.first { $0 > current } ?? (current / 100 + 1) * 100
+    }
+
+    private static func date(fromKey key: String) -> Date? {
+        let parts = key.split(separator: "-").compactMap { Int($0) }
+        guard parts.count == 3 else { return nil }
+        return Calendar.current.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2]))
     }
 
     /// The 7 days of the current calendar week (Duolingo-style row) — single-letter

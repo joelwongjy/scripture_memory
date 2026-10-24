@@ -109,6 +109,7 @@ struct TestSessionView: View {
         .background(Color(.systemGroupedBackground))
         .undoToast($undoToastState)
         .speechErrorAlert(speech)
+        .tracksStudyScreen()
         .onChange(of: vm.currentIndex) { _, _ in
             vm.clearInputs()
             vm.resetDictation()

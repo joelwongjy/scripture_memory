@@ -239,6 +239,12 @@ struct CardStudyView: View {
         .background(Color(.systemGroupedBackground))
         .undoToast($undoToastState)
         .speechErrorAlert(speech)
+        .tracksStudyScreen()
+        // Remember the card you were on, so reopening this pack lands there.
+        .onDisappear {
+            let i = vm.isReviewMode ? vm.currentIndex : visibleListIndex
+            if vm.verses.indices.contains(i) { PackPositions.save(vm.verses[i], inPack: vm.packName) }
+        }
         .onChange(of: vm.isReviewMode) { _, reviewing in handleReviewModeChange(reviewing) }
         // Un-starring the last favourite while the filter is on would leave the
         // session showing nothing at all, with the control that got you there now
@@ -467,9 +473,19 @@ struct CardStudyView: View {
                         if abs(f - scrollFraction) > 0.0001 { scrollFraction = f }
                         if abs(listScrollOffset - m.offset) > 0.5 { listScrollOffset = m.offset }
 
-                        // Mapped off the same fraction the fast-scroll thumb uses, so
-                        // the counter and the thumb agree and both ends are exact.
-                        let idx = ScrubberMath.index(fraction: f, count: vm.verses.count)
+                        // The card under a probe line: the middle of the screen, except
+                        // within half a screen of either end, where it slides to that
+                        // edge so the first and last cards read exactly (they can never
+                        // scroll to the middle).
+                        let viewport  = outerGeo.size.height
+                        let remaining = max(0, m.contentHeight - viewport - m.offset)
+                        var reach: CGFloat = 0.5
+                        if m.offset < viewport / 2 { reach = max(0, m.offset) / viewport }
+                        if remaining < viewport / 2 { reach = 1 - remaining / viewport }
+                        let probe = m.offset + viewport * reach
+                        let pitch = cardHeight + AppLayout.spacing
+                        let raw = Int(((probe - Self.listInset + AppLayout.spacing / 2) / pitch).rounded(.down))
+                        let idx = min(max(raw, 0), max(vm.verses.count - 1, 0))
                         if visibleListIndex != idx { visibleListIndex = idx }
                     }
                     .scrollPosition(id: $verticalScrollTarget, anchor: .center)

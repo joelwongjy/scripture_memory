@@ -26,10 +26,6 @@ struct ScriptureMemoryApp: App {
         WindowGroup {
             ContentView()
                 .task {
-                    // Opening the app counts toward today's streak — just viewing the
-                    // verse on Home keeps it alive (the scenePhase handler below covers
-                    // returning from the background later the same day).
-                    StreakStore.shared.recordToday()
                     // Re-arm the week of daily reminders from saved settings, in
                     // case permission or the time changed while we were closed.
                     await NotificationManager.refreshFromSettings()
@@ -42,7 +38,6 @@ struct ScriptureMemoryApp: App {
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
-                StreakStore.shared.recordToday()
                 // Also on resume, not just on launch. `.task` above runs once per
                 // cold start, and iOS keeps apps suspended for days — so relying
                 // on it alone meant a published correction needed two launches to

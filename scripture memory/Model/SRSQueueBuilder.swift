@@ -57,7 +57,11 @@ enum SRSQueueBuilder {
 
     /// The review cards a session serves, across `packs` in order: every learning
     /// card, then due reviews until the global cap is spent, then known backlog
-    /// into whatever it leaves. `DueSummary` and the dashboard count from this
+    /// into whatever it leaves.
+    ///
+    /// The known backlog is served most recently learnt first. Someone who starts
+    /// at verse 120 gets 119, 118, … rather than going back to verse 1: the verses
+    /// nearest their position are the freshest and the most likely to slip. `DueSummary` and the dashboard count from this
     /// same function so the number on Home is the session the Start button opens.
     static func reviewCards(
         packs: [Pack], store: SRSStore, dailyReviewCap: Int,
@@ -73,7 +77,7 @@ enum SRSQueueBuilder {
             known    += policy.known(in: pack.verses, store: store)
         }
         let cappedReview = review.prefix(max(0, dailyReviewCap))
-        let cappedKnown  = known.prefix(max(0, dailyReviewCap - cappedReview.count))
+        let cappedKnown  = Array(known.reversed().prefix(max(0, dailyReviewCap - cappedReview.count)))
         return learning + cappedReview + cappedKnown
     }
 

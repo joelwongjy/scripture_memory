@@ -112,7 +112,8 @@ struct HomeView: View {
 
     private var dashboard: some View {
         VStack(spacing: AppLayout.spacing) {
-            HomeStreakCard()
+            NavigationLink { StreakView() } label: { HomeStreakCard() }
+                .buttonStyle(CardButtonStyle())
             learningCards
             Text("Daily Review")
                 .font(.system(size: 17, weight: .semibold))
