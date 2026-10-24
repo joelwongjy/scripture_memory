@@ -1,0 +1,78 @@
+Application | Scripture Memory |  | 0,0 744x1133
+                              TextField |  | Search verses | 20,38 704x44
+                                Image | Search |  | 32,50 20x18
+                                        StaticText | 1 day streak |  | 68,98 608x52
+                                          Image | Flame |  | 86,114 16x22
+                                          StaticText | 1 day streak |  | 114,115 86x18
+                                          Image | Flame |  | 648,120 7x9
+                                        StaticText | CONTINUE LEARNING |  | 88,188 130x14
+                                        StaticText | 5 of 5 |  | 598,188 34x14
+                                        PopUpButton | Verse options |  | 638,186 18x18
+                                            Image | More |  | 638,186 18x18
+                                        Button | Read Proverbs 3:5-6 |  | 88,215 568x115
+                                          StaticText | Assurance of Guidance |  | 88,215 186x20
+                                          StaticText | Proverbs 3:5-6 |  | 88,240 94x17
+                                          StaticText | Trust in the Lord with all your heart and lean not on your own understanding; in all your ways acknowledge him, and he will make your paths straight. |  | 88,264 562x40
+                                          StaticText | 5 Assurances |  | 88,316 72x14
+                                          StaticText | Read |  | 612,316 30x14
+                                          Image | Forward |  | 650,318 6x10
+                                        StaticText | Daily Review |  | 72,370 100x20
+                                        StaticText | 6, cards due today |  | 84,420 134x32
+                                          StaticText | 6 |  | 84,420 18x32
+                                          StaticText | cards due today |  | 108,431 110x18
+                                        Button | Start review |  | 588,430 72x32
+                                        StaticText | 0 Learning |  | 94,456 62x14
+                                        StaticText | 4 Review |  | 176,456 52x14
+                                        StaticText | 2 New |  | 248,456 36x14
+                                        Button | Packs in review, Reviewing all 15 packs |  | 68,500 608x20
+                                          StaticText | Reviewing all 15 packs |  | 72,502 136x16
+                                          Image | Forward |  | 214,506 6x10
+                                      Slider | Vertical scroll bar, 1 page | 0% | 711,90 30x703
+                                      Slider | Vertical scroll bar, 1 page | 0% | 711,90 30x703
+                    Button | undo |  | 28,794 22x49
+                    Button | Redo |  | 74,794 22x49
+                    Button | Paste |  | 120,794 22x49
+                Group | Typing Predictions |  | 152,799 440x49
+                Button | Padding-Left |  | 0,848 0x0
+                Button | Padding-Right |  | 0,848 0x0
+                Button | Padding-Left |  | 0,848 0x0
+                Button | Padding-Right |  | 0,848 0x0
+                Button | Q |  | 3,855 66x64
+                Button | W |  | 70,855 66x64
+                Button | E |  | 136,855 66x64
+                Button | R |  | 202,855 66x64
+                Button | T |  | 268,855 66x64
+                Button | Y |  | 335,855 66x64
+                Button | U |  | 402,855 66x64
+                Button | I |  | 468,855 66x64
+                Button | O |  | 534,855 66x64
+                Button | P |  | 601,855 66x64
+                Button | delete |  | 668,855 80x64
+                Button | A |  | 30,920 66x64
+                Button | S |  | 96,920 66x64
+                Button | D |  | 162,920 66x64
+                Button | F |  | 229,920 66x64
+                Button | G |  | 296,920 66x64
+                Button | H |  | 362,920 66x64
+                Button | J |  | 428,920 66x64
+                Button | K |  | 494,920 66x64
+                Button | L |  | 561,920 66x64
+                Button | search |  | 628,920 120x64
+                Button | shift |  | 3,984 66x64
+                Button | Z |  | 70,984 66x64
+                Button | X |  | 136,984 66x64
+                Button | C |  | 202,984 66x64
+                Button | V |  | 268,984 66x64
+                Button | B |  | 335,984 66x64
+                Button | N |  | 402,984 66x64
+                Button | M |  | 468,984 66x64
+                Button | , |  | 534,984 66x64
+                Button | . |  | 601,984 66x64
+                Button | shift |  | 668,984 80x64
+                Button | Emoji |  | 3,1048 69x64
+                Button | numbers |  | 72,1048 69x64
+                Button | Dictate |  | 141,1048 69x64
+                Button |   |  | 210,1048 330x64
+                Button |   |  | 210,1048 330x64
+                Button | numbers |  | 540,1048 104x64
+                Button | Hide keyboard |  | 644,1048 104x64

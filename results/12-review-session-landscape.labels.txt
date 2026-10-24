@@ -1,0 +1,102 @@
+Application | Scripture Memory |  | 0,0 744x1133
+                              TextField |  | Search verses | 20,38 704x44
+                                Image | Search |  | 32,50 20x18
+                                        StaticText | 1 day streak |  | 68,98 608x52
+                                          Image | Flame |  | 86,114 16x22
+                                          StaticText | 1 day streak |  | 114,115 86x18
+                                          Image | Flame |  | 648,120 7x9
+                                        StaticText | CONTINUE LEARNING |  | 88,188 130x14
+                                        StaticText | 5 of 5 |  | 598,188 34x14
+                                        PopUpButton | Verse options |  | 638,186 18x18
+                                            Image | More |  | 638,186 18x18
+                                        Button | Read Proverbs 3:5-6 |  | 88,215 568x115
+                                          StaticText | Assurance of Guidance |  | 88,215 186x20
+                                          StaticText | Proverbs 3:5-6 |  | 88,240 94x17
+                                          StaticText | Trust in the Lord with all your heart and lean not on your own understanding; in all your ways acknowledge him, and he will make your paths straight. |  | 88,264 562x40
+                                          StaticText | 5 Assurances |  | 88,316 72x14
+                                          StaticText | Read |  | 612,316 30x14
+                                          Image | Forward |  | 650,318 6x10
+                                        StaticText | Daily Review |  | 72,370 100x20
+                                        StaticText | 6, cards due today |  | 84,420 134x32
+                                          StaticText | 6 |  | 84,420 18x32
+                                          StaticText | cards due today |  | 108,431 110x18
+                                        Button | Start review |  | 588,430 72x32
+                                        StaticText | 0 Learning |  | 94,456 62x14
+                                        StaticText | 4 Review |  | 176,456 52x14
+                                        StaticText | 2 New |  | 248,456 36x14
+                                        Button | Packs in review, Reviewing all 15 packs |  | 68,500 608x20
+                                          StaticText | Reviewing all 15 packs |  | 72,502 136x16
+                                          Image | Forward |  | 214,506 6x10
+                                      Slider | Vertical scroll bar, 1 page | 0% | 711,90 30x703
+                                      Slider | Vertical scroll bar, 1 page | 0% | 711,90 30x703
+          StaticText | Review |  | 346,49 51x18
+          StaticText | 1 of 6 · 0 done |  | 331,69 82x14
+          Button | Close session |  | 92,44 44x44
+          Button | Undo last rating |  | 144,44 44x44
+          Button | Close keyboard |  | 612,56 40x20
+          StaticText | 1 Corinthians 10:13 |  | 138,242 177x23
+          StaticText | _________ __ _______ |  | 138,276 468x20
+          StaticText | __ __________ ___ ______ ___ ______ ____ __ ______ __ ___. ___ ___ __ ________; __ ____ ___ ___ ___ __ _______ ______ ____ ___ ___ ____. ___ ____ ___ ___ _______, __ ____ ____ _______ _ ___ ___ __ ____ ___ ___ _____ __ _____ __. |  | 138,303 468x268
+          StaticText | 0/3 |  | 589,580 17x11
+          StaticText | 3 · Beginning with Christ |  | 138,606 132x14
+          StaticText | John 16:24 |  | 125,219 101x24
+          StaticText | _________ __ ________ ______ |  | 125,255 494x21
+          StaticText | _____ ___ ___ ____ ___ _____ ___ ________ __ __ ____. ___ ___ ___ ____ _______, ___ ____ ___ ____ __ ________. |  | 125,284 494x283
+          StaticText | 0/4 |  | 601,577 18x11
+          StaticText | 2 · Beginning with Christ |  | 125,603 140x14
+          StaticText | 1 John 5:11-12 |  | 112,197 134x26
+          StaticText | _________ __ _________ |  | 112,234 520x22
+          StaticText | ___ ____ __ ___ _________: ___ ___ _____ __ _______ ____, ___ ____ ____ __ __ ___ ___. __ ___ ___ ___ ___ ___ ____; __ ___ ____ ___ ____ ___ ___ __ ___ ____ ___ ____ ____. |  | 112,265 520x298
+          StaticText | 0/3 |  | 613,573 19x12
+          StaticText | 1 · Beginning with Christ |  | 112,601 145x15
+          Button | Peek at answer |  | 92,720 48x48
+          Button | Dictate verse |  | 157,722 44x44
+          TextField |  | Type first letter of each word... | 200,733 376x22
+          Button | Reveal next word |  | 604,720 48x48
+                    Button | undo |  | 28,794 22x49
+                    Button | Redo |  | 74,794 22x49
+                    Button | Paste |  | 120,794 22x49
+                Group | Typing Predictions |  | 152,799 440x49
+                Button | Padding-Left |  | 0,848 0x0
+                Button | Padding-Right |  | 0,848 0x0
+                Button | Padding-Left |  | 0,848 0x0
+                Button | Padding-Right |  | 0,848 0x0
+                Button | q |  | 3,855 66x64
+                Button | w |  | 70,855 66x64
+                Button | e |  | 136,855 66x64
+                Button | r |  | 202,855 66x64
+                Button | t |  | 268,855 66x64
+                Button | y |  | 335,855 66x64
+                Button | u |  | 402,855 66x64
+                Button | i |  | 468,855 66x64
+                Button | o |  | 534,855 66x64
+                Button | p |  | 601,855 66x64
+                Button | delete |  | 668,855 80x64
+                Button | a |  | 30,920 66x64
+                Button | s |  | 96,920 66x64
+                Button | d |  | 162,920 66x64
+                Button | f |  | 229,920 66x64
+                Button | g |  | 296,920 66x64
+                Button | h |  | 362,920 66x64
+                Button | j |  | 428,920 66x64
+                Button | k |  | 494,920 66x64
+                Button | l |  | 561,920 66x64
+                Button | return |  | 628,920 120x64
+                Button | shift |  | 3,984 66x64
+                Button | z |  | 70,984 66x64
+                Button | x |  | 136,984 66x64
+                Button | c |  | 202,984 66x64
+                Button | v |  | 268,984 66x64
+                Button | b |  | 335,984 66x64
+                Button | n |  | 402,984 66x64
+                Button | m |  | 468,984 66x64
+                Button | , |  | 534,984 66x64
+                Button | . |  | 601,984 66x64
+                Button | shift |  | 668,984 80x64
+                Button | Emoji |  | 3,1048 69x64
+                Button | numbers |  | 72,1048 69x64
+                Button | Dictate |  | 141,1048 69x64
+                Button |   |  | 210,1048 330x64
+                Button |   |  | 210,1048 330x64
+                Button | numbers |  | 540,1048 104x64
+                Button | Hide keyboard |  | 644,1048 104x64

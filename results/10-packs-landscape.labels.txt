@@ -1,0 +1,40 @@
+Application | Scripture Memory |  | 0,0 744x1133
+                    RadioButton | Home | 1 | 211,36 78x36
+                      RadioButton | Home | 1 | 211,36 78x36
+                    RadioButton | Packs |  | 290,36 78x36
+                      RadioButton | Packs |  | 290,36 78x36
+                    RadioButton | Quiz | 1 | 368,36 68x36
+                      RadioButton | Quiz | 1 | 368,36 68x36
+                    RadioButton | Settings |  | 436,36 97x36
+                      RadioButton | Settings |  | 436,36 97x36
+                              Heading | Home |  | 20,90 94x41
+                              TextField |  | Search verses | 20,139 704x44
+                                Image | Search |  | 32,152 20x18
+                                        StaticText | 1 day streak |  | 68,206 608x52
+                                          Image | Flame |  | 86,222 16x22
+                                          StaticText | 1 day streak |  | 114,223 86x18
+                                          Image | Flame |  | 648,228 7x9
+                                        StaticText | CONTINUE LEARNING |  | 88,296 130x14
+                                        StaticText | 5 of 5 |  | 598,296 34x14
+                                        PopUpButton | Verse options |  | 638,294 18x18
+                                            Image | More |  | 638,294 18x18
+                                        Button | Read Proverbs 3:5-6 |  | 88,323 568x115
+                                          StaticText | Assurance of Guidance |  | 88,323 186x20
+                                          StaticText | Proverbs 3:5-6 |  | 88,348 94x17
+                                          StaticText | Trust in the Lord with all your heart and lean not on your own understanding; in all your ways acknowledge him, and he will make your paths straight. |  | 88,372 562x40
+                                          StaticText | 5 Assurances |  | 88,424 72x14
+                                          StaticText | Read |  | 612,424 30x14
+                                          Image | Forward |  | 650,426 6x10
+                                        StaticText | Daily Review |  | 72,478 100x20
+                                        StaticText | 6, cards due today |  | 84,528 134x32
+                                          StaticText | 6 |  | 84,528 18x32
+                                          StaticText | cards due today |  | 108,539 110x18
+                                        Button | Start review |  | 588,538 72x32
+                                        StaticText | 0 Learning |  | 94,564 62x14
+                                        StaticText | 4 Review |  | 176,564 52x14
+                                        StaticText | 2 New |  | 248,564 36x14
+                                        Button | Packs in review, Reviewing all 15 packs |  | 68,608 608x20
+                                          StaticText | Reviewing all 15 packs |  | 72,610 136x16
+                                          Image | Forward |  | 214,614 6x10
+                                      Slider | Vertical scroll bar, 1 page | 0% | 711,146 30x966
+                                      Slider | Vertical scroll bar, 1 page | 0% | 711,146 30x966

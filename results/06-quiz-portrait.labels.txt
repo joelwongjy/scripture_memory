@@ -1,0 +1,105 @@
+Application | Scripture Memory |  | 0,0 744x1133
+                    RadioButton | Home |  | 211,36 78x36
+                      RadioButton | Home |  | 211,36 78x36
+                    RadioButton | Packs |  | 290,36 78x36
+                      RadioButton | Packs |  | 290,36 78x36
+                    RadioButton | Quiz | 1 | 368,36 68x36
+                      RadioButton | Quiz | 1 | 368,36 68x36
+                    RadioButton | Settings |  | 436,36 97x36
+                      RadioButton | Settings |  | 436,36 97x36
+                              Heading | Quiz |  | 20,90 72x41
+                                            Button | Up to current verse, 5A-5 |  | 20,138 704x52
+                                              StaticText | Up to current verse |  | 40,154 140x20
+                                              StaticText | 5A-5 |  | 669,155 35x18
+                                            Button | Select all verses in 5 Assurances |  | 47,217 22x22
+                                              Image | circle |  | 47,217 22x22
+                                            Button | Expand 5 Assurances to pick individual verses |  | 80,203 636x50
+                                              StaticText | 5 Assurances |  | 80,209 100x20
+                                              StaticText | 5 verses |  | 80,231 52x16
+                                              Image | Forward |  | 692,222 6x11
+                                            Button | Select all verses in TMS 60 |  | 47,269 22x22
+                                              Image | circle |  | 47,269 22x22
+                                            Button | Expand TMS 60 to pick individual verses |  | 80,255 636x50
+                                              StaticText | TMS 60 |  | 80,261 58x20
+                                              StaticText | 60 verses |  | 80,283 60x16
+                                              Image | Forward |  | 692,274 6x11
+                                            Button | Select all verses in DEP 1: Assurance of Salvation |  | 47,321 22x22
+                                              Image | circle |  | 47,321 22x22
+                                            Button | Expand DEP 1: Assurance of Salvation to pick individual verses |  | 80,307 636x50
+                                              StaticText | DEP 1: Assurance of Salvation |  | 80,313 221x20
+                                              StaticText | 18 verses |  | 80,335 58x16
+                                              Image | Forward |  | 692,326 6x11
+                                            Button | Select all verses in DEP 2: Quiet Time |  | 47,373 22x22
+                                              Image | circle |  | 47,373 22x22
+                                            Button | Expand DEP 2: Quiet Time to pick individual verses |  | 80,359 636x50
+                                              StaticText | DEP 2: Quiet Time |  | 80,365 134x20
+                                              StaticText | 26 verses |  | 80,387 60x16
+                                              Image | Forward |  | 692,378 6x11
+                                            Button | Select all verses in DEP 3: The Word |  | 47,425 22x22
+                                              Image | circle |  | 47,425 22x22
+                                            Button | Expand DEP 3: The Word to pick individual verses |  | 80,411 636x50
+                                              StaticText | DEP 3: The Word |  | 80,417 126x20
+                                              StaticText | 37 verses |  | 80,439 59x16
+                                              Image | Forward |  | 692,430 6x11
+                                            Button | Select all verses in DEP 4: Prayer |  | 47,477 22x22
+                                              Image | circle |  | 47,477 22x22
+                                            Button | Expand DEP 4: Prayer to pick individual verses |  | 80,463 636x50
+                                              StaticText | DEP 4: Prayer |  | 80,469 102x20
+                                              StaticText | 32 verses |  | 80,491 60x16
+                                              Image | Forward |  | 692,482 6x11
+                                            Button | Select all verses in DEP 5: Fellowship |  | 47,529 22x22
+                                              Image | circle |  | 47,529 22x22
+                                            Button | Expand DEP 5: Fellowship to pick individual verses |  | 80,515 636x50
+                                              StaticText | DEP 5: Fellowship |  | 80,521 132x20
+                                              StaticText | 30 verses |  | 80,543 60x16
+                                              Image | Forward |  | 692,534 6x11
+                                            Button | Select all verses in DEP 6: Witnessing |  | 47,581 22x22
+                                              Image | circle |  | 47,581 22x22
+                                            Button | Expand DEP 6: Witnessing to pick individual verses |  | 80,567 636x50
+                                              StaticText | DEP 6: Witnessing |  | 80,573 137x20
+                                              StaticText | 55 verses |  | 80,595 60x16
+                                              Image | Forward |  | 692,586 6x11
+                                            Button | Select all verses in DEP 7: The Lordship of Christ |  | 47,633 22x22
+                                              Image | circle |  | 47,633 22x22
+                                            Button | Expand DEP 7: The Lordship of Christ to pick individual verses |  | 80,619 636x50
+                                              StaticText | DEP 7: The Lordship of Christ |  | 80,625 218x20
+                                              StaticText | 26 verses |  | 80,647 60x16
+                                              Image | Forward |  | 692,638 6x11
+                                            Button | Select all verses in DEP 8: World Vision |  | 47,685 22x22
+                                              Image | circle |  | 47,685 22x22
+                                            Button | Expand DEP 8: World Vision to pick individual verses |  | 80,671 636x50
+                                              StaticText | DEP 8: World Vision |  | 80,677 148x20
+                                              StaticText | 18 verses |  | 80,699 58x16
+                                              Image | Forward |  | 692,690 6x11
+                                            Button | Select all verses in TMS 180 · Getting to Know God |  | 47,737 22x22
+                                              Image | circle |  | 47,737 22x22
+                                            Button | Expand TMS 180 · Getting to Know God to pick individual verses |  | 80,723 636x50
+                                              StaticText | TMS 180 · Getting to Know God |  | 80,729 233x20
+                                              StaticText | 36 verses |  | 80,751 60x16
+                                              Image | Forward |  | 692,742 6x11
+                                            Button | Select all verses in TMS 180 · Growing in Love |  | 47,789 22x22
+                                              Image | circle |  | 47,789 22x22
+                                            Button | Expand TMS 180 · Growing in Love to pick individual verses |  | 80,775 636x50
+                                              StaticText | TMS 180 · Growing in Love |  | 80,781 196x20
+                                              StaticText | 36 verses |  | 80,803 60x16
+                                              Image | Forward |  | 692,794 6x11
+                                            Button | Select all verses in TMS 180 · Growing in Faith |  | 47,841 22x22
+                                              Image | circle |  | 47,841 22x22
+                                            Button | Expand TMS 180 · Growing in Faith to pick individual verses |  | 80,827 636x50
+                                              StaticText | TMS 180 · Growing in Faith |  | 80,833 198x20
+                                              StaticText | 36 verses |  | 80,855 60x16
+                                              Image | Forward |  | 692,846 6x11
+                                            Button | Select all verses in TMS 180 · Walking in Victory |  | 47,893 22x22
+                                              Image | circle |  | 47,893 22x22
+                                            Button | Expand TMS 180 · Walking in Victory to pick individual verses |  | 80,879 636x50
+                                              StaticText | TMS 180 · Walking in Victory |  | 80,885 212x20
+                                              StaticText | 36 verses |  | 80,907 60x16
+                                              Image | Forward |  | 692,898 6x11
+                                            Button | Select all verses in TMS 180 · Sharing Christ with Others |  | 47,945 22x22
+                                              Image | circle |  | 47,945 22x22
+                                            Button | Expand TMS 180 · Sharing Christ with Others to pick individual verses |  | 80,931 636x50
+                                              StaticText | TMS 180 · Sharing Christ with Others |  | 80,937 274x20
+                                              StaticText | 36 verses |  | 80,959 60x16
+                                              Image | Forward |  | 692,950 6x11
+                                      Slider | Vertical scroll bar, 1 page | 0% | 711,86 30x1015
+                                      Slider | Vertical scroll bar, 1 page | 0% | 711,86 30x1015
