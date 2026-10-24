@@ -473,9 +473,13 @@ struct CardStudyView: View {
                         if abs(f - scrollFraction) > 0.0001 { scrollFraction = f }
                         if abs(listScrollOffset - m.offset) > 0.5 { listScrollOffset = m.offset }
 
-                        // Mapped off the same fraction the fast-scroll thumb uses, so
-                        // the counter and the thumb agree and both ends are exact.
-                        let idx = ScrubberMath.index(fraction: f, count: vm.verses.count)
+                        // The card under a probe line that slides from the top of the
+                        // viewport (at the top of the list) to the bottom (at the end):
+                        // mid-list that's the centred card, and both ends are exact.
+                        let probe = m.offset + outerGeo.size.height * f
+                        let pitch = cardHeight + AppLayout.spacing
+                        let raw = Int(((probe - Self.listInset + AppLayout.spacing / 2) / pitch).rounded(.down))
+                        let idx = min(max(raw, 0), max(vm.verses.count - 1, 0))
                         if visibleListIndex != idx { visibleListIndex = idx }
                     }
                     .scrollPosition(id: $verticalScrollTarget, anchor: .center)
