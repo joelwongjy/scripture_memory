@@ -1,0 +1,39 @@
+Application | Scripture Memory |  | 0,0 1133x744
+                    RadioButton | Home | 1 | 406,36 78x36
+                      RadioButton | Home | 1 | 406,36 78x36
+                    RadioButton | Packs |  | 484,36 78x36
+                      RadioButton | Packs |  | 484,36 78x36
+                    RadioButton | Quiz | 1 | 563,36 68x36
+                      RadioButton | Quiz | 1 | 563,36 68x36
+                    RadioButton | Settings |  | 630,36 97x36
+                      RadioButton | Settings |  | 630,36 97x36
+                              Heading | Home |  | 20,90 94x41
+                              TextField |  | Search verses | 20,139 1093x44
+                                Image | Search |  | 32,152 20x18
+                                        Button | 0 day streak |  | 262,206 608x52
+                                          Image | Flame |  | 280,222 16x22
+                                          StaticText | 0 day streak |  | 308,223 88x18
+                                        StaticText | CONTINUE LEARNING |  | 282,296 130x14
+                                        StaticText | 11 of 37 |  | 781,296 45x14
+                                        PopUpButton | Verse options |  | 832,294 18x18
+                                            Image | More |  | 832,294 18x18
+                                        Button | Read 1 Peter 1:23 |  | 282,323 568x115
+                                          StaticText | Making us born again |  | 282,323 176x20
+                                          StaticText | 1 Peter 1:23 |  | 282,348 71x17
+                                          StaticText | For you have been born again, not of perishable seed, but of imperishable, through the living and enduring word of God. |  | 282,372 520x40
+                                          StaticText | DEP 3: The Word |  | 282,424 91x14
+                                          StaticText | Read |  | 807,424 30x14
+                                          Image | Forward |  | 844,426 6x10
+                                        StaticText | Daily Review |  | 266,478 100x20
+                                        StaticText | 7, cards due today |  | 278,528 132x32
+                                          StaticText | 7 |  | 278,528 16x32
+                                          StaticText | cards due today |  | 300,539 110x18
+                                        Button | Start review |  | 782,538 72x32
+                                        StaticText | 0 Learning |  | 288,564 62x14
+                                        StaticText | 5 Review |  | 370,564 52x14
+                                        StaticText | 2 New |  | 442,564 36x14
+                                        Button | Packs in review, Reviewing all 15 packs |  | 262,608 608x20
+                                          StaticText | Reviewing all 15 packs |  | 266,610 136x16
+                                          Image | Forward |  | 408,614 6x10
+                                      Slider | Vertical scroll bar, 1 page | 0% | 1100,146 30x576
+                                      Slider | Vertical scroll bar, 1 page | 0% | 1100,146 30x576
