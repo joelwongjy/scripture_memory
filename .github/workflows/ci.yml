@@ -17,3 +17,24 @@ jobs:
         run: swift --version
       - name: Run tests
         run: swift test
+
+  ios-build:
+    name: iOS app build
+    runs-on: macos-15
+    # Compiles the app and widget for the simulator, unsigned. Catches anything
+    # the Linux test job can't see (SwiftUI, WidgetKit, the Xcode project).
+    steps:
+      - uses: actions/checkout@v4
+      - name: Xcode version
+        run: xcodebuild -version
+      - name: Build
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project "Scripture Memory.xcodeproj" \
+            -target "Scripture Memory" \
+            -sdk iphonesimulator \
+            -configuration Debug \
+            CODE_SIGNING_ALLOWED=NO \
+            | grep -E "error:|warning:|BUILD (SUCCEEDED|FAILED)" || true
+          test "${PIPESTATUS[0]}" -eq 0
