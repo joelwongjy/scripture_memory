@@ -36,6 +36,21 @@ final class TestSessionViewModel: RecallCardViewModel {
     /// Verse IDs correctly submitted — persisted so submit-mode progress survives dismissal.
     @Published private(set) var completedVerseIds:   Set<Int>            = []
 
+    // MARK: - SRS Grading State (see TestSessionViewModel+Grading.swift)
+
+    /// Ratings given this session, by verse id.
+    @Published var sessionGrades:  [Int: SRSGrade]     = [:]
+    /// The rating picked for the current card but not yet confirmed.
+    @Published var pendingGrade:   SRSGrade?
+    /// Each rated card's schedule from before its first rating this session.
+    @Published var preGradeStates: [Int: SRSCardState] = [:]
+    /// Verse ids in the order they were rated: the Undo stack.
+    @Published var gradedOrder:    [Int]               = []
+    /// Verses whose rating advanced the learning cursor, so Undo can put it back.
+    var autoLearntIds:             Set<Int>            = []
+    /// Verses revealed with hold-to-peek this session.
+    @Published var peekedVerseIds: Set<Int>            = []
+
     // MARK: - Derived State
 
     var isSessionComplete: Bool {
@@ -51,10 +66,13 @@ final class TestSessionViewModel: RecallCardViewModel {
         }
     }
 
-    func mistakes(for verseId: Int) -> Int { min(mistakeCounts[verseId, default: 0], 5) }
-    func score(for verseId: Int) -> Int    { -mistakes(for: verseId) }
+    /// Mistakes count up to this many per verse.
+    private static let maxMistakesPerVerse = 5
 
-    var sessionScore:    Int { verses.reduce(0) { $0 + score(for: $1.id) } }
+    func mistakes(for verseId: Int) -> Int { min(mistakeCounts[verseId, default: 0], Self.maxMistakesPerVerse) }
+
+    /// Zero is perfect; each mistake takes one off.
+    var sessionScore:   Int { -verses.reduce(0) { $0 + mistakes(for: $1.id) } }
     var perfectCount:   Int { verses.filter { mistakes(for: $0.id) == 0 && isComplete($0) }.count }
     var completedCount: Int { verses.filter { isComplete($0) }.count }
 
@@ -80,7 +98,7 @@ final class TestSessionViewModel: RecallCardViewModel {
         guard studyMode == .submit else { return }
         guard let verse = currentVerse else { return }
         let current = mistakeCounts[verse.id, default: 0]
-        guard current < 5 else { return }
+        guard current < Self.maxMistakesPerVerse else { return }
         mistakeCounts[verse.id] = current + 1
         saveProgress()
     }
@@ -134,22 +152,13 @@ final class TestSessionViewModel: RecallCardViewModel {
 
     private static let progressKey = "currentSessionProgress"
 
-    /// Called when the user explicitly ends the session — wipes persisted state.
-    func clearProgress() {
-        UserDefaults.standard.removeObject(forKey: Self.progressKey)
-    }
-
-    /// Called before starting a brand-new session so stale progress is never restored.
+    /// Wipes saved progress: when a session ends, and before a new one starts so
+    /// stale progress is never restored.
     static func clearPersistedProgress() {
         UserDefaults.standard.removeObject(forKey: progressKey)
     }
 
-    /// Persists session state (e.g. after scrubber drag). Navigation helpers call `saveProgress` internally.
-    func persistSession() {
-        saveProgress()
-    }
-
-    private func saveProgress() {
+    func saveProgress() {
         let snapshot = submitResults.isEmpty
             ? nil
             : SubmitResultPersistence.encodeToMap(submitResults)
