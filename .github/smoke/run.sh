@@ -3,11 +3,16 @@
 source .github/smoke/lib.sh
 : > results/assertions.txt
 
-expect() {   # expect "what" "regex"
-  local text; text=$(axe describe-ui --udid "$UDID" 2>/dev/null | python3 .github/smoke/alltext.py)
-  if echo "$text" | grep -Eq -- "$2"; then echo "PASS | $1" | tee -a results/assertions.txt
-  else echo "FAIL | $1 | wanted /$2/ | saw: $(echo "$text" | head -40 | tr '\n' '~' | cut -c1-500)" | tee -a results/assertions.txt; fi
+expect() {   # expect "what" "regex" — retries while the accessibility tree catches up
+  local text
+  for attempt in 1 2 3 4; do
+    text=$(axe describe-ui --udid "$UDID" 2>/dev/null | python3 .github/smoke/alltext.py)
+    if echo "$text" | grep -Eq -- "$2"; then echo "PASS | $1" | tee -a results/assertions.txt; return; fi
+    sleep 2
+  done
+  echo "FAIL | $1 | wanted /$2/ | saw: $(echo "$text" | head -40 | tr '\n' '~' | cut -c1-500)" | tee -a results/assertions.txt
 }
+continue_celebration() { tap_label "=Continue" "" 2 || true; }
 expect_not() {   # expect_not "what" "regex"
   local text; text=$(axe describe-ui --udid "$UDID" 2>/dev/null | python3 .github/smoke/alltext.py)
   if echo "$text" | grep -Eq -- "$2"; then echo "FAIL | $1 | found /$2/" | tee -a results/assertions.txt
@@ -15,7 +20,10 @@ expect_not() {   # expect_not "what" "regex"
 }
 due_is() { echo "^$1\$|(^|[^0-9])$1,? cards? due"; }
 fact() { python3 -c "import json,sys; print(json.load(open('results/facts-$1.json'))['$2'])"; }
-fresh_install() { xcrun simctl uninstall "$UDID" "$BUNDLE" 2>/dev/null; xcrun simctl install "$UDID" "$APP"; }
+fresh_install() {   # erase the whole simulator: also clears its iCloud key-value store
+  xcrun simctl shutdown "$UDID" 2>/dev/null; xcrun simctl erase "$UDID"
+  xcrun simctl boot "$UDID"; xcrun simctl bootstatus "$UDID" -b > /dev/null; xcrun simctl install "$UDID" "$APP"
+}
 open_review() { openurl "scripturememory://review" 3; tap_label "=Open" "" 4 || true; }
 answer() { axe type "for god so loved" --udid "$UDID" > /dev/null; sleep 1; tap_label "=Submit" "" 2; }
 
@@ -52,8 +60,8 @@ if [ "$DEVICE" = iphone ]; then
 
   # ── Quiz progress survives a daily review ─────────────────────────────────
   tap_label "=Quiz"; tap_label "Up to current verse" "" 2; tap_label "=Start" "" 4
-  answer; tap_label "Close session" "" 2
-  open_review; tap_label "Close session" "" 2
+  answer; tap_label "Close session" "" 2; continue_celebration
+  open_review; tap_label "Close session" "" 2; continue_celebration
   tap_label "=Quiz"; tap_label "Session in Progress" "" 3; shot quiz-resumed
   expect "Quiz resumes with its answer kept after a review" "1 done"
   tap_label "Close session" "" 2
@@ -76,7 +84,7 @@ if [ "$DEVICE" = iphone ]; then
   tap_label "Undo last rating" "" 3; shot due-after-undo
   expect "Undo goes back to the rated card" "1 of 10"
   tap_label "=Good" "" 1; tap_label "=Confirm" "" 3
-  tap_label "Close session" "" 3; shot due-celebration
+  tap_label "Close session" "" 3; sleep 1; shot due-celebration
   expect "Streak celebration appears after leaving the session" "day streak!"
   tap_label "=Continue" "" 2; shot due-home-after
   expect "Home count drops by the one card rated (10 -> 9)" "$(due_is 9)"
