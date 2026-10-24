@@ -38,20 +38,6 @@ struct TestSetupView: View {
     @State private var savedSession:      TestSession? = nil
     @State private var showOverwriteAlert = false
 
-    /// Typed-entry state for the card count. Stepping one at a time is fine for a
-    /// nudge but painful for "make it 40", so the number itself is tappable and
-    /// swaps to a number-pad field.
-    @State private var countDraft = ""
-    @FocusState private var countFieldFocused: Bool
-    /// The value the field is showing that a keystroke should *replace* rather than
-    /// extend — set whenever the count arrives from somewhere other than typing
-    /// (focus, +/-, Max), cleared once a digit has replaced it.
-    ///
-    /// The field used to blank itself on focus to get the same effect, which left it
-    /// showing nothing while the stepper still held a value, so any +/- tap made
-    /// with the keypad up looked like it did nothing at all.
-    @State private var countReplaceAnchor: String? = nil
-
     private static let savedSessionKey = "lastTestSessionVerseIds"
     private static let quizCountKey    = "reviewSetupQuizCount"
 
@@ -183,7 +169,7 @@ struct TestSetupView: View {
         .padding(.vertical, 3)
         .listRowInsets(EdgeInsets(top: 2, leading: 16, bottom: 2, trailing: 14))
         .contentShape(Rectangle())
-        .onTapGesture { activeSession = savedSession }
+        .onTapGesture { activeSession = session }
         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
             Button(role: .destructive) {
                 dismissSavedSession()
@@ -194,18 +180,10 @@ struct TestSetupView: View {
     }
 
     // MARK: - Shortcuts
-    //
-    // Picking a quiz almost always means one of a few spans, and reaching them by
-    // hand is the tedious part: "everything I've learnt so far" is a hundred-odd
-    // taps, or one pack checkbox plus un-ticking the tail of the pack you're in.
 
-    /// The two smart presets, as visible rows.
-    ///
-    /// These stay on screen rather than folding into a menu: they're for use
-    /// *while* choosing verses, and a control you need mid-task has to be in
-    /// sight — a `⋯` menu is where occasional commands go, not the ones you're
-    /// reaching for. They sit in their own group above the packs, so they read as
-    /// shortcuts rather than as two more packs.
+    /// Presets for the spans people actually quiz on ("everything I've learnt so
+    /// far" would otherwise be a hundred-odd taps). Visible rows rather than a
+    /// menu, since they're used while choosing verses.
     @ViewBuilder
     private var shortcutRows: some View {
         let upToCurrent = versesUpToCurrent()
@@ -223,10 +201,7 @@ struct TestSetupView: View {
         }
     }
 
-    /// Clearing the selection, in the navigation bar — where Mail and Files put
-    /// it. It acts on the whole selection rather than adding a span to it, so as
-    /// a list row it had to appear the moment you picked something, shoving every
-    /// pack down under a finger already moving toward one.
+    /// Clearing the selection, in the navigation bar where Mail and Files put it.
     @ViewBuilder
     private var deselectAllButton: some View {
         if !selectedVerseIds.isEmpty {
@@ -237,9 +212,7 @@ struct TestSetupView: View {
         }
     }
 
-    /// A plain title-and-value row, the shape iOS uses for exactly this. No icon:
-    /// coloured glyphs down the left edge implied unrelated kinds of thing, when
-    /// these are just two ways of filling the same selection.
+    /// A plain title-and-value row.
     private func shortcutRow(title: String, detail: String,
                              action: @escaping () -> Void) -> some View {
         Button {
@@ -261,17 +234,9 @@ struct TestSetupView: View {
     }
 
     // MARK: - Pack Header Row
-    //
-    // Three distinct zones:
-    //   ① Checkbox button  — select/deselect all verses in this pack
-    //   ② Pack name        — tap to expand/collapse
-    //   ③ Chevron          — same as ②, just the affordance for it
-    //
-    // Tapping the row used to select the whole pack, which put "select 55 verses"
-    // and "look inside" one mis-tap apart, with only the checkbox distinguishing
-    // them. Now the row does the reversible thing and the checkbox does the
-    // committal one — the same split the verse rows use.
 
+    /// The checkbox selects the whole pack; the rest of the row expands it. The
+    /// row does the reversible thing and the checkbox the committal one.
     private func packHeaderRow(_ pack: Pack) -> some View {
         let packVerseIds   = Set(pack.verses.map(\.id))
         let selectedInPack = packVerseIds.intersection(selectedVerseIds).count
@@ -358,10 +323,7 @@ struct TestSetupView: View {
     }
 
     /// Selects everything up to and including this verse, across the whole
-    /// catalogue rather than just this pack. Reaching, say, DEP 1 card 12 means
-    /// "everything I've covered so far" — the span you most want, and the most
-    /// tedious to tick by hand.
-    /// A bare glyph rather than a labelled button: on a list this long a label
+    /// catalogue rather than just this pack. A bare glyph rather than a labelled button: on a list this long a label
     /// would be thirty copies of the same sentence.
     private func upToHereButton(_ verse: Verse) -> some View {
         Button {
@@ -378,15 +340,9 @@ struct TestSetupView: View {
         .accessibilityLabel("Select all verses up to \(verse.title)")
     }
 
-    /// Applies a two-finger drag to whichever verse row is under the finger.
-    ///
-    /// The first row decides the direction for the whole drag — start on an
-    /// unselected verse and the run selects, start on a selected one and it
-    /// clears. Toggling each row on its own terms would leave a dragged-over run
-    /// alternating, which is never what anyone means.
-    ///
-    /// `dragVisited` stops a row flipping again when the finger wobbles back
-    /// over it.
+    /// Applies a two-finger drag to whichever verse row is under the finger. The
+    /// first row decides the direction for the whole drag (select or clear), and
+    /// `dragVisited` stops a row flipping again when the finger wobbles back.
     private func handleDragSelect(at point: CGPoint, isFirst: Bool) {
         guard let id = dragFrames.row(at: point) else { return }
         if isFirst {
@@ -399,14 +355,8 @@ struct TestSetupView: View {
         HapticEngine.light()
     }
 
-    /// Replaces the selection rather than adding to it.
-    ///
-    /// These read as "quiz me on X", so tapping Favourites after Up to Current
-    /// Verse has to leave you with the favourites — not with both sets unioned
-    /// and no indication that's what happened. Composing them was defensible in
-    /// the abstract and wrong in the hand: the shortcut appears to do nothing
-    /// when everything it would add is already selected, and there's no way to
-    /// subtract one preset back out again.
+    /// Replaces the selection rather than adding to it: the shortcuts read as
+    /// "quiz me on X", so Favourites after Up to Current leaves just the favourites.
     private func select(_ verses: [Verse]) {
         selectedVerseIds = Set(verses.map(\.id))
     }
@@ -430,58 +380,7 @@ struct TestSetupView: View {
 
             Spacer()
 
-            VStack(spacing: 4) {
-                HStack(spacing: 10) {
-                    Button {
-                        setCount(clampedCount - 1)
-                    } label: {
-                        Image(systemName: "minus")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(Color.accentColor)
-                            .frame(width: 32, height: 32)
-                            .background(Color(.secondarySystemBackground), in: Circle())
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(clampedCount <= 1)
-                    .opacity(clampedCount <= 1 ? 0.35 : 1)
-                    .accessibilityLabel("Fewer cards to quiz")
-
-                    countField
-
-                    Button {
-                        setCount(clampedCount + 1)
-                    } label: {
-                        Image(systemName: "plus")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(Color.accentColor)
-                            .frame(width: 32, height: 32)
-                            .background(Color(.secondarySystemBackground), in: Circle())
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(clampedCount >= selectedCount)
-                    .opacity(clampedCount >= selectedCount ? 0.35 : 1)
-                    .accessibilityLabel("More cards to quiz")
-                }
-                // "Max" is the one count that's tedious to reach by stepping and
-                // annoying to type — quizzing everything you just selected.
-                HStack(spacing: 6) {
-                    Text("cards to quiz")
-                        .font(.system(size: 11))
-                        .foregroundStyle(Color.secondary)
-                    Button {
-                        setCount(selectedCount)
-                        HapticEngine.light()
-                    } label: {
-                        Text("Max")
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundStyle(Color.accentColor)
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(clampedCount >= selectedCount)
-                    .opacity(clampedCount >= selectedCount ? 0.35 : 1)
-                    .accessibilityLabel("Quiz all \(selectedCount) selected verses")
-                }
-            }
+            QuizCountStepper(count: $quizCount, maximum: selectedCount)
 
             Spacer()
 
@@ -499,112 +398,7 @@ struct TestSetupView: View {
         .padding(.vertical, 4)
     }
 
-    /// The card count, tappable to type a value directly instead of stepping there
-    /// one press at a time. Always a `TextField` (rather than a label that swaps for
-    /// one on tap) so tapping it focuses an already-mounted responder and the keypad
-    /// opens on the first tap. It renders the live count whether or not it has
-    /// focus, so the +/- buttons and Max keep working with the keypad up.
-    private var countField: some View {
-        TextField("", text: $countDraft)
-            .keyboardType(.numberPad)
-            .multilineTextAlignment(.center)
-            .font(.system(size: 22, weight: .bold, design: .monospaced))
-            .focused($countFieldFocused)
-            // Fixed size: the field sits between the two stepper circles, and
-            // letting it grow with the digit count shunted them sideways every
-            // time the number crossed 10 or 100.
-            .frame(width: 58, height: 32)
-            .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-            // Sanitise and commit on every keystroke, so what the field shows is
-            // always exactly what Start will use.
-            //
-            // Two things this guards against. `.numberPad` only limits what the
-            // on-screen keyboard *offers* — a hardware keyboard, dictation or paste
-            // can still put letters in, so non-digits are stripped as they arrive.
-            // And committing only when editing ended wasn't enough: tapping a pack
-            // row doesn't resign focus, so the field could sit there reading "999"
-            // while the session quietly still used the old number.
-            .onChange(of: countDraft) { oldValue, newValue in
-                // First digit typed after the count arrived from elsewhere replaces
-                // it rather than extending it: tap the field showing 15, type "8",
-                // get 8 — not 158. Gated on the anchor still being what's on screen,
-                // so a +/- or Max tap made mid-edit isn't mistaken for that keystroke.
-                var incoming = newValue
-                if let anchor = countReplaceAnchor, oldValue == anchor,
-                   newValue.count > anchor.count, newValue.hasPrefix(anchor) {
-                    incoming = String(newValue.dropFirst(anchor.count))
-                    countReplaceAnchor = nil
-                }
-                var digits = String(incoming.filter(\.isNumber).prefix(4))
-                if let typed = Int(digits) {
-                    let clamped = max(1, min(typed, max(1, selectedCount)))
-                    // Rewrite the field too, so it can never display a count that's
-                    // out of range for the current selection.
-                    if clamped != typed { digits = "\(clamped)" }
-                    quizCount = clamped
-                }
-                // An empty field mid-edit is fine — `commitCountEdit` restores a
-                // valid number when focus leaves.
-                if digits != newValue { countDraft = digits }
-            }
-            .onChange(of: countFieldFocused) { _, focused in
-                if focused {
-                    // Keep the number visible while editing (it's what +/- and Max
-                    // drive); the next keystroke swaps it out.
-                    countDraft = "\(clampedCount)"
-                    countReplaceAnchor = "\(clampedCount)"
-                } else {
-                    countReplaceAnchor = nil
-                    commitCountEdit()
-                }
-            }
-            .onChange(of: clampedCount) { _, newValue in
-                // Any count change that didn't come from typing — +/-, Max, or the
-                // selection shrinking under it. The field tracks it even while
-                // focused, so what's displayed is always what Start will use.
-                guard countDraft != "\(newValue)" else { return }
-                countDraft = "\(newValue)"
-                if countFieldFocused { countReplaceAnchor = "\(newValue)" }
-            }
-            .onAppear { countDraft = "\(clampedCount)" }
-            // Just "Done" — a number pad has no return key, so something has to
-            // dismiss it. "Max" used to sit here too, duplicating the one in the
-            // bar below: that one deliberately keeps working with the keypad up
-            // (the field tracks the count whether or not it has focus), so the
-            // toolbar copy only ever covered the row it was copying.
-            .toolbar {
-                ToolbarItemGroup(placement: .keyboard) {
-                    Spacer()
-                    Button("Done") { countFieldFocused = false }
-                }
-            }
-            .accessibilityLabel("Cards to quiz")
-            .accessibilityValue("\(clampedCount)")
-            .accessibilityHint("Tap to type a number")
-    }
-
     // MARK: - Actions
-
-    /// Single write path for the card count from anything that isn't typing (+/-,
-    /// Max). Pushes the clamped value into the field too, so the number on screen
-    /// and the number Start will use never drift apart — including while the
-    /// keypad is up.
-    private func setCount(_ value: Int) {
-        let clamped = max(1, min(value, max(1, selectedCount)))
-        quizCount  = clamped
-        countDraft = "\(clamped)"
-        countReplaceAnchor = countFieldFocused ? "\(clamped)" : nil
-    }
-
-    /// Applies a typed card count, clamped to 1...selected. An empty or unparseable
-    /// draft (tapped in, then out) falls back to the count already in effect.
-    private func commitCountEdit() {
-        let digits = countDraft.filter(\.isNumber)
-        if let typed = Int(digits), typed >= 1 {
-            quizCount = max(1, min(typed, max(1, selectedCount)))
-        }
-        countDraft = "\(clampedCount)"
-    }
 
     private func launchNewSession() {
         // Wipe any stale progress so the new session starts clean
@@ -627,10 +421,9 @@ struct TestSetupView: View {
         UserDefaults.standard.removeObject(forKey: Self.savedSessionKey)
     }
 
-    /// Discard saved in-progress session (swipe or equivalent).
+    /// Discards the saved in-progress session and its progress.
     private func dismissSavedSession() {
-        savedSession = nil
-        UserDefaults.standard.removeObject(forKey: Self.savedSessionKey)
+        clearSession()
         TestSessionViewModel.clearPersistedProgress()
     }
 
@@ -662,7 +455,7 @@ struct TestSetupView: View {
 
     private func reconcileQuizCountWithSelection() {
         guard !selectedVerseIds.isEmpty else { return }
-        quizCount = max(1, min(quizCount, selectedVerseIds.count))
+        quizCount = clampedCount
     }
 }
 
