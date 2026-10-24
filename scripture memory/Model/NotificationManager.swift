@@ -49,7 +49,7 @@ enum NotificationManager {
 
         // Resolve the active packs + new-card cap from saved settings.
         let d = UserDefaults.standard
-        let version = BibleVersion(rawValue: d.string(forKey: "bibleVersion") ?? "") ?? .niv84
+        let version = BibleVersion.saved(d)
         let activePacks = PackPreferencesStore.shared.visible(from: version.packs)
             .filter { SRSStore.shared.isActive($0.name) }
         let cap = NewCardCap.current(d)

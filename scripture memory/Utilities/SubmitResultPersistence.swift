@@ -1,8 +1,6 @@
 import Foundation
 
-// MARK: - Submit result encoding (UserDefaults / session JSON)
-
-/// Codable bridge for `[Int: SubmitResult]` used by pack review files and test session snapshots.
+/// Codable bridge for `[Int: SubmitResult]` in the saved test-session snapshot.
 enum SubmitResultPersistence {
 
     struct StoredResult: Codable {

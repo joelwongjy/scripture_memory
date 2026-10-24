@@ -37,8 +37,8 @@ struct Verse: Hashable, Codable, Identifiable {
     /// those fall back to the legacy key via `srsKey`.
     let cardUid: String?
 
-    /// Owning pack's name. Not present in JSON — injected by `BundledPacks`
-    /// after decode so the legacy key can still be built.
+    /// Owning pack's name. Not in the JSON (it's implied by nesting) — filled in
+    /// by `VerseCatalog` after decode.
     var packName: String = ""
 
     private enum CodingKeys: String, CodingKey {

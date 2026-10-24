@@ -249,7 +249,7 @@ struct VerseEntryView: View {
 // MARK: - Shared stats row
 
 /// Three stat columns (streak · due today · learned) split by thin separators.
-/// Shared by the large verse widget and the progress widget; sizes are tunable.
+/// Used by the progress widget.
 struct StatsColumnsView: View {
     let streak:   Int
     let dueToday: Int
@@ -344,8 +344,8 @@ struct ProgressEntryView: View {
                 .tracking(0.6)
             Spacer().frame(height: 6)
             if let v = entry.verse {
-                // Same type scale as the medium verse widget's large family, so
-                // the two widgets read as one family side by side.
+                // Same type scale as the verse widget, so the two read as one
+                // family side by side.
                 Text(v.title)
                     .font(.system(size: 20, weight: .bold, design: .serif))
                     .foregroundStyle(.primary)

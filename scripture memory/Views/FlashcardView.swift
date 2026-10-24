@@ -25,10 +25,8 @@ struct FlashcardView: View {
     /// card — read mode has no test-completion event to surface it otherwise.
     var onMarkComplete:      (() -> Void)? = nil
 
-    /// Whether this card offers the star. On wherever the card is something the
-    /// user is *reading* — starring is a "come back to this one" gesture, and the
-    /// moment you want it is while the verse is in front of you. Off on quiz and
-    /// test cards, where the footer row is already carrying the answer state.
+    /// Whether this card offers the star: on in pack study (every Read card, and
+    /// the front card in Review), off in Quiz and daily review.
     var showsFavoriteToggle: Bool = false
 
     @AppStorage("hardMode") private var hardMode = false

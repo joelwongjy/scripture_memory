@@ -3,10 +3,8 @@ import Combine
 
 /// Verses the user has starred.
 ///
-/// Keyed by `srsKey` (pack + book + reference) rather than `Verse.id`, for the
-/// same reason SRS and learning progress are: the two translation bundles give
-/// the same card different ids, and a favourite should survive switching
-/// between them — you starred the verse, not the edition.
+/// Keyed by `srsKey` (the card's permanent id, shared by both editions), so a
+/// favourite survives switching translation.
 @MainActor
 final class FavoritesStore: ObservableObject {
 

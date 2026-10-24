@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct PackListView: View {
-    @AppStorage("bibleVersion") private var bibleVersion: BibleVersion = .niv84
+    @AppStorage(BibleVersion.storageKey) private var bibleVersion: BibleVersion = .niv84
     @ObservedObject private var packPrefs = PackPreferencesStore.shared
     @ObservedObject private var learning  = LearningStore.shared
     @ObservedObject private var favorites = FavoritesStore.shared

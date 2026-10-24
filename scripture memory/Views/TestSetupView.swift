@@ -18,7 +18,7 @@ private enum PackListItem: Identifiable {
 
 struct TestSetupView: View {
 
-    @AppStorage("bibleVersion") private var bibleVersion: BibleVersion = .niv84
+    @AppStorage(BibleVersion.storageKey) private var bibleVersion: BibleVersion = .niv84
     @ObservedObject private var packPrefs = PackPreferencesStore.shared
     @ObservedObject private var learning  = LearningStore.shared
     @ObservedObject private var favorites = FavoritesStore.shared
@@ -315,13 +315,8 @@ struct TestSetupView: View {
 
     // MARK: - Verse Row
 
-    /// One line: tick, card number, title, reference. Nothing to open.
-    ///
-    /// A verse row has exactly one job here — in or out of the quiz — so the
-    /// whole row does it. It used to expand to a panel holding the verse text and
-    /// two more buttons, which meant every row carried a disclosure chevron for a
-    /// drawer nobody wants open while picking a quiz. "Select all up to here"
-    /// moved to a swipe action: still one gesture away, costs no pixels.
+    /// One line: tick, card number, title, reference. Tapping the row toggles it
+    /// in or out of the quiz; the trailing arrow selects everything up to here.
     private func verseRow(_ verse: Verse) -> some View {
         let isSelected = selectedVerseIds.contains(verse.id)
         return Button {
@@ -366,11 +361,8 @@ struct TestSetupView: View {
     /// catalogue rather than just this pack. Reaching, say, DEP 1 card 12 means
     /// "everything I've covered so far" — the span you most want, and the most
     /// tedious to tick by hand.
-    ///
-    /// A visible control because the swipe action alone was undiscoverable —
-    /// nobody finds a gesture they haven't been told about. Kept to a single
-    /// tertiary glyph at the trailing edge: on a list this long, anything with a
-    /// label would be thirty copies of the same sentence running down the page.
+    /// A bare glyph rather than a labelled button: on a list this long a label
+    /// would be thirty copies of the same sentence.
     private func upToHereButton(_ verse: Verse) -> some View {
         Button {
             select(versesUpTo(verse))

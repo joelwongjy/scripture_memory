@@ -13,7 +13,7 @@ struct LearningSetupView: View {
     var showsWelcome: Bool
     var onComplete: () -> Void
 
-    @AppStorage("bibleVersion") private var bibleVersion: BibleVersion = .niv84
+    @AppStorage(BibleVersion.storageKey) private var bibleVersion: BibleVersion = .niv84
     @ObservedObject private var packPrefs = PackPreferencesStore.shared
     @ObservedObject private var learning  = LearningStore.shared
     @Environment(\.dismiss) private var dismiss

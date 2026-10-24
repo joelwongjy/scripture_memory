@@ -3,22 +3,19 @@ import SwiftUI
 /// App-wide layout constants. One canonical horizontal screen margin so every
 /// screen — pack grid, daily dashboard, settings list, and the immersive study
 /// / review screens (card, chrome, and controls) — lines up to the same edge.
-/// 16pt matches the iOS `.insetGrouped` list inset that Settings and Daily use.
+/// 16pt matches the iOS `.insetGrouped` list inset that Settings and Home use.
 enum AppLayout {
     static let screenMargin: CGFloat = 16
     /// Corner radius for content cards (flashcards, pack covers).
     static let cardRadius:    CGFloat = 10
-    /// Corner radius for grouped-list containers (Daily hero / packs panels) —
-    /// matched to the iOS 26 system `.insetGrouped` section corners so the Daily
-    /// dashboard's white panels line up with Settings / Review.
+    /// Corner radius for grouped panels on Home — matched to the iOS 26
+    /// `.insetGrouped` section corners so they line up with Settings.
     static let groupedRadius: CGFloat = 20
 }
 
 extension View {
-    /// Clips to a continuous ("squircle") rounded rectangle — the iOS-standard
-    /// corner style. Used app-wide so every card and control shares one corner
-    /// shape instead of mixing `.continuous` with the default circular style
-    /// (which made the Daily panels look subtly different from other screens).
+    /// Clips to a continuous ("squircle") rounded rectangle, the iOS-standard
+    /// corner style. Used app-wide so every card and control shares one shape.
     func roundedRect(_ radius: CGFloat) -> some View {
         clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
     }

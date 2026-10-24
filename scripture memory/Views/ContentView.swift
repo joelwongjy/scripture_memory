@@ -2,7 +2,7 @@ import SwiftUI
 
 struct ContentView: View {
     @AppStorage("hasOnboardedLearning.v1") private var hasOnboarded = false
-    @AppStorage("bibleVersion")            private var bibleVersion: BibleVersion = .niv84
+    @AppStorage(BibleVersion.storageKey)            private var bibleVersion: BibleVersion = .niv84
     @AppStorage(NewCardCap.amountKey)      private var newCapAmount   = NewCardCap.fallback.amount
     @AppStorage(NewCardCap.unitKey)        private var newCapUnit     = NewCardCap.fallback.unit
     /// The two stored halves as the one value the queue builder takes.

@@ -24,7 +24,7 @@ enum SRSQueueBuilder {
     /// A verse with no SRS state is **new** unless the user has marked it learnt
     /// (everything before the learning cursor is). Learnt-but-unscheduled verses
     /// are **known**: with `reviewsKnown` they're served inside the review slice,
-    /// within the per-pack review cap, and their first grade seeds a review-phase
+    /// within the daily review cap, and their first grade seeds a review-phase
     /// card (`SRSCardState.knownCard`) — they never take a new-card slot.
     @MainActor
     struct NewCardPolicy {
@@ -117,18 +117,19 @@ enum SRSQueueBuilder {
         max(0, newCap.amount - store.newIntroduced(in: newCap.unit, now: now))
     }
 
-    /// What's due at `now` across the given (already-active) packs — the single
-    /// number Home, the widget, and the daily reminder all key off, so they never
-    /// disagree. `review` folds learning + review (both are due cards); `new` is
-    /// the new-card drip bounded by the global cap. Passing a future `now`
-    /// projects that day (the daily-new counter is empty for future days, so the
-    /// full cap is available).
+    /// Cards due in one session: `review` (learning + review) and `new`.
     struct DueSummary {
         let review: Int
         let new: Int
         var total: Int { review + new }
     }
 
+    /// What's due at `now` across the given (already-active) packs — the single
+    /// number Home, the widget, and the daily reminder all key off, so they never
+    /// disagree. `review` folds learning + review (both are due cards); `new` is
+    /// the new-card drip bounded by the global cap. Passing a future `now`
+    /// projects that day (the daily-new counter is empty for future days, so the
+    /// full cap is available).
     static func dueSummary(activePacks: [Pack], store: SRSStore,
                            newCap: NewCardCap, dailyReviewCap: Int,
                            policy: NewCardPolicy? = nil, now: Date = Date()) -> DueSummary {
@@ -139,5 +140,4 @@ enum SRSQueueBuilder {
         let new = min(globalNewRemaining(store: store, newCap: newCap, now: now), candidates)
         return DueSummary(review: review, new: new)
     }
-
 }

@@ -15,7 +15,7 @@ extension Image {
             .contentShape(Rectangle())
     }
 
-    /// Toggle controls (shuffle, layout). Background flips: neutral when off,
+    /// Toggle controls (shuffle, favourites). Background flips: neutral when off,
     /// accent when on. Icon goes white on the accent background so there's no
     /// accent-on-accent visibility issue. 36pt visual / 44pt hit target.
     func studyChromeToggle(isOn: Bool) -> some View {

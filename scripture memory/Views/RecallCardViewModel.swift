@@ -71,7 +71,7 @@ class RecallCardViewModel: ObservableObject {
     /// Reads the current study mode from UserDefaults to stay in sync with
     /// `@AppStorage` in views.
     var studyMode: StudyMode {
-        StudyMode(rawValue: UserDefaults.standard.string(forKey: "studyMode") ?? "") ?? .firstLetter
+        StudyMode.saved()
     }
 
     // MARK: - Navigation

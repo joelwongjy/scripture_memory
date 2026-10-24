@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Edit screen for reordering packs (drag) and hiding/showing them.
 /// Presented as a sheet from the Packs grid. Changes persist immediately via
-/// `PackPreferencesStore` and apply across Packs, Daily, and Review.
+/// `PackPreferencesStore` and apply across the app.
 struct PackOrganizerView: View {
     let allPacks: [Pack]
     @ObservedObject private var store = PackPreferencesStore.shared

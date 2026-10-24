@@ -20,8 +20,6 @@ final class SRSStore: ObservableObject {
     /// Outer key is `yyyy-MM-dd` (device-local). Inner key is pack name.
     @Published private(set) var dailyNewByDate: [String: [String: Int]] = [:]
 
-    /// Packs the user has opted into for daily review. Off by default —
-    /// the user explicitly turns on the packs they're memorizing.
     /// Packs the user has turned OFF for review. Opt-OUT model: every pack is
     /// active by default (users learn all packs in order), so we only persist
     /// the exceptions. New packs are therefore active automatically.
@@ -163,7 +161,7 @@ final class SRSStore: ObservableObject {
     }
 
     /// Wipe all SRS state.
-    /// Active-pack opt-ins are preserved — they're a UI preference, not progress.
+    /// Inactive-pack choices are preserved — they're a UI preference, not progress.
     func resetAll() {
         states = [:]
         dailyNewByDate = [:]

@@ -27,7 +27,7 @@ enum VerseCatalog {
     }
 
     /// Back-fills `Verse.packName`, which isn't in the JSON (it's implied by
-    /// nesting) but is half of every `srsKey`.
+    /// nesting).
     private static func withPackNames(_ packs: [Pack]) -> [Pack] {
         packs.map { pack in
             Pack(name: pack.name, color: pack.color, accentText: pack.accentText,

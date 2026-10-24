@@ -8,9 +8,8 @@ import SwiftUI
 ///   tap any button to choose their own difficulty.
 /// - The **suggested** grade carries a clear "Suggested" tag above it, so the
 ///   recommended choice is obvious — "this is your suggested one, you can pick
-///   another". `suggested` may be `nil` (e.g. first-letter mode, where frequent
-///   typos make a performance-based suggestion unreliable); then no tag shows
-///   and the user simply chooses for themselves.
+///   another". `suggested` is `nil` in the typing modes, where typos make a
+///   performance-based suggestion unreliable; then no tag shows.
 struct SRSGradingButtons: View {
 
     let state:     SRSCardState

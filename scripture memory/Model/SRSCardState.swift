@@ -28,8 +28,8 @@ enum SRSGrade: String, CaseIterable, Codable {
 
 // MARK: - Card State
 
-/// Per-card scheduling state. Keyed by `Verse.srsKey` (pack + canonical book + normalized reference)
-/// so the same passage in the same pack survives a NIV84 ↔ NIV11 switch.
+/// Per-card scheduling state, keyed by `Verse.srsKey` (the card's permanent id,
+/// shared by both editions).
 struct SRSCardState: Codable, Equatable {
     var key:           String
     var phase:         SRSPhase
@@ -113,9 +113,9 @@ struct SRSConfig {
 
 // MARK: - Key Helper
 
-/// Builds and normalizes the per-card key. Pack-qualified so cross-pack verse reuse
-/// (5 Assurances vs. TMS 60) keeps independent schedules; book and reference normalized
-/// so NIV84 ↔ NIV11 alignment survives whitespace and book-name typos.
+/// The pre-`cardUid` key (pack + canonical book + normalized reference). Only
+/// used to find data stored under the old key — see `Verse.legacyKey` and
+/// `IdentityMigration`.
 enum SRSKey {
     static func canonicalBook(_ book: String) -> String {
         return book.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)

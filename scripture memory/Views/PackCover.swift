@@ -263,14 +263,9 @@ struct PackCover: View {
 
             VStack {
                 HStack {
-                    // 27 medium is the ceiling, not a preference. The cover renders
-                    // on a fixed 340pt canvas and scales uniformly, so whether a
-                    // title wraps is a property of this number alone — identical on
-                    // an SE and a Pro Max. The two longest titles in the set
-                    // ("7. The Lordship of Christ" and "1. Assurance of Salvation")
-                    // measure 275pt at this size against the 284 an equal inset
-                    // leaves; 26 needs 286 and drops them to two lines, so this is
-                    // as large as the set goes with symmetric margins.
+                    // The cover renders on a fixed canvas and scales uniformly, so
+                    // whether a title wraps depends on this size alone. Sized so the
+                    // longest titles ("7. The Lordship of Christ") stay on one line.
                     Text(displayTitle)
                         .font(.system(size: 25, weight: .medium))
                         .foregroundStyle(inkColor)
@@ -279,11 +274,8 @@ struct PackCover: View {
                         .multilineTextAlignment(.leading)
                     Spacer(minLength: 0)
                 }
-                // 12, not 16. A 23pt line box carries ~4pt of ascender space above
-                // the cap, so equal padding top and bottom does not read as equal:
-                // measured off screenshots, 16/12 gave a ~20pt optical gap at the
-                // top against ~13pt at the bottom. These numbers are chosen so the
-                // *ink* sits the same distance from both edges.
+                // Top padding is tuned by eye: the line box carries ascender space
+                // above the cap, so equal numbers don't give equal-looking gaps.
                 .padding(.leading, Self.contentInset)
                 .padding(.trailing, Self.contentInset)
                 .padding(.top, 18)
@@ -291,15 +283,8 @@ struct PackCover: View {
             }
 
             // DEP / NIV / 242 lockup, positioned from measurements off the
-            // printed pack rather than stacked and hoped for.
-            //
-            // The three are not a neat right-aligned column: 242 is the largest
-            // and runs almost to the card edge, DEP is smaller and sits well
-            // inside it, and NIV is tucked into the gap between them at the
-            // right. Stacking DEP over 242 in a VStack — which is what this was —
-            // lines up two edges that don't line up in print, and shrinks the 242
-            // to look like a caption under a heading instead of the other way
-            // round.
+            // printed pack: 242 runs almost to the edge, DEP sits well inside it,
+            // and NIV is tucked into the gap between them.
             ZStack(alignment: .bottomTrailing) {
                 OutlinedText(text: "242",
                              font: .system(size: 64, weight: .black).italic(),
@@ -309,11 +294,7 @@ struct PackCover: View {
                     .padding(.trailing, Self.contentInset)
                     .padding(.bottom, 6)
 
-                // 62, not 55. The two are sized very differently, so equal-looking
-                // paddings don't give equal-looking gaps: at 46pt DEP's baseline
-                // lands ~66pt off the bottom edge while the 64pt numeral's cap top
-                // lands ~67pt — within a point of each other, so the glyphs touch
-                // wherever they overlap horizontally. This lifts DEP clear.
+                // Lifted clear of the 242's cap height so the glyphs don't touch.
                 Text("DEP")
                     .font(.system(size: 42, weight: .black))
                     .italic()
@@ -371,9 +352,8 @@ struct PackCover: View {
                     .foregroundStyle(inkColor)
                     Spacer(minLength: 0)
                 }
-                // 15 against the title's 12 — the 10pt line here has almost no
-                // descender slack, so it needs the larger number to land at the
-                // same optical distance from the edge.
+                // The 10pt line has little descender slack, so it needs more
+                // padding to sit the same optical distance from the edge.
                 .padding(.leading, Self.contentInset).padding(.bottom, 15)
             }
         }

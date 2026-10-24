@@ -9,7 +9,7 @@ struct CardStudyView: View {
     @ObservedObject private var learning  = LearningStore.shared
     @ObservedObject private var favorites = FavoritesStore.shared
 
-    @AppStorage("studyMode")       private var studyMode:       StudyMode = .firstLetter
+    @AppStorage(StudyMode.storageKey)       private var studyMode:       StudyMode = .firstLetter
 
     @FocusState private var isInputFocused: Bool
     @FocusState private var submitFocus:    SubmitField?
@@ -414,7 +414,7 @@ struct CardStudyView: View {
         return "\(i + 1) of \(vm.verses.count)"
     }
 
-    // MARK: - Card Stack (horizontal swipe mode)
+    // MARK: - Review Card Stack
 
     private var cardStack: some View {
         ZStack {
@@ -478,7 +478,7 @@ struct CardStudyView: View {
         }
     }
 
-    // MARK: - Vertical Scroll Mode
+    // MARK: - Read List
 
     private func verticalScrollCards(cardWidth: CGFloat, cardHeight: CGFloat) -> some View {
         GeometryReader { outerGeo in

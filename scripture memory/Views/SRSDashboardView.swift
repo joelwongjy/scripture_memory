@@ -1,19 +1,18 @@
 import SwiftUI
 
-/// Daily review dashboard.
+/// The Home tab: streak, the verse you're learning, and today's review.
 ///
-/// One primary action — Start Review across all active packs. Per-pack rows
-/// show progress and an Active toggle on the right (iOS standard placement).
-/// New cards are gated by a single GLOBAL daily cap shared across active packs.
+/// One primary action — Start Review across all active packs. New cards are
+/// gated by a single global cap shared across those packs.
 struct SRSDashboardView: View {
 
-    @AppStorage("bibleVersion")       private var bibleVersion:   BibleVersion = .niv84
+    @AppStorage(BibleVersion.storageKey)       private var bibleVersion:   BibleVersion = .niv84
     @AppStorage(NewCardCap.amountKey) private var newCapAmount:  Int          = NewCardCap.fallback.amount
     @AppStorage(NewCardCap.unitKey)   private var newCapUnit:    NewCapUnit   = NewCardCap.fallback.unit
     /// The two stored halves as the one value the queue builder takes.
     private var newCap: NewCardCap { NewCardCap(amount: newCapAmount, unit: newCapUnit) }
     @AppStorage(NewCardCap.dailyReviewCapKey) private var dailyReviewCap: Int  = NewCardCap.dailyReviewCapDefault
-    @AppStorage("homeVerseStartMode.v1") private var homeVerseStartMode: HomeVerseStartMode = .read
+    @AppStorage(HomeVerseStartMode.storageKey) private var homeVerseStartMode: HomeVerseStartMode = .read
     /// Read here so the counts re-render when the Settings toggle flips.
     @AppStorage(SRSQueueBuilder.NewCardPolicy.reviewsKnownKey)
     private var reviewsKnownVerses = SRSQueueBuilder.NewCardPolicy.reviewsKnownDefault
@@ -43,7 +42,7 @@ struct SRSDashboardView: View {
         }
     }
 
-    // MARK: - Design Tokens (iOS-standard continuous corners + 8/12/16 spacing)
+    // MARK: - Design Tokens
 
     private static let cardPadding:    CGFloat = 20
     private static let rowPaddingH:    CGFloat = 16

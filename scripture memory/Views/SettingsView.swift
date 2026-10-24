@@ -2,15 +2,15 @@ import SwiftUI
 import UIKit
 
 struct SettingsView: View {
-    @AppStorage("studyMode")          private var studyMode:    StudyMode    = .firstLetter
-    @AppStorage("bibleVersion")       private var bibleVersion: BibleVersion = .niv84
+    @AppStorage(StudyMode.storageKey)          private var studyMode:    StudyMode    = .firstLetter
+    @AppStorage(BibleVersion.storageKey)       private var bibleVersion: BibleVersion = .niv84
     @AppStorage("hardMode")           private var hardMode:     Bool         = false
     @AppStorage(NewCardCap.amountKey) private var newCapAmount:  Int        = NewCardCap.fallback.amount
     @AppStorage(NewCardCap.unitKey)   private var newCapUnit:    NewCapUnit = NewCardCap.fallback.unit
     @AppStorage(NewCardCap.dailyReviewCapKey) private var dailyReviewCap: Int = NewCardCap.dailyReviewCapDefault
     @AppStorage(SRSQueueBuilder.NewCardPolicy.reviewsKnownKey)
     private var reviewsKnownVerses = SRSQueueBuilder.NewCardPolicy.reviewsKnownDefault
-    @AppStorage("homeVerseStartMode.v1") private var homeVerseStartMode: HomeVerseStartMode = .read
+    @AppStorage(HomeVerseStartMode.storageKey) private var homeVerseStartMode: HomeVerseStartMode = .read
 
     @AppStorage(NotificationManager.Keys.enabled) private var reminderEnabled = false
     @AppStorage(NotificationManager.Keys.hour)    private var reminderHour    = NotificationManager.defaultHour

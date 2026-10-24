@@ -71,7 +71,7 @@ enum VerseLibrary {
         // The edition the app is showing; fall back to NIV84, then to whatever
         // the file happens to contain.
         let preferred = UserDefaults(suiteName: SharedStore.appGroup)?
-            .string(forKey: "widget.edition.v1")
+            .string(forKey: SharedStore.editionKey)
         var packs = preferred.flatMap { doc.editions[$0] }
             ?? doc.editions["NIV84"]
             ?? doc.editions.values.first
@@ -110,6 +110,7 @@ enum VerseLibrary {
 enum SharedStore {
     static let appGroup    = "group.joel.scripture-memory"
     static let snapshotKey = "widget.snapshot.v1"
+    static let editionKey  = "widget.edition.v1"
 
     struct SharedVerse: Codable {
         var title, verse, book, reference, packName: String

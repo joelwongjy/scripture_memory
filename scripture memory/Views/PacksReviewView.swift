@@ -5,7 +5,7 @@ import SwiftUI
 /// Dedicated screen for choosing which packs are included in Daily Review.
 /// Every pack is on by default; this is the rarely-needed place to turn some off.
 struct PacksReviewView: View {
-    @AppStorage("bibleVersion") private var bibleVersion: BibleVersion = .niv84
+    @AppStorage(BibleVersion.storageKey) private var bibleVersion: BibleVersion = .niv84
     @ObservedObject private var store     = SRSStore.shared
     @ObservedObject private var packPrefs = PackPreferencesStore.shared
 

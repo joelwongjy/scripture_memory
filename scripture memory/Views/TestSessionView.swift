@@ -8,7 +8,7 @@ struct TestSessionView: View {
     @StateObject private var speech: SpeechRecognizer = SpeechRecognizer()
     @ObservedObject private var learning = LearningStore.shared
 
-    @AppStorage("studyMode") private var studyMode: StudyMode = .firstLetter
+    @AppStorage(StudyMode.storageKey) private var studyMode: StudyMode = .firstLetter
 
     @FocusState private var isInputFocused: Bool
     @FocusState private var submitFocus:    SubmitField?
@@ -310,13 +310,9 @@ struct TestSessionView: View {
     }
 
     // MARK: - Progress Dots
-    //
-    // One dot per verse. Size adapts so all dots fit in available width.
-    // Gray = not yet done, green = done perfect, orange/red = done with mistakes (submit only).
 
-    /// One dot per verse for short sessions; a continuous bar once dots would
-    /// shrink below legibility (≈ sub-3pt). Both convey position/progress; the
-    /// bar additionally carries a VoiceOver value.
+    /// One dot per verse (gray = not done, green = perfect, red = mistakes); a
+    /// continuous bar once there are too many dots to read.
     @ViewBuilder
     private var progressDots: some View {
         if vm.verses.count > 24 {
@@ -639,10 +635,8 @@ struct TestSessionView: View {
         .opacity(vm.currentIndex >= vm.verses.count - 1 ? 0.5 : 1)
     }
 
-    /// When the card under review is the current stopped verse, let the user mark
-    /// it learnt right here — advancing the Home cursor. The SRS grade still
-    /// schedules the card and moves on, so this never replaces grading; once
-    /// tapped, the cursor moves and the row hides itself.
+    /// Quiz only: when the card is the current learning verse, mark it learnt
+    /// right here, advancing the Home cursor. The row hides itself once tapped.
     private func markLearntRow(for verse: Verse) -> some View {
         Button {
             learning.markLearnt(verse)

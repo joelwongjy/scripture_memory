@@ -3,9 +3,6 @@ import SwiftUI
 /// The pack study screen's state: `RecallCardViewModel` plus the pack itself,
 /// read-vs-review mode, shuffle, the favourites filter, and hopping to the
 /// neighbouring pack.
-///
-/// The paired `CardStudyView` is responsible only for layout, gesture handling,
-/// focus state, and animation triggers.
 @MainActor
 final class CardStudyViewModel: RecallCardViewModel {
 
