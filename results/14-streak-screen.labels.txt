@@ -1,0 +1,83 @@
+Application | Scripture Memory |  | 0,0 402x874
+                            Button | Home |  | 16,62 44x44
+                            Heading | Streak |  | 175,74 52x21
+                                      GenericElement | 1, day streak, You've practised today. See you tomorrow!, This week: 1 of 7 days practised |  | 16,124 370x330
+                                        Image | Flame |  | 172,157 59x76
+                                        StaticText | 1 |  | 187,244 28x67
+                                        StaticText | day streak |  | 160,317 83x20
+                                        StaticText | You've practised today. See you tomorrow! |  | 55,350 293x18
+                                        GenericElement | This week: 1 of 7 days practised |  | 66,384 270x50
+                                          StaticText | S |  | 77,384 8x14
+                                          StaticText | M |  | 116,384 11x14
+                                          StaticText | T |  | 157,384 8x14
+                                          StaticText | W |  | 195,384 12x14
+                                          StaticText | T |  | 237,384 8x14
+                                          StaticText | F |  | 277,384 7x14
+                                          StaticText | S |  | 317,384 8x14
+                                          Image | Selected |  | 315,413 12x11
+                                      StaticText | Next milestone |  | 34,487 132x18
+                                      StaticText | 3 days |  | 323,487 47x18
+                                      GenericElement |  | 33% | 32,515 338x4
+                                        GenericElement |  | 33% | 32,505 338x24
+                                      StaticText | 2 more days to go |  | 32,529 109x16
+                                      StaticText | 1, Best streak |  | 16,577 177x106
+                                        Image | Flame |  | 34,594 16x21
+                                        StaticText | 1 |  | 32,621 14x26
+                                        StaticText | Best streak |  | 32,651 68x16
+                                      StaticText | 1, Days practised |  | 209,579 177x103
+                                        Image | Calendar |  | 227,596 20x18
+                                        StaticText | 1 |  | 225,619 14x26
+                                        StaticText | Days practised |  | 225,650 90x16
+                                      StaticText | October 2026 |  | 32,727 112x20
+                                      Button | Previous month |  | 290,729 13x17
+                                      Button | Next month |  | 342,729 13x17
+                                      GenericElement | 1 of 31 days practised this month |  | 32,771 332x214
+                                        StaticText | S |  | 52,771 8x13
+                                        StaticText | M |  | 99,771 10x13
+                                        StaticText | T |  | 149,771 7x13
+                                        StaticText | W |  | 196,771 11x13
+                                        StaticText | T |  | 246,771 7x13
+                                        StaticText | F |  | 294,771 7x13
+                                        StaticText | S |  | 342,771 8x13
+                                        StaticText | 1 |  | 246,799 7x18
+                                        StaticText | 2 |  | 293,799 9x18
+                                        StaticText | 3 |  | 341,799 9x18
+                                        StaticText | 4 |  | 51,841 10x18
+                                        StaticText | 5 |  | 100,841 9x18
+                                        StaticText | 6 |  | 148,841 9x18
+                                        StaticText | 7 |  | 197,841 8x18
+                                        StaticText | 8 |  | 244,841 10x18
+                                        StaticText | 9 |  | 293,841 9x18
+                                        StaticText | 10 |  | 338,841 16x18
+                                        StaticText | 11 |  | 49,883 14x18
+                                        StaticText | 12 |  | 97,883 16x18
+                                        StaticText | 13 |  | 145,883 16x18
+                                        StaticText | 14 |  | 193,883 16x18
+                                        StaticText | 15 |  | 241,883 16x18
+                                        StaticText | 16 |  | 289,883 16x18
+                                        StaticText | 17 |  | 338,883 15x18
+                                        StaticText | 18 |  | 48,925 16x18
+                                        StaticText | 19 |  | 96,925 16x18
+                                        StaticText | 20 |  | 144,925 18x18
+                                        StaticText | 21 |  | 193,925 16x18
+                                        StaticText | 22 |  | 240,925 18x18
+                                        StaticText | 23 |  | 289,925 18x18
+                                        StaticText | 24 |  | 336,925 20x18
+                                        StaticText | 25 |  | 47,967 18x18
+                                        StaticText | 26 |  | 95,967 18x18
+                                        StaticText | 27 |  | 144,967 17x18
+                                        StaticText | 28 |  | 192,967 18x18
+                                        StaticText | 29 |  | 240,967 18x18
+                                        StaticText | 30 |  | 288,967 19x18
+                                        StaticText | 31 |  | 338,967 16x18
+                                    Slider | Vertical scroll bar, 2 pages | 0% | 369,116 30x675
+                                    Slider | Vertical scroll bar, 2 pages | 0% | 369,116 30x675
+                  Group | Tab Bar |  | 0,791 402x83
+                        RadioButton | Home | 1 | 25,795 98x54
+                          Image | home |  | 57,801 33x28
+                        RadioButton | Packs |  | 110,795 98x54
+                          Image | Album |  | 144,800 30x31
+                        RadioButton | Quiz |  | 194,795 98x54
+                          Image | selected |  | 229,801 27x27
+                        RadioButton | Settings |  | 279,795 98x54
+                          Image | gearshape.fill |  | 314,801 28x28
