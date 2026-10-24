@@ -1,0 +1,113 @@
+Application | Scripture Memory |  | 0,0 1133x744
+                    RadioButton | Home | 1 | 406,36 78x36
+                      RadioButton | Home | 1 | 406,36 78x36
+                    RadioButton | Packs |  | 484,36 78x36
+                      RadioButton | Packs |  | 484,36 78x36
+                    RadioButton | Quiz | 1 | 563,36 68x36
+                      RadioButton | Quiz | 1 | 563,36 68x36
+                    RadioButton | Settings |  | 630,36 97x36
+                      RadioButton | Settings |  | 630,36 97x36
+                              Heading | Home |  | 20,90 94x41
+                              TextField |  | Search verses | 20,139 1093x44
+                                Image | Search |  | 32,152 20x18
+                                        Button | 0 day streak |  | 262,206 608x52
+                                          Image | Flame |  | 280,222 16x22
+                                          StaticText | 0 day streak |  | 308,223 88x18
+                                        StaticText | CONTINUE LEARNING |  | 282,296 130x14
+                                        StaticText | 11 of 37 |  | 781,296 45x14
+                                        PopUpButton | Verse options |  | 832,294 18x18
+                                            Image | More |  | 832,294 18x18
+                                        Button | Read 1 Peter 1:23 |  | 282,323 568x115
+                                          StaticText | Making us born again |  | 282,323 176x20
+                                          StaticText | 1 Peter 1:23 |  | 282,348 71x17
+                                          StaticText | For you have been born again, not of perishable seed, but of imperishable, through the living and enduring word of God. |  | 282,372 520x40
+                                          StaticText | DEP 3: The Word |  | 282,424 91x14
+                                          StaticText | Read |  | 807,424 30x14
+                                          Image | Forward |  | 844,426 6x10
+                                        StaticText | Daily Review |  | 266,478 100x20
+                                        StaticText | 7, cards due today |  | 278,528 132x32
+                                          StaticText | 7 |  | 278,528 16x32
+                                          StaticText | cards due today |  | 300,539 110x18
+                                        Button | Start review |  | 782,538 72x32
+                                        StaticText | 0 Learning |  | 288,564 62x14
+                                        StaticText | 5 Review |  | 370,564 52x14
+                                        StaticText | 2 New |  | 442,564 36x14
+                                        Button | Packs in review, Reviewing all 15 packs |  | 262,608 608x20
+                                          StaticText | Reviewing all 15 packs |  | 266,610 136x16
+                                          Image | Forward |  | 408,614 6x10
+                                      Slider | Vertical scroll bar, 4 pages | 0% | 1100,146 30x170
+                                      Slider | Vertical scroll bar, 4 pages | 0% | 1100,146 30x170
+                    StaticText | DEP 3: The Word |  | 506,49 120x18
+                    StaticText | 35 of 37 |  | 542,69 48x14
+                    Button | Back to reading |  | 286,44 44x44
+                    Button | Close keyboard |  | 806,56 40x20
+                    StaticText | Joshua 1:8 |  | 332,139 94x23
+                    StaticText | __________ |  | 332,172 468x20
+                    StaticText | __ ___ ___ ____ ____ __ ___ ___ ______ ____ ____ _____; ________ __ __ ___ ___ _____, __ ____ ___ ___ __ _______ __ __ __________ _______ __ __. ____ ___ ____ __ __________ ___ __________. |  | 332,200 468x13
+                    StaticText | 0/1 |  | 783,221 17x11
+                    StaticText | Psalm 1:1-2 |  | 320,124 93x20
+                    TextField |  | Title | 320,154 494x21
+                      Slider | Vertical scroll bar, 2 pages | 0% | 787,187 28x28
+                    StaticText | Verse |  | 320,194 37x17
+                    StaticText | Proverbs 7:1-3 |  | 306,110 124x22
+                    TextField |  | i | 306,141 520x21
+                      Slider | Vertical scroll bar, -1 page | 0% | 798,174 30x0
+                    StaticText | Verse |  | 306,182 39x18
+                    Button | Add to favourites |  | 790,174 44x44
+                    Button | Jump to current verse |  | 802,164 44x44
+                    Button | Previous verse |  | 286,194 44x44
+                    GenericElement | Verse position | 35 of 37 | 340,194 452x44
+                    Button | Next verse |  | 802,194 44x44
+                    Button | Peek at answer |  | 286,244 48x48
+                    Button | Dictate verse |  | 344,244 48x48
+                    Button | Reveal next word |  | 402,244 48x48
+                    Button | Submit |  | 460,246 386x44
+                    Button | undo |  | 317,1083 49x22
+                    Button | Redo |  | 317,1037 49x22
+                    Button | Paste |  | 317,991 49x22
+                Group | Typing Predictions |  | 322,178 49x777
+                      GenericElement | “i” |  | 322,696 49x259
+                      GenericElement | I |  | 322,437 49x259
+                      GenericElement | in |  | 322,178 49x259
+                Button | Padding-Left |  | 371,1133 0x0
+                Button | q |  | 381,1028 86x101
+                Button | w |  | 381,926 86x102
+                Button | e |  | 381,826 86x101
+                Button | r |  | 381,724 86x101
+                Button | t |  | 381,623 86x102
+                Button | y |  | 381,522 86x101
+                Button | u |  | 381,421 86x101
+                Button | i |  | 381,320 86x102
+                Button | o |  | 381,218 86x101
+                Button | p |  | 381,118 86x101
+                Button | Padding-Right |  | 371,1133 0x0
+                Button | delete |  | 381,-4 86x122
+                Button | Padding-Left |  | 371,1133 0x0
+                Button | a |  | 467,988 86x101
+                Button | s |  | 467,886 86x102
+                Button | d |  | 467,785 86x101
+                Button | f |  | 467,684 86x101
+                Button | g |  | 467,582 86x102
+                Button | h |  | 467,482 86x101
+                Button | j |  | 467,380 86x101
+                Button | k |  | 467,279 86x102
+                Button | l |  | 467,178 86x101
+                Button | Padding-Right |  | 371,1133 0x0
+                Button | return |  | 467,-4 86x182
+                Button | shift |  | 552,1028 86x101
+                Button | z |  | 552,926 86x102
+                Button | x |  | 552,826 86x101
+                Button | c |  | 552,724 86x101
+                Button | v |  | 552,623 86x102
+                Button | b |  | 552,522 86x101
+                Button | n |  | 552,421 86x101
+                Button | m |  | 552,320 86x102
+                Button | , |  | 552,218 86x101
+                Button | . |  | 552,118 86x101
+                Button | shift |  | 552,-4 86x122
+                Button | numbers |  | 638,923 86x103
+                Button | Emoji |  | 638,1026 86x103
+                Button | Dictate |  | 638,820 86x102
+                Button |   |  | 638,304 86x516
+                Button | numbers |  | 638,150 86x154
+                Button | Hide keyboard |  | 638,-4 86x154

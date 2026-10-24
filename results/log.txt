@@ -1,0 +1,46 @@
+[19:43:31] Booting 9D9BF050-F6F5-4D32-84C0-4B7AC57F63EF:     iPad mini (A17 Pro) (9D9BF050-F6F5-4D32-84C0-4B7AC57F63EF) (Shutdown) 
+[19:47:31] tap '=Home' at 250 54
+[19:47:43] shot 01-home-portrait
+[19:47:46] tap 'day streak' at 372 232
+[19:48:01] shot 02-streak-portrait
+[19:48:05] tap '=Home' at 250 54
+[19:48:11] tap '=Packs' at 329 54
+[19:48:17] shot 03-packs-portrait
+[19:48:24] tap 'DEP 3: The Word' at 99 375
+[19:48:34] shot 04-pack-read-portrait
+[19:48:53] tap '=Review' at 512 1074
+[19:49:18] shot 05-pack-review-portrait
+[19:49:24] no element labelled '=Close'
+[19:49:37] tap 'Back to reading' at 114 66
+[19:49:52] tap '=Close' at 114 66
+[19:50:00] tap '=Quiz' at 402 54
+[19:50:05] shot 06-quiz-portrait
+[19:50:08] tap '=Settings' at 484 54
+[19:50:13] shot 07-settings-portrait
+[19:50:17] tap '=Home' at 250 54
+[19:50:24] tap '=Open' at 446 577
+[19:50:32] shot 08-review-portrait
+[19:50:35] tap 'Close session' at 114 66
+[19:50:49] rotated
+[19:51:00] tap '=Home' at 445 54
+[19:51:05] shot 09-home-landscape
+[19:51:12] tap 'day streak' at 566 232
+[19:51:22] shot 10-streak-landscape
+[19:51:30] tap '=Home' at 445 54
+[19:51:41] tap '=Packs' at 524 54
+[19:51:48] shot 11-packs-landscape
+[19:51:56] tap 'DEP 3: The Word' at 328 431
+[19:52:13] shot 12-pack-read-landscape
+[19:52:17] no element labelled '=Review'
+[19:52:28] no element labelled '=Close'
+[19:52:38] tap 'Back to reading' at 308 66
+[19:52:41] no element labelled '=Close'
+[19:52:50] tap '=Quiz' at 596 54
+[19:53:00] shot 13-quiz-landscape
+[19:53:14] tap '=Settings' at 679 54
+[19:53:25] shot 14-settings-landscape
+[19:53:36] tap '=Home' at 445 54
+[19:53:55] no element labelled '=Open'
+[19:54:13] shot 15-review-landscape
+[19:54:20] tap 'Close session' at 308 66
+[19:54:22] done

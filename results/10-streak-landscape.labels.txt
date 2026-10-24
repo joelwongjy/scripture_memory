@@ -1,0 +1,79 @@
+Application | Scripture Memory |  | 0,0 1133x744
+                    RadioButton | Home | 1 | 406,36 78x36
+                      RadioButton | Home | 1 | 406,36 78x36
+                    RadioButton | Packs |  | 484,36 78x36
+                      RadioButton | Packs |  | 484,36 78x36
+                    RadioButton | Quiz | 1 | 563,36 68x36
+                      RadioButton | Quiz | 1 | 563,36 68x36
+                    RadioButton | Settings |  | 630,36 97x36
+                      RadioButton | Settings |  | 630,36 97x36
+                              Heading | Home |  | 20,90 94x41
+                              TextField |  | Search verses | 20,139 1093x44
+                                Image | Search |  | 32,152 20x18
+                                        Button | 0 day streak |  | 262,206 608x52
+                                          Image | Flame |  | 280,222 16x22
+                                          StaticText | 0 day streak |  | 308,223 88x18
+                                        StaticText | CONTINUE LEARNING |  | 282,296 130x14
+                                        StaticText | 11 of 37 |  | 781,296 45x14
+                                        PopUpButton | Verse options |  | 832,294 18x18
+                                            Image | More |  | 832,294 18x18
+                                        Button | Read 1 Peter 1:23 |  | 282,323 568x115
+                                          StaticText | Making us born again |  | 282,323 176x20
+                                          StaticText | 1 Peter 1:23 |  | 282,348 71x17
+                                          StaticText | For you have been born again, not of perishable seed, but of imperishable, through the living and enduring word of God. |  | 282,372 520x40
+                                          StaticText | DEP 3: The Word |  | 282,424 91x14
+                                          StaticText | Read |  | 807,424 30x14
+                                          Image | Forward |  | 844,426 6x10
+                                        StaticText | Daily Review |  | 266,478 100x20
+                                        StaticText | 7, cards due today |  | 278,528 132x32
+                                          StaticText | 7 |  | 278,528 16x32
+                                          StaticText | cards due today |  | 300,539 110x18
+                                        Button | Start review |  | 782,538 72x32
+                                        StaticText | 0 Learning |  | 288,564 62x14
+                                        StaticText | 5 Review |  | 370,564 52x14
+                                        StaticText | 2 New |  | 442,564 36x14
+                                        Button | Packs in review, Reviewing all 15 packs |  | 262,608 608x20
+                                          StaticText | Reviewing all 15 packs |  | 266,610 136x16
+                                          Image | Forward |  | 408,614 6x10
+                                      Slider | Vertical scroll bar, 1 page | 0% | 1100,146 30x576
+                                      Slider | Vertical scroll bar, 1 page | 0% | 1100,146 30x576
+                    StaticText | DEP 3: The Word |  | 506,49 120x18
+                    StaticText | 11 of 37 |  | 544,69 45x14
+                    Button | Close |  | 286,44 44x44
+                    Button | Shuffle | Off | 802,44 44x44
+                          Button | Jesus also confirmed the Word, Matthew 4:4, Jesus answered, "It is written: 'Man does not live on bread alone, but on every word that comes from the mouth of God.' ", DEP 3: The Word |  | 286,-494 560x336
+                            StaticText | Jesus also confirmed the Word |  | 306,-474 282x22
+                            StaticText | Matthew 4:4 |  | 306,-443 96x20
+                            StaticText | Jesus answered, "It is written: 'Man does not live on bread alone, but on every word that comes from the mouth of God.' " |  | 306,-416 500x43
+                            StaticText | DEP 3: The Word |  | 306,-200 102x15
+                            Button | Add to favourites |  | 790,-214 44x44
+                          Button | Jesus also confirmed the Word, Luke 24:27, And beginning with Moses and all the Prophets, he explained to them what was said in all the Scriptures concerning himself., DEP 3: The Word |  | 286,-142 560x336
+                            StaticText | Jesus also confirmed the Word |  | 306,-122 282x22
+                            StaticText | Luke 24:27 |  | 306,-91 85x20
+                            StaticText | And beginning with Moses and all the Prophets, he explained to them what was said in all the Scriptures concerning himself. |  | 306,-64 489x43
+                            StaticText | DEP 3: The Word |  | 306,152 102x15
+                            Button | Add to favourites |  | 790,138 44x44
+                          Button | Making us born again, 1 Peter 1:23, For you have been born again, not of perishable seed, but of imperishable, through the living and enduring word of God., DEP 3: The Word |  | 286,210 560x336
+                            StaticText | Making us born again |  | 306,230 201x22
+                            StaticText | 1 Peter 1:23 |  | 306,261 89x20
+                            StaticText | For you have been born again, not of perishable seed, but of imperishable, through the living and enduring word of God. |  | 306,288 520x43
+                            StaticText | DEP 3: The Word |  | 306,504 102x15
+                            Button | Add to favourites |  | 692,490 44x44
+                            Button | Mark current verse as complete |  | 735,500 92x24
+                              Image | Selected |  | 746,506 12x12
+                              StaticText | Complete |  | 762,505 54x14
+                          Button | Making us born again, James 1:18, He chose to give us birth through the word of truth, that we might be a kind of firstfruits of all he created., DEP 3: The Word |  | 286,562 560x336
+                            StaticText | Making us born again |  | 306,582 201x22
+                            StaticText | James 1:18 |  | 306,613 84x20
+                            StaticText | He chose to give us birth through the word of truth, that we might be a kind of firstfruits of all he created. |  | 306,640 496x43
+                            StaticText | DEP 3: The Word |  | 306,856 102x15
+                            Button | Add to favourites |  | 790,842 44x44
+                          Button | Helping us grow up, 1 Peter 2:2, Like newborn babies, crave pure spiritual milk, so that by it you may grow up in your salvation,, DEP 3: The Word |  | 286,914 560x336
+                            StaticText | Helping us grow up |  | 306,934 180x22
+                            StaticText | 1 Peter 2:2 |  | 306,965 81x20
+                            StaticText | Like newborn babies, crave pure spiritual milk, so that by it you may grow up in your salvation, |  | 306,992 515x43
+                            StaticText | DEP 3: The Word |  | 306,1208 102x15
+                            Button | Add to favourites |  | 790,1194 44x44
+                    Image | Up And Down Chevrons |  | 816,246 40x40
+                      RadioButton | Read | 1 | 286,669 280x32
+                      RadioButton | Review |  | 566,669 280x32
