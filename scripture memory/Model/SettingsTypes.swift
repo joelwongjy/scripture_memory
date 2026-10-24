@@ -104,10 +104,14 @@ enum BibleVersion: String, CaseIterable {
         }
     }
 
-    /// Packs that have no NIV 2011 edition in the material we're tested on. Their
-    /// cards stay on NIV 1984 whichever translation is selected — otherwise the
-    /// user would memorise wording that the test doesn't accept.
-    static let niv84OnlyPackNames: Set<String> = ["5 Assurances"]
+    /// The only packs printed in an NIV 2011 edition in the material we're tested
+    /// on. Every other pack stays on NIV 1984 whichever translation is selected —
+    /// otherwise the user would memorise wording that the test doesn't accept.
+    ///
+    /// An allow-list rather than a deny-list so a pack added later defaults to
+    /// NIV 1984, which is what nearly all of the printed material uses. Keep in
+    /// sync with `VerseLibrary.niv11PackNames` in the widget.
+    static let niv11PackNames: Set<String> = ["TMS 60"]
 
     /// Built once rather than per access. `packs` is read inside `body` on
     /// several screens — which means once per frame of any animation running on
@@ -115,7 +119,7 @@ enum BibleVersion: String, CaseIterable {
     /// up as dropped frames in a system transition. The two bundles are fixed for
     /// the life of the process (see `VerseCatalog`), so this can be a constant.
     private static let niv11Packs: [Pack] = packsNIV11.map { pack in
-        guard niv84OnlyPackNames.contains(pack.name) else { return pack }
+        guard !niv11PackNames.contains(pack.name) else { return pack }
         return packsNIV84.first { $0.name == pack.name } ?? pack
     }
 
