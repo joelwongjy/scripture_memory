@@ -35,7 +35,7 @@ struct StartingPointScreen: View {
                         Label("Start from the beginning", systemImage: "flag.fill")
                             .foregroundStyle(.primary)
                         Spacer()
-                        if isSelected(ordered.first) { checkmark }
+                        if isSelected(ordered.first) { SelectionCheckmark() }
                     }
                 }
             }
@@ -74,5 +74,4 @@ struct StartingPointScreen: View {
         return verse.srsKey == pending.srsKey
     }
 
-    private var checkmark: some View { SelectionCheckmark() }
 }

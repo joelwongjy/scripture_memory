@@ -135,15 +135,15 @@ enum SharedStore {
         return s
     }
 
-    /// The verse the app is featuring — pinned if the user pinned one, otherwise
-    /// the live current-learning verse. The app writes whichever into the snapshot.
-    static func displayedVerse() -> WidgetVerse? {
-        guard let s = snapshot()?.verse else { return nil }
+}
+
+extension SharedStore.Snapshot {
+    /// The verse the app is featuring: the pinned one, or the current learning
+    /// verse (`isPinned` says which).
+    var featuredVerse: WidgetVerse? {
+        guard let s = verse else { return nil }
         var v = WidgetVerse(title: s.title, verse: s.verse, book: s.book, reference: s.reference)
         v.packName = s.packName
         return v
     }
-
-    /// Whether `displayedVerse()` is a user-pinned spotlight (vs the live cursor).
-    static func isPinned() -> Bool { snapshot()?.isPinned ?? false }
 }

@@ -106,13 +106,8 @@ struct UndoToast: View {
 
 extension View {
 
-    /// How long an undo stays available.
-    ///
-    /// 3s, down from 5. The toast covers the controls underneath it, and marking
-    /// a verse complete is a deliberate tap on a labelled button — the undo is
-    /// there for the misfire you notice immediately, not a window to reconsider
-    /// in. 2s clipped the read-notice-reach sequence a little tight; swipe-down
-    /// dismissal means nobody has to wait this out anyway.
+    /// How long an undo stays available: long enough to catch a misfire, short
+    /// enough not to cover the controls underneath for long.
     private static var undoToastSeconds: Double { 3 }
 
     /// Floats `toast` over the bottom edge until it's undone or times out.

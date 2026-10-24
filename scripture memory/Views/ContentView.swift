@@ -34,34 +34,22 @@ struct ContentView: View {
             NavigationStack {
                 HomeView()
             }
-            .tabItem {
-                Image(systemName: "house.fill")
-                Text("Home")
-            }
+            .tabItem { Label("Home", systemImage: "house.fill") }
 
             NavigationStack {
                 PackListView()
             }
-            .tabItem {
-                Image(systemName: "rectangle.stack.fill")
-                Text("Packs")
-            }
+            .tabItem { Label("Packs", systemImage: "rectangle.stack.fill") }
 
             NavigationStack {
                 TestSetupView()
             }
-            .tabItem {
-                Image(systemName: "checkmark.circle.fill")
-                Text("Quiz")
-            }
+            .tabItem { Label("Quiz", systemImage: "checkmark.circle.fill") }
 
             NavigationStack {
                 SettingsView()
             }
-            .tabItem {
-                Image(systemName: "gearshape")
-                Text("Settings")
-            }
+            .tabItem { Label("Settings", systemImage: "gearshape") }
         }
         .fullScreenCover(item: $cover) { c in
             switch c {
@@ -126,7 +114,7 @@ struct ContentView: View {
     /// Mirror the current learning verse + streak + due-count + week into the App Group.
     private func syncWidget() {
         let visible   = packPrefs.visible(from: bibleVersion.packs)
-        let displayed = learning.displayed(in: visible.flatMap(\.verses))
+        let displayed = learning.displayed(in: Catalogue.verses(in: visible))
         let week      = StreakStore.shared.thisWeek().map {
             WidgetBridge.WeekDay(letter: $0.initial, done: $0.done, today: $0.isToday)
         }

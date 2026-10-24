@@ -25,7 +25,7 @@ struct SettingsView: View {
 
     @Environment(\.openURL) private var openURL
 
-    private var learningOrdered: [Verse] { packPrefs.visible(from: bibleVersion.packs).flatMap(\.verses) }
+    private var learningOrdered: [Verse] { Catalogue.verses(in: packPrefs.visible(from: bibleVersion.packs)) }
 
     /// Book + reference of the verse the user is currently on, for the Settings row.
     private var currentLearningLabel: String {
@@ -219,7 +219,7 @@ struct SettingsView: View {
     /// A "icon + title … value [− +]" row. The icon column (via `rowLabel`) keeps
     /// the two titles aligned and the icon vertically centred with the title.
     private func capRow(icon: String, title: String,
-                        binding: Binding<Int>, range: ClosedRange<Int>, step: Int = 1) -> some View {
+                        binding: Binding<Int>, range: ClosedRange<Int>) -> some View {
         HStack(spacing: 0) {
             rowLabel(title, icon)
             Spacer(minLength: 8)
@@ -227,7 +227,7 @@ struct SettingsView: View {
                 .foregroundStyle(.secondary)
                 .monospacedDigit()
                 .padding(.trailing, 6)
-            Stepper(title, value: binding, in: range, step: step)
+            Stepper(title, value: binding, in: range)
                 .labelsHidden()
         }
     }

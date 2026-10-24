@@ -8,9 +8,6 @@ import SwiftUI
 /// the picker (with a Cancel button).
 struct LearningSetupView: View {
     var isOnboarding: Bool
-    /// Whether to lead with the welcome hero. New installs do; existing users
-    /// (who already know the app) skip straight to the picker.
-    var showsWelcome: Bool
     var onComplete: () -> Void
 
     @AppStorage(BibleVersion.storageKey) private var bibleVersion: BibleVersion = .niv84
@@ -20,15 +17,16 @@ struct LearningSetupView: View {
 
     @State private var showWelcome: Bool
 
+    /// `showsWelcome`: lead with the welcome hero. New installs do; existing users
+    /// skip straight to the picker.
     init(isOnboarding: Bool = false, showsWelcome: Bool = true, onComplete: @escaping () -> Void = {}) {
         self.isOnboarding = isOnboarding
-        self.showsWelcome = showsWelcome
         self.onComplete   = onComplete
         _showWelcome = State(initialValue: isOnboarding && showsWelcome)
     }
 
     private var packs:   [Pack]  { packPrefs.visible(from: bibleVersion.packs) }
-    private var ordered: [Verse] { packs.flatMap(\.verses) }
+    private var ordered: [Verse] { Catalogue.verses(in: packs) }
 
     var body: some View {
         Group {
