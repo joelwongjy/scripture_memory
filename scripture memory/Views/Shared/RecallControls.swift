@@ -22,7 +22,7 @@ struct StudyControlTile: View {
                 .foregroundStyle(tint)
                 .frame(width: StudyControlMetrics.buttonSize, height: StudyControlMetrics.buttonSize)
                 .background(fill)
-                .roundedRect(StudyControlMetrics.cornerRadius)
+                .clipShape(Capsule())
         }
         .buttonStyle(.plain)
     }
@@ -107,10 +107,11 @@ struct RecallInputField: View {
                     // Keyboard dismissal lives in the top bar ("Done") — a single,
                     // reliable affordance instead of a second keyboard-toolbar one.
             }
-            .padding(14)
+            .padding(.vertical, 14)
+            .padding(.horizontal, 18)
             .background(Color(.secondarySystemGroupedBackground))
-            .roundedRect(StudyControlMetrics.cornerRadius)
-            .overlay(RoundedRectangle(cornerRadius: StudyControlMetrics.cornerRadius, style: .continuous)
+            .clipShape(Capsule())
+            .overlay(Capsule()
                 .stroke(Color(.separator).opacity(0.5), lineWidth: 0.5))
             .offset(x: shakeOffset)
 
@@ -130,7 +131,7 @@ struct RecallInputField: View {
                 .foregroundStyle(isListening ? Color.red : Color.secondary)
                 .contentTransition(.symbolEffect(.replace))
                 .frame(width: 22, height: 22)
-                .contentShape(Rectangle())
+                .minimumTapTarget(visibleSize: 22)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(isListening ? "Stop dictation" : "Dictate verse")
@@ -149,7 +150,7 @@ extension View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 12)
             .background(background)
-            .roundedRect(StudyControlMetrics.cornerRadius)
+            .clipShape(Capsule())
     }
 }
 

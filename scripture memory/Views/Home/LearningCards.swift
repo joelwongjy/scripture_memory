@@ -78,16 +78,16 @@ struct ContinueLearningCard: View {
             .buttonStyle(CardButtonStyle())
             .accessibilityLabel("\(startMode.ctaLabel) \(v.book) \(v.reference)")
         }
-        .padding(18)
+        .padding(AppLayout.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: AppLayout.groupedRadius, style: .continuous)
+            RoundedRectangle(cornerRadius: AppLayout.cornerRadius, style: .continuous)
                 .fill(flashcardBackground)
                 .shadow(color: .black.opacity(0.13), radius: 14, x: 0, y: 7)
                 .shadow(color: .black.opacity(0.05), radius: 2,  x: 0, y: 1)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: AppLayout.groupedRadius, style: .continuous)
+            RoundedRectangle(cornerRadius: AppLayout.cornerRadius, style: .continuous)
                 .strokeBorder(Color(.separator).opacity(0.4), lineWidth: 0.5)
         )
     }
@@ -145,8 +145,8 @@ struct GoToCurrentVerseCard: View {
                 Spacer(minLength: 8)
                 RowChevron()
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+            .padding(.horizontal, AppLayout.panelPadding)
+            .padding(.vertical, AppLayout.panelRowPadding)
             .frame(maxWidth: .infinity)
             .groupedPanel()
             .contentShape(Rectangle())
@@ -172,7 +172,7 @@ struct AllLearntCard: View {
             }
             Spacer()
         }
-        .padding(20)
+        .padding(AppLayout.cardPadding)
         .frame(maxWidth: .infinity)
         .groupedPanel()
     }

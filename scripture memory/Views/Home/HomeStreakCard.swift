@@ -34,8 +34,8 @@ struct HomeStreakCard: View {
                 }
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 11)
+        .padding(.horizontal, AppLayout.panelPadding)
+        .padding(.vertical, AppLayout.panelRowPadding)
         .frame(maxWidth: .infinity)
         .groupedPanel()
         .accessibilityElement(children: .combine)

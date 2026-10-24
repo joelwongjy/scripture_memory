@@ -32,7 +32,7 @@ struct SRSGradingButtons: View {
         let isSuggested = (grade == suggested)
         let isSelected  = (grade == selected)
         let label = predictedIntervalLabel(state: state, grade: grade, now: now)
-        let shape = RoundedRectangle(cornerRadius: 14, style: .continuous)
+        let shape = Capsule()
         return Button {
             HapticEngine.light()
             onPick(grade)

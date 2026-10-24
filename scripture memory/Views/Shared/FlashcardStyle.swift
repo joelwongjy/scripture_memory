@@ -6,18 +6,17 @@ extension View {
     /// Applies the standard card appearance: parchment background, rounded corners, shadows.
     func flashcardStyle() -> some View {
         self
-            .padding(.horizontal, 20)
-            .padding(.vertical, 16)
+            .padding(AppLayout.cardPadding)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .background(flashcardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: AppLayout.cardRadius, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppLayout.cornerRadius, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: AppLayout.cardRadius, style: .continuous)
+                RoundedRectangle(cornerRadius: AppLayout.cornerRadius, style: .continuous)
                     .stroke(Color(.separator).opacity(0.5), lineWidth: 0.5)
             )
             .shadow(color: .black.opacity(0.12), radius: 16, x: 0, y: 8)
             .shadow(color: .black.opacity(0.05), radius: 2,  x: 0, y: 1)
-            .contentShape(RoundedRectangle(cornerRadius: AppLayout.cardRadius, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: AppLayout.cornerRadius, style: .continuous))
     }
 }
 

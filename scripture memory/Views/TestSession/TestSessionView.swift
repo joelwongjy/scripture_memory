@@ -56,8 +56,10 @@ struct TestSessionView: View {
 
     var body: some View {
         GeometryReader { geo in
-            let cardWidth  = geo.size.width - 2 * AppLayout.screenMargin
-            let cardHeight = cardWidth * 3.0 / 5.0
+            // Full width on a phone; a centred column on a wide window.
+            let columnWidth = min(geo.size.width, AppLayout.studyColumnWidth)
+            let cardWidth   = columnWidth - 2 * AppLayout.screenMargin
+            let cardHeight  = cardWidth / AppLayout.cardAspect
 
             VStack(spacing: 0) {
                 topBar
@@ -70,7 +72,8 @@ struct TestSessionView: View {
                 }
 
                 GeometryReader { area in
-                    let cardH = max(cardHeight, min(cardWidth * 0.82, area.size.height - 12))
+                    let room  = max(120, area.size.height - 12)
+                    let cardH = min(max(cardHeight, min(cardWidth * 0.82, room)), room)
                     ZStack {
                         cardStack
                             .frame(width: cardWidth, height: cardH)
@@ -100,6 +103,8 @@ struct TestSessionView: View {
 
                 bottomControls
             }
+            .frame(width: columnWidth)
+            .frame(maxWidth: .infinity)
         }
         .background(Color(.systemGroupedBackground))
         .undoToast($undoToastState)
@@ -443,7 +448,7 @@ struct TestSessionView: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 14.6)
             .background(Color(.secondarySystemGroupedBackground))
-            .roundedRect(StudyControlMetrics.cornerRadius)
+            .clipShape(Capsule())
         }
         .disabled(isLastCard)
         .opacity(isLastCard ? 0.5 : 1)

@@ -28,13 +28,13 @@ struct PeekHoldButton: View {
                 .foregroundStyle(isPeeking ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.secondary))
                 .frame(width: StudyControlMetrics.buttonSize, height: StudyControlMetrics.buttonSize)
                 .background(
-                    RoundedRectangle(cornerRadius: StudyControlMetrics.cornerRadius, style: .continuous)
+                    Capsule()
                         .fill(isPeeking ? Color.accentColor.opacity(0.12) : Color(.secondarySystemGroupedBackground))
                 )
                 .contentShape(Rectangle())
         }
         .buttonStyle(PressReportingButtonStyle { pressed in
-            withAnimation(.easeInOut(duration: 0.1)) { isPeeking = pressed }
+            withAnimation(AppMotion.control) { isPeeking = pressed }
             if pressed {
                 HapticEngine.light()
                 dismissHint()

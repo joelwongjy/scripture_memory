@@ -126,7 +126,7 @@ struct VerseFastScrollOverlay: View {
             .onChanged { value in
                 if !isDragging {
                     dragStartThumbY = thumbY
-                    withAnimation(.easeOut(duration: 0.12)) { isDragging = true }
+                    withAnimation(AppMotion.control) { isDragging = true }
                 }
                 isScrubbing = true
                 dragFraction = ScrubberMath.fractionForDrag(
@@ -142,7 +142,7 @@ struct VerseFastScrollOverlay: View {
                 }
             }
             .onEnded { _ in
-                withAnimation(.easeOut(duration: 0.12)) { isDragging = false }
+                withAnimation(AppMotion.control) { isDragging = false }
                 lastDragIndex = -1
                 DispatchQueue.main.asyncAfter(deadline: .now() + AppMotion.settle) { isScrubbing = false }
                 flash()

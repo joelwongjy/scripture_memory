@@ -57,6 +57,7 @@ struct QuizCountStepper: View {
                 .foregroundStyle(Color.accentColor)
                 .frame(width: 32, height: 32)
                 .background(Color(.secondarySystemBackground), in: Circle())
+                .minimumTapTarget(visibleSize: 32)
         }
         .buttonStyle(.plain)
         .disabled(disabled)
@@ -75,7 +76,7 @@ struct QuizCountStepper: View {
             .focused($fieldFocused)
             // Fixed width so the stepper circles don't shift as digits are added.
             .frame(width: 58, height: 32)
-            .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .background(Color(.secondarySystemBackground), in: Capsule())
             // Sanitise and commit on every keystroke, so what the field shows is
             // what Start will use. `.numberPad` doesn't stop a hardware keyboard,
             // dictation or paste, so non-digits are stripped here.

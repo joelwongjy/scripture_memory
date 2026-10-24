@@ -111,7 +111,7 @@ struct HomeView: View {
     }
 
     private var dashboard: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: AppLayout.spacing) {
             HomeStreakCard()
             learningCards
             Text("Daily Review")
@@ -126,6 +126,7 @@ struct HomeView: View {
         .padding(.horizontal, AppLayout.screenMargin)
         .padding(.top, 8)
         .padding(.bottom, 24)
+        .readableColumn()
     }
 
     // MARK: - Learning

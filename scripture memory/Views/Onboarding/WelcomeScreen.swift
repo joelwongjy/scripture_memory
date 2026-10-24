@@ -5,6 +5,9 @@ import SwiftUI
 struct WelcomeScreen: View {
     var onContinue: () -> Void
 
+    /// On a wide window the hero stays the width of an onboarding sheet.
+    private static let columnWidth: CGFloat = 520
+
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
@@ -38,7 +41,7 @@ struct WelcomeScreen: View {
                 .padding(.horizontal, 30)
                 .padding(.bottom, 24)
             }
-            .frame(maxWidth: .infinity)
+            .readableColumn(Self.columnWidth)
         }
         .safeAreaInset(edge: .bottom) {
             // Floating, not barred — a hero screen has nothing scrolling under it.
@@ -46,6 +49,7 @@ struct WelcomeScreen: View {
                 .padding(.horizontal, AppLayout.screenMargin)
                 .padding(.top, 12)
                 .padding(.bottom, 8)
+                .readableColumn(Self.columnWidth)
         }
     }
 }

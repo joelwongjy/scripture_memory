@@ -32,8 +32,8 @@ struct DailyReviewCard: View {
             }
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 14)
-        .padding(.horizontal, 16)
+        .padding(.vertical, AppLayout.panelRowPadding)
+        .padding(.horizontal, AppLayout.panelPadding)
         .groupedPanel()
     }
 

@@ -6,10 +6,17 @@ struct PackListView: View {
     @ObservedObject private var learning  = LearningStore.shared
     @ObservedObject private var favorites = FavoritesStore.shared
 
-    @State private var selectedPack:   Pack?             = nil
-    @State private var searchText:     String            = ""
-    @State private var searchSelected: VerseSearchResult? = nil
-    @State private var showOrganizer:  Bool              = false
+    @State private var opened:        OpenedPack?       = nil
+    @State private var searchText:    String            = ""
+    @State private var showOrganizer: Bool              = false
+
+    /// What's open full screen: a pack from the grid, or a verse from search.
+    /// One cover, since two `.fullScreenCover`s on one view conflict.
+    private struct OpenedPack: Identifiable {
+        let pack: Pack
+        var index = 0
+        var id: String { "\(pack.id)-\(index)" }
+    }
 
     /// Visible packs in the user's custom order (hidden removed).
     private var visiblePacks: [Pack] { packPrefs.visible(from: bibleVersion.packs) }
@@ -18,7 +25,8 @@ struct PackListView: View {
     /// the user can spot where to resume at a glance.
     private var currentPackName: String? { learning.currentVerse?.packName }
 
-    private let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
+    /// Two columns on a phone; more on a wide window (iPhone Duo's inner display).
+    private let columns = [GridItem(.adaptive(minimum: 160), spacing: AppLayout.spacing)]
 
     // MARK: - Body
 
@@ -35,7 +43,7 @@ struct PackListView: View {
                     VerseSearchResultsList(
                         query:   searchText,
                         results: VerseSearch.results(for: searchText, in: visiblePacks),
-                        onSelect: { searchSelected = $0 }
+                        onSelect: { opened = OpenedPack(pack: $0.pack, index: $0.verseIndex) }
                     )
                 }
             }
@@ -73,15 +81,8 @@ struct PackListView: View {
         )
         // See `HomeView` — index built off the interaction path.
         .task { VerseSearch.prewarm(visiblePacks) }
-        .fullScreenCover(item: $selectedPack) { pack in
-            CardStudyCover(packName: pack.name, verses: pack.verses)
-        }
-        .fullScreenCover(item: $searchSelected) { result in
-            CardStudyCover(
-                packName: result.pack.name,
-                verses: result.pack.verses,
-                initialIndex: result.verseIndex
-            )
+        .fullScreenCover(item: $opened) { item in
+            CardStudyCover(packName: item.pack.name, verses: item.pack.verses, initialIndex: item.index)
         }
     }
 
@@ -89,7 +90,7 @@ struct PackListView: View {
     /// starred anything. It's presented as a pack rather than a separate screen so
     /// everything a pack can do — read, review, shuffle — works on it unchanged.
     private var packGrid: some View {
-        LazyVGrid(columns: columns, spacing: 12) {
+        LazyVGrid(columns: columns, spacing: AppLayout.spacing) {
             if let favorites = favorites.pack(in: visiblePacks) {
                 packTile(favorites)
             }
@@ -104,7 +105,7 @@ struct PackListView: View {
     private func packTile(_ pack: Pack) -> some View {
         Button {
             guard !pack.verses.isEmpty else { return }
-            selectedPack = pack
+            opened = OpenedPack(pack: pack)
         } label: {
             PackCover(pack: pack, isCurrentPack: pack.name == currentPackName)
         }

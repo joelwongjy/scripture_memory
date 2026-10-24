@@ -40,6 +40,8 @@ struct CardStudyView: View {
     /// Pending "marked complete" undo prompt.
     @State private var undoToastState: UndoToastState?
     private static let vScrollSpace = "verticalScrollCards"
+    /// Space above the first card and below the last in the read list.
+    private static let listInset: CGFloat = 12
 
     @Environment(\.dismiss) private var dismiss
 
@@ -143,7 +145,7 @@ struct CardStudyView: View {
     /// height here, so the centre is `topPadding + index·(card+spacing) + card/2`.
     private func showJumpInList(cardHeight: CGFloat, viewportHeight: CGFloat) -> Bool {
         guard let ci = currentVerseIndexInPack, !isEditing else { return false }
-        let cardCentre = 12 + CGFloat(ci) * (cardHeight + 20) + cardHeight / 2
+        let cardCentre = Self.listInset + CGFloat(ci) * (cardHeight + AppLayout.spacing) + cardHeight / 2
         let onScreen = cardCentre > listScrollOffset && cardCentre < listScrollOffset + viewportHeight
         return !onScreen
     }
@@ -163,11 +165,14 @@ struct CardStudyView: View {
 
     var body: some View {
         GeometryReader { geo in
-            let cardWidth  = geo.size.width - 2 * AppLayout.screenMargin
-            let cardHeight = cardWidth * 3.0 / 5.0
+            // A phone uses the full width; a wide window (iPhone Duo's inner
+            // display) gets a centred column so the card stays card-sized.
+            let columnWidth = min(geo.size.width, AppLayout.studyColumnWidth)
+            let cardWidth   = columnWidth - 2 * AppLayout.screenMargin
+            let cardHeight  = cardWidth / AppLayout.cardAspect
 
             VStack(spacing: 0) {
-                topBar(width: geo.size.width)
+                topBar(width: columnWidth)
 
                 // Read mode is a scrolling list of cards; review shows one card
                 // at a time, since it's a question you answer.
@@ -176,9 +181,11 @@ struct CardStudyView: View {
                         .frame(maxHeight: .infinity)
                 } else {
                     // Review grows the card into the free vertical space (capped so
-                    // it stays card-shaped) and shrinks it again for the keyboard.
+                    // it stays card-shaped) and shrinks it again for the keyboard,
+                    // never taller than the space it has (a short, wide window).
                     GeometryReader { area in
-                        let cardH = max(cardHeight, min(cardWidth * 0.82, area.size.height - 16))
+                        let room  = max(120, area.size.height - 16)
+                        let cardH = min(max(cardHeight, min(cardWidth * 0.82, room)), room)
                         ZStack {
                             cardStack
                                 .frame(width: cardWidth, height: cardH)
@@ -226,6 +233,8 @@ struct CardStudyView: View {
 
                 bottomControls
             }
+            .frame(width: columnWidth)
+            .frame(maxWidth: .infinity)
         }
         .background(Color(.systemGroupedBackground))
         .undoToast($undoToastState)
@@ -422,7 +431,7 @@ struct CardStudyView: View {
             ScrollViewReader { proxy in
                 ZStack(alignment: .trailing) {
                     ScrollView(.vertical, showsIndicators: false) {
-                        LazyVStack(spacing: 20) {
+                        LazyVStack(spacing: AppLayout.spacing) {
                             ForEach(Array(vm.verses.enumerated()), id: \.offset) { index, verse in
                                 // Tap a verse to review it (completed ones too).
                                 Button {
@@ -438,7 +447,7 @@ struct CardStudyView: View {
                         }
                         .scrollTargetLayout()
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
+                        .padding(.vertical, Self.listInset)
                         // Continuous offset probe on the (always-present) content
                         // background — 0 at top, grows scrolling down. Reliable,
                         // unlike index-snapping which sticks one card from each end.

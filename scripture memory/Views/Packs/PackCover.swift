@@ -86,8 +86,8 @@ struct PackCover: View {
                         .frame(width: geo.size.width, height: geo.size.height, alignment: .topLeading)
                 }
             )
-            .clipShape(RoundedRectangle(cornerRadius: AppLayout.cardRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: AppLayout.cardRadius, style: .continuous).stroke(borderColor, lineWidth: 0.5))
+            .clipShape(RoundedRectangle(cornerRadius: AppLayout.cornerRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: AppLayout.cornerRadius, style: .continuous).stroke(borderColor, lineWidth: 0.5))
             .shadow(color: .black.opacity(shadowOpacity), radius: 8, x: 0, y: 4)
             .overlay(alignment: .topTrailing) {
                 if isCurrentPack { currentPackBadge.padding(8) }
@@ -462,7 +462,7 @@ struct PackCover: View {
                                     .font(.system(size: 14, weight: .semibold))
                                     .foregroundStyle(.white)
                                     .padding(.horizontal, 9).padding(.vertical, 5)
-                                    .background(RoundedRectangle(cornerRadius: 5, style: .continuous).fill(baseColor))
+                                    .background(Capsule().fill(baseColor))
                                 Text("구절")
                                     .font(.system(size: 62, weight: .bold, design: .monospaced))
                                     .foregroundStyle(baseColor)

@@ -334,7 +334,7 @@ struct TestSetupView: View {
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(.tertiary)
                 .frame(width: 30, height: 36)
-                .contentShape(Rectangle())
+                .minimumTapTarget(visibleSize: 30)
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Select all verses up to \(verse.title)")

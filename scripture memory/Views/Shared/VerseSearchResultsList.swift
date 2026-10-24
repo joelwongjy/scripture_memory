@@ -32,15 +32,17 @@ struct VerseSearchResultsList: View {
                     VStack(spacing: 0) {
                         Button { onSelect(result) } label: { row(result) }
                             .buttonStyle(.plain)
-                        Divider().padding(.leading, 16)
+                        Divider().padding(.leading, AppLayout.panelPadding)
                     }
                 }
             }
         }
-        .background(Color(.systemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: AppLayout.cardRadius, style: .continuous))
+        // Same panel as Home's cards, so results read as a grouped list.
+        .background(Color(.secondarySystemGroupedBackground))
+        .roundedRect()
         .padding(.horizontal, AppLayout.screenMargin)
         .padding(.top, 8)
+        .readableColumn()
     }
 
     private func row(_ result: VerseSearchResult) -> some View {
@@ -53,7 +55,7 @@ struct VerseSearchResultsList: View {
             }
             RowChevron()
         }
-        .padding(.horizontal, AppLayout.screenMargin)
+        .padding(.horizontal, AppLayout.panelPadding)
         .padding(.vertical, 11)
     }
 }

@@ -29,10 +29,9 @@ struct FavoriteStarButton: View {
                 // other arrives instead of the two crossing, which halves the
                 // distance the swap has to cover.
                 .contentTransition(.symbolEffect(.replace.offUp))
-                // 30pt target: the card footer can't spare the full 44, and the
-                // control sits alone in its corner with nothing to mis-hit.
+                // Drawn at 30pt to fit the card footer; the tap area is the full 44.
                 .frame(width: 30, height: 30)
-                .contentShape(Rectangle())
+                .minimumTapTarget(visibleSize: 30)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(isFavorite ? "Remove from favourites" : "Add to favourites")
