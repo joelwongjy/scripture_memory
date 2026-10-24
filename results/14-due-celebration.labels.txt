@@ -1,0 +1,41 @@
+Application | Scripture Memory |  | 0,0 402x874
+                            Heading | Home |  | 16,120 94x41
+                            TextField |  | Search verses | 16,169 370x44
+                              Image | Search |  | 28,181 20x19
+                                      Button | 1 day streak |  | 16,236 370x52
+                                        Image | Flame |  | 34,251 16x21
+                                        StaticText | 1 day streak |  | 62,253 86x18
+                                        Image | Flame |  | 358,258 7x9
+                                      StaticText | CONTINUE LEARNING |  | 36,326 129x14
+                                      StaticText | 11 of 37 |  | 297,326 45x14
+                                      PopUpButton | Verse options |  | 348,324 18x18
+                                          Image | More |  | 348,324 18x18
+                                      Button | Read 1 Peter 1:23 |  | 36,352 330x137
+                                        StaticText | Making us born again |  | 36,352 176x19
+                                        StaticText | 1 Peter 1:23 |  | 36,377 71x17
+                                        StaticText | For you have been born again, not of perishable seed, but of imperishable, through the living and enduring word of God. |  | 36,400 322x62
+                                        StaticText | DEP 3: The Word |  | 36,475 91x13
+                                        StaticText | Read |  | 323,474 30x14
+                                        Image | Forward |  | 360,477 6x10
+                                      StaticText | Daily Review |  | 20,529 100x20
+                                      StaticText | 9, cards due today |  | 32,579 134x31
+                                        StaticText | 9 |  | 32,579 17x31
+                                        StaticText | cards due today |  | 55,589 110x18
+                                      Button | Start review |  | 298,588 72x32
+                                      StaticText | 2 Learning |  | 42,614 61x14
+                                      StaticText | 5 Review |  | 123,614 52x14
+                                      StaticText | 2 New |  | 195,614 36x14
+                                      Button | Packs in review, Reviewing all 15 packs |  | 16,659 370x20
+                                        StaticText | Reviewing all 15 packs |  | 20,661 135x16
+                                        Image | Forward |  | 161,664 6x10
+                                    Slider | Vertical scroll bar, 1 page | 0% | 369,176 30x615
+                                    Slider | Vertical scroll bar, 1 page | 0% | 369,176 30x615
+                  Group | Tab Bar |  | 0,791 402x83
+                        RadioButton | Home | 1 | 25,795 98x54
+                          Image | home |  | 57,801 33x28
+                        RadioButton | Packs |  | 110,795 98x54
+                          Image | Album |  | 144,800 30x31
+                        RadioButton | Quiz |  | 194,795 98x54
+                          Image | selected |  | 229,801 27x27
+                        RadioButton | Settings |  | 279,795 98x54
+                          Image | gearshape.fill |  | 314,801 28x28

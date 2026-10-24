@@ -1,0 +1,25 @@
+PASS | Home shows the current verse (#120), not verse 1
+PASS | Home's position reads like the pack position
+PASS | Daily review: 7 due (5 already-known + 2 new)
+PASS | Breakdown: 5 Review
+PASS | Breakdown: 2 New
+PASS | Review starts with the most recent known verse (#119)
+PASS | Review doesn't start from verse 1
+FAIL | Pack opens on the current verse | wanted /11 of 37/ | saw: Scripture Memory~Organize packs~Packs~Search verses~Search~5 Assurances, 5 cards~5 Assurances, 5 cards, Growing in, CHRIST, Series~5 Assurances~5 cards~Growing in~CHRIST~Series~TMS 60, 60 cards~주제별 성경암송, 60, 개역한글판, 구절, TO KNOW CHRIST AND TO MAKE HIM KNOWN, 네비게이토, 출판사~주제별 성경암송~60~개역한글판~구절~TO KNOW CHRIST AND TO MAKE HIM KNOWN~네비게이토~Do Not Disturb~출판사~DEP 1: Assurance of Salvation, 18 cards~1. Assurance of Salvation, 242, 242, 242, 242, 242, 242, 242, 242, 242, DEP, NIV, THE NAVIGATORS, 18 cards~1.
+PASS | Tapping a card opens that card
+FAIL | Back returns to the same place in the list | wanted /12 of 37/ | saw: Scripture Memory~Organize packs~Packs~Search verses~Search~5 Assurances, 5 cards~5 Assurances, 5 cards, Growing in, CHRIST, Series~5 Assurances~5 cards~Growing in~CHRIST~Series~TMS 60, 60 cards~주제별 성경암송, 60, 개역한글판, 구절, TO KNOW CHRIST AND TO MAKE HIM KNOWN, 네비게이토, 출판사~주제별 성경암송~60~개역한글판~구절~TO KNOW CHRIST AND TO MAKE HIM KNOWN~네비게이토~Do Not Disturb~출판사~DEP 1: Assurance of Salvation, 18 cards~1. Assurance of Salvation, 242, 242, 242, 242, 242, 242, 242, 242, 242, DEP, NIV, THE NAVIGATORS, 18 cards~1.
+FAIL | Reopening the pack lands where you left it | wanted /12 of 37/ | saw: Scripture Memory~Organize packs~Packs~Search verses~Search~5 Assurances, 5 cards~5 Assurances, 5 cards, Growing in, CHRIST, Series~5 Assurances~5 cards~Growing in~CHRIST~Series~TMS 60, 60 cards~주제별 성경암송, 60, 개역한글판, 구절, TO KNOW CHRIST AND TO MAKE HIM KNOWN, 네비게이토, 출판사~주제별 성경암송~60~개역한글판~구절~TO KNOW CHRIST AND TO MAKE HIM KNOWN~네비게이토~Do Not Disturb~출판사~DEP 1: Assurance of Salvation, 18 cards~1. Assurance of Salvation, 242, 242, 242, 242, 242, 242, 242, 242, 242, DEP, NIV, THE NAVIGATORS, 18 cards~1.
+PASS | Counter reads 1 at the top of the list
+FAIL | Quiz resumes with its answer kept after a review | wanted /1 done/ | saw: Scripture Memory~Deselect All~Quiz~Play~Session in Progress~15 cards · TMS 60, DEP 1: Assurance of Salvation, DEP 2: Quiet Time, DEP 3: The Word~Forward~Up to current verse, DEP 3-11~Up to current verse~DEP 3-11~Deselect all verses in 5 Assurances~Selected~Expand 5 Assurances to pick individual verses~5 Assurances~5 of 5 verses~Deselect all verses in TMS 60~Expand TMS 60 to pick individual verses~TMS 60~60 of 60 verses~Deselect all verses in DEP 1: Assurance of Salvation~Expand DEP 1: Assurance 
+PASS | Daily review: 10 due (3 learning + 5 review cap + 2 new)
+PASS | Breakdown: 3 Learning
+PASS | Breakdown: 5 Review (capped from 7)
+FAIL | Streak not yet earned today (opening the app doesn't count) | wanted /0 day streak/ | saw: Scripture Memory~Home~Search verses~Search~1 day streak~Flame~CONTINUE LEARNING~11 of 37~Verse options~More~Read 1 Peter 1:23~Making us born again~1 Peter 1:23~For you have been born again, not of perishable seed, but of imperishable, through the living and enduring word of God.~DEP 3: The Word~Read~Forward~Daily Review~10, cards due today~10~cards due today~Start review~3 Learning~5 Review~2 New~Packs in review, Reviewing all 15 packs~Reviewing all 15 packs~Vertical scroll bar, 1 page~0%~Tab Ba
+PASS | Review session has 10 cards
+PASS | Confirm moves to the next card
+PASS | Undo goes back to the rated card
+FAIL | Streak celebration appears after leaving the session | wanted /day streak!/ | saw: Scripture Memory~Home~Search verses~Search~1 day streak~Flame~CONTINUE LEARNING~11 of 37~Verse options~More~Read 1 Peter 1:23~Making us born again~1 Peter 1:23~For you have been born again, not of perishable seed, but of imperishable, through the living and enduring word of God.~DEP 3: The Word~Read~Forward~Daily Review~9, cards due today~9~cards due today~Start review~2 Learning~5 Review~2 New~Packs in review, Reviewing all 15 packs~Reviewing all 15 packs~Vertical scroll bar, 1 page~0%~Tab Bar~
+PASS | Home count drops by the one card rated (10 -> 9)
+PASS | Streak is now 1 day
+PASS | Streak screen shows best streak
+PASS | Streak screen shows today as done
