@@ -1,0 +1,152 @@
+Application | Scripture Memory |  | 0,0 744x1133
+                    RadioButton | Home | 1 | 211,36 78x36
+                      RadioButton | Home | 1 | 211,36 78x36
+                    RadioButton | Packs |  | 290,36 78x36
+                      RadioButton | Packs |  | 290,36 78x36
+                    RadioButton | Quiz | 1 | 368,36 68x36
+                      RadioButton | Quiz | 1 | 368,36 68x36
+                    RadioButton | Settings |  | 436,36 97x36
+                      RadioButton | Settings |  | 436,36 97x36
+                              Button | Home |  | 10,32 44x44
+                              Heading | Streak |  | 346,98 52x21
+                                        GenericElement | 0, day streak, Practise a verse to start a streak., This week: 0 of 7 days practised |  | 68,148 608x330
+                                          Image | Flame |  | 342,181 59x76
+                                          StaticText | 0 |  | 353,268 38x67
+                                          StaticText | day streak |  | 330,342 83x20
+                                          StaticText | Practise a verse to start a streak. |  | 260,374 225x18
+                                          GenericElement | This week: 0 of 7 days practised |  | 237,408 270x50
+                                            StaticText | S |  | 248,408 8x14
+                                            StaticText | M |  | 286,408 11x14
+                                            StaticText | T |  | 328,408 8x14
+                                            StaticText | W |  | 366,408 12x14
+                                            StaticText | T |  | 408,408 8x14
+                                            StaticText | F |  | 448,408 8x14
+                                            StaticText | S |  | 488,408 8x14
+                                        StaticText | Next milestone |  | 86,511 132x18
+                                        StaticText | 3 days |  | 612,511 48x18
+                                        GenericElement |  | 0% | 84,540 576x4
+                                          GenericElement |  | 0% | 84,530 576x24
+                                        StaticText | 3 more days to go |  | 84,554 110x16
+                                        StaticText | 0, Best streak |  | 68,602 296x107
+                                          Image | Flame |  | 86,620 16x22
+                                          StaticText | 0 |  | 84,646 14x26
+                                          StaticText | Best streak |  | 84,677 68x16
+                                        StaticText | 0, Days practised |  | 380,604 296x104
+                                          Image | Calendar |  | 398,622 20x18
+                                          StaticText | 0 |  | 396,645 14x26
+                                          StaticText | Days practised |  | 396,675 90x16
+                                        StaticText | October 2026 |  | 84,753 112x20
+                                        Button | Previous month |  | 580,755 12x16
+                                        Button | Next month |  | 632,755 12x16
+                                        GenericElement | 0 of 31 days practised this month |  | 84,797 553x214
+                                          StaticText | S |  | 121,797 8x14
+                                          StaticText | M |  | 202,797 10x14
+                                          StaticText | T |  | 286,797 8x14
+                                          StaticText | W |  | 366,797 11x14
+                                          StaticText | T |  | 451,797 8x14
+                                          StaticText | F |  | 533,797 7x14
+                                          StaticText | S |  | 615,797 8x14
+                                          StaticText | 1 |  | 451,826 7x18
+                                          StaticText | 2 |  | 532,826 9x18
+                                          StaticText | 3 |  | 614,826 10x18
+                                          StaticText | 4 |  | 120,868 10x18
+                                          StaticText | 5 |  | 203,868 10x18
+                                          StaticText | 6 |  | 285,868 10x18
+                                          StaticText | 7 |  | 368,868 8x18
+                                          StaticText | 8 |  | 450,868 10x18
+                                          StaticText | 9 |  | 532,868 10x18
+                                          StaticText | 10 |  | 611,868 16x18
+                                          StaticText | 11 |  | 118,910 14x18
+                                          StaticText | 12 |  | 199,910 16x18
+                                          StaticText | 13 |  | 282,910 16x18
+                                          StaticText | 14 |  | 364,910 16x18
+                                          StaticText | 15 |  | 446,910 16x18
+                                          StaticText | 16 |  | 528,910 16x18
+                                          StaticText | 17 |  | 611,910 16x18
+                                          StaticText | 18 |  | 117,952 16x18
+                                          StaticText | 19 |  | 199,952 16x18
+                                          StaticText | 20 |  | 280,952 18x18
+                                          StaticText | 21 |  | 364,952 16x18
+                                          StaticText | 22 |  | 445,952 18x18
+                                          StaticText | 23 |  | 528,952 18x18
+                                          StaticText | 24 |  | 610,952 18x18
+                                          StaticText | 25 |  | 116,994 18x18
+                                          StaticText | 26 |  | 198,994 18x18
+                                          StaticText | 27 |  | 281,994 18x18
+                                          StaticText | 28 |  | 363,994 18x18
+                                          StaticText | 29 |  | 445,994 18x18
+                                          StaticText | 30 |  | 527,994 18x18
+                                          StaticText | 31 |  | 611,994 16x18
+                                      Slider | Vertical scroll bar, 2 pages | 0% | 711,140 30x653
+                                      Slider | Vertical scroll bar, 2 pages | 0% | 711,140 30x653
+          StaticText | Review |  | 346,49 51x18
+          StaticText | 1 of 7 · 0 done |  | 331,69 82x14
+          Button | Close session |  | 92,44 44x44
+          Button | Undo last rating |  | 144,44 44x44
+          Button | Close keyboard |  | 612,56 40x20
+          GenericElement | Session progress | 0 of 7 done | 333,104 76x11
+          StaticText | 2 Timothy 2:9 |  | 138,253 127x23
+          StaticText | ______ _____ |  | 138,287 468x20
+          StaticText | ___ _____ _ __ _________ ____ __ ___ _____ __ _____ _______ ____ _ ________. ___ ___'_ ____ __ ___ _______. |  | 138,314 468x268
+          StaticText | 0/2 |  | 589,591 17x11
+          StaticText | DEP 3: The Word |  | 138,617 91x14
+          StaticText | Matthew 4:4 |  | 125,230 105x20
+          TextField |  | Title | 125,260 494x21
+            Slider | Vertical scroll bar, 1 page | 0% | 592,293 28x315
+          StaticText | Verse |  | 125,301 37x17
+          StaticText | DEP 3: The Word |  | 125,614 96x14
+          StaticText | Luke 24:27 |  | 112,208 92x22
+          TextField |  | Title | 112,240 520x21
+            Slider | Vertical scroll bar, 1 page | 0% | 604,273 30x333
+          StaticText | Verse |  | 112,281 39x18
+          StaticText | DEP 3: The Word |  | 112,612 102x15
+          Button | Peek at answer |  | 92,721 48x48
+          Button | Dictate verse |  | 150,721 48x48
+          Button | Reveal next word |  | 208,721 48x48
+          Button | Submit |  | 266,724 386x44
+                    Button | undo |  | 28,794 22x49
+                    Button | Redo |  | 74,794 22x49
+                    Button | Paste |  | 120,794 22x49
+                Group | Typing Predictions |  | 152,799 440x49
+                Button | Padding-Left |  | 0,848 0x0
+                Button | q |  | 3,855 66x64
+                Button | w |  | 70,855 66x64
+                Button | e |  | 136,855 66x64
+                Button | r |  | 202,855 66x64
+                Button | t |  | 268,855 66x64
+                Button | y |  | 335,855 66x64
+                Button | u |  | 402,855 66x64
+                Button | i |  | 468,855 66x64
+                Button | o |  | 534,855 66x64
+                Button | p |  | 601,855 66x64
+                Button | Padding-Right |  | 0,848 0x0
+                Button | delete |  | 668,855 80x64
+                Button | Padding-Left |  | 0,848 0x0
+                Button | a |  | 30,920 66x64
+                Button | s |  | 96,920 66x64
+                Button | d |  | 162,920 66x64
+                Button | f |  | 229,920 66x64
+                Button | g |  | 296,920 66x64
+                Button | h |  | 362,920 66x64
+                Button | j |  | 428,920 66x64
+                Button | k |  | 494,920 66x64
+                Button | l |  | 561,920 66x64
+                Button | Padding-Right |  | 0,848 0x0
+                Button | return |  | 628,920 120x64
+                Button | shift |  | 3,984 66x64
+                Button | z |  | 70,984 66x64
+                Button | x |  | 136,984 66x64
+                Button | c |  | 202,984 66x64
+                Button | v |  | 268,984 66x64
+                Button | b |  | 335,984 66x64
+                Button | n |  | 402,984 66x64
+                Button | m |  | 468,984 66x64
+                Button | , |  | 534,984 66x64
+                Button | . |  | 601,984 66x64
+                Button | shift |  | 668,984 80x64
+                Button | numbers |  | 72,1048 69x64
+                Button | Emoji |  | 3,1048 69x64
+                Button | Dictate |  | 141,1048 69x64
+                Button |   |  | 210,1048 330x64
+                Button | numbers |  | 540,1048 104x64
+                Button | Hide keyboard |  | 644,1048 104x64

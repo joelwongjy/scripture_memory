@@ -1,0 +1,57 @@
+Application | Scripture Memory |  | 0,0 744x1133
+                    RadioButton | Home |  | 211,36 78x36
+                      RadioButton | Home |  | 211,36 78x36
+                    RadioButton | Packs |  | 290,36 78x36
+                      RadioButton | Packs |  | 290,36 78x36
+                    RadioButton | Quiz | 1 | 368,36 68x36
+                      RadioButton | Quiz | 1 | 368,36 68x36
+                    RadioButton | Settings | 1 | 436,36 97x36
+                      RadioButton | Settings | 1 | 436,36 97x36
+                              Heading | Settings |  | 20,90 133x41
+                                            Heading | Study Mode |  | 20,138 704x40
+                                            Button | First Letter |  | 20,178 704x52
+                                            Button | Full Word |  | 20,230 704x52
+                                            Button | Entire Verse |  | 20,282 704x52
+                                            StaticText | Type the full verse on the card, then tap Submit to check all at once. |  | 20,334 704x30
+                                            CheckBox | Hard Mode | 0 | 20,382 704x52
+                                              StaticText | Hard Mode |  | 80,398 85x20
+                                              CheckBox |  | 0 | 643,394 63x28
+                                              Image | Hide |  | 38,396 29x23
+                                            StaticText | Hides all hints — no word placeholders shown during review. |  | 20,434 704x30
+                                            Heading | Daily Review |  | 20,464 704x40
+                                            Image | Sparkle |  | 42,524 20x24
+                                            StaticText | New cards / week |  | 42,524 172x24
+                                            StaticText | 2 |  | 594,525 10x20
+                                            Slider | New cards / week | 2 | 610,520 94x32
+                                              Button | New cards / week, Decrement | 2 | 610,520 47x32
+                                              Button | New cards / week, Increment | 2 | 657,520 47x32
+                                              RadioButton | Day |  | 40,582 332x32
+                                              RadioButton | Week | 1 | 372,582 332x32
+                                            Image | Refresh |  | 42,647 19x23
+                                            StaticText | Reviews / day |  | 42,647 141x23
+                                            StaticText | 5 |  | 594,648 10x20
+                                            Slider | Reviews / day | 5 | 610,642 94x32
+                                              Button | Reviews / day, Decrement | 5 | 610,642 47x32
+                                              Button | Reviews / day, Increment | 5 | 657,642 47x32
+                                            CheckBox | Review earlier verses | 1 | 20,690 704x52
+                                              StaticText | Review earlier verses |  | 80,705 160x20
+                                              CheckBox |  | 1 | 643,702 63x28
+                                              Image | Selected |  | 41,704 22x22
+                                            StaticText | Both caps count across all packs. New cards start at your current verse. |  | 20,742 704x30
+                                            Heading | Reminders |  | 20,772 704x40
+                                            CheckBox | Daily Reminder | 0 | 20,812 704x52
+                                              StaticText | Daily Reminder |  | 80,828 114x20
+                                              CheckBox |  | 0 | 643,824 63x28
+                                              Image | bell.badge |  | 42,826 21x24
+                                            StaticText | Sent at this time on days you have verses due. |  | 20,864 704x30
+                                            Heading | Bible Version |  | 20,894 704x40
+                                            Button | NIV 1984 |  | 20,934 704x52
+                                            Button | NIV 2011 |  | 20,986 704x52
+                                            Heading | Learning |  | 20,1056 704x40
+                                            Button | Current verse, 1 Peter 1:23 |  | 20,1096 704x52
+                                              Image | Bookmark |  | 45,1111 14x23
+                                              StaticText | Current verse |  | 45,1111 138x23
+                                              StaticText | 1 Peter 1:23 |  | 598,1112 89x20
+                                              Image | Forward |  | 697,1117 6x11
+                                      Slider | Vertical scroll bar, 2 pages | 0% | 711,86 30x1015
+                                      Slider | Vertical scroll bar, 2 pages | 0% | 711,86 30x1015
