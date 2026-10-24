@@ -473,10 +473,16 @@ struct CardStudyView: View {
                         if abs(f - scrollFraction) > 0.0001 { scrollFraction = f }
                         if abs(listScrollOffset - m.offset) > 0.5 { listScrollOffset = m.offset }
 
-                        // The card under a probe line that slides from the top of the
-                        // viewport (at the top of the list) to the bottom (at the end):
-                        // mid-list that's the centred card, and both ends are exact.
-                        let probe = m.offset + outerGeo.size.height * f
+                        // The card under a probe line: the middle of the screen, except
+                        // within half a screen of either end, where it slides to that
+                        // edge so the first and last cards read exactly (they can never
+                        // scroll to the middle).
+                        let viewport  = outerGeo.size.height
+                        let remaining = max(0, m.contentHeight - viewport - m.offset)
+                        var reach: CGFloat = 0.5
+                        if m.offset < viewport / 2 { reach = max(0, m.offset) / viewport }
+                        if remaining < viewport / 2 { reach = 1 - remaining / viewport }
+                        let probe = m.offset + viewport * reach
                         let pitch = cardHeight + AppLayout.spacing
                         let raw = Int(((probe - Self.listInset + AppLayout.spacing / 2) / pitch).rounded(.down))
                         let idx = min(max(raw, 0), max(vm.verses.count - 1, 0))
