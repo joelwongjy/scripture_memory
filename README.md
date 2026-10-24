@@ -19,7 +19,7 @@ An iOS app for memorizing Bible verses with spaced repetition. Built with SwiftU
 - **Type or speak.** Recite verses out loud with on-device speech recognition, or type them. Typed answers get a word-level diff marking missing, extra, and wrong words.
 - **Streaks and daily limits.** A weekly activity strip, and configurable caps for new cards and reviews per day.
 - **Home-screen widgets.** A verse widget and a progress widget, each deep-linking back into the app.
-- **Two translations.** NIV 1984 and NIV 2011, switchable at any time. Progress is shared across both.
+- **Two translations.** NIV 1984 and NIV 2011, switchable at any time. Progress is shared across both. Only TMS 60 has an NIV 2011 edition; every other pack stays on NIV 1984 under either setting.
 - **iCloud sync.** Review progress syncs across devices. No account required.
 - **Offline.** No network calls, no third-party SDKs, no tracking.
 
