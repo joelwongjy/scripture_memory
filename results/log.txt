@@ -1,0 +1,50 @@
+[19:42:43] Booting E952A9B0-CC78-435C-BF08-06AD47FE1076:     iPhone 17 Pro (E952A9B0-CC78-435C-BF08-06AD47FE1076) (Shutdown) 
+[19:46:45] shot 01-far-home
+[19:47:02] tap '=Open' at 275 474
+[19:47:12] shot 02-far-review-first-card
+[19:47:23] tap 'Close session' at 38 96
+[19:47:57] tap '=Packs' at 159 822
+[19:48:08] tap 'DEP 3: The Word' at 104 538
+[19:48:19] shot 03-far-pack-opens
+[19:48:31] tap 'James 1:18' at 201 689
+[19:48:40] shot 04-far-tapped-card
+[19:48:53] tap 'Back to reading' at 38 96
+[19:49:04] shot 05-far-back-to-list
+[19:49:15] tap '=Close' at 38 96
+[19:49:22] tap 'DEP 3: The Word' at 104 538
+[19:49:31] shot 06-far-pack-reopened
+[19:50:20] shot 07-far-list-top
+[19:50:30] tap '=Close' at 38 96
+[19:50:38] tap '=Quiz' at 243 822
+[19:50:46] tap 'Up to current verse' at 201 194
+[19:50:53] tap '=Start' at 346 754
+[19:51:06] tap '=Submit' at 288 792
+[19:51:16] tap 'Close session' at 38 96
+[19:51:22] tap '=Continue' at 201 791
+[19:51:37] no element labelled '=Open'
+[19:51:46] tap 'Close session' at 38 96
+[19:51:51] no element labelled '=Continue'
+[19:51:55] tap '=Quiz' at 52 140
+[19:52:03] tap 'Session in Progress' at 134 182
+[19:52:12] shot 08-quiz-resumed
+[19:52:24] tap 'Close session' at 38 96
+[19:56:13] no element labelled '=Home'
+[19:56:21] shot 09-due-home
+[19:56:37] tap '=Open' at 275 474
+[19:56:47] shot 10-due-review-start
+[19:57:00] tap '=Submit' at 288 792
+[19:57:08] shot 11-due-answered
+[19:57:13] tap '=Good' at 248 718
+[19:57:18] tap '=Confirm' at 201 791
+[19:57:25] shot 12-due-after-confirm
+[19:57:31] tap 'Undo last rating' at 90 96
+[19:57:38] shot 13-due-after-undo
+[19:57:42] tap '=Good' at 248 718
+[19:57:47] tap '=Confirm' at 201 791
+[19:57:55] tap 'Close session' at 38 96
+[19:58:03] shot 14-due-celebration
+[19:58:07] tap '=Continue' at 201 791
+[19:58:13] shot 15-due-home-after
+[19:58:18] tap '1 day streak' at 201 262
+[19:58:25] shot 16-streak-screen
+[19:58:30] done

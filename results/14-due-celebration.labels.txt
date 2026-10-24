@@ -1,0 +1,55 @@
+Application | Scripture Memory |  | 0,0 402x874
+                            Heading | Home |  | 16,120 94x41
+                            TextField |  | Search verses | 16,169 370x44
+                              Image | Search |  | 28,181 20x19
+                                      Button | 1 day streak |  | 16,236 370x52
+                                        Image | Flame |  | 34,251 16x21
+                                        StaticText | 1 day streak |  | 62,253 86x18
+                                        Image | Flame |  | 358,258 7x9
+                                      StaticText | CONTINUE LEARNING |  | 36,326 129x14
+                                      StaticText | 6 of 60 |  | 300,326 42x14
+                                      PopUpButton | Verse options |  | 348,324 18x18
+                                          Image | More |  | 348,324 18x18
+                                      Button | Read Joshua 1:8 |  | 36,352 330x180
+                                        StaticText | The Word |  | 36,352 80x19
+                                        StaticText | Joshua 1:8 |  | 36,377 65x17
+                                        StaticText | Do not let this Book of the Law depart from your mouth; meditate on it day and night, so that you may be careful to do everything written in it. Then you will be prosperous and successful. |  | 36,400 322x106
+                                        StaticText | TMS 60 |  | 36,518 42x13
+                                        StaticText | Read |  | 323,518 30x14
+                                        Image | Forward |  | 360,520 6x10
+                                      StaticText | Daily Review |  | 20,572 100x20
+                                      StaticText | 9, cards due today |  | 32,623 134x31
+                                        StaticText | 9 |  | 32,623 17x31
+                                        StaticText | cards due today |  | 55,633 110x18
+                                      Button | Start review |  | 298,632 72x32
+                                      StaticText | 2 Learning |  | 42,658 61x14
+                                      StaticText | 5 Review |  | 123,658 52x14
+                                      StaticText | 2 New |  | 195,658 36x14
+                                      Button | Packs in review, Reviewing all 15 packs |  | 16,702 370x20
+                                        StaticText | Reviewing all 15 packs |  | 20,704 135x16
+                                        Image | Forward |  | 161,707 6x10
+                                    Slider | Vertical scroll bar, 1 page | 0% | 369,176 30x615
+                                    Slider | Vertical scroll bar, 1 page | 0% | 369,176 30x615
+                  Group | Tab Bar |  | 0,791 402x83
+                        RadioButton | Home | 1 | 25,795 98x54
+                          Image | home |  | 57,801 33x28
+                        RadioButton | Packs |  | 110,795 98x54
+                          Image | Album |  | 144,800 30x31
+                        RadioButton | Quiz |  | 194,795 98x54
+                          Image | selected |  | 229,801 27x27
+                        RadioButton | Settings |  | 279,795 98x54
+                          Image | gearshape.fill |  | 314,801 28x28
+              Image | Flame |  | 162,231 78x102
+              StaticText | 1 |  | 183,347 36x86
+              StaticText | day streak! |  | 144,441 114x26
+              StaticText | You've started a streak. Come back tomorrow to grow it. |  | 64,475 274x42
+              GenericElement | This week: 1 of 7 days practised |  | 66,546 270x50
+                StaticText | S |  | 77,546 8x14
+                StaticText | M |  | 116,546 11x14
+                StaticText | T |  | 157,546 8x14
+                StaticText | W |  | 195,546 12x14
+                StaticText | T |  | 237,546 8x14
+                StaticText | F |  | 277,546 7x14
+                StaticText | S |  | 317,546 8x14
+                Image | Selected |  | 315,575 12x11
+              Button | Continue |  | 16,766 370x50
