@@ -45,7 +45,18 @@ if [ "$DEVICE" = iphone ]; then
   tap_label "=Close" "" 2
   tap_label "$(fact far cursor_pack)" "" 3; shot far-pack-reopened
   expect "Reopening the pack lands where you left it" "$(fact far tap_pos)"
+  for i in 1 2 3 4 5 6; do axe swipe --start-x 200 --start-y 250 --end-x 200 --end-y 750 --duration 0.2 --udid "$UDID" > /dev/null 2>&1; done; sleep 2
+  shot far-list-top
+  expect "Counter reads 1 at the top of the list" "1 of 37"
   tap_label "=Close" "" 2
+
+  # ── Quiz progress survives a daily review ─────────────────────────────────
+  tap_label "=Quiz"; tap_label "Up to current verse" "" 2; tap_label "=Start" "" 4
+  answer; tap_label "Close session" "" 2
+  open_review; tap_label "Close session" "" 2
+  tap_label "=Quiz"; tap_label "Session in Progress" "" 3; shot quiz-resumed
+  expect "Quiz resumes with its answer kept after a review" "1 done"
+  tap_label "Close session" "" 2
 
   # ── Scenario 2: exact due counts, rating, undo, streak ─────────────────────
   fresh_install

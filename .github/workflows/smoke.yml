@@ -29,7 +29,9 @@ jobs:
           common=(-project "Scripture Memory.xcodeproj" -target "Scripture Memory" -sdk iphonesimulator -configuration Debug)
           # Test-only: let the build run on iPad so its regular width can stand
           # in for iPhone Duo's inner display. The shipping app stays iPhone-only.
-          [ "$DEVICE" = ipad ] && common+=(TARGETED_DEVICE_FAMILY="1,2")
+          # It also allows every orientation on iPad, since Duo's inner display
+          # ignores the app's orientation setting.
+          [ "$DEVICE" = ipad ] && common+=(TARGETED_DEVICE_FAMILY="1,2" INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad="UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight")
           if ! xcodebuild build "${common[@]}" CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM= PROVISIONING_PROFILE_SPECIFIER= > build.log 2>&1; then
             echo "::warning::Ad-hoc signed build failed; building unsigned"
             tail -5 build.log
