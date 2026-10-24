@@ -29,12 +29,11 @@ jobs:
         run: xcodebuild -version
       - name: Build
         run: |
-          set -o pipefail
           xcodebuild build \
             -project "Scripture Memory.xcodeproj" \
             -target "Scripture Memory" \
             -sdk iphonesimulator \
             -configuration Debug \
-            CODE_SIGNING_ALLOWED=NO \
-            | grep -E "error:|warning:|BUILD (SUCCEEDED|FAILED)" || true
-          test "${PIPESTATUS[0]}" -eq 0
+            CODE_SIGNING_ALLOWED=NO > build.log 2>&1 && status=0 || status=$?
+          grep -E "error:|warning:|BUILD (SUCCEEDED|FAILED)" build.log | sort -u || true
+          exit $status
