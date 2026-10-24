@@ -45,9 +45,7 @@ final class CardStudyViewModel: RecallCardViewModel {
             titleRevealedCounts = [:]
             verseRevealedCounts = [:]
             submitResults       = [:]
-            inputText  = ""
-            titleInput = ""
-            verseInput = ""
+            clearInputs()
         }
     }
 
@@ -108,9 +106,7 @@ final class CardStudyViewModel: RecallCardViewModel {
         withTransaction(t) {
             verses       = next
             currentIndex = anchorId.flatMap { id in next.firstIndex { $0.id == id } } ?? 0
-            inputText  = ""
-            titleInput = ""
-            verseInput = ""
+            clearInputs()
         }
         // `currentIndex`'s didSet only re-points the highlight when the index
         // actually changed — the anchor verse may well land on the same index.

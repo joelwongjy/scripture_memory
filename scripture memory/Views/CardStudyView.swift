@@ -9,7 +9,7 @@ struct CardStudyView: View {
     @ObservedObject private var learning  = LearningStore.shared
     @ObservedObject private var favorites = FavoritesStore.shared
 
-    @AppStorage(StudyMode.storageKey)       private var studyMode:       StudyMode = .firstLetter
+    @AppStorage(StudyMode.storageKey) private var studyMode: StudyMode = .firstLetter
 
     @FocusState private var isInputFocused: Bool
     @FocusState private var submitFocus:    SubmitField?
@@ -24,31 +24,21 @@ struct CardStudyView: View {
     /// Verse a list tap asked review to open on, consumed by `handleReviewModeChange`.
     @State private var tappedListIndex: Int?
     @State private var isPeeking             = false
-    /// Raw vertical scroll offset of the read-mode list — lets the jump button track
-    /// whether the cursor card is actually on screen, not just `currentIndex` (which
-    /// only changes on tap, so scrolling away after a jump never brought it back).
+    // Read list scroll state. `currentIndex` only moves when you tap a card, so
+    // "what's on screen" is tracked separately from the scroll offset.
     @State private var listScrollOffset: CGFloat = 0
-
-    /// Live continuous scroll position (0 = top, 1 = bottom) in vertical-scroll
-    /// browse mode, measured from the content's offset. Drives the fast-scroll
-    /// thumb so it tracks smoothly and reaches both ends exactly.
+    /// 0 = top, 1 = bottom. Drives the fast-scroll thumb.
     @State private var scrollFraction: Double = 0
-    /// Index of the card sitting in the middle of the viewport in list mode,
-    /// derived from the scroll offset. `currentIndex` can't answer "where am I?"
-    /// there — it only moves when you tap a card — so the position counter needs
-    /// its own scroll-derived value.
+    /// The card the position counter reports while reading.
     @State private var visibleListIndex: Int = 0
-    /// The jump shortcut's label is a one-time teach, not a recurring banner —
-    /// see `JumpToCurrentButton`. Lives here so both the card and list placements
-    /// share one budget for the whole time this screen is open.
+    /// Scroll target for the read list. `scrollPosition(id:)` rather than
+    /// `scrollTo` because its programmatic scrolls can be interrupted by the user.
+    @State private var verticalScrollTarget: Int?
+
+    /// The jump shortcut's label is shown once per screen, shared by both placements.
     @State private var jumpLabelShown = false
     /// Pending "marked complete" undo prompt.
     @State private var undoToastState: UndoToastState?
-    /// Scroll target for the vertical read list. Driven by `scrollPosition(id:)`
-    /// rather than `ScrollViewReader.scrollTo` because scrollPosition's
-    /// programmatic scrolls are natively interruptible — the user can grab
-    /// the list mid-animation and take over, which scrollTo forbids.
-    @State private var verticalScrollTarget: Int?
     private static let vScrollSpace = "verticalScrollCards"
 
     @Environment(\.dismiss) private var dismiss
@@ -58,9 +48,8 @@ struct CardStudyView: View {
     /// ordinary single-pack study.
     let adjacentPack: ((_ currentPackName: String, _ forward: Bool) -> (name: String, verses: [Verse])?)?
 
-    /// "Continue Learning" hook — after a verse is tested the card offers
-    /// **Mark as Learnt** (the only thing that marks a verse done and advances
-    /// the cursor). `nil` for ordinary single-pack study.
+    /// "Continue Learning" hook for what marking a verse complete does. `nil`
+    /// marks it learnt directly.
     let onMarkLearnt: ((Verse) -> Void)?
 
     // MARK: - Init
@@ -111,15 +100,8 @@ struct CardStudyView: View {
         return v.srsKey == key
     }
 
-    /// Float the "Current verse" shortcut when this pack holds the current stopped
+    /// Float the "Current verse" shortcut when this pack holds the current learning
     /// verse and we're parked on a different card.
-    ///
-    /// This used to also require the keyboard to be down. Review mode holds focus on
-    /// the answer field the whole time it's open, so that condition was never
-    /// satisfied there and the shortcut simply didn't exist in review — the mode
-    /// where hopping back to the verse you're actually learning matters most. Read
-    /// mode has no text input at all, so the condition never did anything there
-    /// either; it only ever suppressed the button.
     private var showGoToCurrent: Bool {
         guard let i = currentVerseIndexInPack else { return false }
         return i != vm.currentIndex
@@ -127,10 +109,22 @@ struct CardStudyView: View {
 
     private func jumpToCurrentVerse() {
         guard let i = currentVerseIndexInPack, i != vm.currentIndex else { return }
-        isScrubbing = true
-        withAnimation(AppMotion.movement) { vm.currentIndex = i }
         HapticEngine.light()
-        DispatchQueue.main.asyncAfter(deadline: .now() + AppMotion.settle) { isScrubbing = false }
+        moveProgrammatically(refocus: false) {
+            withAnimation(AppMotion.movement) { vm.currentIndex = i }
+        }
+    }
+
+    /// Runs a move the user didn't make by dragging (a button, a jump, a filter).
+    /// `isScrubbing` tells the `currentIndex` observers it was programmatic, until
+    /// the animation settles; then the keyboard comes back if there's a card to type.
+    private func moveProgrammatically(refocus: Bool = true, _ move: () -> Void) {
+        isScrubbing = true
+        move()
+        DispatchQueue.main.asyncAfter(deadline: .now() + AppMotion.settle) {
+            isScrubbing = false
+            if refocus { refocusIfNeeded() }
+        }
     }
 
     /// Sends the read list back to the first card. `scrollPosition` only scrolls on a
@@ -156,24 +150,13 @@ struct CardStudyView: View {
 
     /// Mark a verse complete from its read-mode card. No advance — the cursor moves
     /// to the next unlearnt verse on its own and the on-card button hides itself.
-    private func markVerseComplete(_ verse: Verse) {
-        if let cb = onMarkLearnt { cb(verse) } else { LearningStore.shared.markLearnt(verse) }
-        HapticEngine.success()
-        raiseMarkedCompleteToast(for: verse)
-    }
-
-    /// Offer a short window to take back a "Mark as Complete". It's a one-tap
-    /// action sitting right next to the card, and it advances the learning cursor —
-    /// cheap to hit by accident, tedious to reverse without this.
     ///
-    /// Undo only restores the learnt flag (and with it the cursor). It deliberately
-    /// doesn't rewind navigation: the review-mode button also steps to the next
-    /// card, and that step can cross into another pack, so unwinding it would be a
-    /// far bigger and less predictable jump than the user asked to undo.
-    private func raiseMarkedCompleteToast(for verse: Verse) {
-        undoToastState = UndoToastState(message: "Marked as complete") {
-            LearningStore.shared.unmarkLearnt(verse)
-        }
+    /// Raises an undo toast, since it's one tap and moves the learning cursor. Undo
+    /// restores only the learnt flag; it doesn't rewind navigation.
+    private func markVerseComplete(_ verse: Verse) {
+        if let cb = onMarkLearnt { cb(verse) } else { learning.markLearnt(verse) }
+        HapticEngine.success()
+        undoToastState = .markedComplete(verse, learning: learning)
     }
 
     // MARK: - Body
@@ -186,31 +169,22 @@ struct CardStudyView: View {
             VStack(spacing: 0) {
                 topBar(width: geo.size.width)
 
-                // Read mode is a scrolling list of cards — the only browse layout.
-                // (A single-card, swipe-through read mode used to sit behind a
-                // toggle here; nobody used it, so the toggle and the layout are
-                // gone.) Review mode still shows one focused card: it's a
-                // question you answer, not a thing you browse.
+                // Read mode is a scrolling list of cards; review shows one card
+                // at a time, since it's a question you answer.
                 if !vm.isReviewMode {
                     verticalScrollCards(cardWidth: cardWidth, cardHeight: cardHeight)
                         .frame(maxHeight: .infinity)
                 } else {
-                    // Review grows the card into the otherwise-empty vertical space
-                    // (capped so it stays card-shaped) — the masked underscores need
-                    // the extra room — and as the flexible middle it also absorbs the
-                    // keyboard inset, shrinking to fit when typing rather than
-                    // overflowing.
+                    // Review grows the card into the free vertical space (capped so
+                    // it stays card-shaped) and shrinks it again for the keyboard.
                     GeometryReader { area in
                         let cardH = max(cardHeight, min(cardWidth * 0.82, area.size.height - 16))
                         ZStack {
                             cardStack
                                 .frame(width: cardWidth, height: cardH)
-                            // Peek renders as an OVERLAY in every mode so the
-                            // SubmitCardView (and its focused TextField) stays
-                            // mounted — otherwise the keyboard dismisses — and so
-                            // the reveal is identical across all study modes.
-                            if vm.isReviewMode, isPeeking,
-                               let verse = vm.currentVerse {
+                            // Peek is an overlay so the card underneath (and its
+                            // focused text field) stays mounted.
+                            if isPeeking, let verse = vm.currentVerse {
                                 PeekOverlayCard(
                                     verse: verse,
                                     cardLabel: vm.cardLabel(for: verse),
@@ -275,16 +249,7 @@ struct CardStudyView: View {
         }
         .onChange(of: speech.transcript) { _, text in
             guard speech.isListening else { return }
-            // Entire Verse collects the transcript as free text to submit; the two
-            // typing modes match it word by word against the hidden verse instead.
-            if studyMode == .submit {
-                switch speechTarget {
-                case .title: vm.titleInput = text
-                case .verse: vm.verseInput = text
-                }
-            } else {
-                vm.processDictation(text)
-            }
+            vm.applyDictation(text, to: speechTarget)
         }
         .onChange(of: submitFocus) { _, newFocus in
             guard speech.isListening, let newFocus else { return }
@@ -328,19 +293,8 @@ struct CardStudyView: View {
 
                 Spacer()
 
-                // While typing, the trailing controls become a guaranteed-visible
-                // "Done" to dismiss the keyboard (the keyboard's own toolbar item
-                // is unreliable this deep in the card stack). Otherwise: shuffle + view.
                 if isEditing {
-                    Button {
-                        isInputFocused = false
-                        submitFocus = nil
-                    } label: {
-                        Text("Done")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundStyle(Color.accentColor)
-                    }
-                    .accessibilityLabel("Close keyboard")
+                    KeyboardDoneButton(action: dismissKeyboard)
                 } else {
                     HStack(spacing: 8) {
                         Button {
@@ -359,21 +313,14 @@ struct CardStudyView: View {
 
                         if showsFavoritesFilter {
                             Button {
-                                // Changing *what's in the list* is a chrome
-                                // action, not arriving at a new card to answer —
-                                // so it shouldn't summon the keyboard. Rebuilding
-                                // moves `currentIndex`, which normally means
-                                // "next card, start typing"; `isScrubbing` is the
-                                // existing signal for "this move was programmatic".
-                                isInputFocused = false
-                                submitFocus    = nil
-                                isScrubbing    = true
-                                vm.setFavoritesFilter(!vm.isFavoritesFiltered)
+                                // Changing what's in the list shouldn't summon
+                                // the keyboard, so this is a programmatic move.
+                                dismissKeyboard()
+                                moveProgrammatically(refocus: false) {
+                                    vm.setFavoritesFilter(!vm.isFavoritesFiltered)
+                                }
                                 if !vm.isReviewMode { scrollListToTop() }
                                 HapticEngine.light()
-                                DispatchQueue.main.asyncAfter(deadline: .now() + AppMotion.settle) {
-                                    isScrubbing = false
-                                }
                             } label: {
                                 Image(systemName: vm.isFavoritesFiltered ? "star.fill" : "star")
                                     .studyChromeToggle(isOn: vm.isFavoritesFiltered)
@@ -386,13 +333,17 @@ struct CardStudyView: View {
             }
         }
         .padding(.horizontal, AppLayout.screenMargin)
-        .padding(.top, 12)
-        .padding(.bottom, 12)
+        .padding(.vertical, 12)
         .animation(AppMotion.control, value: isEditing)
     }
 
     /// True whenever either text input has keyboard focus.
     private var isEditing: Bool { isInputFocused || submitFocus != nil }
+
+    private func dismissKeyboard() {
+        isInputFocused = false
+        submitFocus    = nil
+    }
 
     /// Offer the favourites filter only where it can do something: this pack has
     /// starred verses, and it isn't already *the* favourites collection (where
@@ -430,8 +381,6 @@ struct CardStudyView: View {
             }
             if let verse = vm.currentVerse {
                 let goingBack = dragOffset.width > 0
-                // Peek is rendered as an overlay in `body` (consistent across
-                // all modes); the underlying card never swaps for peek.
                 let frontCard = makeCard(verse: verse, verseIndex: vm.currentIndex, interactive: true)
                     .offset(x: goingBack ? 0 : dragOffset.width,
                             y: goingBack ? backwardDragProgress * 12 : dragOffset.height * 0.1)
@@ -442,24 +391,12 @@ struct CardStudyView: View {
                 // the gesture itself filters out predominantly-vertical drags so editor scroll keeps working.
                 let swipingCard = frontCard.simultaneousGesture(swipeGesture)
 
-                // Tap anywhere on the card to bring the keyboard back. Previously the
-                // only way in was the section text itself — a couple of thin lines —
-                // so most of the card was dead space. Restricted to the masked-recall
-                // modes: in submit mode the card *is* two text inputs, and forcing
-                // focus to the title would steal taps meant for the verse editor.
-                if vm.isReviewMode && studyMode != .submit {
+                // Tap anywhere on the card to bring the keyboard back. Not in
+                // submit mode, where the card *is* two text inputs. A plain tap
+                // (not simultaneous) so the card's own controls, like the star,
+                // don't also summon the keyboard.
+                if studyMode != .submit {
                     swipingCard
-                        // A plain tap gesture, NOT `simultaneousGesture`. Simultaneous
-                        // means "fire as well as whatever was actually hit", so every
-                        // control on the card — the star, in particular — summoned the
-                        // keyboard on top of doing its own job.
-                        //
-                        // Nothing is lost by yielding to the controls: a tap on the
-                        // title/verse underscores hits FlashcardView's section handler,
-                        // which focuses the input itself, and the verse section already
-                        // stretches over the blank space below it. This only has to
-                        // cover what's genuinely dead — the reference line and the
-                        // footer's empty middle.
                         .onTapGesture {
                             guard !vm.isCardComplete else { return }
                             focusInput()
@@ -487,26 +424,14 @@ struct CardStudyView: View {
                     ScrollView(.vertical, showsIndicators: false) {
                         LazyVStack(spacing: 20) {
                             ForEach(Array(vm.verses.enumerated()), id: \.offset) { index, verse in
-                                // Tap a verse to review that verse.
-                                //
-                                // This existed once as a way to *select* the card
-                                // review would later open on, and was removed
-                                // because the tap did nothing you could see. Taking
-                                // you straight there is the opposite: the whole
-                                // result is immediate, and the chevron that
-                                // replaces close on this path is the way back.
-                                //
-                                // Completed verses open too — re-drilling something
-                                // you've finished is a normal thing to want.
+                                // Tap a verse to review it (completed ones too).
                                 Button {
                                     openReview(at: index)
                                 } label: {
                                     makeCard(verse: verse, verseIndex: index, interactive: index == vm.currentIndex)
                                         .frame(width: cardWidth, height: cardHeight)
                                 }
-                                // Same press-scale the pack covers use, so a card
-                                // that can be tapped looks like one without adding
-                                // any chrome to say so.
+                                // Same press-scale as the pack covers.
                                 .buttonStyle(CardButtonStyle())
                                 .id(index)
                             }
@@ -533,19 +458,8 @@ struct CardStudyView: View {
                         if abs(f - scrollFraction) > 0.0001 { scrollFraction = f }
                         if abs(listScrollOffset - m.offset) > 0.5 { listScrollOffset = m.offset }
 
-                        // Where the counter says you are. Mapped straight off the
-                        // scroll fraction — the same function the fast-scroll thumb
-                        // uses — so the number in the top bar and the thumb beside it
-                        // can never disagree, and both ends are exact by construction:
-                        // fraction 0 is card 1, fraction 1 is card N.
-                        //
-                        // This used to invert the card layout to find whichever card
-                        // sat under the middle of the viewport, with the two ends
-                        // special-cased. But the viewport is taller than one card and
-                        // can't scroll far enough to centre the first or last one, so
-                        // at rest against either stop the middle of the screen points
-                        // a card or two inward — the top of the list read "2 of 32",
-                        // and the special cases only papered over the exact stops.
+                        // Mapped off the same fraction the fast-scroll thumb uses, so
+                        // the counter and the thumb agree and both ends are exact.
                         let idx = ScrubberMath.index(fraction: f, count: vm.verses.count)
                         if visibleListIndex != idx { visibleListIndex = idx }
                     }
@@ -596,15 +510,14 @@ struct CardStudyView: View {
                         JumpToCurrentButton(startExpanded: !jumpLabelShown,
                                             onExpandedShown: { jumpLabelShown = true },
                                             action: {
-                            // Set the scroll target directly (not just currentIndex)
-                            // so a re-jump still works when currentIndex is already the
-                            // cursor from a previous jump.
+                            // Sets the scroll target directly so a re-jump works even
+                            // when `currentIndex` is already the cursor.
                             guard let i = currentVerseIndexInPack else { return }
                             HapticEngine.light()
-                            isScrubbing = true
-                            if vm.currentIndex != i { vm.currentIndex = i }
-                            withAnimation(AppMotion.movement) { verticalScrollTarget = i }
-                            DispatchQueue.main.asyncAfter(deadline: .now() + AppMotion.settle) { isScrubbing = false }
+                            moveProgrammatically(refocus: false) {
+                                if vm.currentIndex != i { vm.currentIndex = i }
+                                withAnimation(AppMotion.movement) { verticalScrollTarget = i }
+                            }
                         })
                         .padding(.trailing, AppLayout.screenMargin)
                         .padding(.bottom, 12)
@@ -688,25 +601,13 @@ struct CardStudyView: View {
             trackHeight: 44,
             canStepBeyondStart: canCrossBackward,
             canStepBeyondEnd: canCrossForward,
-            // Stepping lands on a new card to answer, so the keyboard comes back with
-            // it — `refocusIfNeeded` no-ops outside review mode and on finished cards.
             onStepBack: {
-                isScrubbing = true
-                stepBackward()
                 HapticEngine.light()
-                DispatchQueue.main.asyncAfter(deadline: .now() + AppMotion.settle) {
-                    isScrubbing = false
-                    refocusIfNeeded()
-                }
+                moveProgrammatically(stepBackward)
             },
             onStepForward: {
-                isScrubbing = true
-                stepForward()
                 HapticEngine.light()
-                DispatchQueue.main.asyncAfter(deadline: .now() + AppMotion.settle) {
-                    isScrubbing = false
-                    refocusIfNeeded()
-                }
+                moveProgrammatically(stepForward)
             }
         )
     }
@@ -719,7 +620,7 @@ struct CardStudyView: View {
                 cardControlBand
             }
 
-            if !isInputFocused && submitFocus == nil {
+            if !isEditing {
                 Picker("Mode", selection: $vm.isReviewMode) {
                     Text("Read").tag(false)
                     Text("Review").tag(true)
@@ -747,19 +648,12 @@ struct CardStudyView: View {
             }
             Group {
                 if vm.isCardComplete {
-                    // Try Again pairs with whichever "move on" action this card
-                    // offers. It used to appear only on the learning-cursor verse,
-                    // which left every other card with no way back into it —
-                    // finishing one was a one-way door, and re-practising a verse
-                    // meant leaving review and coming back.
-                    //
-                    // The second slot takes over from the old "Complete!" label,
-                    // which only announced a state the card already shows with its
-                    // green section checks while the thing you actually wanted —
-                    // moving on — was stranded on the scrubber chevron. The check
-                    // icon keeps the completion signal.
                     HStack(spacing: 10) {
-                        tryAgainButton
+                        TryAgainButton {
+                            vm.resetCurrentCard()
+                            // The reset remounts the input field; bring the keyboard back.
+                            refocusIfNeeded()
+                        }
                         if isCurrentLearningVerse { markLearntButton } else { nextButton }
                     }
                 } else if studyMode == .submit {
@@ -776,18 +670,12 @@ struct CardStudyView: View {
     }
 
     /// Advance to the next card once this one is done. Steps into the adjacent pack
-    /// at a boundary, same as the scrubber's chevron, so it's only disabled at the
-    /// true end of the sequence.
+    /// at a boundary, same as the scrubber's chevron.
     private var nextButton: some View {
         let canAdvance = vm.currentIndex < vm.verses.count - 1 || canCrossForward
         return Button {
-            isScrubbing = true
-            stepForward()
             HapticEngine.light()
-            DispatchQueue.main.asyncAfter(deadline: .now() + AppMotion.settle) {
-                isScrubbing = false
-                refocusIfNeeded()
-            }
+            moveProgrammatically(stepForward)
         } label: {
             HStack(spacing: 8) {
                 Image(systemName: "checkmark.circle.fill")
@@ -795,104 +683,49 @@ struct CardStudyView: View {
                     .font(.system(size: 18))
                     .symbolEffect(.bounce, options: .nonRepeating)
                 Text("Next")
-                    .font(.system(size: 16, weight: .semibold))
             }
-            .foregroundStyle(Color.primary)
-            .frame(maxWidth: .infinity).padding(.vertical, 12)
-            .background(Color(.secondarySystemGroupedBackground))
-            .roundedRect(StudyControlMetrics.cornerRadius)
+            .studyActionLabel()
         }
         .disabled(!canAdvance)
         .opacity(canAdvance ? 1 : 0.5)
         .accessibilityLabel("Verse complete, go to next")
     }
 
-    /// "Continue Learning" only: the single action that marks a verse done. Marks
-    /// the current verse learnt and advances to the next (crossing packs at a
-    /// boundary). Streak/test progress is handled separately on submit.
+    /// Marks the current learning verse complete and moves on (crossing packs at
+    /// a boundary).
     private var markLearntButton: some View {
-        Button {
-            if let v = vm.currentVerse {
-                if let cb = onMarkLearnt { cb(v) } else { LearningStore.shared.markLearnt(v) }
-                raiseMarkedCompleteToast(for: v)
-            }
-            HapticEngine.success()
-            isScrubbing = true
-            stepForward()
-            DispatchQueue.main.asyncAfter(deadline: .now() + AppMotion.settle) {
-                isScrubbing = false
-                refocusIfNeeded()
-            }
-        } label: {
-            // Short label: it shares the row with "Try Again", and the checkmark
-            // plus its position on the cursor verse already carry the meaning.
-            Label("Complete", systemImage: "checkmark.circle.fill")
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(Color.white)
-                .frame(maxWidth: .infinity).padding(.vertical, 12)
-                .background(Color.green)
-                .roundedRect(StudyControlMetrics.cornerRadius)
+        MarkCompleteButton {
+            if let v = vm.currentVerse { markVerseComplete(v) }
+            moveProgrammatically(stepForward)
         }
         .accessibilityLabel("Mark verse as complete and continue")
     }
 
-    /// Resets the current card so the user can attempt it again (clears revealed
-    /// words / submitted answer for whichever study mode is active).
-    private var tryAgainButton: some View {
-        Button {
-            vm.resetCurrentCard()
-            // The input field is remounted by the reset — bring the keyboard back
-            // with it, since typing is the only thing you tapped Try Again to do.
-            refocusIfNeeded()
-        } label: {
-            Label("Try Again", systemImage: "arrow.counterclockwise")
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(Color.primary)
-                .frame(maxWidth: .infinity).padding(.vertical, 12)
-                .background(Color(.secondarySystemGroupedBackground))
-                .roundedRect(StudyControlMetrics.cornerRadius)
+    /// Entire Verse mode: mic + Submit before scoring, Try Again after.
+    @ViewBuilder
+    private var submitControls: some View {
+        let hasResult = vm.currentVerse.flatMap { vm.submitResults[$0.id] } != nil
+        if hasResult {
+            HStack(spacing: 10) {
+                TryAgainButton { vm.retrySubmit() }
+                if isCurrentLearningVerse { markLearntButton }
+            }
+        } else {
+            SubmitAnswerRow(
+                isListening: speech.isListening,
+                canSubmit: vm.hasSubmitInput,
+                onToggleSpeech: toggleSpeech,
+                onHint: { vm.fillNextHintWord(startingWithVerse: submitFocus == .verse) },
+                onSubmit: submitAnswer
+            )
         }
     }
 
-    /// Submit mode: mic + submit button before scoring, try-again after.
-    private var submitControls: some View {
-        let hasResult = vm.currentVerse.flatMap { vm.submitResults[$0.id] } != nil
-        return Group {
-            if hasResult {
-                HStack(spacing: 10) {
-                    Button { vm.retrySubmit() } label: {
-                        Label("Try Again", systemImage: "arrow.counterclockwise")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundStyle(Color.primary)
-                            .frame(maxWidth: .infinity).padding(.vertical, 12)
-                            .background(Color(.secondarySystemGroupedBackground))
-                            .roundedRect(StudyControlMetrics.cornerRadius)
-                    }
-                    if isCurrentLearningVerse { markLearntButton }
-                }
-            } else {
-                HStack(spacing: 10) {
-                    DictationTile(isListening: speech.isListening, action: toggleSpeech)
-
-                    HintButton { vm.fillNextHintWord(startingWithVerse: submitFocus == .verse) }
-                    let isEmpty = vm.titleInput.trimmingCharacters(in: .whitespaces).isEmpty
-                              && vm.verseInput.trimmingCharacters(in: .whitespaces).isEmpty
-                    Button {
-                        if speech.isListening { speech.stopListening() }
-                        let result = vm.handleSubmit()
-                        submitFocus = nil
-                        result?.isAllCorrect == true ? HapticEngine.success() : HapticEngine.error()
-                    } label: {
-                        Text("Submit")
-                            .font(.system(size: 16, weight: .semibold)).foregroundStyle(Color.white)
-                            .frame(maxWidth: .infinity).padding(.vertical, 12)
-                            .background(isEmpty ? Color(.systemGray3) : Color.accentColor)
-                            .roundedRect(StudyControlMetrics.cornerRadius)
-                    }
-                    .disabled(isEmpty)
-                }
-            }
-        }
+    private func submitAnswer() {
+        if speech.isListening { speech.stopListening() }
+        let result = vm.handleSubmit()
+        submitFocus = nil
+        result?.isAllCorrect == true ? HapticEngine.success() : HapticEngine.error()
     }
 
     // MARK: - Swipe Gesture

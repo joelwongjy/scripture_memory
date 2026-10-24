@@ -46,3 +46,27 @@ jobs:
           grep -E "error:" build.log | grep -vE "^/.+:[0-9]+:[0-9]+: error: " | sort -u | head -20 | sed -E "s#^ *#::error::#" || true
           [ $status -eq 0 ] || tail -15 build.log | sed -E "s#^ *#::warning::#"
           exit $status
+
+  app-size:
+    name: App size (Release, device)
+    runs-on: macos-15
+    # Reports the size of an unsigned Release build for a real device, as a
+    # notice on the run. Informational only.
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select Xcode 26
+        run: sudo xcode-select -s /Applications/Xcode_26.3.app
+      - name: Build
+        run: |
+          xcodebuild build \
+            -project "Scripture Memory.xcodeproj" \
+            -target "Scripture Memory" \
+            -sdk iphoneos \
+            -configuration Release \
+            CODE_SIGNING_ALLOWED=NO > build.log 2>&1 || { tail -20 build.log; exit 1; }
+      - name: Report size
+        run: |
+          app="build/Release-iphoneos/Scripture Memory.app"
+          echo "::notice::App bundle: $(du -sh "$app" | cut -f1)"
+          echo "::notice::Breakdown: $(du -sh "$app"/* "$app"/PlugIns/* 2>/dev/null | sort -rh | head -8 | tr '\t' ' ' | sed "s#$app/##" | tr '\n' ';')"
+          zip -qr app.zip "$app" && echo "::notice::Zipped (rough download size): $(du -sh app.zip | cut -f1)"

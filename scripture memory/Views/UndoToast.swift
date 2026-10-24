@@ -9,6 +9,12 @@ struct UndoToastState: Identifiable {
     let id = UUID()
     let message: String
     let undo: () -> Void
+
+    /// The prompt after marking a verse complete; Undo un-marks it.
+    @MainActor
+    static func markedComplete(_ verse: Verse, learning: LearningStore) -> UndoToastState {
+        UndoToastState(message: "Marked as complete") { learning.unmarkLearnt(verse) }
+    }
 }
 
 // MARK: - Toast

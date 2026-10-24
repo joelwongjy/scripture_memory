@@ -175,7 +175,24 @@ class RecallCardViewModel: ObservableObject {
         verseInput = ""
     }
 
+    /// Whether Entire Verse mode has anything typed to submit.
+    var hasSubmitInput: Bool {
+        !titleInput.trimmingCharacters(in: .whitespaces).isEmpty
+            || !verseInput.trimmingCharacters(in: .whitespaces).isEmpty
+    }
+
     // MARK: - Dictation
+
+    /// Routes a dictation transcript. Entire Verse collects it as free text in the
+    /// box being dictated into; the two typing modes match it word by word against
+    /// the hidden verse instead.
+    func applyDictation(_ transcript: String, to field: SubmitField) {
+        guard studyMode == .submit else { processDictation(transcript); return }
+        switch field {
+        case .title: titleInput = transcript
+        case .verse: verseInput = transcript
+        }
+    }
 
     /// How many words of the running transcript have already been matched. The
     /// recognizer re-emits the *whole* transcript on every partial result, so
@@ -217,7 +234,7 @@ class RecallCardViewModel: ObservableObject {
     /// active one is fully revealed.
     func revealHint() {
         guard let verse = currentVerse else { return }
-        let other: CardSection = activeSection == .title ? .verse : .title
+        let other = activeSection.other
         let hinted: CardSection
         if revealedCount(for: verse.id, section: activeSection) < sectionWords(activeSection, in: verse).count {
             hinted = activeSection
@@ -227,10 +244,7 @@ class RecallCardViewModel: ObservableObject {
             return
         }
         withAnimation(AppMotion.content) {
-            switch hinted {
-            case .verse: verseRevealedCounts[verse.id] = verseRevealedCounts[verse.id, default: 0] + 1
-            case .title: titleRevealedCounts[verse.id] = titleRevealedCounts[verse.id, default: 0] + 1
-            }
+            setRevealed(revealedCount(for: verse.id, section: hinted) + 1, for: verse.id, section: hinted)
         }
         progressDidChange()
         // If the hint just finished the section the user was typing in,
@@ -301,7 +315,7 @@ class RecallCardViewModel: ObservableObject {
     }
 
     private func switchSectionIfNeeded(verse: Verse) {
-        let other         = activeSection == .title ? CardSection.verse : .title
+        let other         = activeSection.other
         let otherWords    = sectionWords(other, in: verse)
         let otherRevealed = revealedCount(for: verse.id, section: other)
         if otherRevealed < otherWords.count {

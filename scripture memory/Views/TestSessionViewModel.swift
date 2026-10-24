@@ -125,9 +125,7 @@ final class TestSessionViewModel: RecallCardViewModel {
             verseRevealedCounts = [:]
             submitResults       = [:]
             completedVerseIds   = []
-            inputText  = ""
-            titleInput = ""
-            verseInput = ""
+            clearInputs()
         }
         saveProgress()
     }
