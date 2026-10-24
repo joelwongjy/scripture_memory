@@ -1,0 +1,104 @@
+Application | Scripture Memory |  | 0,0 402x874
+                            Group | Deselect All |  | 268,66 114x36
+                                Button | Deselect All |  | 268,66 114x36
+                            Heading | Quiz |  | 16,120 72x41
+                                          Button | Up to current verse, 5A-5 |  | 16,168 370x52
+                                            StaticText | Up to current verse |  | 32,184 140x19
+                                            StaticText | 5A-5 |  | 335,185 35x18
+                                          Button | Deselect all verses in 5 Assurances |  | 43,247 22x22
+                                            Image | Selected |  | 43,247 22x22
+                                          Button | Expand 5 Assurances to pick individual verses |  | 76,233 302x50
+                                            StaticText | 5 Assurances |  | 76,240 101x19
+                                            StaticText | 5 of 5 verses |  | 76,261 79x16
+                                            Image | Forward |  | 354,253 6x11
+                                          Button | Select all verses in TMS 60 |  | 43,299 22x22
+                                            Image | circle |  | 43,299 22x22
+                                          Button | Expand TMS 60 to pick individual verses |  | 76,285 302x50
+                                            StaticText | TMS 60 |  | 76,292 58x19
+                                            StaticText | 60 verses |  | 76,313 60x16
+                                            Image | Forward |  | 354,305 6x11
+                                          Button | Select all verses in DEP 1: Assurance of Salvation |  | 43,351 22x22
+                                            Image | circle |  | 43,351 22x22
+                                          Button | Expand DEP 1: Assurance of Salvation to pick individual verses |  | 76,337 302x50
+                                            StaticText | DEP 1: Assurance of Salvation |  | 76,344 221x19
+                                            StaticText | 18 verses |  | 76,365 58x16
+                                            Image | Forward |  | 354,357 6x11
+                                          Button | Select all verses in DEP 2: Quiet Time |  | 43,403 22x22
+                                            Image | circle |  | 43,403 22x22
+                                          Button | Expand DEP 2: Quiet Time to pick individual verses |  | 76,389 302x50
+                                            StaticText | DEP 2: Quiet Time |  | 76,396 134x19
+                                            StaticText | 26 verses |  | 76,417 59x16
+                                            Image | Forward |  | 354,409 6x11
+                                          Button | Select all verses in DEP 3: The Word |  | 43,455 22x22
+                                            Image | circle |  | 43,455 22x22
+                                          Button | Expand DEP 3: The Word to pick individual verses |  | 76,441 302x50
+                                            StaticText | DEP 3: The Word |  | 76,448 126x19
+                                            StaticText | 37 verses |  | 76,469 59x16
+                                            Image | Forward |  | 354,461 6x11
+                                          Button | Select all verses in DEP 4: Prayer |  | 43,507 22x22
+                                            Image | circle |  | 43,507 22x22
+                                          Button | Expand DEP 4: Prayer to pick individual verses |  | 76,493 302x50
+                                            StaticText | DEP 4: Prayer |  | 76,500 102x19
+                                            StaticText | 32 verses |  | 76,521 59x16
+                                            Image | Forward |  | 354,513 6x11
+                                          Button | Select all verses in DEP 5: Fellowship |  | 43,559 22x22
+                                            Image | circle |  | 43,559 22x22
+                                          Button | Expand DEP 5: Fellowship to pick individual verses |  | 76,545 302x50
+                                            StaticText | DEP 5: Fellowship |  | 76,552 132x19
+                                            StaticText | 30 verses |  | 76,573 60x16
+                                            Image | Forward |  | 354,565 6x11
+                                          Button | Select all verses in DEP 6: Witnessing |  | 43,611 22x22
+                                            Image | circle |  | 43,611 22x22
+                                          Button | Expand DEP 6: Witnessing to pick individual verses |  | 76,597 302x50
+                                            StaticText | DEP 6: Witnessing |  | 76,604 137x19
+                                            StaticText | 55 verses |  | 76,625 59x16
+                                            Image | Forward |  | 354,617 6x11
+                                          Button | Select all verses in DEP 7: The Lordship of Christ |  | 43,663 22x22
+                                            Image | circle |  | 43,663 22x22
+                                          Button | Expand DEP 7: The Lordship of Christ to pick individual verses |  | 76,649 302x50
+                                            StaticText | DEP 7: The Lordship of Christ |  | 76,656 217x19
+                                            StaticText | 26 verses |  | 76,677 59x16
+                                            Image | Forward |  | 354,669 6x11
+                                          Button | Select all verses in DEP 8: World Vision |  | 43,715 22x22
+                                            Image | circle |  | 43,715 22x22
+                                          Button | Expand DEP 8: World Vision to pick individual verses |  | 76,701 302x50
+                                            StaticText | DEP 8: World Vision |  | 76,708 147x19
+                                            StaticText | 18 verses |  | 76,729 58x16
+                                            Image | Forward |  | 354,721 6x11
+                                          Button | Select all verses in TMS 180 · Getting to Know God |  | 43,767 22x22
+                                            Image | circle |  | 43,767 22x22
+                                          Button | Expand TMS 180 · Getting to Know God to pick individual verses |  | 76,753 302x50
+                                            StaticText | TMS 180 · Getting to Know God |  | 76,760 212x19
+                                            StaticText | 36 verses |  | 76,781 60x16
+                                            Image | Forward |  | 354,773 6x11
+                                          Button | Select all verses in TMS 180 · Growing in Love |  | 43,819 22x22
+                                            Image | circle |  | 43,819 22x22
+                                          Button | Expand TMS 180 · Growing in Love to pick individual verses |  | 76,805 302x50
+                                            StaticText | TMS 180 · Growing in Love |  | 76,812 197x19
+                                            StaticText | 36 verses |  | 76,833 60x16
+                                            Image | Forward |  | 354,825 6x11
+                                          Button | Select all verses in TMS 180 · Growing in Faith |  | 43,871 22x22
+                                            Image | circle |  | 43,871 22x22
+                                          Button | Expand TMS 180 · Growing in Faith to pick individual verses |  | 76,857 302x50
+                                            StaticText | TMS 180 · Growing in Faith |  | 76,864 198x19
+                                            StaticText | 36 verses |  | 76,885 60x16
+                                            Image | Forward |  | 354,877 6x11
+                                    Slider | Vertical scroll bar, 2 pages | 0% | 369,116 30x596
+                                    Slider | Vertical scroll bar, 2 pages | 0% | 369,116 30x596
+                                  StaticText | 5 |  | 16,734 14x26
+                                  StaticText | verses |  | 16,761 34x13
+                                  Button | Fewer cards to quiz |  | 118,729 32x32
+                                  TextField | Cards to quiz | 5 | 160,729 58x32
+                                  Button | More cards to quiz |  | 228,729 32x32
+                                  StaticText | cards to quiz |  | 140,765 68x13
+                                  Button | Quiz all 5 selected verses |  | 214,765 23x13
+                                  Button | Start |  | 306,729 80x50
+                  Group | Tab Bar |  | 0,791 402x83
+                        RadioButton | Home |  | 25,795 98x54
+                          Image | home |  | 57,801 33x28
+                        RadioButton | Packs |  | 110,795 98x54
+                          Image | Album |  | 144,800 30x31
+                        RadioButton | Quiz | 1 | 194,795 98x54
+                          Image | selected |  | 229,801 27x27
+                        RadioButton | Settings |  | 279,795 98x54
+                          Image | gearshape.fill |  | 314,801 28x28

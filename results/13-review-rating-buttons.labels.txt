@@ -1,0 +1,18 @@
+Application |   |  | 0,0 402x874
+              Group | Scripture Memory |  | 0,0 402x874
+                                                    StaticText | 6:05 PM |  | 55,22 38x20
+                                                    GenericElement | Cellular | No signal | 288,26 19x12
+                                                    GenericElement |  | SSID, 3 of 3 Wi-Fi bars | 315,26 17x12
+                                                    GenericElement | 100% battery power | Not charging | 339,26 27x13
+      Sheet | Open in “Scripture Memory”? |  | 41,388 320x126
+                  StaticText | Open in “Scripture Memory”? |  | 71,410 260x20
+                Slider | Vertical scroll bar, 2 pages | 0% | 328,388 30x46
+                Slider | Horizontal scroll bar, 1 page | 0% | 41,408 320x23
+                Slider | Vertical scroll bar, 2 pages | 0% | 328,388 30x46
+                Slider | Horizontal scroll bar, 1 page | 0% | 41,408 320x23
+                    Button | Cancel |  | 57,450 140x48
+                    Button | Open |  | 205,450 140x48
+                Slider | Vertical scroll bar, 1 page | 0% | 328,434 30x80
+                Slider | Horizontal scroll bar, 1 page | 0% | 41,481 320x30
+                Slider | Vertical scroll bar, 1 page | 0% | 328,434 30x80
+                Slider | Horizontal scroll bar, 1 page | 0% | 41,481 320x30

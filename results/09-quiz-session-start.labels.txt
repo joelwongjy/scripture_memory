@@ -1,0 +1,162 @@
+Application | Scripture Memory |  | 0,0 402x874
+                            Group | Deselect All |  | 268,66 114x36
+                                Button | Deselect All |  | 268,66 114x36
+                            Heading | Quiz |  | 16,120 72x41
+                                          Image | Play |  | 34,183 22x22
+                                          StaticText | Session in Progress |  | 68,178 132x17
+                                          StaticText | 5 cards · 5 Assurances |  | 68,196 129x14
+                                          Image | Forward |  | 365,189 6x11
+                                          Button | Up to current verse, 5A-5 |  | 16,242 370x52
+                                            StaticText | Up to current verse |  | 32,258 140x19
+                                            StaticText | 5A-5 |  | 335,259 35x18
+                                          Button | Deselect all verses in 5 Assurances |  | 43,331 22x22
+                                            Image | Selected |  | 43,331 22x22
+                                          Button | Expand 5 Assurances to pick individual verses |  | 76,317 302x50
+                                            StaticText | 5 Assurances |  | 76,324 101x19
+                                            StaticText | 5 of 5 verses |  | 76,345 79x16
+                                            Image | Forward |  | 354,337 6x11
+                                          Button | Select all verses in TMS 60 |  | 43,383 22x22
+                                            Image | circle |  | 43,383 22x22
+                                          Button | Expand TMS 60 to pick individual verses |  | 76,369 302x50
+                                            StaticText | TMS 60 |  | 76,376 58x19
+                                            StaticText | 60 verses |  | 76,397 60x16
+                                            Image | Forward |  | 354,389 6x11
+                                          Button | Select all verses in DEP 1: Assurance of Salvation |  | 43,435 22x22
+                                            Image | circle |  | 43,435 22x22
+                                          Button | Expand DEP 1: Assurance of Salvation to pick individual verses |  | 76,421 302x50
+                                            StaticText | DEP 1: Assurance of Salvation |  | 76,428 221x19
+                                            StaticText | 18 verses |  | 76,449 58x16
+                                            Image | Forward |  | 354,441 6x11
+                                          Button | Select all verses in DEP 2: Quiet Time |  | 43,487 22x22
+                                            Image | circle |  | 43,487 22x22
+                                          Button | Expand DEP 2: Quiet Time to pick individual verses |  | 76,473 302x50
+                                            StaticText | DEP 2: Quiet Time |  | 76,480 134x19
+                                            StaticText | 26 verses |  | 76,501 59x16
+                                            Image | Forward |  | 354,493 6x11
+                                          Button | Select all verses in DEP 3: The Word |  | 43,539 22x22
+                                            Image | circle |  | 43,539 22x22
+                                          Button | Expand DEP 3: The Word to pick individual verses |  | 76,525 302x50
+                                            StaticText | DEP 3: The Word |  | 76,532 126x19
+                                            StaticText | 37 verses |  | 76,553 59x16
+                                            Image | Forward |  | 354,545 6x11
+                                          Button | Select all verses in DEP 4: Prayer |  | 43,591 22x22
+                                            Image | circle |  | 43,591 22x22
+                                          Button | Expand DEP 4: Prayer to pick individual verses |  | 76,577 302x50
+                                            StaticText | DEP 4: Prayer |  | 76,584 102x19
+                                            StaticText | 32 verses |  | 76,605 59x16
+                                            Image | Forward |  | 354,597 6x11
+                                          Button | Select all verses in DEP 5: Fellowship |  | 43,643 22x22
+                                            Image | circle |  | 43,643 22x22
+                                          Button | Expand DEP 5: Fellowship to pick individual verses |  | 76,629 302x50
+                                            StaticText | DEP 5: Fellowship |  | 76,636 132x19
+                                            StaticText | 30 verses |  | 76,657 60x16
+                                            Image | Forward |  | 354,649 6x11
+                                          Button | Select all verses in DEP 6: Witnessing |  | 43,695 22x22
+                                            Image | circle |  | 43,695 22x22
+                                          Button | Expand DEP 6: Witnessing to pick individual verses |  | 76,681 302x50
+                                            StaticText | DEP 6: Witnessing |  | 76,688 137x19
+                                            StaticText | 55 verses |  | 76,709 59x16
+                                            Image | Forward |  | 354,701 6x11
+                                          Button | Select all verses in DEP 7: The Lordship of Christ |  | 43,747 22x22
+                                            Image | circle |  | 43,747 22x22
+                                          Button | Expand DEP 7: The Lordship of Christ to pick individual verses |  | 76,733 302x50
+                                            StaticText | DEP 7: The Lordship of Christ |  | 76,740 217x19
+                                            StaticText | 26 verses |  | 76,761 59x16
+                                            Image | Forward |  | 354,753 6x11
+                                          Button | Select all verses in DEP 8: World Vision |  | 43,799 22x22
+                                            Image | circle |  | 43,799 22x22
+                                          Button | Expand DEP 8: World Vision to pick individual verses |  | 76,785 302x50
+                                            StaticText | DEP 8: World Vision |  | 76,792 147x19
+                                            StaticText | 18 verses |  | 76,813 58x16
+                                            Image | Forward |  | 354,805 6x11
+                                          Button | Select all verses in TMS 180 · Getting to Know God |  | 43,851 22x22
+                                            Image | circle |  | 43,851 22x22
+                                          Button | Expand TMS 180 · Getting to Know God to pick individual verses |  | 76,837 302x50
+                                            StaticText | TMS 180 · Getting to Know God |  | 76,844 212x19
+                                            StaticText | 36 verses |  | 76,865 60x16
+                                            Image | Forward |  | 354,857 6x11
+                                    Slider | Vertical scroll bar, 4 pages | 0% | 369,116 30x344
+                                    Slider | Vertical scroll bar, 4 pages | 0% | 369,116 30x344
+                                  StaticText | 5 |  | 16,482 14x26
+                                  StaticText | verses |  | 16,509 34x13
+                                  Button | Fewer cards to quiz |  | 118,477 32x32
+                                  TextField | Cards to quiz | 5 | 160,477 58x32
+                                  Button | More cards to quiz |  | 228,477 32x32
+                                  StaticText | cards to quiz |  | 140,513 68x13
+                                  Button | Quiz all 5 selected verses |  | 214,513 23x13
+                                  Button | Start |  | 306,477 80x50
+                  Group | Tab Bar |  | 0,791 402x83
+                        RadioButton | Home |  | 25,795 98x54
+                          Image | home |  | 57,801 33x28
+                        RadioButton | Packs |  | 110,795 98x54
+                          Image | Album |  | 144,800 30x31
+                        RadioButton | Quiz | 1 | 194,795 98x54
+                          Image | selected |  | 229,801 27x27
+                        RadioButton | Settings |  | 279,795 98x54
+                          Image | gearshape.fill |  | 314,801 28x28
+                    StaticText | Quiz |  | 185,79 33x18
+                    StaticText | 1 of 5 · 0 done |  | 160,99 82x14
+                    Button | Close session |  | 16,74 44x44
+                    Button | Close keyboard |  | 346,86 40x19
+                    StaticText | Proverbs 3:5-6 |  | 52,188 118x20
+                    StaticText | _________ __ ________ |  | 52,218 297x18
+                    StaticText | _____ __ ___ ____ ____ ___ ____ _____ ___ ____ ___ __ ____ ___ _____________; __ ___ ____ ____ ___________ ___, ___ __ ____ ____ ____ _____ ________. |  | 52,243 297x106
+                    StaticText | 0/3 |  | 333,359 17x11
+                    Image | Current verse |  | 301,388 5x8
+                    StaticText | Current verse |  | 310,387 33x10
+                    StaticText | 1 John 5:11-12 |  | 44,170 111x21
+                    StaticText | _________ __ _________ |  | 44,202 314x19
+                    StaticText | ___ ____ __ ___ _________: ___ ___ _____ __ _______ ____, ___ ____ ____ __ __ ___ ___. __ ___ ___ ___ ___ ___ ____; __ ___ ____ ___ ____ ___ ___ __ ___ ____ ___ ____ ____. |  | 44,228 314x129
+                    StaticText | 0/3 |  | 340,367 18x11
+                    StaticText | John 16:24 |  | 36,152 92x22
+                    StaticText | _________ __ ________ ______ |  | 36,186 330x20
+                    StaticText | _____ ___ ___ ____ ___ _____ ___ ________ __ __ ____. ___ ___ ___ ____ _______, ___ ____ ___ ____ __ ________. |  | 36,214 330x135
+                    StaticText | 0/4 |  | 347,359 19x12
+                    Button | Previous verse |  | 16,409 44x44
+                    GenericElement | Verse position | 1 of 5 | 70,414 262x34
+                    Button | Next verse |  | 342,409 44x44
+                    Button | Peek at answer |  | 16,466 48x48
+                    Button | Dictate verse |  | 88,479 22x22
+                    TextField |  | Type first letter of each word... | 120,479 194x22
+                    Button | Reveal next word |  | 338,466 48x48
+                Group | Typing Predictions |  | 0,539 402x44
+                Button | Padding-Left |  | 0,583 0x0
+                Button | q |  | 5,590 39x54
+                Button | w |  | 44,590 40x54
+                Button | e |  | 84,590 39x54
+                Button | r |  | 123,590 40x54
+                Button | t |  | 163,590 39x54
+                Button | y |  | 202,590 40x54
+                Button | u |  | 242,590 39x54
+                Button | i |  | 281,590 40x54
+                Button | o |  | 321,590 39x54
+                Button | p |  | 360,590 40x54
+                Button | Padding-Right |  | 0,583 0x0
+                Button | Padding-Left |  | 0,583 0x0
+                Button | a |  | 24,644 39x54
+                Button | s |  | 64,644 40x54
+                Button | d |  | 103,644 39x54
+                Button | f |  | 143,644 40x54
+                Button | g |  | 182,644 39x54
+                Button | h |  | 222,644 40x54
+                Button | j |  | 261,644 39x54
+                Button | k |  | 301,644 40x54
+                Button | l |  | 340,644 39x54
+                Button | Padding-Right |  | 0,583 0x0
+                Button | shift |  | 5,698 51x54
+                Button | Padding-Left |  | 0,583 0x0
+                Button | z |  | 64,698 40x54
+                Button | x |  | 103,698 39x54
+                Button | c |  | 143,698 40x54
+                Button | v |  | 182,698 39x54
+                Button | b |  | 222,698 40x54
+                Button | n |  | 261,698 39x54
+                Button | m |  | 301,698 40x54
+                Button | Padding-Right |  | 0,583 0x0
+                Button | delete |  | 348,698 52x54
+                Button | numbers |  | 5,752 99x54
+                Button |   |  | 103,752 197x54
+                Button | return |  | 301,752 99x54
+          Button | Emoji |  | 8,806 68x69
+          Button | Dictate |  | 325,805 68x69
+          Button | Dictate |  | 325,805 68x69

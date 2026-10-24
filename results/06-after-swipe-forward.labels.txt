@@ -1,0 +1,106 @@
+Application | Scripture Memory |  | 0,0 402x874
+                            Heading | Home |  | 16,120 94x41
+                            TextField |  | Search verses | 16,169 370x44
+                              Image | Search |  | 28,181 20x19
+                                      StaticText | 1 day streak |  | 16,236 370x46
+                                        Image | Flame |  | 34,248 16x21
+                                        StaticText | 1 day streak |  | 62,250 86x18
+                                        Image | Flame |  | 358,255 7x9
+                                      StaticText | CONTINUE LEARNING |  | 34,318 129x14
+                                      StaticText | 5 of 5 |  | 310,318 34x14
+                                      PopUpButton | Verse options |  | 350,316 18x18
+                                          Image | More |  | 350,316 18x18
+                                      Button | Practice Proverbs 3:5-6 |  | 34,344 334x158
+                                        StaticText | Assurance of Guidance |  | 34,344 186x19
+                                        StaticText | Proverbs 3:5-6 |  | 34,369 94x17
+                                        StaticText | Trust in the Lord with all your heart and lean not on your own understanding; in all your ways acknowledge him, and he will make your paths straight. |  | 34,392 326x84
+                                        StaticText | 5 Assurances |  | 34,488 73x13
+                                        StaticText | Practice |  | 306,488 49x14
+                                        Image | Forward |  | 362,490 6x10
+                                      StaticText | Daily Review |  | 20,540 100x20
+                                      StaticText | 6, cards due today |  | 32,591 134x31
+                                        StaticText | 6 |  | 32,591 17x31
+                                        StaticText | cards due today |  | 55,601 110x18
+                                      Button | Start review |  | 298,600 72x32
+                                      StaticText | 0 Learning |  | 42,626 62x14
+                                      StaticText | 4 Review |  | 124,626 52x14
+                                      StaticText | 2 New |  | 196,626 36x14
+                                      Button | Packs in review, Reviewing all 15 packs |  | 16,670 370x20
+                                        StaticText | Reviewing all 15 packs |  | 20,672 135x16
+                                        Image | Forward |  | 161,675 6x10
+                                    Slider | Vertical scroll bar, 2 pages | 0% | 369,176 30x363
+                                    Slider | Vertical scroll bar, 2 pages | 0% | 369,176 30x363
+                  Group | Tab Bar |  | 0,791 402x83
+                        RadioButton | Home | 1 | 25,795 98x54
+                          Image | home |  | 57,801 33x28
+                        RadioButton | Packs |  | 110,795 98x54
+                          Image | Album |  | 144,800 30x31
+                        RadioButton | Quiz |  | 194,795 98x54
+                          Image | selected |  | 229,801 27x27
+                        RadioButton | Settings |  | 279,795 98x54
+                          Image | gearshape.fill |  | 314,801 28x28
+                    StaticText | TMS 60 |  | 173,79 56x18
+                    StaticText | 1 of 60 |  | 181,99 40x14
+                    Button | Close |  | 16,74 44x44
+                    Button | Close keyboard |  | 346,86 40x19
+                    StaticText | Romans 12:1 |  | 52,190 100x20
+                    StaticText | _________ __ ______ |  | 52,220 297x18
+                    StaticText | _________, _ ____ ___, ________, __ ____ __ ___'_ _____ __ _____ ____ ______ __ ______ __________, ____ ___ ________ __ ___ - ____ __ ____ _________ ___ __ _______. |  | 52,245 297x124
+                    StaticText | 0/3 |  | 333,378 17x11
+                    StaticText | Galatians 2:20 |  | 44,172 123x21
+                    StaticText | ______ ___ ______ |  | 44,204 314x19
+                    StaticText | _ ____ ____ _________ ____ ______ ___ _ __ ______ ____, ___ ______ _____ __ __. ___ ____ _ ____ __ ___ ____, _ ____ __ _____ __ ___ ___ __ ___, ___ _____ __ ___ ____ _______ ___ __. |  | 44,231 314x130
+                    StaticText | 0/3 |  | 340,370 18x11
+                    StaticText | 2 Corinthians 5:17 |  | 36,154 161x22
+                    StaticText | ______ ___ ______ |  | 36,188 330x20
+                    StaticText | _________, __ ______ __ __ ______, __ __ _ ___ ________; ___ ___ ___ ____, ___ ___ ___ ____! |  | 36,216 330x107
+                    StaticText | 0/3 |  | 347,333 19x12
+                    Button | Add to favourites |  | 336,361 30x30
+                    Button | Previous verse |  | 16,415 44x44
+                    GenericElement | Verse position | 1 of 60 | 70,415 262x44
+                    Button | Next verse |  | 342,415 44x44
+                    Button | Peek at answer |  | 16,466 48x48
+                    Button | Dictate verse |  | 88,479 22x22
+                    TextField |  | Type first letter of each word... | 120,479 194x22
+                    Button | Reveal next word |  | 338,466 48x48
+                Group | Typing Predictions |  | 0,539 402x44
+                Button | Padding-Left |  | 0,583 0x0
+                Button | q |  | 5,590 39x54
+                Button | w |  | 44,590 40x54
+                Button | e |  | 84,590 39x54
+                Button | r |  | 123,590 40x54
+                Button | t |  | 163,590 39x54
+                Button | y |  | 202,590 40x54
+                Button | u |  | 242,590 39x54
+                Button | i |  | 281,590 40x54
+                Button | o |  | 321,590 39x54
+                Button | p |  | 360,590 40x54
+                Button | Padding-Right |  | 0,583 0x0
+                Button | Padding-Left |  | 0,583 0x0
+                Button | a |  | 24,644 39x54
+                Button | s |  | 64,644 40x54
+                Button | d |  | 103,644 39x54
+                Button | f |  | 143,644 40x54
+                Button | g |  | 182,644 39x54
+                Button | h |  | 222,644 40x54
+                Button | j |  | 261,644 39x54
+                Button | k |  | 301,644 40x54
+                Button | l |  | 340,644 39x54
+                Button | Padding-Right |  | 0,583 0x0
+                Button | shift |  | 5,698 51x54
+                Button | Padding-Left |  | 0,583 0x0
+                Button | z |  | 64,698 40x54
+                Button | x |  | 103,698 39x54
+                Button | c |  | 143,698 40x54
+                Button | v |  | 182,698 39x54
+                Button | b |  | 222,698 40x54
+                Button | n |  | 261,698 39x54
+                Button | m |  | 301,698 40x54
+                Button | Padding-Right |  | 0,583 0x0
+                Button | delete |  | 348,698 52x54
+                Button | numbers |  | 5,752 99x54
+                Button |   |  | 103,752 197x54
+                Button | return |  | 301,752 99x54
+          Button | Emoji |  | 8,806 68x69
+          Button | Dictate |  | 325,805 68x69
+          Button | Dictate |  | 325,805 68x69

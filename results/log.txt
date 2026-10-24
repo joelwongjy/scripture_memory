@@ -1,0 +1,61 @@
+[17:54:30] Booting E952A9B0-CC78-435C-BF08-06AD47FE1076:     iPhone 17 Pro (E952A9B0-CC78-435C-BF08-06AD47FE1076) (Shutdown) 
+[17:57:45] shot 01-home
+[17:58:05] tap '=Packs' at 159 822
+[17:58:14] shot 02-tab-Packs
+[17:58:24] tap '=Quiz' at 243 822
+[17:58:32] shot 03-tab-Quiz
+[17:58:39] tap '=Settings' at 328 822
+[17:58:46] shot 04-tab-Settings
+[17:58:50] tap '=Home' at 74 822
+[17:58:53] tap 'Practice' at 201 423
+[17:59:07] shot 05-learning-review-last-card
+[17:59:12] swipe 340 380 40 380 2.5
+[17:59:24] shot 06-after-swipe-forward
+                                        StaticText | 5 Assurances |  | 34,488 73x13
+                    StaticText | TMS 60 |  | 173,79 56x18
+[17:59:37] tap '=Close' at 38 96
+[17:59:49] shot 07-home-after-learning
+[17:59:53] tap '=Quiz' at 243 822
+[18:00:01] tap 'Up to current verse' at 201 194
+[18:00:07] shot 08-quiz-selected
+[18:00:14] tap '=Start' at 346 754
+[18:00:23] shot 09-quiz-session-start
+[18:00:29] tap 'Reveal next word' at 362 490
+[18:00:37] tap 'Reveal next word' at 362 490
+[18:00:41] tap 'Reveal next word' at 362 490
+[18:00:46] tap 'Reveal next word' at 362 490
+[18:00:52] tap 'Reveal next word' at 362 490
+[18:00:58] tap 'Reveal next word' at 362 490
+[18:01:06] tap 'Reveal next word' at 362 490
+[18:01:14] tap 'Reveal next word' at 362 490
+[18:01:23] tap 'Reveal next word' at 362 490
+[18:01:31] tap 'Reveal next word' at 362 490
+[18:01:45] tap 'Reveal next word' at 362 490
+[18:01:57] tap 'Reveal next word' at 362 490
+[18:02:05] tap 'Reveal next word' at 362 490
+[18:02:19] tap 'Reveal next word' at 362 490
+[18:02:31] tap 'Reveal next word' at 362 490
+[18:02:46] tap 'Reveal next word' at 362 490
+[18:03:05] tap 'Reveal next word' at 362 490
+[18:03:23] tap 'Reveal next word' at 362 490
+[18:03:37] tap 'Reveal next word' at 362 490
+[18:03:47] tap 'Reveal next word' at 362 490
+[18:03:58] tap 'Reveal next word' at 362 490
+[18:04:09] tap 'Reveal next word' at 362 490
+[18:04:18] tap 'Reveal next word' at 362 490
+[18:04:35] tap 'Reveal next word' at 362 490
+[18:04:44] tap 'Reveal next word' at 362 490
+[18:04:51] tap 'Reveal next word' at 362 490
+[18:04:56] no element labelled 'Reveal next word'
+[18:05:02] shot 10-quiz-one-card-done
+[18:05:09] tap 'Close session' at 38 96
+[18:05:23] shot 11-quiz-tab-after-leaving
+[18:05:38] shot 12-review-start
+[18:05:39] no element labelled 'Reveal next word'
+[18:05:43] shot 13-review-rating-buttons
+[18:05:44] no element labelled 'Close session'
+[18:05:46] no element labelled '=Quiz'
+[18:05:49] shot 14-quiz-tab-after-review
+[18:05:51] no element labelled 'Session in Progress'
+[18:05:52] no element labelled 'Close session'
+[18:05:52] done
