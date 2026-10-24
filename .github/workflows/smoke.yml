@@ -1,42 +1,26 @@
 name: Simulator smoke test
-
 on:
   push:
     branches: ["smoke/**"]
-
 permissions:
-  contents: write
-
+  contents: read
 jobs:
-  smoke:
-    runs-on: macos-15
-    timeout-minutes: 45
+  probe:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-26, macos-15]
+    runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - name: Select Xcode 26
-        run: sudo xcode-select -s /Applications/Xcode_26.3.app
-      - name: Install AXe (simulator UI automation)
-        run: brew install cameroncooke/axe/axe > /dev/null 2>&1 || brew install cameroncooke/axe/axe
-      - name: Build for simulator
+      - name: List Xcodes and Duo simulators
         run: |
-          set -o pipefail
-          common=(-project "Scripture Memory.xcodeproj" -target "Scripture Memory" -sdk iphonesimulator -configuration Debug)
-          if ! xcodebuild build "${common[@]}" CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM= PROVISIONING_PROFILE_SPECIFIER= > build.log 2>&1; then
-            echo "::warning::Ad-hoc signed build failed; building unsigned"
-            tail -5 build.log
-            xcodebuild build "${common[@]}" CODE_SIGNING_ALLOWED=NO > build.log 2>&1 || { tail -30 build.log; exit 1; }
-          fi
-      - name: Run smoke steps
-        run: bash .github/smoke/run.sh
-      - name: Publish results to a branch
-        if: always()
-        run: |
-          branch="smoke-results/run-${GITHUB_RUN_ID}"
-          mkdir -p /tmp/out && cp -R results /tmp/out/ 2>/dev/null || true
-          cp build.log /tmp/out/ 2>/dev/null || true
-          cd /tmp/out
-          git init -q -b "$branch"
-          git config user.name "smoke-bot"; git config user.email "smoke-bot@users.noreply.github.com"
-          git add -A && git commit -qm "Smoke results for run ${GITHUB_RUN_ID}"
-          git push -q "https://x-access-token:${{ github.token }}@github.com/${GITHUB_REPOSITORY}.git" "HEAD:refs/heads/$branch"
-          echo "::notice::Results on branch $branch"
+          echo "::notice::${{ matrix.os }} Xcodes: $(ls /Applications | grep -i xcode | tr '\n' ' ')"
+          for x in $(ls -d /Applications/Xcode_27* /Applications/Xcode-27* 2>/dev/null | sort -V | tail -1); do
+            sudo xcode-select -s "$x"
+            echo "::notice::${{ matrix.os }} selected $(xcodebuild -version | tr '\n' ' ')"
+            echo "::notice::${{ matrix.os }} SDKs: $(xcodebuild -showsdks | grep -i ios | tr '\n' ' ' | tr -s ' ')"
+            echo "::notice::${{ matrix.os }} device types: $(xcrun simctl list devicetypes | grep -i -E 'duo|fold' | tr '\n' ';')"
+            echo "::notice::${{ matrix.os }} runtimes: $(xcrun simctl list runtimes | grep -i ios | tr '\n' ';')"
+            echo "::notice::${{ matrix.os }} duo devices: $(xcrun simctl list devices | grep -i duo | head -3 | tr '\n' ';')"
+            xcrun simctl help 2>&1 | grep -i -E "fold|hinge|pose|display" | head -5 | sed 's/^/::notice::simctl: /'
+          done
