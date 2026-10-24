@@ -147,11 +147,13 @@ final class LearningStore: ObservableObject {
         NotificationCenter.default.post(name: .featuredVerseDidChange, object: nil)
     }
 
-    /// Mark a single verse learnt.
+    /// Mark a single verse learnt. Completing a verse is practice, so it counts
+    /// toward today's streak.
     func markLearnt(_ verse: Verse) {
         guard !verse.srsKey.isEmpty, !learntKeys.contains(verse.srsKey) else { return }
         learntKeys.insert(verse.srsKey)
         persist()
+        StreakStore.shared.recordToday()
     }
 
     /// Undo `markLearnt` — used when a review grade that auto-advanced the cursor is

@@ -239,6 +239,12 @@ struct CardStudyView: View {
         .background(Color(.systemGroupedBackground))
         .undoToast($undoToastState)
         .speechErrorAlert(speech)
+        .tracksStudyScreen()
+        // Remember the card you were on, so reopening this pack lands there.
+        .onDisappear {
+            let i = vm.isReviewMode ? vm.currentIndex : visibleListIndex
+            if vm.verses.indices.contains(i) { PackPositions.save(vm.verses[i], inPack: vm.packName) }
+        }
         .onChange(of: vm.isReviewMode) { _, reviewing in handleReviewModeChange(reviewing) }
         // Un-starring the last favourite while the filter is on would leave the
         // session showing nothing at all, with the control that got you there now

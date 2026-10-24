@@ -105,7 +105,7 @@ struct PackListView: View {
     private func packTile(_ pack: Pack) -> some View {
         Button {
             guard !pack.verses.isEmpty else { return }
-            opened = OpenedPack(pack: pack)
+            opened = OpenedPack(pack: pack, index: PackPositions.startIndex(for: pack, currentKey: learning.currentKey))
         } label: {
             PackCover(pack: pack, isCurrentPack: pack.name == currentPackName)
         }

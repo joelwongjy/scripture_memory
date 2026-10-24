@@ -51,6 +51,7 @@ struct ContentView: View {
             }
             .tabItem { Label("Settings", systemImage: "gearshape") }
         }
+        .streakCelebration()
         .fullScreenCover(item: $cover) { c in
             switch c {
             case .onboarding(let showsWelcome):
