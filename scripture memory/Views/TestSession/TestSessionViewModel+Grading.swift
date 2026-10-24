@@ -18,17 +18,16 @@ extension TestSessionViewModel {
         peekedVerseIds.insert(verse.id)
     }
 
-    /// The state the grading buttons predict from. Once a card is rated this
-    /// session, that's its pre-grade state, so the "1d / 4d / 12d" labels show
-    /// what each rating would do from where the card started.
+    /// The state the grading buttons predict from, which is the state a rating
+    /// will actually be applied to. Once a card is rated this session that's its
+    /// pre-grade state, so the "1d / 4d / 12d" labels show what each rating would
+    /// do from where the card started.
     func displayState(for verse: Verse) -> SRSCardState {
         if let prior = preGradeStates[verse.id] { return prior }
-        if sessionGrades[verse.id] != nil {
-            // Brand-new card rated this session: show the fresh-card predictions.
-            return SRSCardState.newCard(key: verse.srsKey, now: Date())
-        }
         return SRSStore.shared.state(for: verse)
-            ?? SRSCardState.newCard(key: verse.srsKey, now: Date())
+            ?? SRSStore.initialState(key: verse.srsKey,
+                                     alreadyKnew: LearningStore.shared.isLearnt(verse),
+                                     now: Date())
     }
 
     /// The rating shown as selected, which Confirm will commit: the user's pick,
@@ -56,16 +55,20 @@ extension TestSessionViewModel {
         StreakStore.shared.recordToday()
 
         if sessionGrades[verse.id] == nil {
+            // Capture where the card starts, decided once: a Good/Easy rating
+            // below marks the verse learnt, which mustn't change how a re-rating
+            // or Undo treats it.
+            let knew = learning.isLearnt(verse)
             if let current = SRSStore.shared.state(for: verse) {
                 preGradeStates[verse.id] = current
+            } else {
+                preGradeStates[verse.id] = SRSStore.initialState(key: verse.srsKey, alreadyKnew: knew, now: Date())
+                unscheduledAtStart[verse.id] = knew
             }
-            SRSStore.shared.grade(verse: verse, grade: grade, alreadyKnew: learning.isLearnt(verse))
+            SRSStore.shared.grade(verse: verse, grade: grade, alreadyKnew: knew)
             gradedOrder.append(verse.id)
-        } else {
-            // Re-rating: start again from the captured state (or a fresh one for
-            // a card that had no schedule when the session began).
-            let prior = preGradeStates[verse.id]
-                ?? SRSStore.initialState(key: verse.srsKey, alreadyKnew: learning.isLearnt(verse), now: Date())
+        } else if let prior = preGradeStates[verse.id] {
+            // Re-rating: recompute from the captured state so it doesn't compound.
             SRSStore.shared.regrade(verse: verse, grade: grade, from: prior)
         }
         sessionGrades[verse.id] = grade
@@ -87,18 +90,21 @@ extension TestSessionViewModel {
         let verse = verses[index]
         let learning = LearningStore.shared
 
-        // No captured state means the card had no schedule before, so reverting
-        // removes it and hands back the new-card slot (unless the user already
-        // knew the verse, in which case it never took one).
-        let prior = preGradeStates[lastId]
-        SRSStore.shared.revert(verse: verse, to: prior,
-                               wasNewlyIntroduced: prior == nil && !learning.isLearnt(verse))
+        // A card with no schedule before this session goes back to having none,
+        // and hands back the new-card slot unless the user already knew it (a
+        // known verse never took one).
+        if let knew = unscheduledAtStart[lastId] {
+            SRSStore.shared.revert(verse: verse, to: nil, wasNewlyIntroduced: !knew)
+        } else {
+            SRSStore.shared.revert(verse: verse, to: preGradeStates[lastId], wasNewlyIntroduced: false)
+        }
         if autoLearntIds.remove(lastId) != nil {
             learning.unmarkLearnt(verse)
         }
 
         sessionGrades.removeValue(forKey: lastId)
         preGradeStates.removeValue(forKey: lastId)
+        unscheduledAtStart.removeValue(forKey: lastId)
         gradedOrder.removeLast()
         pendingGrade = nil
         return index

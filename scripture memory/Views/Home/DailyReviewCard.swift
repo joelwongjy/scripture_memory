@@ -196,7 +196,7 @@ struct DailyReviewCard: View {
     private func start() {
         guard let session = TestSession.dailyReview(activePacks: activePacks, newCap: newCap,
                                                     dailyReviewCap: dailyReviewCap) else { return }
-        TestSessionViewModel.clearPersistedProgress()
+        TestSessionViewModel.clearPersistedProgress(for: .srs)
         onStart(session)
     }
 }

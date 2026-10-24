@@ -742,18 +742,21 @@ struct CardStudyView: View {
     /// stray vertical wobble during a horizontal swipe.
     private static let keyboardDismissPull: CGFloat = 40
 
+    /// Swiping steps into the adjacent pack at a boundary, like Next and the
+    /// scrubber's chevrons.
+    private var canSwipeForward:  Bool { vm.currentIndex < vm.verses.count - 1 || canCrossForward }
+    private var canSwipeBackward: Bool { vm.currentIndex > 0 || canCrossBackward }
+
     private var swipeGesture: some Gesture {
         DragGesture()
             .onChanged { value in
                 // Skip predominantly-vertical drags so TextEditor scroll/selection in submit mode survives.
                 guard abs(value.translation.width) > abs(value.translation.height) else { return }
                 if isCardFlying { commitSwipe() }
-                let canNext = vm.currentIndex < vm.verses.count - 1
-                let canPrev = vm.currentIndex > 0
                 dragOffset = CardSwipeConfig.clampedDragTranslation(
                     value.translation,
-                    canGoNext: canNext,
-                    canGoPrev: canPrev
+                    canGoNext: canSwipeForward,
+                    canGoPrev: canSwipeBackward
                 )
             }
             .onEnded { value in
@@ -762,11 +765,11 @@ struct CardStudyView: View {
                 let vx = value.predictedEndTranslation.width
                 if isHorizontal,
                    (dragOffset.width < -CardSwipeConfig.threshold || vx < -CardSwipeConfig.velocityThreshold),
-                   vm.currentIndex < vm.verses.count - 1 {
+                   canSwipeForward {
                     swipeForward()
                 } else if isHorizontal,
                           (dragOffset.width > CardSwipeConfig.threshold || vx > CardSwipeConfig.velocityThreshold),
-                          vm.currentIndex > 0 {
+                          canSwipeBackward {
                     swipeBackward()
                 } else {
                     withAnimation(AppMotion.control) { dragOffset = .zero }

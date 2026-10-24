@@ -402,7 +402,7 @@ struct TestSetupView: View {
 
     private func launchNewSession() {
         // Wipe any stale progress so the new session starts clean
-        TestSessionViewModel.clearPersistedProgress()
+        TestSessionViewModel.clearPersistedProgress(for: .custom)
 
         var verses: [Verse] = []
         for pack in bibleVersion.packs {
@@ -424,7 +424,7 @@ struct TestSetupView: View {
     /// Discards the saved in-progress session and its progress.
     private func dismissSavedSession() {
         clearSession()
-        TestSessionViewModel.clearPersistedProgress()
+        TestSessionViewModel.clearPersistedProgress(for: .custom)
     }
 
     // MARK: - Persistence

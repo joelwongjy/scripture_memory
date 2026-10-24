@@ -33,7 +33,7 @@ struct TestSessionView: View {
     // MARK: - Init
 
     init(session: TestSession, onSessionEnded: (() -> Void)? = nil) {
-        _vm = StateObject(wrappedValue: TestSessionViewModel(verses: session.verses))
+        _vm = StateObject(wrappedValue: TestSessionViewModel(verses: session.verses, kind: session.kind))
         self.onSessionEnded = onSessionEnded
         self.sessionKind    = session.kind
     }
@@ -623,7 +623,7 @@ struct TestSessionView: View {
 
     /// Clears saved progress and closes the session.
     private func finishSession() {
-        TestSessionViewModel.clearPersistedProgress()
+        TestSessionViewModel.clearPersistedProgress(for: sessionKind)
         onSessionEnded?()
         dismiss()
     }

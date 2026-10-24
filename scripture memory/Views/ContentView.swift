@@ -160,7 +160,7 @@ struct ContentView: View {
         let active = SRSStore.shared.activePacks(packPrefs.visible(from: bibleVersion.packs))
         guard let session = TestSession.dailyReview(activePacks: active, newCap: newCap,
                                                     dailyReviewCap: dailyReviewCap) else { return }
-        TestSessionViewModel.clearPersistedProgress()
+        TestSessionViewModel.clearPersistedProgress(for: .srs)
         cover = .review(session)
     }
 }
