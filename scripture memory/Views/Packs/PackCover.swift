@@ -7,6 +7,10 @@ import SwiftUI
 struct PackCover: View {
     let pack: Pack
     var isCurrentPack: Bool = false
+    /// The pack grid's rounded tile by default; the pouch shows the same cover
+    /// as a square-cornered printed card with no shadow of its own.
+    var cornerRadius: CGFloat = AppLayout.cornerRadius
+    var showsShadow: Bool = true
 
     private static let designWidth:  CGFloat = 340
     private static let designHeight: CGFloat = designWidth * 3 / 5  // 5:3
@@ -86,9 +90,9 @@ struct PackCover: View {
                         .frame(width: geo.size.width, height: geo.size.height, alignment: .topLeading)
                 }
             )
-            .clipShape(RoundedRectangle(cornerRadius: AppLayout.cornerRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: AppLayout.cornerRadius, style: .continuous).stroke(borderColor, lineWidth: 0.5))
-            .shadow(color: .black.opacity(shadowOpacity), radius: 8, x: 0, y: 4)
+            .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous).stroke(borderColor, lineWidth: 0.5))
+            .shadow(color: .black.opacity(showsShadow ? shadowOpacity : 0), radius: 8, x: 0, y: 4)
             .overlay(alignment: .topTrailing) {
                 if isCurrentPack { currentPackBadge.padding(8) }
             }
