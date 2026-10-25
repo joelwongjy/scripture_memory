@@ -1,0 +1,57 @@
+[08:19:28] Booting 9D9BF050-F6F5-4D32-84C0-4B7AC57F63EF:     iPad mini (A17 Pro) (9D9BF050-F6F5-4D32-84C0-4B7AC57F63EF) (Shutdown) 
+[08:23:25] tap '=Packs' at 329 54
+[08:23:34] tap 'TMS 60' at 281 260
+[08:23:42] shot 01-light-pack
+[08:23:44] recording 02-light-open-and-turn
+[08:23:55] tap 'Open in pouch' at 166 66
+[08:24:05] shot 03-light-pouch-closed
+[08:24:09] shot 04-light-pouch-opening
+[08:24:17] shot 05-light-pouch-open
+[08:24:38] shot 06-light-turned-forward
+[08:24:41] tap 372,803
+[08:24:46] shot 07-light-turned-twice
+[08:24:49] tap 372,393
+[08:24:53] shot 08-light-turned-back
+[08:24:55] stopped 02-light-open-and-turn
+[08:24:56] recording 09-light-cards-out
+[08:25:06] shot 10-light-cards-out
+[08:25:15] shot 11-light-cards-next
+[08:25:24] shot 12-light-cards-back-in
+[08:25:25] stopped 09-light-cards-out
+[08:25:26] recording 13-light-fold
+[08:25:35] tap 'Fold the pouch' at 706 66
+[08:25:46] shot 14-light-folding
+[08:25:59] shot 15-light-folded
+[08:26:08] tap 'Open the pouch' at 706 66
+[08:26:11] stopped 13-light-fold
+[08:26:21] tap '=Close' at 114 66
+[08:26:30] shot 16-light-back-on-pack
+[08:26:37] tap '=Close' at 114 66
+[08:27:00] tap '=Packs' at 329 54
+[08:27:07] tap 'TMS 60' at 281 260
+[08:27:15] shot 17-dark-pack
+[08:27:16] recording 18-dark-open-and-turn
+[08:27:21] tap 'Open in pouch' at 166 66
+[08:27:28] shot 19-dark-pouch-closed
+[08:27:33] shot 20-dark-pouch-opening
+[08:27:40] shot 21-dark-pouch-open
+[08:27:59] shot 22-dark-turned-forward
+[08:28:04] tap 372,803
+[08:28:13] shot 23-dark-turned-twice
+[08:28:20] tap 372,393
+[08:28:29] shot 24-dark-turned-back
+[08:28:30] stopped 18-dark-open-and-turn
+[08:28:32] recording 25-dark-cards-out
+[08:28:45] shot 26-dark-cards-out
+[08:28:56] shot 27-dark-cards-next
+[08:29:06] shot 28-dark-cards-back-in
+[08:29:08] stopped 25-dark-cards-out
+[08:29:09] recording 29-dark-fold
+[08:29:16] tap 'Fold the pouch' at 706 66
+[08:29:20] shot 30-dark-folding
+[08:29:27] shot 31-dark-folded
+[08:29:34] tap 'Open the pouch' at 706 66
+[08:29:38] stopped 29-dark-fold
+[08:29:44] tap '=Close' at 114 66
+[08:29:51] shot 32-dark-back-on-pack
+[08:29:58] tap '=Close' at 114 66
