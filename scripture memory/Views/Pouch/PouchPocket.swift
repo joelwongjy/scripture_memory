@@ -57,18 +57,22 @@ struct PlasticStyle {
     let edgeShade: Color    // the edge's thickness
     let shine: Color        // specular highlight
     let emboss: Color       // the pressed pattern along a pocket's mouth
+    let embossShade: Color  // its shadow, so it reads over white card too
+    let crease: Color       // the bend at the fold
 
     init(_ scheme: ColorScheme) {
         if scheme == .dark {
-            tint = Color.white.opacity(0.045); panel = Color.white.opacity(0.035)
-            rim = Color.white.opacity(0.12); edgeLight = Color.white.opacity(0.45)
-            edgeShade = Color.black.opacity(0.5); shine = Color.white.opacity(0.16)
-            emboss = Color.white.opacity(0.55)
+            tint = Color.white.opacity(0.055); panel = Color.white.opacity(0.03)
+            rim = Color.white.opacity(0.13); edgeLight = Color.white.opacity(0.5)
+            edgeShade = Color.black.opacity(0.35); shine = Color.white.opacity(0.14)
+            emboss = Color.white.opacity(0.75); embossShade = Color.black.opacity(0.45)
+            crease = Color.white.opacity(0.07)
         } else {
-            tint = Color(white: 0.35).opacity(0.10); panel = Color(white: 0.5).opacity(0.07)
-            rim = Color(white: 0.4).opacity(0.20); edgeLight = Color.white.opacity(0.9)
-            edgeShade = Color.black.opacity(0.18); shine = Color.white.opacity(0.55)
-            emboss = Color.white.opacity(0.95)
+            tint = Color(white: 0.3).opacity(0.06); panel = Color(white: 0.5).opacity(0.035)
+            rim = Color(white: 0.35).opacity(0.13); edgeLight = Color.white.opacity(0.95)
+            edgeShade = Color.black.opacity(0.13); shine = Color.white.opacity(0.6)
+            emboss = Color.white; embossShade = Color.black.opacity(0.22)
+            crease = Color.black.opacity(0.07)
         }
     }
 }
@@ -180,13 +184,14 @@ struct MouthEdgeShape: Shape {
 struct EmbossedBand: View {
     let m: PouchMetrics
     let color: Color
+    let shade: Color
 
     var body: some View {
         Canvas { ctx, size in
             let pts = mouthPoints(width: size.width, y: m.foldGap, notchWidth: m.notchWidth,
                                   notchDepth: m.notchDepth, grow: max(4, m.rim * 0.9),
                                   from: m.rim + 2, to: size.width - m.rim - 2, step: 0.5)
-            let loop = max(2.6, m.cardWidth * 0.011)
+            let loop = max(3.2, m.cardWidth * 0.013)
             var travelled: CGFloat = 0
             for i in 1..<pts.count {
                 let a = pts[i - 1], b = pts[i]
@@ -194,11 +199,11 @@ struct EmbossedBand: View {
                 guard travelled >= loop * 1.25 else { continue }
                 travelled = 0
                 let angle = atan2(b.y - a.y, b.x - a.x)
-                var t = CGAffineTransform(translationX: b.x, y: b.y).rotated(by: angle)
+                let t = CGAffineTransform(translationX: b.x, y: b.y).rotated(by: angle)
                 let oval = Path(ellipseIn: CGRect(x: -loop * 0.6, y: -loop * 0.42, width: loop * 1.2, height: loop * 0.84))
-                ctx.stroke(oval.applying(t.translatedBy(x: 0, y: 0.5)), with: .color(.black.opacity(0.10)), lineWidth: 0.7)
-                t = t.translatedBy(x: 0, y: 0)
-                ctx.stroke(oval.applying(t), with: .color(color), lineWidth: 0.8)
+                // Shadow a hair below, then the raised loop: pressed plastic.
+                ctx.stroke(oval.applying(t.translatedBy(x: 0, y: 0.7)), with: .color(shade), lineWidth: 1.0)
+                ctx.stroke(oval.applying(t), with: .color(color), lineWidth: 1.0)
             }
         }
         .allowsHitTesting(false)
@@ -227,10 +232,17 @@ struct PouchPocket<Card: View>: View {
 
             // The fold: the sheet bends here, darker into the crease with a
             // bright line right on it.
-            LinearGradient(colors: [style.edgeShade.opacity(0.9), .clear],
-                           startPoint: .top, endPoint: UnitPoint(x: 0.5, y: m.foldGap / m.halfHeight * 0.9))
-                .blendMode(.multiply)
-            Rectangle().fill(style.edgeLight.opacity(0.6)).frame(height: 0.75)
+            LinearGradient(colors: [style.crease, .clear],
+                           startPoint: .top, endPoint: UnitPoint(x: 0.5, y: m.foldGap / m.halfHeight * 0.8))
+            // Light catching the bend, brightest off to one side like the photo.
+            LinearGradient(stops: [
+                .init(color: .clear, location: 0.45),
+                .init(color: style.edgeLight.opacity(0.7), location: 0.78),
+                .init(color: .clear, location: 0.95),
+            ], startPoint: .leading, endPoint: .trailing)
+            .frame(height: 1.6)
+            .blur(radius: 0.6)
+            .offset(y: m.foldGap * 0.25)
 
             // The stack: edges of the cards behind the front one.
             ForEach(0..<stackEdges, id: \.self) { i in
@@ -263,7 +275,7 @@ struct PouchPocket<Card: View>: View {
                 )
             MouthEdgeShape(m: m, grow: 0.8).stroke(style.edgeShade, lineWidth: 0.8)
             MouthEdgeShape(m: m).stroke(style.edgeLight, lineWidth: 1)
-            EmbossedBand(m: m, color: style.emboss)
+            EmbossedBand(m: m, color: style.emboss, shade: style.embossShade)
 
             // The weld along the sides and outer edge, over everything.
             RimShape(corner: m.corner, inset: m.rim / 2).stroke(style.rim, lineWidth: m.rim)
@@ -282,10 +294,12 @@ struct PouchExterior<Card: View>: View {
     @ViewBuilder let card: () -> Card
 
     var body: some View {
-        let shape = RoundedRectangle(cornerRadius: m.corner, style: .continuous)
+        // Its top edge is the fold, so square there and no weld.
+        let shape = HalfSheetShape(corner: m.corner)
         let frame = m.cardFrame
         ZStack(alignment: .topLeading) {
             shape.fill(style.tint)
+            shape.fill(style.tint)          // two layers of plastic folded together
             ForEach(0..<4, id: \.self) { i in
                 RoundedRectangle(cornerRadius: 2)
                     .fill(i % 2 == 0 ? PouchInk.paperBack : Color(white: 0.89))
@@ -303,9 +317,12 @@ struct PouchExterior<Card: View>: View {
                 .init(color: .clear, location: 0.5),
             ], startPoint: UnitPoint(x: -0.6 + shine * 1.4, y: 0), endPoint: UnitPoint(x: 0.4 + shine * 1.4, y: 1))
             .clipShape(shape)
-            shape.inset(by: m.rim / 2).stroke(style.rim, lineWidth: m.rim)
-            shape.inset(by: m.rim).stroke(style.edgeShade.opacity(0.7), lineWidth: 0.6)
-            shape.inset(by: 0.5).stroke(style.edgeLight.opacity(0.8), lineWidth: 0.8)
+            LinearGradient(colors: [style.crease, .clear], startPoint: .top,
+                           endPoint: UnitPoint(x: 0.5, y: m.foldGap / m.halfHeight * 0.8))
+            Rectangle().fill(style.edgeLight.opacity(0.8)).frame(height: 1)
+            RimShape(corner: m.corner, inset: m.rim / 2).stroke(style.rim, lineWidth: m.rim)
+            RimShape(corner: m.corner, inset: m.rim).stroke(style.edgeShade.opacity(0.7), lineWidth: 0.6)
+            RimShape(corner: m.corner, inset: 0.5).stroke(style.edgeLight.opacity(0.8), lineWidth: 0.8)
         }
         .frame(width: m.pouchWidth, height: m.halfHeight, alignment: .topLeading)
     }
