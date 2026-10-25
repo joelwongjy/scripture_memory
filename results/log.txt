@@ -1,0 +1,75 @@
+[10:56:51] Booting E952A9B0-CC78-435C-BF08-06AD47FE1076:     iPhone 17 Pro (E952A9B0-CC78-435C-BF08-06AD47FE1076) (Shutdown) 
+[11:00:03] no element labelled '=Packs'
+[11:00:04] recording 01-light-open-and-turn
+[11:00:12] no element labelled 'TMS 60'
+[11:00:17] shot 02-light-pouch-closed
+[11:00:22] shot 03-light-pouch-opening
+[11:00:26] shot 04-light-pouch-open
+[11:00:33] shot 05-light-turned-forward
+[11:00:34] tap ,140
+[11:00:38] shot 06-light-turned-twice
+[11:00:38] tap ,-110
+[11:00:42] shot 07-light-turned-back
+[11:00:43] stopped 01-light-open-and-turn
+[11:00:45] recording 08-light-cards-out
+[11:00:50] shot 09-light-cards-out
+[11:00:56] shot 10-light-cards-next
+[11:01:00] shot 11-light-cards-back-in
+[11:01:01] stopped 08-light-cards-out
+[11:01:03] recording 12-light-spread-gather
+[11:01:07] shot 13-light-spreading
+[11:01:09] shot 14-light-list
+[11:01:10] no element labelled 'Open in pouch'
+[11:01:11] shot 15-light-gathering
+[11:01:15] shot 16-light-gathered
+[11:01:16] stopped 12-light-spread-gather
+[11:01:18] recording 17-light-fold
+[11:01:19] no element labelled 'Fold the pouch'
+[11:01:21] shot 18-light-folding
+[11:01:26] shot 19-light-folded
+[11:01:27] no element labelled 'Open the pouch'
+[11:01:28] stopped 17-light-fold
+[11:01:30] no element labelled 'Show as list'
+[11:01:37] shot 20-light-list-via-button
+[11:01:39] no element labelled '=Close'
+[11:01:41] no element labelled 'TMS 60'
+[11:01:44] shot 21-light-reopens-as-list
+[11:01:45] no element labelled 'Open in pouch'
+[11:01:46] no element labelled '=Close'
+[11:02:06] tap '=Packs' at 159 822
+[11:02:10] recording 22-dark-open-and-turn
+[11:02:15] tap 'TMS 60' at 298 293
+[11:02:21] shot 23-dark-pouch-closed
+[11:02:25] shot 24-dark-pouch-opening
+[11:02:30] shot 25-dark-pouch-open
+[11:02:42] shot 26-dark-turned-forward
+[11:02:44] tap 201,609
+[11:02:50] shot 27-dark-turned-twice
+[11:02:52] tap 201,359
+[11:02:57] shot 28-dark-turned-back
+[11:02:58] stopped 22-dark-open-and-turn
+[11:03:00] recording 29-dark-cards-out
+[11:03:09] shot 30-dark-cards-out
+[11:03:18] shot 31-dark-cards-next
+[11:03:26] shot 32-dark-cards-back-in
+[11:03:27] stopped 29-dark-cards-out
+[11:03:29] recording 33-dark-spread-gather
+[11:03:43] shot 34-dark-spreading
+[11:03:48] shot 35-dark-list
+[11:03:53] tap 'Open in pouch' at 90 96
+[11:03:58] shot 36-dark-gathering
+[11:04:03] shot 37-dark-gathered
+[11:04:04] stopped 33-dark-spread-gather
+[11:04:05] recording 38-dark-fold
+[11:04:12] tap 'Fold the pouch' at 364 96
+[11:04:16] shot 39-dark-folding
+[11:04:21] shot 40-dark-folded
+[11:04:27] tap 'Open the pouch' at 364 96
+[11:04:30] stopped 38-dark-fold
+[11:04:37] tap 'Show as list' at 312 96
+[11:04:44] shot 41-dark-list-via-button
+[11:04:49] tap '=Close' at 38 96
+[11:04:55] tap 'TMS 60' at 298 293
+[11:05:03] shot 42-dark-reopens-as-list
+[11:05:09] tap 'Open in pouch' at 90 96
+[11:05:16] tap '=Close' at 38 96
