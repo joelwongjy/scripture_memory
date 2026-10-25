@@ -50,7 +50,7 @@ struct LiftedDeck<Face: View>: View, Animatable {
                 .shadow(color: .black.opacity(abs(swipe.width) > 1 ? 0.18 : 0), radius: 10, y: 4)
         }
         .frame(width: handWidth, height: height)
-        .shadow(color: .black.opacity(0.28 * lift), radius: 22 * lift, y: 12 * lift)
+        .shadow(color: .black.opacity(Double(0.28 * lift)), radius: 22 * lift, y: 12 * lift)
         .scaleEffect(scale)
         .position(x: center.x, y: center.y + pulledDown)
         .opacity(lift > 0.02 ? 1 : 0)
