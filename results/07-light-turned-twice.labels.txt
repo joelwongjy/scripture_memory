@@ -1,0 +1,39 @@
+Application | Scripture Memory |  | 0,0 744x1133
+                    RadioButton | Home | 1 | 211,36 78x36
+                      RadioButton | Home | 1 | 211,36 78x36
+                    RadioButton | Packs |  | 290,36 78x36
+                      RadioButton | Packs |  | 290,36 78x36
+                    RadioButton | Quiz | 1 | 368,36 68x36
+                      RadioButton | Quiz | 1 | 368,36 68x36
+                    RadioButton | Settings |  | 436,36 97x36
+                      RadioButton | Settings |  | 436,36 97x36
+                              Heading | Home |  | 20,90 94x41
+                              TextField |  | Search verses | 20,139 704x44
+                                Image | Search |  | 32,152 20x18
+                                        Button | 0 day streak |  | 68,206 608x52
+                                          Image | Flame |  | 86,222 16x22
+                                          StaticText | 0 day streak |  | 114,223 88x18
+                                        StaticText | CONTINUE LEARNING |  | 88,296 130x14
+                                        StaticText | 1 of 5 |  | 600,296 32x14
+                                        PopUpButton | Verse options |  | 638,294 18x18
+                                            Image | More |  | 638,294 18x18
+                                        Button | Read 1 John 5:11-12 |  | 88,323 568x137
+                                          StaticText | Assurance of Salvation |  | 88,323 185x20
+                                          StaticText | 1 John 5:11-12 |  | 88,348 84x17
+                                          StaticText | And this is the testimony: God has given us eternal life, and this life is in his Son. He who has the Son has life; he who does not have the Son of God does not have life. |  | 88,372 564x62
+                                          StaticText | 5 Assurances |  | 88,446 72x14
+                                          StaticText | Read |  | 612,446 30x14
+                                          Image | Forward |  | 650,448 6x10
+                                        StaticText | Daily Review |  | 72,500 100x20
+                                        StaticText | 7, cards due today |  | 84,550 132x32
+                                          StaticText | 7 |  | 84,550 16x32
+                                          StaticText | cards due today |  | 106,561 110x18
+                                        Button | Start review |  | 588,560 72x32
+                                        StaticText | 0 Learning |  | 94,586 62x14
+                                        StaticText | 5 Review |  | 176,586 52x14
+                                        StaticText | 2 New |  | 248,586 36x14
+                                        Button | Packs in review, Reviewing all 15 packs |  | 68,630 608x20
+                                          StaticText | Reviewing all 15 packs |  | 72,632 136x16
+                                          Image | Forward |  | 214,636 6x10
+                                      Slider | Vertical scroll bar, 1 page | 0% | 711,146 30x955
+                                      Slider | Vertical scroll bar, 1 page | 0% | 711,146 30x955
