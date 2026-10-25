@@ -1,0 +1,75 @@
+[10:57:02] Booting 9D9BF050-F6F5-4D32-84C0-4B7AC57F63EF:     iPad mini (A17 Pro) (9D9BF050-F6F5-4D32-84C0-4B7AC57F63EF) (Shutdown) 
+[11:03:17] tap '=Packs' at 329 54
+[11:03:21] recording 01-light-open-and-turn
+[11:03:28] tap 'TMS 60' at 281 260
+[11:03:35] shot 02-light-pouch-closed
+[11:03:40] shot 03-light-pouch-opening
+[11:03:45] shot 04-light-pouch-open
+[11:04:05] shot 05-light-turned-forward
+[11:04:10] tap 372,820
+[11:04:19] shot 06-light-turned-twice
+[11:04:25] tap 372,410
+[11:04:33] shot 07-light-turned-back
+[11:04:34] stopped 01-light-open-and-turn
+[11:04:36] recording 08-light-cards-out
+[11:04:57] shot 09-light-cards-out
+[11:05:10] shot 10-light-cards-next
+[11:05:20] shot 11-light-cards-back-in
+[11:05:21] stopped 08-light-cards-out
+[11:05:22] recording 12-light-spread-gather
+[11:05:38] shot 13-light-spreading
+[11:05:44] shot 14-light-list
+[11:05:54] tap 'Open in pouch' at 166 66
+[11:05:59] shot 15-light-gathering
+[11:06:04] shot 16-light-gathered
+[11:06:05] stopped 12-light-spread-gather
+[11:06:06] recording 17-light-fold
+[11:06:13] tap 'Fold the pouch' at 706 66
+[11:06:17] shot 18-light-folding
+[11:06:22] shot 19-light-folded
+[11:06:28] tap 'Open the pouch' at 706 66
+[11:06:32] stopped 17-light-fold
+[11:06:36] tap 'Show as list' at 654 66
+[11:06:45] shot 20-light-list-via-button
+[11:06:54] tap '=Close' at 114 66
+[11:07:01] tap 'TMS 60' at 281 260
+[11:07:09] shot 21-light-reopens-as-list
+[11:07:16] tap 'Open in pouch' at 166 66
+[11:07:24] tap '=Close' at 38 66
+[11:07:47] tap '=Packs' at 329 54
+[11:07:50] recording 22-dark-open-and-turn
+[11:07:54] tap 'TMS 60' at 281 260
+[11:07:58] shot 23-dark-pouch-closed
+[11:08:01] shot 24-dark-pouch-opening
+[11:08:07] shot 25-dark-pouch-open
+[11:08:17] shot 26-dark-turned-forward
+[11:08:17] tap ,230
+[11:08:24] shot 27-dark-turned-twice
+[11:08:24] tap ,-180
+[11:08:31] shot 28-dark-turned-back
+[11:08:32] stopped 22-dark-open-and-turn
+[11:08:34] recording 29-dark-cards-out
+[11:08:40] shot 30-dark-cards-out
+[11:08:45] shot 31-dark-cards-next
+[11:08:50] shot 32-dark-cards-back-in
+[11:08:52] stopped 29-dark-cards-out
+[11:08:53] recording 33-dark-spread-gather
+[11:09:37] shot 34-dark-spreading
+[11:09:51] shot 35-dark-list
+[11:09:56] no element labelled 'Open in pouch'
+[11:10:03] shot 36-dark-gathering
+[11:10:09] shot 37-dark-gathered
+[11:10:11] stopped 33-dark-spread-gather
+[11:10:12] recording 38-dark-fold
+[11:10:24] tap 'Fold the pouch' at 706 66
+[11:10:31] shot 39-dark-folding
+[11:10:37] shot 40-dark-folded
+[11:10:45] tap 'Open the pouch' at 706 66
+[11:10:48] stopped 38-dark-fold
+[11:10:53] tap 'Show as list' at 654 66
+[11:11:01] shot 41-dark-list-via-button
+[11:11:08] tap '=Close' at 114 66
+[11:11:16] tap 'TMS 60' at 281 260
+[11:11:23] shot 42-dark-reopens-as-list
+[11:11:31] tap 'Open in pouch' at 166 66
+[11:11:40] tap '=Close' at 38 66
