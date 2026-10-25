@@ -1,0 +1,57 @@
+[07:56:22] Booting E952A9B0-CC78-435C-BF08-06AD47FE1076:     iPhone 17 Pro (E952A9B0-CC78-435C-BF08-06AD47FE1076) (Shutdown) 
+[08:01:31] tap '=Packs' at 159 822
+[08:01:37] tap 'TMS 60' at 298 293
+[08:01:45] shot 01-light-pack
+[08:01:46] recording 02-light-open-and-turn
+[08:01:51] tap 'Open in pouch' at 90 96
+[08:01:57] shot 03-light-pouch-closed
+[08:02:02] shot 04-light-pouch-opening
+[08:02:08] shot 05-light-pouch-open
+[08:02:27] shot 06-light-turned-forward
+[08:02:33] tap 201,591
+[08:02:38] shot 07-light-turned-twice
+[08:02:42] tap 201,341
+[08:02:50] shot 08-light-turned-back
+[08:02:51] stopped 02-light-open-and-turn
+[08:02:53] recording 09-light-cards-out
+[08:03:13] shot 10-light-cards-out
+[08:03:26] shot 11-light-cards-next
+[08:03:38] shot 12-light-cards-back-in
+[08:03:39] stopped 09-light-cards-out
+[08:03:41] recording 13-light-fold
+[08:03:49] tap 'Fold the pouch' at 364 96
+[08:03:53] shot 14-light-folding
+[08:03:58] shot 15-light-folded
+[08:04:05] tap 'Open the pouch' at 364 96
+[08:04:09] stopped 13-light-fold
+[08:04:14] tap '=Close' at 38 96
+[08:04:21] shot 16-light-back-on-pack
+[08:04:28] tap '=Close' at 38 96
+[08:04:50] tap '=Packs' at 159 822
+[08:04:58] tap 'TMS 60' at 298 293
+[08:05:06] shot 17-dark-pack
+[08:05:08] recording 18-dark-open-and-turn
+[08:05:18] tap 'Open in pouch' at 90 96
+[08:05:26] shot 19-dark-pouch-closed
+[08:05:31] shot 20-dark-pouch-opening
+[08:05:40] shot 21-dark-pouch-open
+[08:05:59] shot 22-dark-turned-forward
+[08:06:04] tap 201,591
+[08:06:10] shot 23-dark-turned-twice
+[08:06:14] tap 201,341
+[08:06:20] shot 24-dark-turned-back
+[08:06:21] stopped 18-dark-open-and-turn
+[08:06:23] recording 25-dark-cards-out
+[08:06:36] shot 26-dark-cards-out
+[08:06:50] shot 27-dark-cards-next
+[08:07:04] shot 28-dark-cards-back-in
+[08:07:06] stopped 25-dark-cards-out
+[08:07:07] recording 29-dark-fold
+[08:07:15] tap 'Fold the pouch' at 364 96
+[08:07:21] shot 30-dark-folding
+[08:07:26] shot 31-dark-folded
+[08:07:34] tap 'Open the pouch' at 364 96
+[08:07:38] stopped 29-dark-fold
+[08:07:47] tap '=Close' at 38 96
+[08:07:55] shot 32-dark-back-on-pack
+[08:08:04] tap '=Close' at 38 96
