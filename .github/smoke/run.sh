@@ -10,11 +10,11 @@ where() { axe describe-ui --udid "$UDID" 2>/dev/null | python3 .github/smoke/fin
 
 tour() {   # tour SUFFIX
   local s=$1
-  tap_label "=Packs" "" 2; tap_label "TMS 60" "" 3; shot "$s-pack"
+  tap_label "=Packs" "" 2
   record_start "$s-open-and-turn"
-  tap_label "Open in pouch" "" 0.15; shot "$s-pouch-closed" 0
-  sleep 0.25; shot "$s-pouch-opening" 0
-  sleep 2; shot "$s-pouch-open" 0
+  tap_label "TMS 60" "" 0.1; shot "$s-pouch-closed" 0
+  sleep 0.2; shot "$s-pouch-opening" 0
+  sleep 1.5; shot "$s-pouch-open" 0
   xy=$(where "God is not a man")   # the pouch itself: its label is the current card
   cx=${xy% *}; cy=${xy#* }
   if [ "$DEVICE" = ipad ]; then low=$((cy + 230)); reach=$((cy - 260)); hi=$((cy - 180)); else low=$((cy + 140)); reach=$((cy - 170)); hi=$((cy - 110)); fi
@@ -23,29 +23,47 @@ tour() {   # tour SUFFIX
   tap_xy "$cx" "$low" 1.5; shot "$s-turned-twice" 0
   tap_xy "$cx" "$hi" 1.5; shot "$s-turned-back" 0
   record_stop
+
   # Hold to take the cards out, flip through them, put them back.
   record_start "$s-cards-out"
-  # Touch down, hold, lift: AXe's touch with a delay between down and up.
   axe touch -x "$cx" -y "$low" --down --up --delay 0.9 --udid "$UDID" > /dev/null 2>&1 \
-    || { log "touch --delay unsupported, holding with a slow swipe"; axe swipe --start-x "$cx" --start-y "$low" --end-x "$cx" --end-y "$((low + 1))" --duration 0.9 --udid "$UDID" > /dev/null; }
-  sleep 1.2
-  shot "$s-cards-out" 0
+    || axe swipe --start-x "$cx" --start-y "$low" --end-x "$cx" --end-y "$((low + 1))" --duration 0.9 --udid "$UDID" > /dev/null
+  sleep 1.2; shot "$s-cards-out" 0
   axe swipe --start-x "$((cx + 120))" --start-y "$((cy - 60))" --end-x "$((cx - 160))" --end-y "$((cy - 60))" --duration 0.3 --udid "$UDID" > /dev/null; sleep 1
   shot "$s-cards-next" 0
   axe swipe --start-x "$cx" --start-y "$((cy - 80))" --end-x "$cx" --end-y "$((cy + 160))" --duration 0.4 --udid "$UDID" > /dev/null; sleep 1.2
   shot "$s-cards-back-in" 0
   record_stop
+
+  # Spread into the list, then gather back into the pouch.
+  record_start "$s-spread-gather"
+  axe touch -x "$cx" -y "$low" --down --up --delay 0.9 --udid "$UDID" > /dev/null 2>&1 \
+    || axe swipe --start-x "$cx" --start-y "$low" --end-x "$cx" --end-y "$((low + 1))" --duration 0.9 --udid "$UDID" > /dev/null
+  sleep 1.2
+  axe swipe --start-x "$cx" --start-y "$((cy + 40))" --end-x "$cx" --end-y "$((cy - 220))" --duration 0.35 --udid "$UDID" > /dev/null; sleep 0.25
+  shot "$s-spreading" 0
+  sleep 1.5; shot "$s-list" 0
+  tap_label "Open in pouch" "" 0.2; shot "$s-gathering" 0
+  sleep 1.5; shot "$s-gathered" 0
+  record_stop
+
+  # Fold to the cover and open again.
   record_start "$s-fold"
   tap_label "Fold the pouch" "" 0.3; shot "$s-folding" 0
   sleep 1.5; shot "$s-folded" 0
   tap_label "Open the pouch" "" 2
   record_stop
-  tap_label "=Close" "" 2; shot "$s-back-on-pack"
+
+  # Leave it as a list: it reopens as a list.
+  tap_label "Show as list" "" 2; shot "$s-list-via-button"
   tap_label "=Close" "" 2
+  tap_label "TMS 60" "" 3; shot "$s-reopens-as-list"
+  tap_label "Open in pouch" "" 2; tap_label "=Close" "" 2
 }
 
 tour light
 xcrun simctl ui "$UDID" appearance dark; sleep 2
 python3 .github/smoke/seed.py "$UDID" pouch > /dev/null   # back to card 30
+pref packOpensAsList.v1 -dict 2>/dev/null; xcrun simctl spawn "$UDID" defaults delete "$BUNDLE" packOpensAsList.v1 2>/dev/null || true
 launch 8
 tour dark
