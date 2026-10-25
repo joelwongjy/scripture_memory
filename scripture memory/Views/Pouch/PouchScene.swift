@@ -18,9 +18,12 @@ struct PouchSlots {
 ///
 /// - `openness`: 0 is folded shut, 1 is lying flat.
 /// - `turn`: 0 is the turning card in the bottom pocket, 1 is it in the top one.
+/// - `lift`: 0 is the bottom stack in its pocket, above 0 it's out in your hand
+///   (drawn by `LiftedDeck`), so the pocket shows empty.
 struct PouchScene<CardFace: View, Cover: View>: View, Animatable {
     var openness: CGFloat
     var turn: CGFloat
+    var lift: CGFloat = 0
     let m: PouchMetrics
     let style: PlasticStyle
     let slots: PouchSlots
@@ -28,9 +31,9 @@ struct PouchScene<CardFace: View, Cover: View>: View, Animatable {
     let face: (PouchSlots.Card) -> CardFace
     let cover: () -> Cover
 
-    var animatableData: AnimatablePair<CGFloat, CGFloat> {
-        get { AnimatablePair(openness, turn) }
-        set { openness = newValue.first; turn = newValue.second }
+    var animatableData: AnimatablePair<AnimatablePair<CGFloat, CGFloat>, CGFloat> {
+        get { AnimatablePair(AnimatablePair(openness, turn), lift) }
+        set { openness = newValue.first.first; turn = newValue.first.second; lift = newValue.second }
     }
 
     var body: some View {
@@ -41,8 +44,9 @@ struct PouchScene<CardFace: View, Cover: View>: View, Animatable {
 
         ZStack(alignment: .top) {
             // Bottom half.
-            PouchPocket(m: m, style: style, stackEdges: slots.bottomEdges, shine: shine) {
-                face(slots.bottom)
+            let stackIsOut = lift > 0.02
+            PouchPocket(m: m, style: style, stackEdges: stackIsOut ? 0 : slots.bottomEdges, shine: shine) {
+                face(stackIsOut ? .none : slots.bottom)
             }
             .offset(y: m.halfHeight)
             // Shut, the lid's outside is all you see.

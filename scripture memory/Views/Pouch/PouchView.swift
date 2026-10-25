@@ -8,6 +8,10 @@ import SwiftUI
 /// top pocket, which holds everything before it. Folded shut, the pack's cover
 /// card shows through the plastic.
 ///
+/// Press and hold to take the bottom pocket's cards out into your hand, the way
+/// people actually use the pack: the stack rises out of the pocket over the
+/// dimmed pouch, you swipe through it, and pull it down to tuck it back in.
+///
 /// iPhone Duo: `openness` is meant to follow the hinge. Building with the
 /// iOS 27.1 SDK, drive it from `.onHingeChange { _, context in … }` using
 /// `context.hinge?.angle` (0° shut … 180° flat). On every other device you
@@ -24,6 +28,10 @@ struct PouchView: View {
     @State private var turning: Int?
     @State private var drag: DragMode = .none
     @State private var hasTurned = false
+    /// 0 with the stack in its pocket, 1 with it out in your hand.
+    @State private var lift: CGFloat = 0
+    /// The out-of-pocket stack being swiped (width) or pulled down (height).
+    @State private var swipe: CGSize = .zero
 
     @StateObject private var tilt = TiltMonitor()
     @ObservedObject private var learning = LearningStore.shared
@@ -48,17 +56,27 @@ struct PouchView: View {
                 let m = PouchMetrics(fitting: CGSize(width: geo.size.width, height: geo.size.height - 12))
                 let sceneTop = (geo.size.height - 2 * m.halfHeight) / 2
 
-                PouchScene(openness: openness, turn: turn, m: m,
+                let handWidth = min(geo.size.width - 2 * AppLayout.screenMargin, 600)
+                let handHeight = handWidth / PouchMetrics.cardAspect
+                let handCenter = CGPoint(x: geo.size.width / 2, y: max(handHeight / 2 + 24, geo.size.height * 0.4))
+
+                ZStack {
+                PouchScene(openness: openness, turn: turn, lift: lift, m: m,
                            style: PlasticStyle(colorScheme), slots: slots, tilt: tilt.roll,
                            face: { cardFace($0, width: m.cardWidth) },
                            cover: { PackCover(pack: pack, cornerRadius: 2, showsShadow: false)
                                         .frame(width: m.cardWidth) })
                     .frame(width: geo.size.width, height: geo.size.height)
+                    // The pouch drops back while its cards are out.
+                    .opacity(1 - 0.55 * lift)
+                    .scaleEffect(1 - 0.04 * lift)
                     .contentShape(Rectangle())
                     .onTapGesture(coordinateSpace: .local) { point in
                         tapped(inTopHalf: point.y < sceneTop + m.halfHeight)
                     }
                     .gesture(dragGesture(m: m, splitY: sceneTop + m.halfHeight))
+                    .simultaneousGesture(LongPressGesture(minimumDuration: 0.35).onEnded { _ in takeOut() })
+                    .allowsHitTesting(lift == 0)
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel(accessibilityDescription)
                     .accessibilityHint(openness < 1 ? "Double-tap to open the pouch" : "Swipe up or down to turn cards")
@@ -70,6 +88,39 @@ struct PouchView: View {
                         }
                     }
                     .accessibilityAction(named: openness < 1 ? "Open the pouch" : "Fold the pouch") { toggleFold() }
+                    .accessibilityAction(named: "Take the cards out") { takeOut() }
+
+                LiftedDeck(lift: lift,
+                           pocketCenter: CGPoint(x: geo.size.width / 2, y: sceneTop + m.halfHeight + m.cardFrame.midY),
+                           handCenter: handCenter,
+                           pocketWidth: m.cardWidth, handWidth: handWidth,
+                           front: deckCard(index), next: deckCard(index + 1),
+                           edges: min(5, Int((Double(max(verses.count - index - 1, 0)) / 8).rounded(.up))),
+                           swipe: swipe,
+                           face: { cardFace($0, width: $1) })
+                    .contentShape(Rectangle())
+                    .onTapGesture(coordinateSpace: .local) { point in
+                        // Tapping the pouch behind puts the cards back; tapping
+                        // the cards themselves does nothing.
+                        let card = CGRect(x: handCenter.x - handWidth / 2, y: handCenter.y - handHeight / 2,
+                                          width: handWidth, height: handHeight)
+                        if !card.contains(point) { putBack() }
+                    }
+                    .gesture(deckGesture(width: handWidth))
+                    .allowsHitTesting(lift == 1)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(accessibilityDescription)
+                    .accessibilityHint("Swipe up or down to flip through the cards")
+                    .accessibilityAdjustableAction { direction in
+                        switch direction {
+                        case .increment: deckNext(width: handWidth)
+                        case .decrement: deckPrevious(width: handWidth)
+                        @unknown default: break
+                        }
+                    }
+                    .accessibilityAction(named: "Put the cards back") { putBack() }
+                    .accessibilityHidden(lift == 0)
+                }
             }
             hint
         }
@@ -122,10 +173,10 @@ struct PouchView: View {
     }
 
     private var hint: some View {
-        Text(openness < 1 ? "Tap the pouch to open it" : "Swipe up on the card to turn it over")
+        Text(hintText)
             .font(.footnote)
             .foregroundStyle(.secondary)
-            .opacity(hasTurned ? 0 : 1)
+            .opacity(hasTurned && lift == 0 ? 0 : 1)
             .animation(AppMotion.content, value: hasTurned)
             .padding(.bottom, 16)
             .accessibilityHidden(true)
@@ -142,6 +193,17 @@ struct PouchView: View {
         case .none:
             Color.clear
         }
+    }
+
+    private var hintText: String {
+        if openness < 1 { return "Tap the pouch to open it" }
+        if lift > 0 { return "Swipe to flip through · pull down to put them back" }
+        return "Swipe up to turn a card · hold to take the cards out"
+    }
+
+    /// What the out-of-pocket stack shows at `i`: a verse, then the back page.
+    private func deckCard(_ i: Int) -> PouchSlots.Card {
+        i < verses.count ? .verse(i) : i == verses.count ? .backPage : .none
     }
 
     // MARK: - State
@@ -182,7 +244,64 @@ struct PouchView: View {
         HapticEngine.light()
         withAnimation(AppMotion.reduceMotion ? .easeInOut(duration: 0.2) : .smooth(duration: 0.65)) {
             openness = openness < 1 ? 1 : 0
+            lift = 0
+            swipe = .zero
         }
+    }
+
+    // MARK: Cards out of the pocket
+
+    private func takeOut() {
+        guard openness == 1, turning == nil, lift == 0, index < verses.count else { return }
+        HapticEngine.medium()
+        withAnimation(AppMotion.reduceMotion ? .easeInOut(duration: 0.2) : .snappy(duration: 0.5)) { lift = 1 }
+    }
+
+    private func putBack() {
+        guard lift == 1 else { return }
+        HapticEngine.light()
+        withAnimation(AppMotion.reduceMotion ? .easeInOut(duration: 0.2) : .snappy(duration: 0.45)) {
+            lift = 0
+            swipe = .zero
+        }
+    }
+
+    /// The front card slides off to the left, uncovering the next one.
+    private func deckNext(width: CGFloat) {
+        guard lift == 1, index < verses.count else { return }
+        withAnimation(.snappy(duration: 0.28), completionCriteria: .logicallyComplete) {
+            swipe = CGSize(width: -width * 1.4, height: 0)
+        } completion: {
+            var t = Transaction()
+            t.disablesAnimations = true
+            withTransaction(t) { index += 1; swipe = .zero }
+            HapticEngine.light()
+        }
+    }
+
+    /// The previous card comes back in from the right, on top.
+    private func deckPrevious(width: CGFloat) {
+        guard lift == 1, index > 0 else { return }
+        var t = Transaction()
+        t.disablesAnimations = true
+        withTransaction(t) { index -= 1; swipe = CGSize(width: width * 1.4, height: 0) }
+        DispatchQueue.main.async {
+            withAnimation(.snappy(duration: 0.3)) { swipe = .zero }
+            HapticEngine.light()
+        }
+    }
+
+    private func deckGesture(width: CGFloat) -> some Gesture {
+        DragGesture(minimumDistance: 6)
+            .onChanged { swipe = $0.translation }
+            .onEnded { value in
+                let dx = value.translation.width, dy = value.translation.height
+                let flick = value.predictedEndTranslation.width
+                if dy > 90, dy > abs(dx) { putBack(); return }
+                if dx < -70 || flick < -220, index < verses.count { deckNext(width: width); return }
+                if dx > 70 || flick > 220, index > 0 { deckPrevious(width: width); return }
+                withAnimation(.snappy(duration: 0.3)) { swipe = .zero }
+            }
     }
 
     private func tapped(inTopHalf: Bool) {
