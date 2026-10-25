@@ -44,6 +44,8 @@ struct PouchScene<CardFace: View, Cover: View>: View, Animatable {
                 face(slots.bottom)
             }
             .offset(y: m.halfHeight)
+            // Shut, the lid's outside is all you see.
+            .opacity(lidShowsOutside ? max(0, (180 - lidAngle) / 60 - 0.5) : 1)
             .zIndex(1)
 
             // Top half: the same pocket turned round, folding over the hinge.

@@ -194,7 +194,7 @@ struct PaperFace: View {
             .overlay(
                 Image(uiImage: PaperGrain.tile)
                     .resizable(resizingMode: .tile)
-                    .opacity(0.5)
+                    .opacity(0.35)
                     .blendMode(.multiply)
                     .clipShape(shape)
             )
