@@ -15,7 +15,10 @@ struct PackListView: View {
     private struct OpenedPack: Identifiable {
         let pack: Pack
         var index = 0
-        var id: String { "\(pack.id)-\(index)" }
+        /// Opened from its tile, as the pouch (or the list, if that's how you
+        /// last left it). Search results go straight to the card in the list.
+        var fromTile = false
+        var id: String { "\(pack.id)-\(index)-\(fromTile)" }
     }
 
     /// Visible packs in the user's custom order (hidden removed).
@@ -82,7 +85,11 @@ struct PackListView: View {
         // See `HomeView` — index built off the interaction path.
         .task { VerseSearch.prewarm(visiblePacks) }
         .fullScreenCover(item: $opened) { item in
-            CardStudyCover(packName: item.pack.name, verses: item.pack.verses, initialIndex: item.index)
+            if item.fromTile {
+                PackReader(pack: item.pack, startIndex: item.index)
+            } else {
+                CardStudyCover(packName: item.pack.name, verses: item.pack.verses, initialIndex: item.index)
+            }
         }
     }
 
@@ -105,7 +112,8 @@ struct PackListView: View {
     private func packTile(_ pack: Pack) -> some View {
         Button {
             guard !pack.verses.isEmpty else { return }
-            opened = OpenedPack(pack: pack, index: PackPositions.startIndex(for: pack, currentKey: learning.currentKey))
+            opened = OpenedPack(pack: pack, index: PackPositions.startIndex(for: pack, currentKey: learning.currentKey),
+                                fromTile: true)
         } label: {
             PackCover(pack: pack, isCurrentPack: pack.name == currentPackName)
         }
