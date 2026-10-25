@@ -1,0 +1,47 @@
+[05:56:47] Booting E952A9B0-CC78-435C-BF08-06AD47FE1076:     iPhone 17 Pro (E952A9B0-CC78-435C-BF08-06AD47FE1076) (Shutdown) 
+[06:01:05] tap '=Packs' at 159 822
+[06:01:24] tap 'TMS 60' at 298 293
+[06:01:37] shot 01-light-pack
+[06:01:39] recording 02-light-open-and-turn
+[06:01:51] tap 'Open in pouch' at 90 96
+[06:02:02] shot 03-light-pouch-closed
+[06:02:09] shot 04-light-pouch-opening
+[06:02:19] shot 05-light-pouch-open
+[06:02:49] shot 06-light-turned-forward
+[06:02:58] tap 201,591
+[06:03:11] shot 07-light-turned-twice
+[06:03:19] tap 201,341
+[06:03:28] shot 08-light-turned-back
+[06:03:29] stopped 02-light-open-and-turn
+[06:03:31] recording 09-light-fold
+[06:03:39] tap 'Fold the pouch' at 364 96
+[06:03:44] shot 10-light-folding
+[06:03:50] shot 11-light-folded
+[06:04:07] tap 'Open the pouch' at 364 96
+[06:04:11] stopped 09-light-fold
+[06:04:31] tap '=Close' at 38 96
+[06:04:40] shot 12-light-back-on-pack
+[06:04:49] tap '=Close' at 38 96
+[06:05:17] tap '=Packs' at 159 822
+[06:05:30] tap 'TMS 60' at 298 293
+[06:05:39] shot 13-dark-pack
+[06:05:40] recording 14-dark-open-and-turn
+[06:05:47] tap 'Open in pouch' at 90 96
+[06:05:55] shot 15-dark-pouch-closed
+[06:06:04] shot 16-dark-pouch-opening
+[06:06:14] shot 17-dark-pouch-open
+[06:06:36] shot 18-dark-turned-forward
+[06:06:42] tap 201,353
+[06:06:55] shot 19-dark-turned-twice
+[06:07:03] tap 201,103
+[06:07:16] shot 20-dark-turned-back
+[06:07:18] stopped 14-dark-open-and-turn
+[06:07:19] recording 21-dark-fold
+[06:07:32] tap 'Fold the pouch' at 364 96
+[06:07:39] shot 22-dark-folding
+[06:07:46] shot 23-dark-folded
+[06:07:55] tap 'Open the pouch' at 364 96
+[06:07:58] stopped 21-dark-fold
+[06:08:07] tap '=Close' at 38 96
+[06:08:14] shot 24-dark-back-on-pack
+[06:08:20] tap '=Close' at 38 96
