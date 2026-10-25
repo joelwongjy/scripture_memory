@@ -68,7 +68,7 @@ struct PouchView: View {
                                         .frame(width: m.cardWidth) })
                     .frame(width: geo.size.width, height: geo.size.height)
                     // The pouch drops back while its cards are out.
-                    .opacity(1 - 0.55 * lift)
+                    .opacity(Double(1 - 0.55 * lift))
                     .scaleEffect(1 - 0.04 * lift)
                     .contentShape(Rectangle())
                     .onTapGesture(coordinateSpace: .local) { point in
