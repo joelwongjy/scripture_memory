@@ -25,7 +25,10 @@ tour() {   # tour SUFFIX
   record_stop
   # Hold to take the cards out, flip through them, put them back.
   record_start "$s-cards-out"
-  axe swipe --start-x "$cx" --start-y "$low" --end-x "$cx" --end-y "$((low + 1))" --duration 0.9 --udid "$UDID" > /dev/null; sleep 1.2
+  # Touch down, hold, lift: AXe's touch with a delay between down and up.
+  axe touch -x "$cx" -y "$low" --down --up --delay 0.9 --udid "$UDID" > /dev/null 2>&1 \
+    || { log "touch --delay unsupported, holding with a slow swipe"; axe swipe --start-x "$cx" --start-y "$low" --end-x "$cx" --end-y "$((low + 1))" --duration 0.9 --udid "$UDID" > /dev/null; }
+  sleep 1.2
   shot "$s-cards-out" 0
   axe swipe --start-x "$((cx + 120))" --start-y "$((cy - 60))" --end-x "$((cx - 160))" --end-y "$((cy - 60))" --duration 0.3 --udid "$UDID" > /dev/null; sleep 1
   shot "$s-cards-next" 0
