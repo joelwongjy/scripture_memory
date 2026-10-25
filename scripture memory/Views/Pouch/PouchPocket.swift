@@ -43,15 +43,13 @@ struct PouchMetrics {
         corner     = rim * 2.4
     }
 
-    /// How far the sides pinch in at `y` (distance from the fold). The real
-    /// sleeve is crimped down each side, and the crimp draws the sides in where
-    /// the plastic bends, so the outline narrows at the fold.
-    func pinch(at y: CGFloat) -> CGFloat {
-        let reach = foldGap * 1.8
-        guard y < reach else { return 0 }
-        let t = max(0, y) / reach
-        return rim * 0.9 * (1 - t * t * (3 - 2 * t))
-    }
+    /// Radius where a pocket's mouth meets the side seam. The real mouths are
+    /// rounded off there, so the gap between the two pockets at the fold reads
+    /// as a long slot with round ends.
+    var mouthCorner: CGFloat { foldGap * 0.8 }
+
+    /// Size of one cell of the embossed band along a mouth.
+    var embossCell: CGFloat { max(3, cardWidth * 0.018) }
 
     /// The front card's frame inside a half drawn mouth-up (hinge at y = 0).
     var cardFrame: CGRect {
@@ -108,17 +106,10 @@ struct HalfSheetShape: Shape {
     }
 }
 
-/// One side edge from the fold down to `bottom`, pinched in near the fold.
-/// `inward` is +1 for the left side, -1 for the right.
+/// One side edge from the fold down to `bottom`: straight, like the sleeve's
+/// crimped side seam. `inward` is +1 for the left side, -1 for the right.
 func sidePoints(_ m: PouchMetrics, x: CGFloat, inward: CGFloat, inset: CGFloat, to bottom: CGFloat) -> [CGPoint] {
-    var pts: [CGPoint] = []
-    var y: CGFloat = 0
-    while y < bottom {
-        pts.append(CGPoint(x: x + inward * (inset + m.pinch(at: y)), y: y))
-        y += y < m.foldGap * 2 ? 1.5 : 12
-    }
-    pts.append(CGPoint(x: x + inward * inset, y: bottom))
-    return pts
+    [CGPoint(x: x + inward * inset, y: 0), CGPoint(x: x + inward * inset, y: bottom)]
 }
 
 /// The welded rim: down one side, along the outer edge, up the other. Open at
@@ -139,8 +130,7 @@ struct RimShape: Shape {
     }
 }
 
-/// The crimp down each side: fine parallel ridges pressed into the weld,
-/// following the side's pinch at the fold.
+/// The crimp down each side: fine parallel ridges pressed into the weld.
 struct SideCrimp: View {
     let m: PouchMetrics
     let style: PlasticStyle
@@ -195,16 +185,48 @@ func mouthPoints(width: CGFloat, y: CGFloat, notchWidth: CGFloat, notchDepth: CG
     return pts
 }
 
-/// The pocket's front layer: from the mouth (with its notch) down to the outer
-/// edge.
+/// The whole cut edge of a pocket's mouth, left to right: rounded down into
+/// the side seam at each end, straight across, and into the thumb notch.
+func mouthOutline(_ m: PouchMetrics, width: CGFloat) -> [CGPoint] {
+    let rc = m.mouthCorner, y = m.foldGap
+    let left = m.rim, right = width - m.rim
+    func quad(_ a: CGPoint, _ c: CGPoint, _ b: CGPoint) -> [CGPoint] {
+        (0...12).map { i in
+            let t = CGFloat(i) / 12, u = 1 - t
+            return CGPoint(x: u * u * a.x + 2 * u * t * c.x + t * t * b.x,
+                           y: u * u * a.y + 2 * u * t * c.y + t * t * b.y)
+        }
+    }
+    return quad(CGPoint(x: left, y: y + rc), CGPoint(x: left, y: y), CGPoint(x: left + rc, y: y))
+        + mouthPoints(width: width, y: y, notchWidth: m.notchWidth, notchDepth: m.notchDepth,
+                      from: left + rc + 2, to: right - rc - 2)
+        + quad(CGPoint(x: right - rc, y: y), CGPoint(x: right, y: y), CGPoint(x: right, y: y + rc))
+}
+
+/// `points` moved `distance` into the pocket's front layer, along each point's
+/// normal: how the embossed band keeps an even distance from the cut edge,
+/// round the corners and the notch alike.
+func offsetIntoPanel(_ points: [CGPoint], by distance: CGFloat) -> [CGPoint] {
+    guard points.count > 1, distance != 0 else { return points }
+    return points.indices.map { i in
+        let a = points[max(i - 1, 0)], b = points[min(i + 1, points.count - 1)]
+        let dx = b.x - a.x, dy = b.y - a.y
+        let len = max(hypot(dx, dy), 0.0001)
+        // Travelling left to right with the panel below: the right-hand normal.
+        return CGPoint(x: points[i].x - dy / len * distance, y: points[i].y + dx / len * distance)
+    }
+}
+
+/// The pocket's front layer: from the mouth (with its notch and rounded
+/// corners) down to the outer edge.
 struct PocketPanelShape: Shape {
     let m: PouchMetrics
     func path(in r: CGRect) -> Path {
-        let mouth = mouthPoints(width: r.width, y: m.foldGap, notchWidth: m.notchWidth,
-                                notchDepth: m.notchDepth, from: 0, to: r.width)
+        let mouth = mouthOutline(m, width: r.width)
         return Path { p in
-            p.addLines(mouth)
-            p.addLine(to: CGPoint(x: r.maxX, y: m.foldGap))
+            p.move(to: CGPoint(x: r.minX, y: m.foldGap + m.mouthCorner))
+            for pt in mouth { p.addLine(to: pt) }
+            p.addLine(to: CGPoint(x: r.maxX, y: m.foldGap + m.mouthCorner))
             p.addLine(to: CGPoint(x: r.maxX, y: r.maxY - m.corner))
             p.addQuadCurve(to: CGPoint(x: r.maxX - m.corner, y: r.maxY), control: CGPoint(x: r.maxX, y: r.maxY))
             p.addLine(to: CGPoint(x: r.minX + m.corner, y: r.maxY))
@@ -214,21 +236,18 @@ struct PocketPanelShape: Shape {
     }
 }
 
-/// Just the cut edge of the mouth, for its highlight.
+/// Just the cut edge of the mouth, for its highlight and thickness.
 struct MouthEdgeShape: Shape {
     let m: PouchMetrics
     var grow: CGFloat = 0
     func path(in r: CGRect) -> Path {
-        Path { p in
-            p.addLines(mouthPoints(width: r.width, y: m.foldGap, notchWidth: m.notchWidth,
-                                   notchDepth: m.notchDepth, grow: grow, from: m.rim, to: r.width - m.rim))
-        }
+        Path { p in p.addLines(offsetIntoPanel(mouthOutline(m, width: r.width), by: grow)) }
     }
 }
 
-/// The pressed chain pattern that runs along each mouth and around its notch:
-/// a row of small loops, light on top with a faint shadow so it reads as
-/// embossed into the plastic.
+/// The pressed band along each mouth: a row of small rounded squares right
+/// against the cut edge, following it round the corners and the notch. Light
+/// on top with a shadow a hair below, so it reads as embossed into the plastic.
 struct EmbossedBand: View {
     let m: PouchMetrics
     let color: Color
@@ -236,22 +255,31 @@ struct EmbossedBand: View {
 
     var body: some View {
         Canvas { ctx, size in
-            let pts = mouthPoints(width: size.width, y: m.foldGap, notchWidth: m.notchWidth,
-                                  notchDepth: m.notchDepth, grow: max(4, m.rim * 0.9),
-                                  from: m.rim + 2, to: size.width - m.rim - 2, step: 0.5)
-            let loop = max(3.2, m.cardWidth * 0.013)
-            var travelled: CGFloat = 0
-            for i in 1..<pts.count {
-                let a = pts[i - 1], b = pts[i]
+            let cell = m.embossCell
+            let pitch = cell * 1.12
+            // Densify the edge so cells land evenly however tight the curve.
+            var path: [CGPoint] = []
+            let edge = offsetIntoPanel(mouthOutline(m, width: size.width), by: cell * 0.5 + 1.5)
+            for i in 1..<edge.count {
+                let a = edge[i - 1], b = edge[i]
+                let n = max(1, Int(hypot(b.x - a.x, b.y - a.y) / 0.5))
+                for k in 0..<n {
+                    let t = CGFloat(k) / CGFloat(n)
+                    path.append(CGPoint(x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t))
+                }
+            }
+            let square = Path(roundedRect: CGRect(x: -cell / 2, y: -cell * 0.45, width: cell, height: cell * 0.9),
+                              cornerRadius: cell * 0.3)
+            var travelled = pitch / 2
+            for i in 1..<path.count {
+                let a = path[i - 1], b = path[i]
                 travelled += hypot(b.x - a.x, b.y - a.y)
-                guard travelled >= loop * 1.25 else { continue }
+                guard travelled >= pitch else { continue }
                 travelled = 0
-                let angle = atan2(b.y - a.y, b.x - a.x)
-                let t = CGAffineTransform(translationX: b.x, y: b.y).rotated(by: angle)
-                let oval = Path(ellipseIn: CGRect(x: -loop * 0.6, y: -loop * 0.42, width: loop * 1.2, height: loop * 0.84))
-                // Shadow a hair below, then the raised loop: pressed plastic.
-                ctx.stroke(oval.applying(t.translatedBy(x: 0, y: 0.7)), with: .color(shade), lineWidth: 1.0)
-                ctx.stroke(oval.applying(t), with: .color(color), lineWidth: 1.0)
+                let t = CGAffineTransform(translationX: b.x, y: b.y).rotated(by: atan2(b.y - a.y, b.x - a.x))
+                ctx.stroke(square.applying(t.translatedBy(x: 0, y: 0.6)), with: .color(shade), lineWidth: 0.9)
+                ctx.fill(square.applying(t), with: .color(color.opacity(0.28)))
+                ctx.stroke(square.applying(t), with: .color(color), lineWidth: 0.9)
             }
         }
         .allowsHitTesting(false)
