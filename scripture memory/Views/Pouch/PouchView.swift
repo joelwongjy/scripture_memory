@@ -74,8 +74,9 @@ struct PouchView: View {
                     .onTapGesture(coordinateSpace: .local) { point in
                         tapped(inTopHalf: point.y < sceneTop + m.halfHeight)
                     }
+                    // After the tap so a hold isn't swallowed as a slow tap.
+                    .onLongPressGesture(minimumDuration: 0.35, maximumDistance: 12) { takeOut() }
                     .gesture(dragGesture(m: m, splitY: sceneTop + m.halfHeight))
-                    .simultaneousGesture(LongPressGesture(minimumDuration: 0.35).onEnded { _ in takeOut() })
                     .allowsHitTesting(lift == 0)
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel(accessibilityDescription)
