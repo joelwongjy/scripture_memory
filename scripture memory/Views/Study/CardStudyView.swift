@@ -56,17 +56,24 @@ struct CardStudyView: View {
     /// marks it learnt directly.
     let onMarkLearnt: ((Verse) -> Void)?
 
+    /// Set when this list was spread out of the pouch: gathering the cards back
+    /// (the pouch button, or pinching the list closed) hands the card you're on
+    /// back to it. `nil` opens the pouch on top instead.
+    let onGather: ((Int) -> Void)?
+
     // MARK: - Init
 
     init(packName: String, verses: [Verse], initialIndex: Int = 0,
          initialReviewMode: Bool = false,
          adjacentPack: ((_ currentPackName: String, _ forward: Bool) -> (name: String, verses: [Verse])?)? = nil,
-         onMarkLearnt: ((Verse) -> Void)? = nil) {
+         onMarkLearnt: ((Verse) -> Void)? = nil,
+         onGather: ((Int) -> Void)? = nil) {
         _vm = StateObject(wrappedValue: CardStudyViewModel(packName: packName, verses: verses,
                                                            initialIndex: initialIndex,
                                                            initialReviewMode: initialReviewMode))
         self.adjacentPack = adjacentPack
         self.onMarkLearnt = onMarkLearnt
+        self.onGather = onGather
     }
 
     // MARK: - Cross-pack stepping
@@ -181,6 +188,15 @@ struct CardStudyView: View {
                 if !vm.isReviewMode {
                     verticalScrollCards(cardWidth: cardWidth, cardHeight: cardHeight)
                         .frame(maxHeight: .infinity)
+                        // Pinch the list closed to gather the cards back into the pouch.
+                        .simultaneousGesture(
+                            MagnifyGesture().onEnded { value in
+                                guard let onGather, value.magnification < 0.75 else { return }
+                                HapticEngine.light()
+                                onGather(positionIndex)
+                            },
+                            including: onGather == nil ? .subviews : .all
+                        )
                 } else {
                     // Review grows the card into the free vertical space (capped so
                     // it stays card-shaped) and shrinks it again for the keyboard,
@@ -244,10 +260,8 @@ struct CardStudyView: View {
         .tracksStudyScreen()
         // Remember the card you were on, so reopening this pack lands there.
         .fullScreenCover(isPresented: $showsPouch) {
-            PouchView(packName: vm.packName, verses: vm.verses,
-                      startIndex: vm.isReviewMode ? vm.currentIndex : visibleListIndex) { i in
-                vm.currentIndex = i
-            }
+            PouchView(packName: vm.packName, verses: vm.verses, startIndex: positionIndex,
+                      onClose: { i in vm.currentIndex = i })
         }
         .onDisappear {
             let i = vm.isReviewMode ? vm.currentIndex : visibleListIndex
@@ -319,7 +333,7 @@ struct CardStudyView: View {
                 if !isEditing {
                     Button {
                         HapticEngine.light()
-                        showsPouch = true
+                        if let onGather { onGather(positionIndex) } else { showsPouch = true }
                     } label: {
                         Image(systemName: "rectangle.split.1x2")
                             .studyChromeCircleButton()
@@ -372,6 +386,9 @@ struct CardStudyView: View {
         .padding(.vertical, 12)
         .animation(AppMotion.control, value: isEditing)
     }
+
+    /// The card you're on: the one in review, or the one centred in the list.
+    private var positionIndex: Int { vm.isReviewMode ? vm.currentIndex : visibleListIndex }
 
     /// True whenever either text input has keyboard focus.
     private var isEditing: Bool { isInputFocused || submitFocus != nil }

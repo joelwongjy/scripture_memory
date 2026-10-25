@@ -13,6 +13,7 @@ struct CardStudyCover: View {
     var initialReviewMode: Bool = false
     var adjacentPack: ((_ currentPackName: String, _ forward: Bool) -> (name: String, verses: [Verse])?)? = nil
     var onMarkLearnt: ((Verse) -> Void)? = nil
+    var onGather: ((Int) -> Void)? = nil
 
     var body: some View {
         NavigationStack {
@@ -22,7 +23,8 @@ struct CardStudyCover: View {
                 initialIndex: initialIndex,
                 initialReviewMode: initialReviewMode,
                 adjacentPack: adjacentPack,
-                onMarkLearnt: onMarkLearnt
+                onMarkLearnt: onMarkLearnt,
+                onGather: onGather
             )
             .toolbar(.hidden, for: .navigationBar)
         }

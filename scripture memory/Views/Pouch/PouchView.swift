@@ -21,6 +21,13 @@ struct PouchView: View {
     let verses: [Verse]
     /// Called with the card you were on, so the screen underneath can follow.
     var onClose: (Int) -> Void = { _ in }
+    /// Set when the pouch can hand over to the pack's list: called with the card
+    /// in your hand once the cards have spread out into the list's layout.
+    var onSpread: ((Int) -> Void)?
+
+    /// How the pouch first appears: unfolding from shut, or, coming back from
+    /// the list, already open with the cards gathering back into the pocket.
+    enum Entrance { case unfold, gather }
 
     @State private var index: Int
     @State private var openness: CGFloat
@@ -32,6 +39,9 @@ struct PouchView: View {
     @State private var lift: CGFloat = 0
     /// The out-of-pocket stack being swiped (width) or pulled down (height).
     @State private var swipe: CGSize = .zero
+    /// 0 with the cards stacked, 1 with them laid out like the list.
+    @State private var spread: CGFloat = 0
+    private let entrance: Entrance
 
     @StateObject private var tilt = TiltMonitor()
     @ObservedObject private var learning = LearningStore.shared
@@ -40,13 +50,20 @@ struct PouchView: View {
 
     private enum DragMode { case none, opening, forward, backward }
 
-    init(packName: String, verses: [Verse], startIndex: Int, onClose: @escaping (Int) -> Void = { _ in }) {
+    init(packName: String, verses: [Verse], startIndex: Int, entrance: Entrance = .unfold,
+         onClose: @escaping (Int) -> Void = { _ in }, onSpread: ((Int) -> Void)? = nil) {
         self.packName = packName
         self.verses = verses
         self.onClose = onClose
+        self.onSpread = onSpread
+        self.entrance = entrance
         _index = State(initialValue: min(max(startIndex, 0), verses.count))
-        // Starts shut and unfolds on appear, unless motion is reduced.
-        _openness = State(initialValue: AppMotion.reduceMotion ? 1 : 0)
+        let reduce = AppMotion.reduceMotion
+        // Unfolding starts shut; gathering starts open with the cards still
+        // laid out as the list had them.
+        _openness = State(initialValue: entrance == .gather || reduce ? 1 : 0)
+        _lift = State(initialValue: entrance == .gather && !reduce ? 1 : 0)
+        _spread = State(initialValue: entrance == .gather && !reduce ? 1 : 0)
     }
 
     var body: some View {
@@ -59,6 +76,9 @@ struct PouchView: View {
                 let handWidth = min(geo.size.width - 2 * AppLayout.screenMargin, 600)
                 let handHeight = handWidth / PouchMetrics.cardAspect
                 let handCenter = CGPoint(x: geo.size.width / 2, y: max(handHeight / 2 + 24, geo.size.height * 0.4))
+                // The list centres the current card in the space under its top
+                // bar, which is about where this area is.
+                let listCenter = CGPoint(x: geo.size.width / 2, y: geo.size.height / 2 - 24)
 
                 ZStack {
                 PouchScene(openness: openness, turn: turn, lift: lift, m: m,
@@ -90,12 +110,14 @@ struct PouchView: View {
                     }
                     .accessibilityAction(named: openness < 1 ? "Open the pouch" : "Fold the pouch") { toggleFold() }
                     .accessibilityAction(named: "Take the cards out") { takeOut() }
+                    .accessibilityAction(named: "Show as list") { showList() }
 
-                LiftedDeck(lift: lift,
+                LiftedDeck(lift: lift, spread: spread,
                            pocketCenter: CGPoint(x: geo.size.width / 2, y: sceneTop + m.halfHeight + m.cardFrame.midY),
                            handCenter: handCenter,
                            pocketWidth: m.cardWidth, handWidth: handWidth,
-                           front: deckCard(index), next: deckCard(index + 1),
+                           listCenter: listCenter, listPitch: handHeight + AppLayout.spacing,
+                           previous: deckCard(index - 1), front: deckCard(index), next: deckCard(index + 1),
                            edges: min(5, Int((Double(max(verses.count - index - 1, 0)) / 8).rounded(.up))),
                            swipe: swipe,
                            face: { cardFace($0, width: $1) })
@@ -120,6 +142,7 @@ struct PouchView: View {
                         }
                     }
                     .accessibilityAction(named: "Put the cards back") { putBack() }
+                    .accessibilityAction(named: "Show as list") { showList() }
                     .accessibilityHidden(lift == 0)
                 }
             }
@@ -128,9 +151,20 @@ struct PouchView: View {
         .background(Color(.systemGroupedBackground).ignoresSafeArea())
         .onAppear {
             tilt.start()
+            if spread > 0 {
+                // Back from the list: the cards close up into a stack, then
+                // slide down into the pocket.
+                withAnimation(.snappy(duration: 0.4), completionCriteria: .logicallyComplete) {
+                    spread = 0
+                } completion: {
+                    withAnimation(.snappy(duration: 0.45)) { lift = 0 }
+                }
+                return
+            }
             guard openness < 1 else { return }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-                withAnimation(.smooth(duration: 0.75)) { openness = 1 }
+            // Quick to start, and any tap takes it straight to open.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                withAnimation(.smooth(duration: 0.6)) { openness = 1 }
             }
         }
         .onDisappear {
@@ -163,6 +197,12 @@ struct PouchView: View {
                 }
                 .accessibilityLabel("Close")
                 Spacer()
+                if onSpread != nil {
+                    Button { showList() } label: {
+                        Image(systemName: "list.bullet").studyChromeCircleButton()
+                    }
+                    .accessibilityLabel("Show as list")
+                }
                 Button { toggleFold() } label: {
                     Image(systemName: openness < 1 ? "book" : "book.closed").studyChromeCircleButton()
                 }
@@ -198,7 +238,10 @@ struct PouchView: View {
 
     private var hintText: String {
         if openness < 1 { return "Tap the pouch to open it" }
-        if lift > 0 { return "Swipe to flip through · pull down to put them back" }
+        if lift > 0 {
+            return onSpread == nil ? "Swipe to flip through · pull down to put them back"
+                                   : "Swipe to flip · up for the list · down to put back"
+        }
         return "Swipe up to turn a card · hold to take the cards out"
     }
 
@@ -258,6 +301,22 @@ struct PouchView: View {
         withAnimation(AppMotion.reduceMotion ? .easeInOut(duration: 0.2) : .snappy(duration: 0.5)) { lift = 1 }
     }
 
+    /// Lays the cards out like the list, then hands over to it. From the pouch
+    /// this takes the cards out and spreads them in one movement.
+    private func showList() {
+        guard let onSpread, openness == 1, turning == nil else { return }
+        let current = min(index, verses.count - 1)
+        guard verses.indices.contains(current) else { return }
+        if index >= verses.count { index = current }
+        HapticEngine.light()
+        if AppMotion.reduceMotion { onSpread(current); return }
+        withAnimation(.snappy(duration: 0.5), completionCriteria: .logicallyComplete) {
+            lift = 1
+            spread = 1
+            swipe = .zero
+        } completion: { onSpread(current) }
+    }
+
     private func putBack() {
         guard lift == 1 else { return }
         HapticEngine.light()
@@ -299,6 +358,7 @@ struct PouchView: View {
                 let dx = value.translation.width, dy = value.translation.height
                 let flick = value.predictedEndTranslation.width
                 if dy > 90, dy > abs(dx) { putBack(); return }
+                if dy < -90, -dy > abs(dx), onSpread != nil { showList(); return }
                 if dx < -70 || flick < -220, index < verses.count { deckNext(width: width); return }
                 if dx > 70 || flick > 220, index > 0 { deckPrevious(width: width); return }
                 withAnimation(.snappy(duration: 0.3)) { swipe = .zero }
