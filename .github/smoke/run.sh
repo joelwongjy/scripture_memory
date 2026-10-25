@@ -23,6 +23,15 @@ tour() {   # tour SUFFIX
   tap_xy "$cx" "$low" 1.5; shot "$s-turned-twice" 0
   tap_xy "$cx" "$hi" 1.5; shot "$s-turned-back" 0
   record_stop
+  # Hold to take the cards out, flip through them, put them back.
+  record_start "$s-cards-out"
+  axe swipe --start-x "$cx" --start-y "$low" --end-x "$cx" --end-y "$((low + 1))" --duration 0.9 --udid "$UDID" > /dev/null; sleep 1.2
+  shot "$s-cards-out" 0
+  axe swipe --start-x "$((cx + 120))" --start-y "$((cy - 60))" --end-x "$((cx - 160))" --end-y "$((cy - 60))" --duration 0.3 --udid "$UDID" > /dev/null; sleep 1
+  shot "$s-cards-next" 0
+  axe swipe --start-x "$cx" --start-y "$((cy - 80))" --end-x "$cx" --end-y "$((cy + 160))" --duration 0.4 --udid "$UDID" > /dev/null; sleep 1.2
+  shot "$s-cards-back-in" 0
+  record_stop
   record_start "$s-fold"
   tap_label "Fold the pouch" "" 0.3; shot "$s-folding" 0
   sleep 1.5; shot "$s-folded" 0
