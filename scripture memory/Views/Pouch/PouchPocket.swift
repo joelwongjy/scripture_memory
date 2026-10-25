@@ -191,16 +191,19 @@ func mouthOutline(_ m: PouchMetrics, width: CGFloat) -> [CGPoint] {
     let rc = m.mouthCorner, y = m.foldGap
     let left = m.rim, right = width - m.rim
     func quad(_ a: CGPoint, _ c: CGPoint, _ b: CGPoint) -> [CGPoint] {
-        (0...12).map { i in
-            let t = CGFloat(i) / 12, u = 1 - t
-            return CGPoint(x: u * u * a.x + 2 * u * t * c.x + t * t * b.x,
-                           y: u * u * a.y + 2 * u * t * c.y + t * t * b.y)
+        (0...12).map { (i: Int) -> CGPoint in
+            let t = CGFloat(i) / 12
+            let u: CGFloat = 1 - t
+            let x: CGFloat = u * u * a.x + 2 * u * t * c.x + t * t * b.x
+            let y: CGFloat = u * u * a.y + 2 * u * t * c.y + t * t * b.y
+            return CGPoint(x: x, y: y)
         }
     }
-    return quad(CGPoint(x: left, y: y + rc), CGPoint(x: left, y: y), CGPoint(x: left + rc, y: y))
-        + mouthPoints(width: width, y: y, notchWidth: m.notchWidth, notchDepth: m.notchDepth,
-                      from: left + rc + 2, to: right - rc - 2)
-        + quad(CGPoint(x: right - rc, y: y), CGPoint(x: right, y: y), CGPoint(x: right, y: y + rc))
+    var points = quad(CGPoint(x: left, y: y + rc), CGPoint(x: left, y: y), CGPoint(x: left + rc, y: y))
+    points += mouthPoints(width: width, y: y, notchWidth: m.notchWidth, notchDepth: m.notchDepth,
+                          from: left + rc + 2, to: right - rc - 2)
+    points += quad(CGPoint(x: right - rc, y: y), CGPoint(x: right, y: y), CGPoint(x: right, y: y + rc))
+    return points
 }
 
 /// `points` moved `distance` into the pocket's front layer, along each point's
@@ -213,7 +216,8 @@ func offsetIntoPanel(_ points: [CGPoint], by distance: CGFloat) -> [CGPoint] {
         let dx = b.x - a.x, dy = b.y - a.y
         let len = max(hypot(dx, dy), 0.0001)
         // Travelling left to right with the panel below: the right-hand normal.
-        return CGPoint(x: points[i].x - dy / len * distance, y: points[i].y + dx / len * distance)
+        let nx: CGFloat = -dy / len, ny: CGFloat = dx / len
+        return CGPoint(x: points[i].x + nx * distance, y: points[i].y + ny * distance)
     }
 }
 
