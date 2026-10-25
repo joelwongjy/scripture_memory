@@ -1,0 +1,47 @@
+[04:43:01] Booting 9D9BF050-F6F5-4D32-84C0-4B7AC57F63EF:     iPad mini (A17 Pro) (9D9BF050-F6F5-4D32-84C0-4B7AC57F63EF) (Shutdown) 
+[04:47:28] tap '=Packs' at 329 54
+[04:47:44] tap 'TMS 60' at 281 260
+[04:48:01] shot 01-light-pack
+[04:48:03] recording 02-light-open-and-turn
+[04:48:16] tap 'Open in pouch' at 166 66
+[04:48:25] shot 03-light-pouch-closed
+[04:48:32] shot 04-light-pouch-opening
+[04:48:40] shot 05-light-pouch-open
+[04:48:59] shot 06-light-turned-forward
+[04:49:05] tap 372,803
+[04:49:13] shot 07-light-turned-twice
+[04:49:19] tap 372,393
+[04:49:30] shot 08-light-turned-back
+[04:49:31] stopped 02-light-open-and-turn
+[04:49:33] recording 09-light-fold
+[04:49:46] tap 'Fold the pouch' at 706 66
+[04:50:09] shot 10-light-folding
+[04:50:19] shot 11-light-folded
+[04:50:29] tap 'Open the pouch' at 706 66
+[04:50:33] stopped 09-light-fold
+[04:50:40] tap '=Close' at 114 66
+[04:50:47] shot 12-light-back-on-pack
+[04:50:58] tap '=Close' at 114 66
+[04:51:24] tap '=Packs' at 329 54
+[04:51:33] tap 'TMS 60' at 281 260
+[04:51:42] shot 13-dark-pack
+[04:51:43] recording 14-dark-open-and-turn
+[04:51:50] tap 'Open in pouch' at 166 66
+[04:51:57] shot 15-dark-pouch-closed
+[04:52:02] shot 16-dark-pouch-opening
+[04:52:09] shot 17-dark-pouch-open
+[04:52:25] shot 18-dark-turned-forward
+[04:52:29] tap 372,803
+[04:52:35] shot 19-dark-turned-twice
+[04:52:42] tap 372,393
+[04:52:48] shot 20-dark-turned-back
+[04:52:50] stopped 14-dark-open-and-turn
+[04:52:51] recording 21-dark-fold
+[04:53:03] tap 'Fold the pouch' at 706 66
+[04:53:12] shot 22-dark-folding
+[04:53:20] shot 23-dark-folded
+[04:53:32] tap 'Open the pouch' at 706 66
+[04:53:36] stopped 21-dark-fold
+[04:53:49] tap '=Close' at 114 66
+[04:54:03] shot 24-dark-back-on-pack
+[04:54:17] tap '=Close' at 114 66
