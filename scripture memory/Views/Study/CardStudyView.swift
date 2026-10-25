@@ -39,6 +39,8 @@ struct CardStudyView: View {
     @State private var jumpLabelShown = false
     /// Pending "marked complete" undo prompt.
     @State private var undoToastState: UndoToastState?
+    /// The pack shown as the physical pouch.
+    @State private var showsPouch = false
     private static let vScrollSpace = "verticalScrollCards"
     /// Space above the first card and below the last in the read list.
     private static let listInset: CGFloat = 12
@@ -241,6 +243,12 @@ struct CardStudyView: View {
         .speechErrorAlert(speech)
         .tracksStudyScreen()
         // Remember the card you were on, so reopening this pack lands there.
+        .fullScreenCover(isPresented: $showsPouch) {
+            PouchView(packName: vm.packName, verses: vm.verses,
+                      startIndex: vm.isReviewMode ? vm.currentIndex : visibleListIndex) { i in
+                vm.currentIndex = i
+            }
+        }
         .onDisappear {
             let i = vm.isReviewMode ? vm.currentIndex : visibleListIndex
             if vm.verses.indices.contains(i) { PackPositions.save(vm.verses[i], inPack: vm.packName) }
@@ -305,6 +313,19 @@ struct CardStudyView: View {
                         .studyChromeCircleButton()
                 }
                 .accessibilityLabel(returnsToRead ? "Back to reading" : "Close")
+
+                // The pack as the physical pouch. Balances the two toggles on
+                // the right so the title stays centred.
+                if !isEditing {
+                    Button {
+                        HapticEngine.light()
+                        showsPouch = true
+                    } label: {
+                        Image(systemName: "rectangle.split.1x2")
+                            .studyChromeCircleButton()
+                    }
+                    .accessibilityLabel("Open in pouch")
+                }
 
                 Spacer()
 
