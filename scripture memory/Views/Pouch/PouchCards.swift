@@ -83,63 +83,6 @@ struct PouchVerseCard: View {
     private var reference: String { "\(verse.book) \(verse.reference)" }
 }
 
-/// The pack's cover card: what shows through the plastic when the pouch is shut.
-/// Our own layout in the spirit of the printed covers (big green count), without
-/// copying any publisher's artwork or wording.
-struct PouchCoverCard: View {
-    let packName: String
-    let verseCount: Int
-    let edition: String
-    let width: CGFloat
-
-    var body: some View {
-        let u = width / 100
-        VStack(alignment: .leading, spacing: 0) {
-            Text(series)
-                .font(.system(size: 4.4 * u, weight: .medium))
-                .foregroundStyle(Color(white: 0.2))
-                .padding(.top, 7 * u)
-            HStack(alignment: .center, spacing: 3 * u) {
-                Text("\(verseCount)")
-                    .font(.system(size: 30 * u, weight: .regular, design: .rounded))
-                    .foregroundStyle(PouchInk.green)
-                    .minimumScaleFactor(0.5)
-                    .lineLimit(1)
-                VStack(alignment: .leading, spacing: 1.6 * u) {
-                    Text(edition)
-                        .font(.system(size: 4 * u, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 2.2 * u)
-                        .padding(.vertical, 0.8 * u)
-                        .background(PouchInk.green.opacity(0.85), in: RoundedRectangle(cornerRadius: 1.2 * u))
-                    Text("verses")
-                        .font(.system(size: 9.5 * u, weight: .semibold, design: .rounded))
-                        .foregroundStyle(PouchInk.green)
-                }
-            }
-            Spacer(minLength: 0)
-            Text(packName)
-                .font(.system(size: 3.6 * u, weight: .semibold))
-                .foregroundStyle(Color(white: 0.25))
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 4 * u)
-                .padding(.vertical, 2.4 * u)
-                .background(PouchInk.mint)
-                .padding(.horizontal, -4 * u)
-                .padding(.bottom, 3 * u)
-        }
-        .padding(.horizontal, 8 * u)
-        .frame(width: width, height: width / PouchMetrics.cardAspect, alignment: .topLeading)
-        .background(PaperFace(tint: .white))
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(packName) cover, \(verseCount) verses")
-    }
-
-    private var series: String {
-        packName.hasPrefix("TMS") ? "Topical Memory System" : "Scripture Memory"
-    }
-}
-
 /// The last card in the pack, behind the final verse: what the pack is, and
 /// how far you've come.
 struct PouchBackPageCard: View {

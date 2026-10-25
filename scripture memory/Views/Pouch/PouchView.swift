@@ -51,9 +51,8 @@ struct PouchView: View {
                 PouchScene(openness: openness, turn: turn, m: m,
                            style: PlasticStyle(colorScheme), slots: slots, tilt: tilt.roll,
                            face: { cardFace($0, width: m.cardWidth) },
-                           cover: { PouchCoverCard(packName: packName, verseCount: verses.count,
-                                                   edition: BibleVersion.saved().displayName,
-                                                   width: m.cardWidth) })
+                           cover: { PackCover(pack: pack, cornerRadius: 2, showsShadow: false)
+                                        .frame(width: m.cardWidth) })
                     .frame(width: geo.size.width, height: geo.size.height)
                     .contentShape(Rectangle())
                     .onTapGesture(coordinateSpace: .local) { point in
@@ -146,6 +145,12 @@ struct PouchView: View {
     }
 
     // MARK: - State
+
+    /// The pack itself, for its cover: the same cover the pack grid shows.
+    private var pack: Pack {
+        BibleVersion.saved().packs.first { $0.name == packName }
+            ?? Pack(name: packName, color: "#8E8E93", accentText: "", verses: verses)
+    }
 
     private var slots: PouchSlots {
         func card(_ i: Int) -> PouchSlots.Card {

@@ -6,7 +6,8 @@ import SwiftUI
 /// pocket whose mouth faces the fold, with a U-shaped thumb notch so you can
 /// push the front card out. `halfHeight` is one half, hinge to outer edge.
 struct PouchMetrics {
-    static let cardAspect: CGFloat = 1.58          // the printed card, 3⅜ × 2⅛ in
+    /// The app's card shape everywhere (the pack covers are drawn for it too).
+    static let cardAspect: CGFloat = AppLayout.cardAspect
 
     let pouchWidth: CGFloat
     let cardWidth: CGFloat
@@ -40,6 +41,16 @@ struct PouchMetrics {
         notchWidth = cardWidth * 0.42
         notchDepth = cardHeight * 0.20
         corner     = rim * 2.4
+    }
+
+    /// How far the sides pinch in at `y` (distance from the fold). The real
+    /// sleeve is crimped down each side, and the crimp draws the sides in where
+    /// the plastic bends, so the outline narrows at the fold.
+    func pinch(at y: CGFloat) -> CGFloat {
+        let reach = foldGap * 1.8
+        guard y < reach else { return 0 }
+        let t = max(0, y) / reach
+        return rim * 0.9 * (1 - t * t * (3 - 2 * t))
     }
 
     /// The front card's frame inside a half drawn mouth-up (hinge at y = 0).
@@ -82,36 +93,73 @@ struct PlasticStyle {
 /// The sleeve's back sheet for one half: square along the fold, rounded at the
 /// outer corners.
 struct HalfSheetShape: Shape {
-    let corner: CGFloat
+    let m: PouchMetrics
     func path(in r: CGRect) -> Path {
-        Path { p in
-            p.move(to: CGPoint(x: r.minX, y: r.minY))
-            p.addLine(to: CGPoint(x: r.maxX, y: r.minY))
-            p.addLine(to: CGPoint(x: r.maxX, y: r.maxY - corner))
+        let corner = m.corner
+        return Path { p in
+            p.addLines(sidePoints(m, x: r.maxX, inward: -1, inset: 0, to: r.maxY - corner))
             p.addQuadCurve(to: CGPoint(x: r.maxX - corner, y: r.maxY), control: CGPoint(x: r.maxX, y: r.maxY))
             p.addLine(to: CGPoint(x: r.minX + corner, y: r.maxY))
             p.addQuadCurve(to: CGPoint(x: r.minX, y: r.maxY - corner), control: CGPoint(x: r.minX, y: r.maxY))
+            // addLine, not addLines: addLines would start a new subpath here.
+            for pt in sidePoints(m, x: r.minX, inward: 1, inset: 0, to: r.maxY - corner).reversed() { p.addLine(to: pt) }
             p.closeSubpath()
         }
     }
 }
 
+/// One side edge from the fold down to `bottom`, pinched in near the fold.
+/// `inward` is +1 for the left side, -1 for the right.
+func sidePoints(_ m: PouchMetrics, x: CGFloat, inward: CGFloat, inset: CGFloat, to bottom: CGFloat) -> [CGPoint] {
+    var pts: [CGPoint] = []
+    var y: CGFloat = 0
+    while y < bottom {
+        pts.append(CGPoint(x: x + inward * (inset + m.pinch(at: y)), y: y))
+        y += y < m.foldGap * 2 ? 1.5 : 12
+    }
+    pts.append(CGPoint(x: x + inward * inset, y: bottom))
+    return pts
+}
+
 /// The welded rim: down one side, along the outer edge, up the other. Open at
 /// the fold, so it carries straight on into the other half.
 struct RimShape: Shape {
-    let corner: CGFloat
+    let m: PouchMetrics
     let inset: CGFloat
     func path(in rect: CGRect) -> Path {
-        let r = rect.insetBy(dx: inset, dy: 0)
-        let c = max(0, corner - inset)
+        let c = max(0, m.corner - inset)
+        let bottom = rect.maxY - inset
         return Path { p in
-            p.move(to: CGPoint(x: r.minX, y: r.minY))
-            p.addLine(to: CGPoint(x: r.minX, y: r.maxY - inset - c))
-            p.addQuadCurve(to: CGPoint(x: r.minX + c, y: r.maxY - inset), control: CGPoint(x: r.minX, y: r.maxY - inset))
-            p.addLine(to: CGPoint(x: r.maxX - c, y: r.maxY - inset))
-            p.addQuadCurve(to: CGPoint(x: r.maxX, y: r.maxY - inset - c), control: CGPoint(x: r.maxX, y: r.maxY - inset))
-            p.addLine(to: CGPoint(x: r.maxX, y: r.minY))
+            p.addLines(sidePoints(m, x: rect.minX, inward: 1, inset: inset, to: bottom - c))
+            p.addQuadCurve(to: CGPoint(x: rect.minX + inset + c, y: bottom), control: CGPoint(x: rect.minX + inset, y: bottom))
+            p.addLine(to: CGPoint(x: rect.maxX - inset - c, y: bottom))
+            p.addQuadCurve(to: CGPoint(x: rect.maxX - inset, y: bottom - c), control: CGPoint(x: rect.maxX - inset, y: bottom))
+            for pt in sidePoints(m, x: rect.maxX, inward: -1, inset: inset, to: bottom - c).reversed() { p.addLine(to: pt) }
         }
+    }
+}
+
+/// The crimp down each side: fine parallel ridges pressed into the weld,
+/// following the side's pinch at the fold.
+struct SideCrimp: View {
+    let m: PouchMetrics
+    let style: PlasticStyle
+
+    var body: some View {
+        Canvas { ctx, size in
+            let bottom = size.height - m.corner
+            let ridges = 4
+            for k in 1...ridges {
+                let inset = m.rim * CGFloat(k) / CGFloat(ridges + 1)
+                for (x, inward) in [(CGFloat(0), CGFloat(1)), (size.width, CGFloat(-1))] {
+                    var line = Path()
+                    line.addLines(sidePoints(m, x: x, inward: inward, inset: inset, to: bottom))
+                    ctx.stroke(line.offsetBy(dx: inward * 0.5, dy: 0), with: .color(style.edgeShade), lineWidth: 0.5)
+                    ctx.stroke(line, with: .color(style.edgeLight.opacity(0.75)), lineWidth: 0.6)
+                }
+            }
+        }
+        .allowsHitTesting(false)
     }
 }
 
@@ -228,7 +276,7 @@ struct PouchPocket<Card: View>: View {
         let size = CGSize(width: m.pouchWidth, height: m.halfHeight)
         let frame = m.cardFrame
         ZStack(alignment: .topLeading) {
-            HalfSheetShape(corner: m.corner).fill(style.tint)
+            HalfSheetShape(m: m).fill(style.tint)
 
             // The fold: the sheet bends here, darker into the crease with a
             // bright line right on it.
@@ -278,11 +326,13 @@ struct PouchPocket<Card: View>: View {
             EmbossedBand(m: m, color: style.emboss, shade: style.embossShade)
 
             // The weld along the sides and outer edge, over everything.
-            RimShape(corner: m.corner, inset: m.rim / 2).stroke(style.rim, lineWidth: m.rim)
-            RimShape(corner: m.corner, inset: m.rim).stroke(style.edgeShade.opacity(0.7), lineWidth: 0.6)
-            RimShape(corner: m.corner, inset: 0.5).stroke(style.edgeLight.opacity(0.8), lineWidth: 0.8)
+            RimShape(m: m, inset: m.rim / 2).stroke(style.rim, lineWidth: m.rim)
+            SideCrimp(m: m, style: style)
+            RimShape(m: m, inset: m.rim).stroke(style.edgeShade.opacity(0.7), lineWidth: 0.6)
+            RimShape(m: m, inset: 0.5).stroke(style.edgeLight.opacity(0.8), lineWidth: 0.8)
         }
         .frame(width: size.width, height: size.height, alignment: .topLeading)
+        .clipShape(HalfSheetShape(m: m))
     }
 }
 
@@ -295,7 +345,7 @@ struct PouchExterior<Card: View>: View {
 
     var body: some View {
         // Its top edge is the fold, so square there and no weld.
-        let shape = HalfSheetShape(corner: m.corner)
+        let shape = HalfSheetShape(m: m)
         let frame = m.cardFrame
         ZStack(alignment: .topLeading) {
             shape.fill(style.tint)
@@ -320,10 +370,12 @@ struct PouchExterior<Card: View>: View {
             LinearGradient(colors: [style.crease, .clear], startPoint: .top,
                            endPoint: UnitPoint(x: 0.5, y: m.foldGap / m.halfHeight * 0.8))
             Rectangle().fill(style.edgeLight.opacity(0.8)).frame(height: 1)
-            RimShape(corner: m.corner, inset: m.rim / 2).stroke(style.rim, lineWidth: m.rim)
-            RimShape(corner: m.corner, inset: m.rim).stroke(style.edgeShade.opacity(0.7), lineWidth: 0.6)
-            RimShape(corner: m.corner, inset: 0.5).stroke(style.edgeLight.opacity(0.8), lineWidth: 0.8)
+            RimShape(m: m, inset: m.rim / 2).stroke(style.rim, lineWidth: m.rim)
+            SideCrimp(m: m, style: style)
+            RimShape(m: m, inset: m.rim).stroke(style.edgeShade.opacity(0.7), lineWidth: 0.6)
+            RimShape(m: m, inset: 0.5).stroke(style.edgeLight.opacity(0.8), lineWidth: 0.8)
         }
         .frame(width: m.pouchWidth, height: m.halfHeight, alignment: .topLeading)
+        .clipShape(shape)
     }
 }
