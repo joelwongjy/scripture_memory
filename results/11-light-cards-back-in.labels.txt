@@ -1,0 +1,256 @@
+Application | Scripture Memory |  | 0,0 744x1133
+                    RadioButton | Home |  | 211,36 78x36
+                      RadioButton | Home |  | 211,36 78x36
+                    RadioButton | Packs | 1 | 290,36 78x36
+                      RadioButton | Packs | 1 | 290,36 78x36
+                    RadioButton | Quiz | 1 | 368,36 68x36
+                      RadioButton | Quiz | 1 | 368,36 68x36
+                    RadioButton | Settings |  | 436,36 97x36
+                      RadioButton | Settings |  | 436,36 97x36
+                              Group | Organize packs |  | 694,36 36x36
+                                  Button | Organize packs |  | 695,36 34x36
+                              Heading | Packs |  | 20,90 94x41
+                              TextField |  | Search verses | 20,139 704x44
+                                Image | Search |  | 32,152 20x18
+                                          Button | 5 Assurances, 5 cards |  | 16,210 166x100
+                                            Button | 5 Assurances, 5 cards, Growing in, CHRIST, Series, Current pack, Current pack |  | 16,210 166x100
+                                              StaticText | 5 Assurances |  | 29,219 71x14
+                                              StaticText | 5 cards |  | 26,299 20x7
+                                              StaticText | Growing in |  | 149,286 24x5
+                                              StaticText | CHRIST |  | 137,291 35x10
+                                              StaticText | Series |  | 159,300 13x5
+                                              Image | Current pack |  | 115,223 6x10
+                                              StaticText | Current pack |  | 126,222 40x12
+                                          Button | TMS 60, 60 cards |  | 198,210 166x100
+                                            Button | 주제별 성경암송, 60, 개역한글판, 구절, TO KNOW CHRIST AND TO MAKE HIM KNOWN, 네비게이토, 출판사 |  | 198,210 166x100
+                                              StaticText | 주제별 성경암송 |  | 224,219 63x12
+                                              StaticText | 60 |  | 224,236 59x56
+                                              StaticText | 개역한글판 |  | 290,241 30x8
+                                              StaticText | 구절 |  | 286,253 52x36
+                                              StaticText | TO KNOW CHRIST AND TO MAKE HIM KNOWN |  | 203,301 100x5
+                                              StaticText | 네비게이토 |  | 315,300 22x6
+                                              Image | Do Not Disturb |  | 339,301 4x4
+                                              StaticText | 출판사 |  | 346,300 13x6
+                                          Button | DEP 1: Assurance of Salvation, 18 cards |  | 380,210 166x100
+                                            Button | 1. Assurance of Salvation, 242, 242, 242, 242, 242, 242, 242, 242, 242, DEP, NIV, THE NAVIGATORS, 18 cards |  | 380,210 166x100
+                                              StaticText | 1. Assurance of Salvation |  | 394,219 134x15
+                                              StaticText | 242 |  | 469,269 62x37
+                                              StaticText | 242 |  | 470,269 62x37
+                                              StaticText | 242 |  | 471,269 62x37
+                                              StaticText | 242 |  | 469,269 62x37
+                                              StaticText | 242 |  | 471,269 62x37
+                                              StaticText | 242 |  | 469,270 62x37
+                                              StaticText | 242 |  | 470,270 62x37
+                                              StaticText | 242 |  | 471,270 62x37
+                                              StaticText | 242 |  | 470,269 62x37
+                                              StaticText | DEP |  | 463,255 41x25
+                                              StaticText | NIV |  | 519,267 11x8
+                                              Image | Do Not Disturb |  | 394,289 5x5
+                                              StaticText | THE NAVIGATORS |  | 402,288 52x7
+                                              StaticText | 18 cards |  | 394,296 20x6
+                                          Button | DEP 2: Quiet Time, 26 cards |  | 562,210 166x100
+                                            Button | 2. Quiet Time, 242, 242, 242, 242, 242, 242, 242, 242, 242, DEP, NIV, THE NAVIGATORS, 26 cards |  | 562,210 166x100
+                                              StaticText | 2. Quiet Time |  | 576,219 71x15
+                                              StaticText | 242 |  | 651,269 62x37
+                                              StaticText | 242 |  | 652,269 62x37
+                                              StaticText | 242 |  | 653,269 62x37
+                                              StaticText | 242 |  | 651,269 62x37
+                                              StaticText | 242 |  | 653,269 62x37
+                                              StaticText | 242 |  | 651,270 62x37
+                                              StaticText | 242 |  | 652,270 62x37
+                                              StaticText | 242 |  | 653,270 62x37
+                                              StaticText | 242 |  | 652,269 62x37
+                                              StaticText | DEP |  | 645,255 41x25
+                                              StaticText | NIV |  | 701,267 11x8
+                                              Image | Do Not Disturb |  | 576,289 5x5
+                                              StaticText | THE NAVIGATORS |  | 584,288 52x7
+                                              StaticText | 26 cards |  | 576,296 21x6
+                                          Button | DEP 3: The Word, 37 cards |  | 16,325 166x100
+                                            Button | 3. The Word, 242, 242, 242, 242, 242, 242, 242, 242, 242, DEP, NIV, THE NAVIGATORS, 37 cards |  | 16,325 166x100
+                                              StaticText | 3. The Word |  | 30,334 65x15
+                                              StaticText | 242 |  | 105,384 62x37
+                                              StaticText | 242 |  | 106,384 62x37
+                                              StaticText | 242 |  | 107,384 62x37
+                                              StaticText | 242 |  | 105,385 62x37
+                                              StaticText | 242 |  | 107,385 62x37
+                                              StaticText | 242 |  | 105,386 62x37
+                                              StaticText | 242 |  | 106,386 62x37
+                                              StaticText | 242 |  | 107,386 62x37
+                                              StaticText | 242 |  | 106,385 62x37
+                                              StaticText | DEP |  | 99,370 41x25
+                                              StaticText | NIV |  | 155,382 11x8
+                                              Image | Do Not Disturb |  | 30,405 5x5
+                                              StaticText | THE NAVIGATORS |  | 38,404 52x7
+                                              StaticText | 37 cards |  | 30,412 21x6
+                                          Button | DEP 4: Prayer, 32 cards |  | 198,325 166x100
+                                            Button | 4. Prayer, 242, 242, 242, 242, 242, 242, 242, 242, 242, DEP, NIV, THE NAVIGATORS, 32 cards |  | 198,325 166x100
+                                              StaticText | 4. Prayer |  | 212,334 48x15
+                                              StaticText | 242 |  | 287,384 62x37
+                                              StaticText | 242 |  | 288,384 62x37
+                                              StaticText | 242 |  | 289,384 62x37
+                                              StaticText | 242 |  | 287,385 62x37
+                                              StaticText | 242 |  | 289,385 62x37
+                                              StaticText | 242 |  | 287,386 62x37
+                                              StaticText | 242 |  | 288,386 62x37
+                                              StaticText | 242 |  | 289,386 62x37
+                                              StaticText | 242 |  | 288,385 62x37
+                                              StaticText | DEP |  | 281,370 41x25
+                                              StaticText | NIV |  | 337,382 11x8
+                                              Image | Do Not Disturb |  | 212,405 5x5
+                                              StaticText | THE NAVIGATORS |  | 220,404 52x7
+                                              StaticText | 32 cards |  | 212,412 21x6
+                                          Button | DEP 5: Fellowship, 30 cards |  | 380,325 166x100
+                                            Button | 5. Fellowship, 242, 242, 242, 242, 242, 242, 242, 242, 242, DEP, NIV, THE NAVIGATORS, 30 cards |  | 380,325 166x100
+                                              StaticText | 5. Fellowship |  | 394,334 70x15
+                                              StaticText | 242 |  | 469,384 62x37
+                                              StaticText | 242 |  | 470,384 62x37
+                                              StaticText | 242 |  | 471,384 62x37
+                                              StaticText | 242 |  | 469,385 62x37
+                                              StaticText | 242 |  | 471,385 62x37
+                                              StaticText | 242 |  | 469,386 62x37
+                                              StaticText | 242 |  | 470,386 62x37
+                                              StaticText | 242 |  | 471,386 62x37
+                                              StaticText | 242 |  | 470,385 62x37
+                                              StaticText | DEP |  | 463,370 41x25
+                                              StaticText | NIV |  | 519,382 11x8
+                                              Image | Do Not Disturb |  | 394,405 5x5
+                                              StaticText | THE NAVIGATORS |  | 402,404 52x7
+                                              StaticText | 30 cards |  | 394,412 21x6
+                                          Button | DEP 6: Witnessing, 55 cards |  | 562,325 166x100
+                                            Button | 6. Witnessing, 242, 242, 242, 242, 242, 242, 242, 242, 242, DEP, NIV, THE NAVIGATORS, 55 cards |  | 562,325 166x100
+                                              StaticText | 6. Witnessing |  | 576,334 73x15
+                                              StaticText | 242 |  | 651,384 62x37
+                                              StaticText | 242 |  | 652,384 62x37
+                                              StaticText | 242 |  | 653,384 62x37
+                                              StaticText | 242 |  | 651,385 62x37
+                                              StaticText | 242 |  | 653,385 62x37
+                                              StaticText | 242 |  | 651,386 62x37
+                                              StaticText | 242 |  | 652,386 62x37
+                                              StaticText | 242 |  | 653,386 62x37
+                                              StaticText | 242 |  | 652,385 62x37
+                                              StaticText | DEP |  | 645,370 41x25
+                                              StaticText | NIV |  | 701,382 11x8
+                                              Image | Do Not Disturb |  | 576,405 5x5
+                                              StaticText | THE NAVIGATORS |  | 584,404 52x7
+                                              StaticText | 55 cards |  | 576,412 21x6
+                                          Button | DEP 7: The Lordship of Christ, 26 cards |  | 16,441 166x100
+                                            Button | 7. The Lordship of Christ, 242, 242, 242, 242, 242, 242, 242, 242, 242, DEP, NIV, THE NAVIGATORS, 26 cards |  | 16,441 166x100
+                                              StaticText | 7. The Lordship of Christ |  | 30,450 131x15
+                                              StaticText | 242 |  | 105,500 62x37
+                                              StaticText | 242 |  | 106,500 62x37
+                                              StaticText | 242 |  | 107,500 62x37
+                                              StaticText | 242 |  | 105,500 62x37
+                                              StaticText | 242 |  | 107,500 62x37
+                                              StaticText | 242 |  | 105,501 62x37
+                                              StaticText | 242 |  | 106,501 62x37
+                                              StaticText | 242 |  | 107,501 62x37
+                                              StaticText | 242 |  | 106,500 62x37
+                                              StaticText | DEP |  | 99,486 41x25
+                                              StaticText | NIV |  | 155,498 11x8
+                                              Image | Do Not Disturb |  | 30,520 5x5
+                                              StaticText | THE NAVIGATORS |  | 38,519 52x7
+                                              StaticText | 26 cards |  | 30,527 21x6
+                                          Button | DEP 8: World Vision, 18 cards |  | 198,441 166x100
+                                            Button | 8. World Vision, 242, 242, 242, 242, 242, 242, 242, 242, 242, DEP, NIV, THE NAVIGATORS, 18 cards |  | 198,441 166x100
+                                              StaticText | 8. World Vision |  | 212,450 80x15
+                                              StaticText | 242 |  | 287,500 62x37
+                                              StaticText | 242 |  | 288,500 62x37
+                                              StaticText | 242 |  | 289,500 62x37
+                                              StaticText | 242 |  | 287,500 62x37
+                                              StaticText | 242 |  | 289,500 62x37
+                                              StaticText | 242 |  | 287,501 62x37
+                                              StaticText | 242 |  | 288,501 62x37
+                                              StaticText | 242 |  | 289,501 62x37
+                                              StaticText | 242 |  | 288,500 62x37
+                                              StaticText | DEP |  | 281,486 41x25
+                                              StaticText | NIV |  | 337,498 11x8
+                                              Image | Do Not Disturb |  | 212,520 5x5
+                                              StaticText | THE NAVIGATORS |  | 220,519 52x7
+                                              StaticText | 18 cards |  | 212,527 20x6
+                                          Button | TMS 180 · Getting to Know God, 36 cards |  | 380,441 166x100
+                                            Button | series 1, Getting to Know God, 네비게이토, 출판사, TO KNOW CHRIST AND TO MAKE HIM KNOWN, 36 cards |  | 380,441 166x100
+                                              StaticText | series 1 |  | 511,449 25x9
+                                              StaticText | Getting to Know God |  | 395,460 141x18
+                                              StaticText | 네비게이토 |  | 390,522 28x8
+                                              Image | Do Not Disturb |  | 420,523 5x5
+                                              StaticText | 출판사 |  | 427,522 17x8
+                                              StaticText | TO KNOW CHRIST AND TO MAKE HIM KNOWN |  | 390,531 84x4
+                                              StaticText | 36 cards |  | 515,529 21x6
+                                          Button | TMS 180 · Growing in Love, 36 cards |  | 562,441 166x100
+                                            Button | series 2, Growing in Love, 네비게이토, 출판사, TO KNOW CHRIST AND TO MAKE HIM KNOWN, 36 cards |  | 562,441 166x100
+                                              StaticText | series 2 |  | 692,449 26x9
+                                              StaticText | Growing in Love |  | 610,460 109x18
+                                              StaticText | 네비게이토 |  | 572,522 28x8
+                                              Image | Do Not Disturb |  | 602,523 5x5
+                                              StaticText | 출판사 |  | 609,522 17x8
+                                              StaticText | TO KNOW CHRIST AND TO MAKE HIM KNOWN |  | 572,531 84x4
+                                              StaticText | 36 cards |  | 697,529 21x6
+                                          Button | TMS 180 · Growing in Faith, 36 cards |  | 16,557 166x100
+                                            Button | series 3, Growing in Faith, 네비게이토, 출판사, TO KNOW CHRIST AND TO MAKE HIM KNOWN, 36 cards |  | 16,557 166x100
+                                              StaticText | series 3 |  | 146,565 27x9
+                                              StaticText | Growing in Faith |  | 62,576 110x18
+                                              StaticText | 네비게이토 |  | 26,638 28x8
+                                              Image | Do Not Disturb |  | 56,639 5x5
+                                              StaticText | 출판사 |  | 63,638 17x8
+                                              StaticText | TO KNOW CHRIST AND TO MAKE HIM KNOWN |  | 26,647 84x4
+                                              StaticText | 36 cards |  | 151,645 21x6
+                                          Button | TMS 180 · Walking in Victory, 36 cards |  | 198,557 166x100
+                                            Button | series 4, Walking in Victory, 네비게이토, 출판사, TO KNOW CHRIST AND TO MAKE HIM KNOWN, 36 cards |  | 198,557 166x100
+                                              StaticText | series 4 |  | 328,565 27x9
+                                              StaticText | Walking in Victory |  | 231,576 123x18
+                                              StaticText | 네비게이토 |  | 208,638 28x8
+                                              Image | Do Not Disturb |  | 238,639 5x5
+                                              StaticText | 출판사 |  | 245,638 17x8
+                                              StaticText | TO KNOW CHRIST AND TO MAKE HIM KNOWN |  | 208,647 84x4
+                                              StaticText | 36 cards |  | 333,645 21x6
+                                          Button | TMS 180 · Sharing Christ with Others, 36 cards |  | 380,557 166x100
+                                            Button | series 5, Sharing Christ with Others, 네비게이토, 출판사, TO KNOW CHRIST AND TO MAKE HIM KNOWN, 36 cards |  | 380,557 166x100
+                                              StaticText | series 5 |  | 510,565 26x9
+                                              StaticText | Sharing Christ with Others |  | 435,576 101x35
+                                              StaticText | 네비게이토 |  | 390,638 28x8
+                                              Image | Do Not Disturb |  | 420,639 5x5
+                                              StaticText | 출판사 |  | 427,638 17x8
+                                              StaticText | TO KNOW CHRIST AND TO MAKE HIM KNOWN |  | 390,647 84x4
+                                              StaticText | 36 cards |  | 515,645 21x6
+                                      Slider | Vertical scroll bar, 1 page | 0% | 711,146 30x955
+                                      Slider | Vertical scroll bar, 1 page | 0% | 711,146 30x955
+          StaticText | TMS 60 |  | 344,49 56x18
+          StaticText | Card 32 of 60 |  | 332,69 80x14
+          Button | Close |  | 16,44 44x44
+          Button | Show as list |  | 632,44 44x44
+          Button | Fold the pouch |  | 684,44 44x44
+          Slider | Card 32 of 60. His Peace, 1 Peter 5:7. Cast all your anxiety on Him because He cares for you. | nan | 0,100 744x981
+            GenericElement | His Peace, Isaiah 26:3. You will keep in perfect peace him whose mind is steadfast, because he trusts in You. |  | 0,100 744x981
+              StaticText | His Peace |  | 459,487 120x36
+              StaticText | NIV |  | 165,494 28x18
+              StaticText | Isaiah 26:3 |  | 475,455 104x26
+              StaticText | You will keep in perfect peace him whose mind is steadfast, because he trusts in You. |  | 178,395 402x57
+              StaticText | Isaiah 26:3 |  | 165,309 104x27
+              StaticText | C-7 |  | 555,285 24x17
+              StaticText | Rely on God's Resources |  | 386,285 160x17
+            GenericElement | His Peace, 1 Peter 5:7. Cast all your anxiety on Him because He cares for you. |  | 131,627 482x289
+              StaticText | His Peace |  | 165,658 121x36
+              StaticText | NIV |  | 551,669 28x18
+              StaticText | 1 Peter 5:7 |  | 165,700 102x26
+              StaticText | Cast all your anxiety on Him because He cares for you. |  | 165,729 395x57
+              StaticText | 1 Peter 5:7 |  | 477,846 102x26
+              StaticText | C-8 |  | 165,879 26x17
+              StaticText | Rely on God's Resources |  | 198,879 161x17
+          Slider | Card 32 of 60. His Peace, 1 Peter 5:7. Cast all your anxiety on Him because He cares for you. | nan | 0,100 744x981
+            Group | His Provision, Romans 8:32. He who did not spare His own Son, but gave Him up for us all- how will He not also, along with Him, graciously give us all things? |  | 131,627 482x289
+              StaticText | His Provision |  | 165,658 161x35
+              StaticText | NIV |  | 550,669 29x18
+              StaticText | Romans 8:32 |  | 165,699 128x27
+              StaticText | He who did not spare His own Son, but gave Him up for us all- how will He not also, along with Him, graciously give us all things? |  | 165,729 408x116
+              StaticText | Romans 8:32 |  | 451,845 128x27
+              StaticText | C-9 |  | 165,879 24x17
+              StaticText | Rely on God's Resources |  | 197,879 156x17
+            Group | His Peace, 1 Peter 5:7. Cast all your anxiety on Him because He cares for you. |  | 131,627 482x289
+              StaticText | His Peace |  | 165,658 119x35
+              StaticText | NIV |  | 550,669 29x18
+              StaticText | 1 Peter 5:7 |  | 165,699 104x27
+              StaticText | Cast all your anxiety on Him because He cares for you. |  | 165,729 403x58
+              StaticText | 1 Peter 5:7 |  | 475,845 104x27
+              StaticText | C-8 |  | 165,879 24x17
+              StaticText | Rely on God's Resources |  | 197,879 156x17
+          StaticText | Swipe up to turn a card · hold to take the cards out |  | 218,1081 307x16
