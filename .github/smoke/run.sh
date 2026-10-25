@@ -15,7 +15,7 @@ tour() {   # tour SUFFIX
   tap_label "Open in pouch" "" 0.15; shot "$s-pouch-closed" 0
   sleep 0.25; shot "$s-pouch-opening" 0
   sleep 2; shot "$s-pouch-open" 0
-  xy=$(where "Card 30 of 60") || xy=$(where "pouch")
+  xy=$(where "God is not a man")   # the pouch itself: its label is the current card
   cx=${xy% *}; cy=${xy#* }
   if [ "$DEVICE" = ipad ]; then low=$((cy + 230)); reach=$((cy - 260)); hi=$((cy - 180)); else low=$((cy + 140)); reach=$((cy - 170)); hi=$((cy - 110)); fi
   axe swipe --start-x "$cx" --start-y "$low" --end-x "$cx" --end-y "$reach" --duration 1.2 --udid "$UDID" > /dev/null; sleep 1.5
@@ -34,4 +34,6 @@ tour() {   # tour SUFFIX
 
 tour light
 xcrun simctl ui "$UDID" appearance dark; sleep 2
+python3 .github/smoke/seed.py "$UDID" pouch > /dev/null   # back to card 30
+launch 8
 tour dark
