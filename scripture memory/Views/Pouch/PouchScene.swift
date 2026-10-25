@@ -36,6 +36,7 @@ struct PouchScene<CardFace: View, Cover: View>: View, Animatable {
     var body: some View {
         let lidAngle = (1 - openness) * 180           // 0 flat, 180 shut
         let lidShowsOutside = lidAngle > 90
+        let bottomFade: CGFloat = max(0, (180 - lidAngle) / 60 - 0.5)
         let shine = min(1, max(0, 0.35 + tilt * 0.5 + (1 - openness) * 0.3))
 
         ZStack(alignment: .top) {
@@ -45,7 +46,7 @@ struct PouchScene<CardFace: View, Cover: View>: View, Animatable {
             }
             .offset(y: m.halfHeight)
             // Shut, the lid's outside is all you see.
-            .opacity(lidShowsOutside ? max(0, (180 - lidAngle) / 60 - 0.5) : 1)
+            .opacity(lidShowsOutside ? bottomFade : 1)
             .zIndex(1)
 
             // Top half: the same pocket turned round, folding over the hinge.
