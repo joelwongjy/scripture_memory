@@ -1,0 +1,53 @@
+name: Simulator smoke test
+
+on:
+  push:
+    branches: ["smoke/**"]
+
+permissions:
+  contents: write
+
+jobs:
+  smoke:
+    strategy:
+      fail-fast: false
+      matrix:
+        device: [iphone, ipad]
+    runs-on: macos-15
+    env:
+      DEVICE: ${{ matrix.device }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select Xcode 26
+        run: sudo xcode-select -s /Applications/Xcode_26.3.app
+      - name: Install AXe (simulator UI automation)
+        run: brew install cameroncooke/axe/axe > /dev/null 2>&1 || brew install cameroncooke/axe/axe
+      - name: Build for simulator
+        run: |
+          set -o pipefail
+          common=(-project "Scripture Memory.xcodeproj" -target "Scripture Memory" -sdk iphonesimulator -configuration Debug)
+          # Test-only: let the build run on iPad so its regular width can stand
+          # in for iPhone Duo's inner display. The shipping app stays iPhone-only.
+          # It also allows every orientation on iPad, since Duo's inner display
+          # ignores the app's orientation setting.
+          [ "$DEVICE" = ipad ] && common+=(TARGETED_DEVICE_FAMILY="1,2" INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad="UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight")
+          if ! xcodebuild build "${common[@]}" CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM= PROVISIONING_PROFILE_SPECIFIER= > build.log 2>&1; then
+            echo "::warning::Ad-hoc signed build failed; building unsigned"
+            tail -5 build.log
+            xcodebuild build "${common[@]}" CODE_SIGNING_ALLOWED=NO > build.log 2>&1 || { tail -30 build.log; exit 1; }
+          fi
+      - name: Run smoke steps
+        run: bash .github/smoke/run.sh
+      - name: Publish results to a branch
+        if: always()
+        run: |
+          branch="smoke-results/run-${GITHUB_RUN_ID}-${DEVICE}"
+          mkdir -p /tmp/out && cp -R results /tmp/out/ 2>/dev/null || true
+          cp build.log /tmp/out/ 2>/dev/null || true
+          cd /tmp/out
+          git init -q -b "$branch"
+          git config user.name "smoke-bot"; git config user.email "smoke-bot@users.noreply.github.com"
+          git add -A && git commit -qm "Smoke results for run ${GITHUB_RUN_ID}"
+          git push -q "https://x-access-token:${{ github.token }}@github.com/${GITHUB_REPOSITORY}.git" "HEAD:refs/heads/$branch"
+          echo "::notice::Results on branch $branch"
