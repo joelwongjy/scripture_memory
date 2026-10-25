@@ -48,13 +48,16 @@ struct LiftedDeck<Face: View>: View, Animatable {
         let pulledDown = swipe.height > 0 ? swipe.height * 0.6 : swipe.height * 0.3
 
         ZStack {
-            // The rest of the stack behind, a hair lower each.
+            // The rest of the stack behind: the side of a deck is fine white
+            // paper edges with hairline gaps, not a grey slab.
             ForEach(0..<edges, id: \.self) { i in
                 let n = edges - i
                 RoundedRectangle(cornerRadius: 2)
-                    .fill(n % 2 == 0 ? PouchInk.paperBack : Color(white: 0.89))
-                    .overlay(RoundedRectangle(cornerRadius: 2).strokeBorder(Color.black.opacity(0.10), lineWidth: 0.5))
-                    .offset(y: CGFloat(n) * 2.4)
+                    .fill(PouchInk.paper)
+                    .overlay(alignment: .bottom) {
+                        Rectangle().fill(Color.black.opacity(0.08)).frame(height: 0.5)
+                    }
+                    .offset(y: CGFloat(n) * 1.1)
                     .opacity(Double(1 - spread))
             }
             face(next, handWidth)
@@ -67,10 +70,15 @@ struct LiftedDeck<Face: View>: View, Animatable {
             face(front, handWidth)
                 .offset(x: swipe.width)
                 .rotationEffect(.degrees(Double(swipe.width / 28)), anchor: .bottom)
-                .shadow(color: .black.opacity(abs(swipe.width) > 1 ? 0.18 : 0), radius: 10, y: 4)
+                // Sliding off the stack, it shades the card underneath a little.
+                .shadow(color: .black.opacity(abs(swipe.width) > 1 ? 0.10 : 0), radius: 6, y: 2)
         }
         .frame(width: handWidth, height: height)
-        .shadow(color: .black.opacity(Double(0.28 * lift * (1 - spread))), radius: 22 * lift, y: 12 * lift)
+        // Paper held above the desk: a tight, slightly darker shadow right at
+        // the edge, and a faint, wide one further out. Light from above, so
+        // both fall a little below.
+        .shadow(color: .black.opacity(Double(0.14 * lift * (1 - spread))), radius: 1.5, y: 1)
+        .shadow(color: .black.opacity(Double(0.09 * lift * (1 - spread))), radius: 16 * lift, y: 8 * lift)
         .scaleEffect(scale)
         .position(x: center.x, y: center.y + pulledDown)
         .opacity(lift > 0.02 ? 1 : 0)
