@@ -45,6 +45,8 @@ jobs:
           branch="smoke-results/run-${GITHUB_RUN_ID}-${DEVICE}"
           mkdir -p /tmp/out && cp -R results /tmp/out/ 2>/dev/null || true
           cp build.log /tmp/out/ 2>/dev/null || true
+          # The built Simulator app, for installing on a Mac's own Simulator.
+          [ -d "build/Debug-iphonesimulator/Scripture Memory.app" ] && ditto -c -k --sequesterRsrc --keepParent "build/Debug-iphonesimulator/Scripture Memory.app" /tmp/out/ScriptureMemory-sim.zip || true
           cd /tmp/out
           git init -q -b "$branch"
           git config user.name "smoke-bot"; git config user.email "smoke-bot@users.noreply.github.com"
