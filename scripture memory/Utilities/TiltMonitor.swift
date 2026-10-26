@@ -18,8 +18,9 @@ final class TiltMonitor: ObservableObject {
             let target = CGFloat(max(-1, min(1, motion.attitude.roll / 0.6)))
             MainActor.assumeIsolated {
                 guard let self else { return }
-                // Ease toward the reading so the highlight glides rather than jitters.
-                self.roll += (target - self.roll) * 0.18
+                let next = self.roll + (target - self.roll) * 0.18
+                guard abs(next - self.roll) > 0.002 else { return }
+                self.roll = next
             }
         }
     }

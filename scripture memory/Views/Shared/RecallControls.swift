@@ -1,7 +1,6 @@
 import SwiftUI
 
-/// The controls both card-recall screens (`CardStudyView`, `TestSessionView`)
-/// put under the card. They used to be copies in each file; this is the one set.
+/// The controls `TestSessionView` puts under the card.
 ///
 /// Everything here is a `Button` on purpose: a bare tap target would resign the
 /// text field's first responder and dismiss the keyboard mid-verse.

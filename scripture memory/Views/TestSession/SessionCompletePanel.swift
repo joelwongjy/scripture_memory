@@ -51,26 +51,3 @@ struct SessionCompletePanel: View {
         .transition(.scale.combined(with: .opacity))
     }
 }
-
-/// Entire Verse mode's running score in the top bar: ✓ when the session is
-/// perfect and done, otherwise the (zero or negative) score.
-struct SessionScoreBadge: View {
-    @ObservedObject var vm: TestSessionViewModel
-
-    var body: some View {
-        Group {
-            if vm.isSessionComplete && vm.sessionScore == 0 {
-                Text("✓")
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(Color.green)
-            } else {
-                Text("\(vm.sessionScore)")
-                    .font(.system(size: 13, weight: .bold, design: .monospaced))
-                    .foregroundStyle(vm.sessionScore < 0 ? Color.red : Color.secondary)
-            }
-        }
-        .frame(width: 36, height: 36)
-        .background(Color(.secondarySystemBackground), in: Circle())
-        .animation(AppMotion.content, value: vm.sessionScore)
-    }
-}

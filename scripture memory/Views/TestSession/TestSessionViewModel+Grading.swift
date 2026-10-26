@@ -93,10 +93,12 @@ extension TestSessionViewModel {
         // A card with no schedule before this session goes back to having none,
         // and hands back the new-card slot unless the user already knew it (a
         // known verse never took one).
+        let wasReview = preGradeStates[lastId]?.phase == .review
         if let knew = unscheduledAtStart[lastId] {
-            SRSStore.shared.revert(verse: verse, to: nil, wasNewlyIntroduced: !knew)
+            SRSStore.shared.revert(verse: verse, to: nil, wasNewlyIntroduced: !knew, wasReview: wasReview)
         } else {
-            SRSStore.shared.revert(verse: verse, to: preGradeStates[lastId], wasNewlyIntroduced: false)
+            SRSStore.shared.revert(verse: verse, to: preGradeStates[lastId], wasNewlyIntroduced: false,
+                                   wasReview: wasReview)
         }
         if autoLearntIds.remove(lastId) != nil {
             learning.unmarkLearnt(verse)

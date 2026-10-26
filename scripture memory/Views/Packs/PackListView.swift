@@ -9,16 +9,18 @@ struct PackListView: View {
     @State private var opened:        OpenedPack?       = nil
     @State private var searchText:    String            = ""
     @State private var showOrganizer: Bool              = false
+    @State private var tileFrames                       = TileFrames()
 
-    /// What's open full screen: a pack from the grid, or a verse from search.
-    /// One cover, since two `.fullScreenCover`s on one view conflict.
+    /// Where each tile sits on screen.
+    private final class TileFrames { var byPack: [String: CGRect] = [:] }
+
+    /// The pack open full screen, from its tile or from a search result.
     private struct OpenedPack: Identifiable {
         let pack: Pack
         var index = 0
-        /// Opened from its tile, as the pouch (or the list, if that's how you
-        /// last left it). Search results go straight to the card in the list.
-        var fromTile = false
-        var id: String { "\(pack.id)-\(index)-\(fromTile)" }
+        /// Its tile's frame, to fly out of and back into.
+        var origin: CGRect?
+        var id: String { "\(pack.id)-\(index)" }
     }
 
     /// Visible packs in the user's custom order (hidden removed).
@@ -85,11 +87,10 @@ struct PackListView: View {
         // See `HomeView` — index built off the interaction path.
         .task { VerseSearch.prewarm(visiblePacks) }
         .fullScreenCover(item: $opened) { item in
-            if item.fromTile {
-                PackReader(pack: item.pack, startIndex: item.index)
-            } else {
-                CardStudyCover(packName: item.pack.name, verses: item.pack.verses, initialIndex: item.index)
-            }
+            PouchView(pack: item.pack, startIndex: item.index, shelf: item.origin,
+                      onPutBack: { withoutPresentationAnimation { opened = nil } })
+                .presentationBackground(item.origin == nil ? AnyShapeStyle(Color(.systemGroupedBackground))
+                                                            : AnyShapeStyle(Color.clear))
         }
     }
 
@@ -112,16 +113,33 @@ struct PackListView: View {
     private func packTile(_ pack: Pack) -> some View {
         Button {
             guard !pack.verses.isEmpty else { return }
-            opened = OpenedPack(pack: pack, index: PackPositions.startIndex(for: pack, currentKey: learning.currentKey),
-                                fromTile: true)
+            let index = PackPositions.startIndex(for: pack, currentKey: learning.currentKey)
+            guard !AppMotion.reduceMotion,
+                  let origin = tileFrames.byPack[pack.id] else {
+                opened = OpenedPack(pack: pack, index: index)
+                return
+            }
+            withoutPresentationAnimation {
+                opened = OpenedPack(pack: pack, index: index, origin: origin)
+            }
         } label: {
             PackCover(pack: pack, isCurrentPack: pack.name == currentPackName)
         }
         .buttonStyle(CardButtonStyle())
+        .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { tileFrames.byPack[pack.id] = $0 }
+        .opacity(opened?.origin != nil && opened?.pack.id == pack.id ? 0 : 1)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(pack.name), \(pack.verses.count) cards")
         .accessibilityAddTraits(.isButton)
     }
+}
+
+/// Presents or dismisses a full-screen cover without the system's slide, for a
+/// cover that animates its own way in and out.
+private func withoutPresentationAnimation(_ body: () -> Void) {
+    var t = Transaction()
+    t.disablesAnimations = true
+    withTransaction(t, body)
 }
 
 #Preview {

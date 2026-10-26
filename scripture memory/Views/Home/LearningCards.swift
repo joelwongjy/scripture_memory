@@ -82,7 +82,7 @@ struct ContinueLearningCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: AppLayout.cornerRadius, style: .continuous)
-                .fill(flashcardBackground)
+                .fill(Self.parchment)
                 .shadow(color: .black.opacity(0.13), radius: 14, x: 0, y: 7)
                 .shadow(color: .black.opacity(0.05), radius: 2,  x: 0, y: 1)
         )
@@ -91,6 +91,12 @@ struct ContinueLearningCard: View {
                 .strokeBorder(Color(.separator).opacity(0.4), lineWidth: 0.5)
         )
     }
+
+    private static let parchment = Color(uiColor: UIColor { tc in
+        tc.userInterfaceStyle == .dark
+            ? UIColor(white: 0.13, alpha: 1)
+            : UIColor(red: 0.98, green: 0.965, blue: 0.94, alpha: 1)
+    })
 
     private var pinMenu: some View {
         Menu {

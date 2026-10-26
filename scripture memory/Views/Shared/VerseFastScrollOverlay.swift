@@ -1,12 +1,8 @@
 import SwiftUI
 
-/// Google-Photos-style fast-scroll thumb for vertical browse mode.
-///
-/// A draggable thumb pinned to the trailing edge that follows the list's
-/// CONTINUOUS scroll position (so it reaches the very top and bottom — an
-/// index-snapping `scrollPosition(anchor:.center)` sticks one card in from each
-/// end). While dragging, a pill floats to its left showing the target verse's
-/// TITLE (and reference), the way Photos shows the month/year.
+/// Google-Photos-style fast-scroll thumb pinned to the trailing edge. While
+/// dragging, a pill floats to its left showing the target verse's title and
+/// reference, the way Photos shows the month and year.
 ///
 /// All position math lives in `ScrubberMath` (unit-tested).
 struct VerseFastScrollOverlay: View {
@@ -17,14 +13,16 @@ struct VerseFastScrollOverlay: View {
     private static let hideDelay: Duration       = .milliseconds(1400)
 
     let verseCount:        Int
-    /// Live continuous scroll position in [0,1] (0 = top, 1 = bottom).
+    /// Position through the deck in [0,1] (0 = first card, 1 = last).
     let scrollFraction:    Double
     let containerHeight:   CGFloat
-    @Binding var isScrubbing: Bool
     let titleProvider:     (Int) -> String
     let referenceProvider: (Int) -> String
     /// Called while dragging the thumb — the parent scrolls the list to `index`.
     let onScrubTo:         (Int) -> Void
+    /// Stays on screen instead of fading out once scrolling stops: for content
+    /// that doesn't scroll by itself, where the thumb is the way through it.
+    var alwaysVisible = false
 
     @State private var isDragging       = false
     @State private var dragFraction:    Double = 0
@@ -59,7 +57,7 @@ struct VerseFastScrollOverlay: View {
         }
         .frame(width: Self.thumbSize + Self.thumbTrailingPad + 2,
                height: containerHeight, alignment: .topTrailing)
-        .opacity(visible || isDragging ? 1 : 0)
+        .opacity(visible || isDragging || alwaysVisible ? 1 : 0)
         .animation(AppMotion.control, value: visible)
         .allowsHitTesting(verseCount >= 2)
         .onAppear { flash() }
@@ -128,7 +126,6 @@ struct VerseFastScrollOverlay: View {
                     dragStartThumbY = thumbY
                     withAnimation(AppMotion.control) { isDragging = true }
                 }
-                isScrubbing = true
                 dragFraction = ScrubberMath.fractionForDrag(
                     startThumbY: Double(dragStartThumbY),
                     translationY: Double(value.translation.height),
@@ -144,7 +141,6 @@ struct VerseFastScrollOverlay: View {
             .onEnded { _ in
                 withAnimation(AppMotion.control) { isDragging = false }
                 lastDragIndex = -1
-                DispatchQueue.main.asyncAfter(deadline: .now() + AppMotion.settle) { isScrubbing = false }
                 flash()
             }
     }
@@ -161,23 +157,5 @@ struct VerseFastScrollOverlay: View {
                 withAnimation(AppMotion.movement) { visible = false }
             }
         }
-    }
-}
-
-// MARK: - Scroll offset probe
-
-/// Live vertical-scroll metrics (content offset from top + total content
-/// height), measured via a `.background(GeometryReader)` on the scroll content.
-struct VScrollMetrics: Equatable {
-    var offset: CGFloat = 0          // 0 at top, grows as you scroll down
-    var contentHeight: CGFloat = 0
-}
-
-struct VScrollMetricsKey: PreferenceKey {
-    static let defaultValue = VScrollMetrics()
-    static func reduce(value: inout VScrollMetrics, nextValue: () -> VScrollMetrics) {
-        let next = nextValue()
-        // Keep the most informative (non-zero height) reading.
-        if next.contentHeight > 0 { value = next }
     }
 }

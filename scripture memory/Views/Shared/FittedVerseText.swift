@@ -7,12 +7,11 @@ import SwiftUI
 /// space the card layout actually leaves, so short verses grow to fill the card
 /// and long verses shrink just enough to never truncate.
 enum VerseFit {
-    /// Rendered height of `text` at `size` (serif) with `lineSpacing`, wrapped to `width`.
+    /// Rendered height of `text` at `size` in `style` with `lineSpacing`, wrapped to `width`.
     static func height(_ text: String, width: CGFloat, size: CGFloat,
-                       weight: UIFont.Weight = .regular, lineSpacing: CGFloat) -> CGFloat {
+                       style: CardFont.Style = .body, lineSpacing: CGFloat) -> CGFloat {
         guard width > 1 else { return .greatestFiniteMagnitude }
-        var font = UIFont.systemFont(ofSize: size, weight: weight)
-        if let d = font.fontDescriptor.withDesign(.serif) { font = UIFont(descriptor: d, size: size) }
+        let font = CardFont.uiFont(style, size: size)
         let para = NSMutableParagraphStyle()
         para.lineSpacing = lineSpacing
         let rect = (text as NSString).boundingRect(
@@ -26,14 +25,14 @@ enum VerseFit {
     /// Snaps to a 0.5pt grid. Returns `minSize` if even that overflows (so the
     /// floor governs readability; it won't go smaller).
     static func fontSize(_ text: String, width: CGFloat, height: CGFloat,
-                         weight: UIFont.Weight = .regular, lineSpacing: CGFloat,
+                         style: CardFont.Style = .body, lineSpacing: CGFloat,
                          minSize: CGFloat, maxSize: CGFloat) -> CGFloat {
         guard width > 1, height > 1, !text.isEmpty else { return maxSize }
-        if Self.height(text, width: width, size: maxSize, weight: weight, lineSpacing: lineSpacing) <= height { return maxSize }
+        if Self.height(text, width: width, size: maxSize, style: style, lineSpacing: lineSpacing) <= height { return maxSize }
         var lo = minSize, hi = maxSize
         for _ in 0..<12 {
             let mid = (lo + hi) / 2
-            if Self.height(text, width: width, size: mid, weight: weight, lineSpacing: lineSpacing) <= height {
+            if Self.height(text, width: width, size: mid, style: style, lineSpacing: lineSpacing) <= height {
                 lo = mid
             } else {
                 hi = mid
@@ -57,7 +56,7 @@ struct FittedVerseText: View {
             let size = VerseFit.fontSize(text, width: geo.size.width, height: geo.size.height,
                                          lineSpacing: lineSpacing, minSize: minSize, maxSize: maxSize)
             Text(text)
-                .font(.system(size: size, design: .serif))
+                .font(CardFont.font(.body, size: size))
                 .lineSpacing(lineSpacing)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }

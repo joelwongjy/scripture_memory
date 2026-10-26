@@ -22,22 +22,27 @@ struct PouchMetrics {
 
     init(fitting size: CGSize) {
         var width = min(size.width - 2 * AppLayout.screenMargin, 560)
-        var m = PouchMetrics(width: width)
+        var m = PouchMetrics(width: width, halfHeight: nil)
         if 2 * m.halfHeight > size.height {
             width *= size.height / (2 * m.halfHeight)
-            m = PouchMetrics(width: width)
+            m = PouchMetrics(width: width, halfHeight: nil)
         }
         self = m
     }
 
-    private init(width: CGFloat) {
+    /// With `halfHeight`, one half of a folding screen filled edge to edge, the
+    /// card as large as the half allows; without, a pouch sized to `width`.
+    init(width: CGFloat, halfHeight: CGFloat?) {
+        let foldRatio: CGFloat = 0.13, stackRatio: CGFloat = 0.06
+        let rim    = max(5, width * 0.028)
+        let widest = width * 0.86 / Self.cardAspect
         pouchWidth = width
-        cardWidth  = width * 0.86
-        cardHeight = cardWidth / Self.cardAspect
-        rim        = max(5, width * 0.028)
-        foldGap    = cardHeight * 0.13
-        stackRoom  = cardHeight * 0.06
-        halfHeight = foldGap + cardHeight + stackRoom + rim + 6
+        self.rim   = rim
+        cardHeight = halfHeight.map { min(widest, ($0 - rim - 6) / (1 + foldRatio + stackRatio)) } ?? widest
+        cardWidth  = cardHeight * Self.cardAspect
+        foldGap    = cardHeight * foldRatio
+        stackRoom  = cardHeight * stackRatio
+        self.halfHeight = halfHeight ?? foldGap + cardHeight + stackRoom + rim + 6
         notchWidth = cardWidth * 0.42
         notchDepth = cardHeight * 0.20
         corner     = rim * 2.4
@@ -328,7 +333,7 @@ struct PouchPocket<Card: View>: View {
             ForEach(0..<stackEdges, id: \.self) { i in
                 let n = stackEdges - i
                 RoundedRectangle(cornerRadius: 2)
-                    .fill(n % 2 == 0 ? PouchInk.paperBack : Color(white: 0.89))
+                    .fill(n % 2 == 0 ? PouchInk.paperBack : PouchInk.paperEdge)
                     .overlay(RoundedRectangle(cornerRadius: 2).strokeBorder(Color.black.opacity(0.10), lineWidth: 0.5))
                     .frame(width: frame.width, height: frame.height)
                     .offset(x: frame.minX, y: frame.minY + CGFloat(n) * 1.5)
@@ -384,7 +389,7 @@ struct PouchExterior<Card: View>: View {
             shape.fill(style.tint)          // two layers of plastic folded together
             ForEach(0..<4, id: \.self) { i in
                 RoundedRectangle(cornerRadius: 2)
-                    .fill(i % 2 == 0 ? PouchInk.paperBack : Color(white: 0.89))
+                    .fill(i % 2 == 0 ? PouchInk.paperBack : PouchInk.paperEdge)
                     .frame(width: frame.width, height: frame.height)
                     .offset(x: frame.minX, y: frame.minY + CGFloat(4 - i) * 1.5)
             }

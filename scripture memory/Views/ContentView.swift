@@ -59,11 +59,9 @@ struct ContentView: View {
                                   showsWelcome: showsWelcome,
                                   onComplete: { hasOnboarded = true })
             case .read(let pack, let index):
-                // Open the verse in Read mode, in its pack (chrome hidden so the
-                // card's own top bar shows; NavigationStack lets its keyboard work).
-                CardStudyCover(packName: pack.name, verses: pack.verses, initialIndex: index)
+                PouchView(pack: pack, startIndex: index)
             case .review(let session):
-                TestSessionView(session: session, onSessionEnded: { cover = nil })
+                DailyReviewScreen(session: session, onFinished: { cover = nil })
             }
         }
         .onAppear {

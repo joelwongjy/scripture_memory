@@ -6,23 +6,34 @@ extension Image {
     /// Neutral circular icon button — close, list, reset, etc. Accent icon on a
     /// solid neutral fill. 36pt visual circle inside a 44pt hit target (HIG min).
     func studyChromeCircleButton() -> some View {
-        studyChromeToggle(isOn: false)
-    }
-
-    /// Toggle controls (shuffle, favourites). Background flips: neutral when off,
-    /// accent when on. Icon goes white on the accent background so there's no
-    /// accent-on-accent visibility issue. 36pt visual / 44pt hit target.
-    func studyChromeToggle(isOn: Bool) -> some View {
         self
             .font(.system(size: 15, weight: .semibold))
-            .foregroundStyle(isOn ? AnyShapeStyle(Color.white) : AnyShapeStyle(Color.accentColor))
+            .foregroundStyle(Color.accentColor)
             .frame(width: 36, height: 36)
-            .background(
-                isOn ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(Color(.secondarySystemBackground)),
-                in: Circle()
-            )
+            .background(Color(.secondarySystemBackground), in: Circle())
             .frame(width: 44, height: 44)
             .contentShape(Rectangle())
+    }
+
+    /// A 44pt round glass control, for chrome floating over full-screen content.
+    func floatingGlassButton() -> some View {
+        font(.system(size: 15, weight: .semibold))
+            .foregroundStyle(Color.primary)
+            .frame(width: 44, height: 44)
+            .floatingGlass(in: Circle())
+            .contentShape(Circle())
+    }
+}
+
+extension View {
+    /// Liquid Glass on iOS 26 and later; a thin material before it.
+    @ViewBuilder
+    func floatingGlass(in shape: some Shape) -> some View {
+        if #available(iOS 26.0, *) {
+            glassEffect(.regular, in: shape)
+        } else {
+            background(.ultraThinMaterial, in: shape)
+        }
     }
 }
 

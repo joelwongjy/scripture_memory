@@ -7,10 +7,9 @@ import Foundation
 /// doesn't multiply the workload, it stays at the cap. The cap is measured per
 /// day or per week depending on what the user picked.
 ///
-/// `dailyReviewCap` is GLOBAL too: at most that many review cards a day across
-/// every pack — due ones first, then (per `NewCardPolicy`) the known backlog —
-/// dripped in pack order. Learning-phase cards are never capped; they're
-/// minutes from being due again and leaving them out would stall them.
+/// `dailyReviewCap` is GLOBAL too, and counts reviews already answered today.
+/// Due cards come most overdue first, then (per `NewCardPolicy`) the known
+/// backlog. Learning-phase cards are never capped.
 ///
 /// **Where new cards start** is decided by `NewCardPolicy`: the drip begins at
 /// the learning cursor, not at the first verse of the first pack. Verses before
@@ -18,6 +17,9 @@ import Foundation
 /// a few at a time or are left alone, per the policy.
 @MainActor
 enum SRSQueueBuilder {
+
+    /// How far ahead a learning card counts as due now: Anki's default.
+    static let learnAhead: TimeInterval = 20 * 60
 
     /// How unscheduled verses split between "new" and "already known".
     ///
@@ -55,30 +57,44 @@ enum SRSQueueBuilder {
         }
     }
 
-    /// The review cards a session serves, across `packs` in order: every learning
-    /// card, then due reviews until the global cap is spent, then known backlog
-    /// into whatever it leaves.
-    ///
-    /// The known backlog is served most recently learnt first. Someone who starts
-    /// at verse 120 gets 119, 118, … rather than going back to verse 1: the verses
-    /// nearest their position are the freshest and the most likely to slip. `DueSummary` and the dashboard count from this
-    /// same function so the number on Home is the session the Start button opens.
+    /// The review cards a session serves: every learning card, then due reviews
+    /// until what's left of today's limit is spent, then known backlog, one slot
+    /// of it kept while any is left. The backlog takes turns across packs from
+    /// the latest back, most recently learnt first within each. Home counts
+    /// from this same function.
     static func reviewCards(
         packs: [Pack], store: SRSStore, dailyReviewCap: Int,
         policy: NewCardPolicy, now: Date
     ) -> [Verse] {
         var learning: [Verse] = []
         var review:   [Verse] = []
-        var known:    [Verse] = []
+        var knownByPack: [[Verse]] = []
         for pack in packs {
             let due = store.dueCards(in: pack.verses, now: now)
             learning += due.filter { store.state(for: $0)?.phase == .learning }
             review   += due.filter { store.state(for: $0)?.phase == .review }
-            known    += policy.known(in: pack.verses, store: store)
+            knownByPack.append(policy.known(in: pack.verses, store: store).reversed())
         }
-        let cappedReview = review.prefix(max(0, dailyReviewCap))
-        let cappedKnown  = Array(known.reversed().prefix(max(0, dailyReviewCap - cappedReview.count)))
+        review.sort { (store.state(for: $0)?.due ?? now) < (store.state(for: $1)?.due ?? now) }
+        let known = takingTurns(knownByPack.reversed())
+
+        let left = max(0, dailyReviewCap - store.reviewedToday(now: now))
+        let keptForBacklog = known.isEmpty ? 0 : min(1, left)
+        let cappedReview = review.prefix(left - keptForBacklog)
+        let cappedKnown  = known.prefix(left - cappedReview.count)
         return learning + cappedReview + cappedKnown
+    }
+
+    /// The first of each list, then the second of each, and so on.
+    private static func takingTurns(_ lists: [[Verse]]) -> [Verse] {
+        var out: [Verse] = []
+        var round = 0
+        while true {
+            let picks = lists.compactMap { round < $0.count ? $0[round] : nil }
+            if picks.isEmpty { return out }
+            out += picks
+            round += 1
+        }
     }
 
     // MARK: - All-packs merged session

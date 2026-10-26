@@ -26,7 +26,7 @@ struct SubmitCardView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("\(verse.book) \(verse.reference)")
-                .font(.system(size: 18, weight: .bold, design: .serif))
+                .font(CardFont.font(.reference, size: 18))
 
             Spacer().frame(height: 10)
 
@@ -72,7 +72,7 @@ struct SubmitCardView: View {
     private var inputView: some View {
         VStack(alignment: .leading, spacing: 0) {
             TextField("Title", text: $titleText)
-                .font(.system(size: 16, weight: .bold, design: .serif))
+                .font(CardFont.font(.title, size: 16))
                 .focused($focusedField, equals: .title)
                 .autocorrectionDisabled()
                 .textInputAutocapitalization(.never)
@@ -83,7 +83,7 @@ struct SubmitCardView: View {
             TextEditor(text: $verseText)
                 .scrollContentBackground(.hidden)
                 .background(.clear)
-                .font(.system(size: 15, design: .serif))
+                .font(CardFont.font(.body, size: 15))
                 .lineSpacing(5)
                 .focused($focusedField, equals: .verse)
                 .autocorrectionDisabled()
@@ -93,7 +93,7 @@ struct SubmitCardView: View {
                 .overlay(alignment: .topLeading) {
                     if verseText.isEmpty {
                         Text("Verse")
-                            .font(.system(size: 15, design: .serif))
+                            .font(CardFont.font(.body, size: 15))
                             .foregroundStyle(Color.secondary.opacity(0.45))
                             .padding(.top, 8)
                             .allowsHitTesting(false)
@@ -107,8 +107,8 @@ struct SubmitCardView: View {
 
     private func diffView(_ result: SubmitResult) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            diffLine(result.titleDiffs, font: .system(size: 16, weight: .bold, design: .serif))
-            diffLine(result.verseDiffs, font: .system(size: 15, design: .serif))
+            diffLine(result.titleDiffs, font: CardFont.font(.title, size: 16))
+            diffLine(result.verseDiffs, font: CardFont.font(.body, size: 15))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }

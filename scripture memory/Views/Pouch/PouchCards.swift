@@ -10,20 +10,84 @@ import UIKit
 
 /// Paper colour and ink, shared by every card face.
 enum PouchInk {
-    static let paper    = Color(red: 0.965, green: 0.962, blue: 0.950)
-    static let paperBack = Color(red: 0.925, green: 0.921, blue: 0.905)
-    static let title    = Color(white: 0.33)
-    static let body     = Color(white: 0.14)
-    static let caption  = Color(white: 0.30)
-    static let green    = Color(red: 0.12, green: 0.55, blue: 0.37)
-    static let mint     = Color(red: 0.80, green: 0.91, blue: 0.86)
+    static let paper     = adaptive(light: (0.965, 0.962, 0.950), dark: (0.180, 0.178, 0.170))
+    static let paperBack = adaptive(light: (0.925, 0.921, 0.905), dark: (0.145, 0.143, 0.137))
+    static let paperEdge = adaptive(light: (0.890, 0.890, 0.890), dark: (0.235, 0.233, 0.225))
+    static let title     = adaptive(light: (0.33, 0.33, 0.33), dark: (0.74, 0.74, 0.72))
+    static let body      = adaptive(light: (0.14, 0.14, 0.14), dark: (0.90, 0.90, 0.88))
+    static let caption   = adaptive(light: (0.30, 0.30, 0.30), dark: (0.62, 0.62, 0.60))
+    static let green     = adaptive(light: (0.12, 0.55, 0.37), dark: (0.36, 0.78, 0.56))
+    static let mint      = adaptive(light: (0.80, 0.91, 0.86), dark: (0.16, 0.30, 0.24))
+    static let edgeLine  = adaptive(light: (0, 0, 0), dark: (1, 1, 1)).opacity(0.10)
+
+    private static func adaptive(light: (CGFloat, CGFloat, CGFloat), dark: (CGFloat, CGFloat, CGFloat)) -> Color {
+        Color(uiColor: UIColor { tc in
+            let c = tc.userInterfaceStyle == .dark ? dark : light
+            return UIColor(red: c.0, green: c.1, blue: c.2, alpha: 1)
+        })
+    }
+}
+
+/// The printed card's typefaces: a bold sans title, the reference and verse in
+/// Optima.
+enum CardFont {
+    enum Style {
+        case title, reference, body
+
+        fileprivate var name: String {
+            switch self {
+            case .title:     return "AvenirNext-Bold"
+            case .reference: return "Optima-Bold"
+            case .body:      return "Optima-Regular"
+            }
+        }
+    }
+
+    static func font(_ style: Style, size: CGFloat) -> Font { .custom(style.name, size: size) }
+
+    static func uiFont(_ style: Style, size: CGFloat) -> UIFont {
+        UIFont(name: style.name, size: size) ?? .systemFont(ofSize: size)
+    }
+}
+
+/// How the paper cards follow the system appearance.
+enum CardAppearance: String, CaseIterable {
+    case alwaysLight
+    case matchSystem
+
+    static let storageKey = "cardAppearance.v1"
+
+    var displayName: String {
+        switch self {
+        case .matchSystem: return "Match Appearance"
+        case .alwaysLight: return "Always Light"
+        }
+    }
+}
+
+extension View {
+    func paperAppearance() -> some View { modifier(PaperAppearance()) }
+}
+
+private struct PaperAppearance: ViewModifier {
+    @AppStorage(CardAppearance.storageKey) private var appearance: CardAppearance = .alwaysLight
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if appearance == .alwaysLight {
+            content.environment(\.colorScheme, .light)
+        } else {
+            content
+        }
+    }
 }
 
 /// One verse card, front face.
-struct PouchVerseCard: View {
+struct PouchVerseCard<Accessory: View>: View {
     let verse: Verse
     let isLearnt: Bool
     let width: CGFloat
+    @ViewBuilder var accessory: () -> Accessory
 
     var body: some View {
         let u = width / 100                       // one percent of the card's width
@@ -32,7 +96,7 @@ struct PouchVerseCard: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .firstTextBaseline) {
                 Text(verse.title)
-                    .font(.custom("AvenirNext-Bold", size: 5.4 * u))
+                    .font(CardFont.font(.title, size: 5.4 * u))
                     .foregroundStyle(PouchInk.title)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
@@ -42,18 +106,18 @@ struct PouchVerseCard: View {
                     .foregroundStyle(PouchInk.caption)
             }
             Text(reference)
-                .font(.custom("Optima-Regular", size: 4.6 * u))
+                .font(CardFont.font(.body, size: 4.6 * u))
                 .foregroundStyle(PouchInk.body)
                 .padding(.top, 1.2 * u)
             Text(verse.verse)
-                .font(.custom("Optima-Regular", size: 4.6 * u))
+                .font(CardFont.font(.body, size: 4.6 * u))
                 .foregroundStyle(PouchInk.body)
                 .lineSpacing(0.9 * u)
                 .minimumScaleFactor(0.55)
                 .padding(.top, 0.6 * u)
                 .frame(maxHeight: .infinity, alignment: .topLeading)
             Text(reference)
-                .font(.custom("Optima-Regular", size: 4.6 * u))
+                .font(CardFont.font(.body, size: 4.6 * u))
                 .foregroundStyle(PouchInk.body)
                 .frame(maxWidth: .infinity, alignment: .trailing)
             HStack(spacing: 1.6 * u) {
@@ -66,6 +130,7 @@ struct PouchVerseCard: View {
                         .font(.system(size: 2.9 * u, weight: .bold))
                         .foregroundStyle(PouchInk.green)
                 }
+                accessory()
             }
             .font(.system(size: 2.9 * u))
             .foregroundStyle(PouchInk.caption)
@@ -83,6 +148,12 @@ struct PouchVerseCard: View {
     private var reference: String { "\(verse.book) \(verse.reference)" }
 }
 
+extension PouchVerseCard where Accessory == EmptyView {
+    init(verse: Verse, isLearnt: Bool, width: CGFloat) {
+        self.init(verse: verse, isLearnt: isLearnt, width: width) { EmptyView() }
+    }
+}
+
 /// The last card in the pack, behind the final verse: what the pack is, and
 /// how far you've come.
 struct PouchBackPageCard: View {
@@ -95,10 +166,10 @@ struct PouchBackPageCard: View {
         let u = width / 100
         VStack(alignment: .leading, spacing: 2.4 * u) {
             Text("End of \(packName)")
-                .font(.custom("AvenirNext-Bold", size: 5.4 * u))
+                .font(CardFont.font(.title, size: 5.4 * u))
                 .foregroundStyle(PouchInk.green)
             Text("You've turned every card in the pack. Turn them back to go over them again.")
-                .font(.custom("Optima-Regular", size: 4.2 * u))
+                .font(CardFont.font(.body, size: 4.2 * u))
                 .foregroundStyle(PouchInk.body)
             Spacer(minLength: 0)
             HStack(alignment: .firstTextBaseline, spacing: 6 * u) {
@@ -109,7 +180,7 @@ struct PouchBackPageCard: View {
         .padding(.horizontal, 7 * u)
         .padding(.vertical, 6.4 * u)
         .frame(width: width, height: width / PouchMetrics.cardAspect, alignment: .topLeading)
-        .background(PaperFace(tint: .white))
+        .background(PaperFace(tint: PouchInk.paperBack))
         .accessibilityElement(children: .combine)
     }
 
@@ -141,7 +212,7 @@ struct PaperFace: View {
                     .blendMode(.multiply)
                     .clipShape(shape)
             )
-            .overlay(shape.strokeBorder(Color.black.opacity(0.10), lineWidth: 0.5))
+            .overlay(shape.strokeBorder(PouchInk.edgeLine, lineWidth: 0.5))
     }
 }
 

@@ -18,8 +18,8 @@ struct PouchSlots {
 ///
 /// - `openness`: 0 is folded shut, 1 is lying flat.
 /// - `turn`: 0 is the turning card in the bottom pocket, 1 is it in the top one.
-/// - `lift`: 0 is the bottom stack in its pocket, above 0 it's out in your hand
-///   (drawn by `LiftedDeck`), so the pocket shows empty.
+/// - `lift`: 0 is the bottom stack in its pocket, above 0 it's out (drawn by
+///   `LiftedDeck`), so the pocket shows empty.
 struct PouchScene<CardFace: View, Cover: View>: View, Animatable {
     var openness: CGFloat
     var turn: CGFloat
@@ -68,9 +68,9 @@ struct PouchScene<CardFace: View, Cover: View>: View, Animatable {
                 }
             }
             .frame(width: m.pouchWidth, height: m.halfHeight)
-            .rotation3DEffect(.degrees(lidAngle), axis: (x: 1, y: 0, z: 0),
+            .rotation3DEffect(.degrees(-lidAngle), axis: (x: 1, y: 0, z: 0),
                               anchor: .bottom, perspective: 0.35)
-            .zIndex(lidShowsOutside ? 3 : 0)
+            .zIndex(lidAngle > 0.5 ? 3 : 0)
 
             // A card being turned over the fold like a page.
             if let i = slots.turning {
@@ -103,7 +103,7 @@ private struct TurningCard<Face: View>: View {
             // Past vertical we're looking at the back of the card.
             .scaleEffect(x: angle > 90 ? -1 : 1, y: 1)
             .shadow(color: .black.opacity(0.25 * lift), radius: 14 * lift, y: 8 * lift)
-            .rotation3DEffect(.degrees(-angle), axis: (x: 1, y: 0, z: 0),
+            .rotation3DEffect(.degrees(angle), axis: (x: 1, y: 0, z: 0),
                               anchor: hinge, perspective: 0.35)
             .offset(x: frame.minX, y: m.halfHeight + frame.minY)
             .frame(width: m.pouchWidth, height: m.halfHeight * 2, alignment: .topLeading)

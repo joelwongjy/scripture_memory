@@ -1,8 +1,8 @@
 import CoreGraphics
 
-// MARK: - Card deck swipe (shared by pack study + test session)
+// MARK: - Card deck swipe
 
-/// Centralizes swipe thresholds and drag math so both card stacks stay in sync.
+/// Swipe thresholds and drag math for the session card stack.
 enum CardSwipeConfig {
     static let threshold: CGFloat = 80
     static let velocityThreshold: CGFloat = 400

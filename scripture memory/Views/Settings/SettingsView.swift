@@ -11,6 +11,7 @@ struct SettingsView: View {
     @AppStorage(SRSQueueBuilder.NewCardPolicy.reviewsKnownKey)
     private var reviewsKnownVerses = SRSQueueBuilder.NewCardPolicy.reviewsKnownDefault
     @AppStorage(HomeVerseStartMode.storageKey) private var homeVerseStartMode: HomeVerseStartMode = .read
+    @AppStorage(CardAppearance.storageKey)     private var cardAppearance: CardAppearance = .alwaysLight
 
     @AppStorage(NotificationManager.Keys.enabled) private var reminderEnabled = false
     @AppStorage(NotificationManager.Keys.hour)    private var reminderHour    = NotificationManager.defaultHour
@@ -123,6 +124,19 @@ struct SettingsView: View {
                 .labelsHidden()
             } header: {
                 Text("Bible Version")
+            }
+
+            Section {
+                Picker(selection: $cardAppearance) {
+                    ForEach(CardAppearance.allCases, id: \.self) { mode in
+                        Text(mode.displayName).tag(mode)
+                    }
+                } label: {
+                    rowLabel("Cards", "rectangle.on.rectangle")
+                }
+                .pickerStyle(.menu)
+            } footer: {
+                Text("Match Appearance prints the cards on dark card stock in Dark Mode.")
             }
 
             Section {

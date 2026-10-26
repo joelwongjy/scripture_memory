@@ -21,32 +21,47 @@ struct TestSessionView: View {
     @State private var speechTarget: SubmitField = .title
     @State private var isScrubbing           = false
     @State private var isPeeking             = false
-    @State private var showVerseSelector     = false
     /// Pending "marked complete" undo prompt.
     @State private var undoToastState:       UndoToastState?
 
     @Environment(\.dismiss) private var dismiss
 
     let onSessionEnded: (() -> Void)?
+    /// A review's last card was rated: called with this round's ratings and the
+    /// cards that went back into learning, in place of closing the screen.
+    let onRoundEnded:   ((_ grades: [SRSGrade], _ missed: [Verse]) -> Void)?
     let sessionKind:    SessionKind
+    let round:          Int
 
     // MARK: - Init
 
-    init(session: TestSession, onSessionEnded: (() -> Void)? = nil) {
+    init(session: TestSession, onSessionEnded: (() -> Void)? = nil,
+         onRoundEnded: ((_ grades: [SRSGrade], _ missed: [Verse]) -> Void)? = nil) {
         _vm = StateObject(wrappedValue: TestSessionViewModel(verses: session.verses, kind: session.kind))
         self.onSessionEnded = onSessionEnded
+        self.onRoundEnded   = onRoundEnded
         self.sessionKind    = session.kind
+        self.round          = session.round
     }
 
     private var isReview: Bool { sessionKind == .srs }
 
-    /// The daily review reads "Review"; a self-test picked on the Quiz tab, "Quiz".
-    private var sessionTitle: String { isReview ? "Review" : "Quiz" }
+    /// The daily review reads "Review", and "Another look" once it comes back
+    /// round to the cards you missed; a self-test picked on the Quiz tab, "Quiz".
+    private var sessionTitle: String {
+        switch sessionKind {
+        case .srs:    return round > 1 ? "Another look" : "Review"
+        case .pack:   return "Practice"
+        case .custom: return "Quiz"
+        }
+    }
 
     /// A quiz is drawn from packs the user picked, so naming the pack on the card
     /// would give half the answer away. The review deck mixes everything, so there
     /// the label is orientation, not a clue.
     private var showsCardLabel: Bool { isReview }
+
+    private var positionLabel: String { "Card \(vm.currentIndex + 1) of \(vm.verses.count)" }
 
     private var isEditing: Bool { isInputFocused || submitFocus != nil }
 
@@ -63,13 +78,6 @@ struct TestSessionView: View {
 
             VStack(spacing: 0) {
                 topBar
-
-                if studyMode == .submit {
-                    SessionProgressBar(vm: vm)
-                        .padding(.horizontal, AppLayout.screenMargin)
-                        .padding(.top, 6)
-                        .padding(.bottom, 2)
-                }
 
                 GeometryReader { area in
                     let room  = max(120, area.size.height - 12)
@@ -146,23 +154,28 @@ struct TestSessionView: View {
 
     private var topBar: some View {
         ZStack {
-            VStack(spacing: 2) {
+            VStack(spacing: 1) {
                 Text(sessionTitle)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.system(size: 13, weight: .semibold))
                     .lineLimit(1)
-                Text("\(vm.currentIndex + 1) of \(vm.verses.count) · \(vm.completedCount) done")
-                    .font(.system(size: 12, weight: .medium))
+                Text(positionLabel)
+                    .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(Color.secondary)
+                    .monospacedDigit()
                     .lineLimit(1)
-                    .animation(AppMotion.content, value: vm.completedCount)
+                    .contentTransition(.numericText())
+                    .animation(AppMotion.content, value: positionLabel)
             }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 6)
+            .floatingGlass(in: Capsule())
 
             HStack {
                 Button {
                     if speech.isListening { speech.stopListening() }
                     dismiss()
                 } label: {
-                    Image(systemName: "xmark").studyChromeCircleButton()
+                    Image(systemName: "xmark").floatingGlassButton()
                 }
                 .accessibilityLabel("Close session")
 
@@ -170,7 +183,7 @@ struct TestSessionView: View {
                 // while the keyboard is up.
                 if isReview {
                     Button(action: undoLastGrade) {
-                        Image(systemName: "arrow.uturn.backward").studyChromeCircleButton()
+                        Image(systemName: "arrow.uturn.backward").floatingGlassButton()
                     }
                     .disabled(vm.gradedOrder.isEmpty)
                     .opacity(vm.gradedOrder.isEmpty ? 0.3 : 1)
@@ -184,28 +197,13 @@ struct TestSessionView: View {
                         isInputFocused = false
                         submitFocus = nil
                     }
-                } else {
-                    HStack(spacing: 8) {
-                        if !isReview {
-                            Button { showVerseSelector = true } label: {
-                                Image(systemName: "list.bullet").studyChromeCircleButton()
-                            }
-                            .accessibilityLabel("Jump to verse")
-                        }
-                        if studyMode == .submit { SessionScoreBadge(vm: vm) }
-                    }
                 }
             }
         }
         .padding(.horizontal, AppLayout.screenMargin)
-        .padding(.vertical, 12)
+        .padding(.vertical, 8)
         .animation(AppMotion.control, value: isInputFocused)
         .animation(AppMotion.control, value: submitFocus)
-        .sheet(isPresented: $showVerseSelector) {
-            VerseJumpSheet(verses: vm.verses, currentIndex: vm.currentIndex) { i in
-                moveProgrammatically(refocus: false) { vm.currentIndex = i }
-            }
-        }
     }
 
     // MARK: - Card Stack
@@ -367,7 +365,7 @@ struct TestSessionView: View {
             if !showSessionSummary, isReview, vm.isCardAnswered, let verse = vm.currentVerse {
                 let pick = vm.currentSelection(for: verse)
                 Button {
-                    guard let grade = pick else { return }
+                    guard let grade = pick, vm.currentVerse?.id == verse.id else { return }
                     gradeAndAdvance(grade)
                 } label: {
                     Text(pick == nil ? "Pick a difficulty to continue" : "Confirm")
@@ -634,13 +632,28 @@ struct TestSessionView: View {
         dismiss()
     }
 
-    /// Rates the current card, then moves on (or closes after the last card).
+    /// Rates the current card, then moves on (or ends the round after the last card).
     private func gradeAndAdvance(_ grade: SRSGrade) {
         vm.grade(grade)
         if isLastCard {
-            finishSession()
+            if let onRoundEnded {
+                TestSessionViewModel.clearPersistedProgress(for: sessionKind)
+                onRoundEnded(vm.verses.compactMap { vm.sessionGrades[$0.id] }, missedCards())
+            } else {
+                finishSession()
+            }
         } else {
             moveProgrammatically { vm.goForward() }
+        }
+    }
+
+    /// Cards this round put back into learning and due again within the
+    /// learn-ahead window.
+    private func missedCards() -> [Verse] {
+        let soon = Date().addingTimeInterval(SRSQueueBuilder.learnAhead)
+        return vm.verses.filter { verse in
+            guard let state = SRSStore.shared.state(for: verse) else { return false }
+            return state.phase == .learning && state.due <= soon
         }
     }
 

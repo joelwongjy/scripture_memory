@@ -12,9 +12,12 @@ enum AppLayout {
     /// Gap between stacked cards and panels, and between grid tiles.
     static let spacing: CGFloat = 16
 
-    /// One corner radius for every card and panel: grouped panels, flashcards,
-    /// pack covers. Matches iOS 26's grouped-list sections. Controls use capsules.
+    /// Corner radius for panels, matching iOS 26's grouped-list sections.
+    /// Controls use capsules.
     static let cornerRadius: CGFloat = 26
+    /// Corner radius for cards (flashcards, pack covers): tighter than a panel,
+    /// like the printed cards they stand for.
+    static let cardRadius: CGFloat = 10
 
     /// Inner padding of a list-like panel (one row of text and a control), the
     /// same as a list row's content inset.

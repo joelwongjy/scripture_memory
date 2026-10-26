@@ -19,18 +19,18 @@ struct PeekOverlayCard: View {
                 Spacer().frame(height: 6)
             }
             Text("\(verse.book) \(verse.reference)")
-                .font(.system(size: 18, weight: .bold, design: .serif))
+                .font(CardFont.font(.reference, size: 18))
                 .foregroundStyle(Color.secondary)
 
             Spacer().frame(height: 10)
 
             Text(verse.title)
-                .font(.system(size: 16, weight: .bold, design: .serif))
+                .font(CardFont.font(.title, size: 16))
                 .foregroundStyle(Color.secondary)
                 .padding(.bottom, 6)
 
             Text(verse.verse)
-                .font(.system(size: 15, design: .serif))
+                .font(CardFont.font(.body, size: 15))
                 .lineSpacing(5)
                 .foregroundStyle(Color.secondary)
                 .minimumScaleFactor(0.75)

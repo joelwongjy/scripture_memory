@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The Home tab: streak, the verse you're learning, and today's review.
+/// The Home tab: streak, today's review, and the verse you're learning.
 struct HomeView: View {
 
     @AppStorage(BibleVersion.storageKey)       private var bibleVersion: BibleVersion = .niv84
@@ -12,20 +12,18 @@ struct HomeView: View {
 
     @State private var cover: ActiveCover?
     @State private var showPinPicker = false
-    @State private var searchText    = ""
 
     /// One full-screen presentation at a time (two `.fullScreenCover`s on one
-    /// view conflict): a review session, the learning session, or a verse opened
-    /// from search.
+    /// view conflict): the daily review, a pack's practice, or a pack.
     private enum ActiveCover: Identifiable {
         case review(TestSession)
-        case learning(forceCurrent: Bool)
-        case verse(VerseSearchResult)
+        case practice(TestSession)
+        case pack(Pack, index: Int)
         var id: String {
             switch self {
-            case .review(let s):       return "review-\(s.id)"
-            case .learning(let force): return force ? "learning-current" : "learning"
-            case .verse(let r):        return "verse-\(r.id)"
+            case .review(let s):          return "review-\(s.id)"
+            case .practice(let s):        return "practice-\(s.id)"
+            case .pack(let p, let index): return "pack-\(p.id)-\(index)"
             }
         }
     }
@@ -55,54 +53,21 @@ struct HomeView: View {
         return LearningSpot(verse: verse, pack: pack, indexInPack: index, isPinned: isPinned)
     }
 
-    /// The pack before/after `name`, so a learning session can roll into the next
-    /// (or previous) pack when stepping past a boundary.
-    private func adjacentPack(after name: String, forward: Bool) -> (name: String, verses: [Verse])? {
-        guard let i = packs.firstIndex(where: { $0.name == name }) else { return nil }
-        let j = forward ? i + 1 : i - 1
-        guard packs.indices.contains(j) else { return nil }
-        return (packs[j].name, packs[j].verses)
-    }
-
     // MARK: - Body
 
     var body: some View {
-        // One scroll view for the whole screen; see `PackListView.body`.
         MountAfterFirstFrame {
-            ScrollView {
-                if searchText.isEmpty {
-                    dashboard
-                } else {
-                    VerseSearchResultsList(
-                        query:   searchText,
-                        results: VerseSearch.results(for: searchText, in: packs),
-                        onSelect: { cover = .verse($0) }
-                    )
-                }
-            }
+            ScrollView { dashboard }
         }
-        // See `PackListView`: pins the initial offset above the search field.
         .defaultScrollAnchor(.top)
-        .scrollDismissesKeyboard(.immediately)
-        .animation(nil, value: searchText.isEmpty)
         .background(Color(.systemGroupedBackground))
         .navigationTitle("Home")
         .navigationBarTitleDisplayMode(.large)
-        .searchable(
-            text: $searchText,
-            placement: .navigationBarDrawer(displayMode: .always),
-            prompt: "Search verses"
-        )
-        // Build the search index before the field is tapped, so the first
-        // keystroke doesn't pay for it.
-        .task { VerseSearch.prewarm(packs) }
         .fullScreenCover(item: $cover) { c in
             switch c {
-            case .review(let s): TestSessionView(session: s, onSessionEnded: { cover = nil })
-            case .learning(let force): learningSession(forceCurrent: force)
-            case .verse(let r):
-                // Read mode in its own pack, like tapping the verse from Packs.
-                CardStudyCover(packName: r.pack.name, verses: r.pack.verses, initialIndex: r.verseIndex)
+            case .review(let s): DailyReviewScreen(session: s, onFinished: { cover = nil })
+            case .practice(let s): TestSessionView(session: s, onSessionEnded: { cover = nil })
+            case .pack(let pack, let index): PouchView(pack: pack, startIndex: index)
             }
         }
         .sheet(isPresented: $showPinPicker) {
@@ -114,7 +79,6 @@ struct HomeView: View {
         VStack(spacing: AppLayout.spacing) {
             NavigationLink { StreakView() } label: { HomeStreakCard() }
                 .buttonStyle(CardButtonStyle())
-            learningCards
             Text("Daily Review")
                 .font(.system(size: 17, weight: .semibold))
                 .foregroundStyle(.secondary)
@@ -123,6 +87,8 @@ struct HomeView: View {
                 .padding(.top, 4)
             DailyReviewCard(activePacks: activePacks) { cover = .review($0) }
             packsReviewLink
+            learningCards
+                .padding(.top, 8)
         }
         .padding(.horizontal, AppLayout.screenMargin)
         .padding(.top, 8)
@@ -138,13 +104,13 @@ struct HomeView: View {
             ContinueLearningCard(
                 spot: spot,
                 startMode: homeVerseStartMode,
-                onOpen: { cover = .learning(forceCurrent: false) },
+                onOpen: { openLearning(forceCurrent: false) },
                 onChangePin: { showPinPicker = true },
                 onUnpin: { learning.unpin() }
             )
             if spot.isPinned, !learning.isCurrent(spot.verse), let cursor = current {
                 GoToCurrentVerseCard(verse: cursor.verse) {
-                    cover = .learning(forceCurrent: true)
+                    openLearning(forceCurrent: true)
                 }
             }
         } else if !ordered.isEmpty {
@@ -154,19 +120,14 @@ struct HomeView: View {
 
     /// `forceCurrent` opens the learning cursor even while another verse is
     /// pinned (the "Go to current verse" shortcut).
-    @ViewBuilder
-    private func learningSession(forceCurrent: Bool) -> some View {
-        if let spot = forceCurrent ? current : featured {
-            // A pinned verse is a spotlight, not a step in the sequence, so it
-            // gets neither cross-pack stepping nor marking complete.
-            CardStudyCover(
-                packName: spot.pack.name,
-                verses: spot.pack.verses,
-                initialIndex: spot.indexInPack,
-                initialReviewMode: homeVerseStartMode.opensInReview,
-                adjacentPack: spot.isPinned ? nil : { name, forward in adjacentPack(after: name, forward: forward) },
-                onMarkLearnt: spot.isPinned ? nil : { learning.markLearnt($0) }
-            )
+    private func openLearning(forceCurrent: Bool) {
+        guard let spot = forceCurrent ? current : featured else { return }
+        if homeVerseStartMode.opensInReview {
+            if let session = TestSession.practice(spot.pack.verses, from: spot.indexInPack) {
+                cover = .practice(session)
+            }
+        } else {
+            cover = .pack(spot.pack, index: spot.indexInPack)
         }
     }
 

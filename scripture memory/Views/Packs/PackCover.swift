@@ -9,7 +9,7 @@ struct PackCover: View {
     var isCurrentPack: Bool = false
     /// The pack grid's rounded tile by default; the pouch shows the same cover
     /// as a square-cornered printed card with no shadow of its own.
-    var cornerRadius: CGFloat = AppLayout.cornerRadius
+    var cornerRadius: CGFloat = AppLayout.cardRadius
     var showsShadow: Bool = true
 
     private static let designWidth:  CGFloat = 340

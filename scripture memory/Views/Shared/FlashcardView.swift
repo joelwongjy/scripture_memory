@@ -147,10 +147,10 @@ struct FlashcardView: View {
         return VStack(alignment: .leading, spacing: 0) {
             if verse.pinnedVersion != nil { versionBadge; Spacer().frame(height: 6) }
             Text(verse.title)
-                .font(.system(size: titleSize, weight: .bold, design: .serif))
+                .font(CardFont.font(.title, size: titleSize))
             Spacer().frame(height: 8)
             Text("\(verse.book) \(verse.reference)")
-                .font(.system(size: refSize))
+                .font(CardFont.font(.body, size: refSize))
             Spacer().frame(height: 6)
             // Scales the verse down to fit (never truncates) but stays within a
             // calm reading range — short verses don't balloon to headline size.
@@ -172,8 +172,8 @@ struct FlashcardView: View {
         // Size the verse to the height the layout actually leaves after the
         // reference, title row, gaps, progress bar and card label — so it fills
         // the card and never truncates, instead of guessing from word count.
-        let refH    = VerseFit.height("\(verse.book) \(verse.reference)", width: cardWidth, size: refSize, weight: .bold, lineSpacing: 0)
-        let titleH  = VerseFit.height(verse.title, width: cardWidth, size: titleSectionSize, weight: .bold, lineSpacing: 4)
+        let refH    = VerseFit.height("\(verse.book) \(verse.reference)", width: cardWidth, size: refSize, style: .reference, lineSpacing: 0)
+        let titleH  = VerseFit.height(verse.title, width: cardWidth, size: titleSectionSize, style: .title, lineSpacing: 4)
         let showsProgress = !hardMode && activeRevealed < activeWords.count
         // Count everything below the verse so the fit target matches the space
         // that's actually free: the progress block (spacer + bar) and the card's
@@ -188,7 +188,7 @@ struct FlashcardView: View {
         return VStack(alignment: .leading, spacing: 0) {
             if verse.pinnedVersion != nil { versionBadge; Spacer().frame(height: 6) }
             Text("\(verse.book) \(verse.reference)")
-                .font(.system(size: refSize, weight: .bold, design: .serif))
+                .font(CardFont.font(.reference, size: refSize))
 
             Spacer().frame(height: 12)
 
@@ -196,7 +196,7 @@ struct FlashcardView: View {
                          words: verse.titleWords,
                          revealed: titleRevealedCount,
                          cardWidth: cardWidth,
-                         font: .system(size: titleSectionSize, weight: .bold, design: .serif))
+                         font: CardFont.font(.title, size: titleSectionSize))
 
             Spacer().frame(height: 8)
 
@@ -204,7 +204,7 @@ struct FlashcardView: View {
                          words: verse.verseWords,
                          revealed: verseRevealedCount,
                          cardWidth: cardWidth,
-                         font: .system(size: verseSize, design: .serif),
+                         font: CardFont.font(.body, size: verseSize),
                          fillsRemainingSpace: true)
 
             if !hardMode && activeRevealed < activeWords.count {
@@ -330,7 +330,7 @@ struct FlashcardView: View {
 
     private func placeholder(for section: CardSection) -> Text {
         Text(section == .title ? "Title" : "Verse")
-            .font(.system(size: 18, weight: .medium, design: .serif))
+            .font(CardFont.font(.body, size: 18))
             .foregroundStyle(.tertiary)
     }
 

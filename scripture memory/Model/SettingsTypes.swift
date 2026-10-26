@@ -142,9 +142,8 @@ enum BibleVersion: String, CaseIterable {
 
 // MARK: - Home Verse Start Mode
 
-/// Which mode the Home "current verse" card opens in when tapped: `.read` shows
-/// the full verse for study; `.review` starts active-recall practice. The
-/// in-session Read/Review toggle still lets the user switch at any time.
+/// Which mode the Home "current verse" card opens in when tapped: `.read` opens
+/// its pack's pouch on the verse; `.review` starts practising from it.
 enum HomeVerseStartMode: String, CaseIterable {
     case read
     case review
@@ -166,6 +165,5 @@ enum HomeVerseStartMode: String, CaseIterable {
         }
     }
 
-    /// Whether the learning session should open in active-recall review mode.
     var opensInReview: Bool { self == .review }
 }
