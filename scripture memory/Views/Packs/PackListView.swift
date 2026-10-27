@@ -79,11 +79,7 @@ struct PackListView: View {
         .sheet(isPresented: $showOrganizer) {
             PackOrganizerView(allPacks: bibleVersion.packs)
         }
-        .searchable(
-            text: $searchText,
-            placement: .navigationBarDrawer(displayMode: .always),
-            prompt: "Search verses"
-        )
+        .modifier(VerseSearchField(text: $searchText))
         // See `HomeView` — index built off the interaction path.
         .task { VerseSearch.prewarm(visiblePacks) }
         .fullScreenCover(item: $opened) { item in
@@ -144,4 +140,19 @@ private func withoutPresentationAnimation(_ body: () -> Void) {
 
 #Preview {
     NavigationStack { PackListView() }
+}
+
+/// Search lives in its own tab from iOS 18; before that, it's pinned under the
+/// Packs title.
+private struct VerseSearchField: ViewModifier {
+    @Binding var text: String
+
+    func body(content: Content) -> some View {
+        if #available(iOS 18, *) {
+            content
+        } else {
+            content.searchable(text: $text, placement: .navigationBarDrawer(displayMode: .always),
+                               prompt: "Search verses")
+        }
+    }
 }

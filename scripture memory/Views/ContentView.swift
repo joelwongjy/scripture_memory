@@ -30,27 +30,7 @@ struct ContentView: View {
     }
 
     var body: some View {
-        TabView {
-            NavigationStack {
-                HomeView()
-            }
-            .tabItem { Label("Home", systemImage: "house.fill") }
-
-            NavigationStack {
-                PackListView()
-            }
-            .tabItem { Label("Packs", systemImage: "rectangle.stack.fill") }
-
-            NavigationStack {
-                TestSetupView()
-            }
-            .tabItem { Label("Quiz", systemImage: "checkmark.circle.fill") }
-
-            NavigationStack {
-                SettingsView()
-            }
-            .tabItem { Label("Settings", systemImage: "gearshape") }
-        }
+        tabs
         .streakCelebration()
         .fullScreenCover(item: $cover) { c in
             switch c {
@@ -106,6 +86,32 @@ struct ContentView: View {
             if phase == .active || phase == .background { syncWidget() }
         }
         .onOpenURL { handleDeepLink($0) }
+    }
+
+    /// The app's tabs. From iOS 18 search is a tab of its own, which iOS 26
+    /// draws as the search button beside the tab bar.
+    @ViewBuilder
+    private var tabs: some View {
+        if #available(iOS 18, *) {
+            TabView {
+                Tab("Home", systemImage: "house.fill") { NavigationStack { HomeView() } }
+                Tab("Packs", systemImage: "rectangle.stack.fill") { NavigationStack { PackListView() } }
+                Tab("Quiz", systemImage: "checkmark.circle.fill") { NavigationStack { TestSetupView() } }
+                Tab("Settings", systemImage: "gearshape") { NavigationStack { SettingsView() } }
+                Tab(role: .search) { NavigationStack { VerseSearchView() } }
+            }
+        } else {
+            TabView {
+                NavigationStack { HomeView() }
+                    .tabItem { Label("Home", systemImage: "house.fill") }
+                NavigationStack { PackListView() }
+                    .tabItem { Label("Packs", systemImage: "rectangle.stack.fill") }
+                NavigationStack { TestSetupView() }
+                    .tabItem { Label("Quiz", systemImage: "checkmark.circle.fill") }
+                NavigationStack { SettingsView() }
+                    .tabItem { Label("Settings", systemImage: "gearshape") }
+            }
+        }
     }
 
     /// Anything that only exists once someone has studied — a learning cursor or
