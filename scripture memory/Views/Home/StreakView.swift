@@ -22,6 +22,7 @@ struct StreakView: View {
         }
         .background(Color(.systemGroupedBackground))
         .navigationTitle("Streak")
+        .analyticsScreen(.streak)
         .navigationBarTitleDisplayMode(.inline)
     }
 

@@ -20,6 +20,7 @@ struct ScriptureMemoryApp: App {
         // per-day new-card setting onto the day/week keys, so the new 2-a-week
         // default only lands on people who never picked one.
         NewCardCap.migrateIfNeeded()
+        Analytics.start()
     }
 
     var body: some Scene {

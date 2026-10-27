@@ -23,6 +23,11 @@ struct TestSessionView: View {
     @State private var isPeeking             = false
     /// Pending "marked complete" undo prompt.
     @State private var undoToastState:       UndoToastState?
+    @State private var startedAt             = Date()
+    @State private var undoCount             = 0
+    @State private var usedVoice             = false
+    @State private var loggedStart           = false
+    @State private var loggedEnd             = false
 
     @Environment(\.dismiss) private var dismiss
 
@@ -125,6 +130,8 @@ struct TestSessionView: View {
         .undoToast($undoToastState)
         .speechErrorAlert(speech)
         .tracksStudyScreen()
+        .onAppear(perform: logStart)
+        .onDisappear { logEnd(finished: false) }
         .onChange(of: vm.currentIndex) { _, _ in
             vm.clearInputs()
             vm.resetDictation()
@@ -610,6 +617,7 @@ struct TestSessionView: View {
             // word count starts over with it.
             vm.resetDictation()
             speech.startListening()
+            usedVoice = true
         }
     }
 
@@ -617,6 +625,7 @@ struct TestSessionView: View {
 
     /// Clears saved progress and closes the session.
     private func finishSession() {
+        logEnd(finished: true)
         TestSessionViewModel.clearPersistedProgress(for: sessionKind)
         onSessionEnded?()
         dismiss()
@@ -627,6 +636,7 @@ struct TestSessionView: View {
         vm.grade(grade)
         if isLastCard {
             if let onRoundEnded {
+                logEnd(finished: true)
                 TestSessionViewModel.clearPersistedProgress(for: sessionKind)
                 onRoundEnded(vm.verses.compactMap { vm.sessionGrades[$0.id] }, missedCards())
             } else {
@@ -647,9 +657,60 @@ struct TestSessionView: View {
         }
     }
 
+    // MARK: - Analytics
+
+    private var analyticsKind: StudySessionKind {
+        switch sessionKind {
+        case .srs:    return round > 1 ? .extraRound : .review
+        case .custom: return .quiz
+        case .pack:   return .practice
+        }
+    }
+
+    private func logStart() {
+        guard !loggedStart else { return }
+        loggedStart = true
+        startedAt = Date()
+        Analytics.log(.screenViewed(isReview ? .dailyReview : sessionKind == .pack ? .practice : .quizSession))
+        var start = StudySessionStart(kind: analyticsKind, cards: vm.verses.count,
+                                      studyMode: studyMode.rawValue,
+                                      hardMode: UserDefaults.standard.bool(forKey: "hardMode"))
+        if isReview {
+            for verse in vm.verses {
+                switch SRSStore.shared.state(for: verse)?.phase {
+                case nil:       start.newCards += 1
+                case .learning: start.learningCards += 1
+                case .review:   start.dueCards += 1
+                }
+            }
+        }
+        if sessionKind == .pack { start.pack = vm.verses.first?.packName }
+        Analytics.log(.sessionStarted(start))
+    }
+
+    private func logEnd(finished: Bool) {
+        guard loggedStart, !loggedEnd else { return }
+        loggedEnd = true
+        let grades = vm.verses.compactMap { vm.sessionGrades[$0.id] }
+        var summary = StudySessionSummary(kind: analyticsKind, finished: finished,
+                                          cards: vm.verses.count,
+                                          cardsDone: isReview ? grades.count : vm.completedCount,
+                                          seconds: Date().timeIntervalSince(startedAt))
+        summary.again = grades.filter { $0 == .again }.count
+        summary.hard  = grades.filter { $0 == .hard }.count
+        summary.good  = grades.filter { $0 == .good }.count
+        summary.easy  = grades.filter { $0 == .easy }.count
+        summary.peeks = vm.peekedVerseIds.count
+        summary.undos = undoCount
+        summary.mistakes = -vm.sessionScore
+        summary.usedVoice = usedVoice
+        Analytics.log(.sessionEnded(summary))
+    }
+
     /// Undo the last rating and go back to that card to rate it again.
     private func undoLastGrade() {
         guard let index = vm.undoLastGrade() else { return }
+        undoCount += 1
         HapticEngine.light()
         moveProgrammatically(refocus: false) { vm.currentIndex = index }
     }

@@ -21,6 +21,7 @@ struct VerseSearchView: View {
         let results = VerseSearch.results(for: searchText, in: visiblePacks)
         List {
             VerseSearchSections(query: searchText, results: results) {
+                VerseSearch.logOpened($0, in: results)
                 opened = OpenedVerse(pack: $0.pack, index: $0.verseIndex)
             }
         }
@@ -39,6 +40,13 @@ struct VerseSearchView: View {
         .background(Color(.systemGroupedBackground))
         .scrollDismissesKeyboard(.immediately)
         .navigationTitle("Search")
+        .analyticsScreen(.search)
+        .task(id: searchText) {
+            guard !searchText.isEmpty else { return }
+            try? await Task.sleep(for: .seconds(1.5))
+            guard !Task.isCancelled, results.isEmpty else { return }
+            Analytics.log(.searchFoundNothing)
+        }
         .task { VerseSearch.prewarm(visiblePacks) }
         .fullScreenCover(item: $opened) { item in
             PouchView(pack: item.pack, startIndex: item.index)

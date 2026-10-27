@@ -24,6 +24,7 @@ struct FavoriteStarButton: View {
             // back to SwiftUI's default animation — around twice this long, on the
             // one control in the app that most needs to feel instant.
             HapticEngine.light()
+            Analytics.log(.starChanged(starred: !isFavorite, from: .card))
             withAnimation(AppMotion.control) { favorites.toggle(verse) }
         } label: {
             Image(systemName: isFavorite ? "star.fill" : "star")

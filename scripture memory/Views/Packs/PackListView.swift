@@ -45,10 +45,14 @@ struct PackListView: View {
                 if searchText.isEmpty {
                     packGrid
                 } else {
+                    let results = VerseSearch.results(for: searchText, in: visiblePacks)
                     VerseSearchResultsList(
                         query:   searchText,
-                        results: VerseSearch.results(for: searchText, in: visiblePacks),
-                        onSelect: { opened = OpenedPack(pack: $0.pack, index: $0.verseIndex) }
+                        results: results,
+                        onSelect: { result in
+                            VerseSearch.logOpened(result, in: results)
+                            opened = OpenedPack(pack: result.pack, index: result.verseIndex)
+                        }
                     )
                 }
             }
@@ -65,6 +69,7 @@ struct PackListView: View {
         .animation(nil, value: searchText.isEmpty)
         .background(Color(.systemGroupedBackground))
         .navigationTitle("Packs")
+        .analyticsScreen(.packs)
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
@@ -110,6 +115,7 @@ struct PackListView: View {
         Button {
             guard !pack.verses.isEmpty else { return }
             let index = PackPositions.startIndex(for: pack, currentKey: learning.currentKey)
+            Analytics.log(.packOpened(pack: pack.name, from: .shelf))
             guard !AppMotion.reduceMotion,
                   let origin = tileFrames.byPack[pack.id] else {
                 opened = OpenedPack(pack: pack, index: index)

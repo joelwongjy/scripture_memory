@@ -52,6 +52,7 @@ struct ContentView: View {
                     // A reinstall with progress already back from iCloud: there's
                     // nothing to set up, and asking "where have you got to?"
                     // would overwrite the answer we just restored.
+                    Analytics.log(.onboardingFinished(start: .restoredFromICloud, bibleVersion: bibleVersion.rawValue))
                     hasOnboarded = true
                 } else {
                     // Already-studying users skip the "Welcome to the app" hero and
@@ -65,6 +66,7 @@ struct ContentView: View {
         // setup question is moot — take it down.
         .onReceive(NotificationCenter.default.publisher(for: ProgressStorage.didChangeExternally)) { _ in
             if case .onboarding = cover, hasRestoredProgress {
+                Analytics.log(.onboardingFinished(start: .restoredFromICloud, bibleVersion: bibleVersion.rawValue))
                 hasOnboarded = true
                 cover = nil
             }
@@ -150,8 +152,12 @@ struct ContentView: View {
     private func handleDeepLink(_ url: URL) {
         guard url.scheme == "scripturememory" else { return }
         switch url.host {
-        case "read":   openRead(url)
-        case "review": openReview()
+        case "read":
+            Analytics.log(.openedFromWidget(destination: .read))
+            openRead(url)
+        case "review":
+            Analytics.log(.openedFromWidget(destination: .review))
+            openReview()
         default:       break
         }
     }
@@ -165,6 +171,7 @@ struct ContentView: View {
               let pack = packPrefs.visible(from: bibleVersion.packs).first(where: { $0.name == packName })
         else { return }
         let idx = pack.verses.firstIndex { $0.book == val("book") && $0.reference == val("ref") } ?? 0
+        Analytics.log(.packOpened(pack: pack.name, from: .widget))
         cover = .read(pack: pack, index: idx)
     }
 

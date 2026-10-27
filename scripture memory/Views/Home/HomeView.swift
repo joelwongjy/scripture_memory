@@ -62,6 +62,7 @@ struct HomeView: View {
         .defaultScrollAnchor(.top)
         .background(Color(.systemGroupedBackground))
         .navigationTitle("Home")
+        .analyticsScreen(.home)
         .navigationBarTitleDisplayMode(.large)
         .fullScreenCover(item: $cover) { c in
             switch c {
@@ -129,6 +130,7 @@ struct HomeView: View {
                 cover = .practice(session)
             }
         } else {
+            Analytics.log(.packOpened(pack: spot.pack.name, from: .homeCard))
             cover = .pack(spot.pack, index: spot.indexInPack)
         }
     }

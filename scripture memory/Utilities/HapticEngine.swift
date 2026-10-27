@@ -17,14 +17,11 @@ enum HapticEngine {
     }
 
     static let packOpen: [Beat] = [
-        Beat(time: 0, intensity: 0.5, sharpness: 0.25),
-        Beat(time: 0.02, intensity: 0.18, sharpness: 0.1, duration: 0.3),
-        Beat(time: 0.32, intensity: 0.4, sharpness: 0.45),
-        Beat(time: 0.34, intensity: 0.22, sharpness: 0.3, duration: 0.22),
-        Beat(time: 0.6, intensity: 0.75, sharpness: 0.7),
-        Beat(time: 0.67, intensity: 0.55, sharpness: 0.75),
-        Beat(time: 0.74, intensity: 0.42, sharpness: 0.8),
-        Beat(time: 0.81, intensity: 0.3, sharpness: 0.85),
+        Beat(time: 0, intensity: 0.85, sharpness: 0.3),
+        Beat(time: 0.34, intensity: 0.2, sharpness: 0.3, duration: 0.2),
+        Beat(time: 0.6, intensity: 0.55, sharpness: 0.75),
+        Beat(time: 0.66, intensity: 0.42, sharpness: 0.8),
+        Beat(time: 0.72, intensity: 0.3, sharpness: 0.85),
     ]
 
     static let packClose: [Beat] = [

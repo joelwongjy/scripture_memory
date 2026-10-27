@@ -32,6 +32,7 @@ struct PouchView: View {
     @State private var settleToken = 0
     @Environment(\.displayScale) private var displayScale
     @State private var closing = false
+    @State private var openedAt = Date()
     /// The card centred in the list.
     @State private var listIndex: Int?
     @State private var listScrolled = false
@@ -106,6 +107,7 @@ struct PouchView: View {
         }
         .modifier(FollowsHinge(onChange: hingeMoved))
         .onAppear { appeared() }
+        .analyticsScreen(.pack)
         .onChange(of: fanned) { _, out in out ? tilt.stop() : tilt.start() }
         .onDisappear {
             tilt.stop()
@@ -330,7 +332,7 @@ struct PouchView: View {
             .padding(.horizontal, 60)
             .accessibilityElement(children: .combine)
             HStack {
-                Button { close() } label: {
+                Button { close(.closeButton) } label: {
                     Image(systemName: "xmark")
                         .font(.body.weight(.medium))
                         .frame(width: 30, height: 30)
@@ -398,7 +400,7 @@ struct PouchView: View {
         let isCurrent = learning.isCurrent(verse)
         return PouchVerseCard(verse: verse, isLearnt: learning.isLearnt(verse), width: width) {
             if isCurrent {
-                Button { markComplete(verse) } label: {
+                Button { markComplete(verse, from: .card) } label: {
                     Label("Complete", systemImage: "checkmark")
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(.white)
@@ -415,7 +417,7 @@ struct PouchView: View {
         .accessibilityHint("Practises from this verse")
         .accessibilityAction { startPractice(from: i) }
         .accessibilityAction(named: FavoritesStore.shared.isFavorite(verse) ? "Unstar" : "Star") {
-            FavoritesStore.shared.toggle(verse)
+            toggleStar(verse)
         }
         .accessibilityAction(named: learning.isLearnt(verse) ? "Mark as not learnt" : "Mark as learnt") {
             toggleLearnt(verse)
@@ -427,7 +429,7 @@ struct PouchView: View {
         let isFavorite = FavoritesStore.shared.isFavorite(verse)
         Button {
             HapticEngine.light()
-            FavoritesStore.shared.toggle(verse)
+            toggleStar(verse)
         } label: {
             Label(isFavorite ? "Unstar" : "Star", systemImage: isFavorite ? "star.slash" : "star")
         }
@@ -440,12 +442,18 @@ struct PouchView: View {
         }
     }
 
+    private func toggleStar(_ verse: Verse) {
+        Analytics.log(.starChanged(starred: !FavoritesStore.shared.isFavorite(verse), from: .menu))
+        FavoritesStore.shared.toggle(verse)
+    }
+
     private func toggleLearnt(_ verse: Verse) {
         if learning.isLearnt(verse) {
             learning.unmarkLearnt(verse)
+            Analytics.log(.learntChanged(learnt: false, from: .menu))
             HapticEngine.light()
         } else {
-            markComplete(verse)
+            markComplete(verse, from: .menu)
         }
     }
 
@@ -523,9 +531,10 @@ struct PouchView: View {
 
     /// The cards gather back into the pocket, the pouch folds shut and goes back
     /// onto its shelf tile; without one, the screen closes once it's shut.
-    private func close() {
+    private func close(_ how: PackCloseMethod) {
         guard !closing else { return }
         closing = true
+        Analytics.log(.packClosed(how: how, seconds: Date().timeIntervalSince(openedAt)))
         if AppMotion.reduceMotion { HapticEngine.light(); dismissOrPutBack(); return }
         HapticEngine.play(HapticEngine.packClose)
         var t = Transaction()
@@ -563,7 +572,7 @@ struct PouchView: View {
                 let dx = value.translation.width
                 let flick = value.predictedEndTranslation.width
                 if dx > 80 || flick > 220 {
-                    close()
+                    close(.edgeSwipe)
                 } else {
                     withAnimation(AppMotion.control) { swipeOffset = 0 }
                 }
@@ -602,8 +611,9 @@ struct PouchView: View {
         practice = TestSession.practice(verses, from: i)
     }
 
-    private func markComplete(_ verse: Verse) {
+    private func markComplete(_ verse: Verse, from source: VerseActionSource) {
         learning.markLearnt(verse)
+        Analytics.log(.learntChanged(learnt: true, from: source))
         HapticEngine.success()
         undoToastState = .markedComplete(verse, learning: learning)
     }

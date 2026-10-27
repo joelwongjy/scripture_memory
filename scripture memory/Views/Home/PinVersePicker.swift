@@ -20,6 +20,7 @@ struct PinVersePicker: View {
                 }
             }
             .navigationTitle("Pin a Verse")
+            .analyticsScreen(.pinPicker)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

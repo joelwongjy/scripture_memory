@@ -17,6 +17,8 @@ struct SettingsView: View {
     @AppStorage(NotificationManager.Keys.hour)    private var reminderHour    = NotificationManager.defaultHour
     @AppStorage(NotificationManager.Keys.minute)  private var reminderMinute  = NotificationManager.defaultMinute
 
+    @AppStorage(Analytics.shareUsageKey) private var shareUsage = Analytics.shareUsageDefault
+
     @State private var showResetSRSAlert      = false
     @State private var showNotifDeniedAlert   = false
     @State private var showLearningSetup      = false
@@ -165,6 +167,17 @@ struct SettingsView: View {
             }
 
             Section {
+                Toggle(isOn: $shareUsage) {
+                    rowLabel("Share Anonymous Usage", "chart.bar")
+                }
+            } header: {
+                Text("Privacy")
+            } footer: {
+                Text("Sends which screens and features you use, never your verses or personal details.")
+            }
+            .onChange(of: shareUsage) { _, on in Analytics.setEnabled(on) }
+
+            Section {
                 Button(role: .destructive) {
                     showResetSRSAlert = true
                 } label: {
@@ -201,12 +214,27 @@ struct SettingsView: View {
             }
         }
         .navigationTitle("Settings")
+        .analyticsScreen(.settings)
+        .onChange(of: studyMode)          { _, v in logSetting("studyMode", v.rawValue) }
+        .onChange(of: hardMode)           { _, v in logSetting("hardMode", String(v)) }
+        .onChange(of: bibleVersion)       { _, v in logSetting("bibleVersion", v.rawValue) }
+        .onChange(of: newCapAmount)       { _, v in logSetting("newCards", String(v)) }
+        .onChange(of: newCapUnit)         { _, v in logSetting("newCardsPer", v.rawValue) }
+        .onChange(of: dailyReviewCap)     { _, v in logSetting("reviewsPerDay", String(v)) }
+        .onChange(of: reviewsKnownVerses) { _, v in logSetting("reviewEarlierVerses", String(v)) }
+        .onChange(of: homeVerseStartMode) { _, v in logSetting("homeCardOpensIn", v.rawValue) }
+        .onChange(of: cardAppearance)     { _, v in logSetting("cardAppearance", v.rawValue) }
+        .onChange(of: reminderEnabled)    { _, v in logSetting("dailyReminder", String(v)) }
         // Hosted on the List (not the Learning Section) so the first presentation
         // doesn't self-dismiss — a sheet anchored to a lazy List section can tear
         // down on its initial layout pass.
         .sheet(isPresented: $showLearningSetup) {
             LearningSetupView()
         }
+    }
+
+    private func logSetting(_ setting: String, _ value: String) {
+        Analytics.log(.settingChanged(setting: setting, value: value))
     }
 
     /// A settings-row label with the SF Symbol pinned to a uniform 24pt column,

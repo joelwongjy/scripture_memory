@@ -135,6 +135,7 @@ struct TestSetupView: View {
         .animation(AppMotion.content, value: savedSession != nil)
         .background(Color(.systemGroupedBackground))
         .navigationTitle("Quiz")
+        .analyticsScreen(.quiz)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) { deselectAllButton }
         }

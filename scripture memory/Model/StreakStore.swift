@@ -47,7 +47,10 @@ final class StreakStore: ObservableObject {
         let key = Self.dayKey(now)
         guard !days.contains(key) else { return }
         days.insert(key)
-        if Self.milestones.contains(current) { celebration = current }
+        if Self.milestones.contains(current) {
+            celebration = current
+            Analytics.log(.streakGoalReached(days: current))
+        }
         // Keep ~400 days so the set can't grow unbounded.
         if days.count > 400 {
             days = Set(days.sorted().suffix(400))

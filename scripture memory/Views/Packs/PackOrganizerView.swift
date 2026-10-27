@@ -19,6 +19,7 @@ struct PackOrganizerView: View {
                     .onMove { source, destination in
                         store.move(arranged: store.arranged(from: allPacks),
                                    from: source, to: destination)
+                        Analytics.log(.packsReordered)
                     }
                 } header: {
                     // At the top, not a footer — users won't scroll past every pack
@@ -31,6 +32,7 @@ struct PackOrganizerView: View {
                 }
             }
             .navigationTitle("Organize Packs")
+            .analyticsScreen(.organizePacks)
             .navigationBarTitleDisplayMode(.inline)
             // Always-on edit mode: drag handles are present immediately, so
             // reordering works without an Edit button. The per-row eye button
@@ -72,6 +74,7 @@ struct PackOrganizerView: View {
 
             Button {
                 store.setHidden(pack.name, !isHidden)
+                Analytics.log(.packVisibilityChanged(hidden: !isHidden))
                 HapticEngine.light()
             } label: {
                 Image(systemName: isHidden ? "eye.slash" : "eye")

@@ -28,6 +28,7 @@ let package = Package(
                 "ReminderPlan.swift",
                 "ScrubberMath.swift",
                 "PackArranger.swift",
+                "AnalyticsEvent.swift",
             ]
         ),
         .testTarget(

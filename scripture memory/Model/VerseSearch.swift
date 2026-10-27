@@ -9,6 +9,7 @@ struct VerseSearchResult: Identifiable {
     let verse:      Verse
     let pack:       Pack
     let verseIndex: Int
+    var matchedOnReference = false
 }
 
 /// One pack's share of the results, in the order its best match ranked.
@@ -77,7 +78,9 @@ enum VerseSearch {
         for entry in entries {
             let onReference = entry.reference.contains(q) || entry.title.contains(q)
             if onReference {
-                primary.append(result(entry, in: packs))
+                var match = result(entry, in: packs)
+                match.matchedOnReference = true
+                primary.append(match)
                 if primary.count == resultLimit { return primary }
             } else if secondary.count < resultLimit, entry.body.contains(q) {
                 secondary.append(result(entry, in: packs))
@@ -93,6 +96,13 @@ enum VerseSearch {
     /// The screens call it when they appear, off the interaction path. Cheap to
     /// call repeatedly — it no-ops once the fingerprint matches.
     static func prewarm(_ packs: [Pack]) { _ = index(for: packs) }
+
+    static func logOpened(_ result: VerseSearchResult, in results: [VerseSearchResult]) {
+        let shown = VerseSearchGroup.grouping(results).flatMap(\.results)
+        let rank = (shown.firstIndex { $0.id == result.id } ?? 0) + 1
+        Analytics.log(.searchResultOpened(rank: rank, matchedOnReference: result.matchedOnReference))
+        Analytics.log(.packOpened(pack: result.pack.name, from: .search))
+    }
 
     private static func result(_ entry: Entry, in packs: [Pack]) -> VerseSearchResult {
         let pack = packs[entry.packIndex]
