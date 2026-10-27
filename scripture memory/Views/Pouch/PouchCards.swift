@@ -194,7 +194,7 @@ struct PouchBackPageCard: View {
     }
 }
 
-/// Card stock: flat paper with a faint grain and a hairline edge, nearly square
+/// Card stock: a flat paper colour with a hairline edge, nearly square
 /// corners like a die-cut card.
 struct PaperFace: View {
     var tint: Color = PouchInk.paper
@@ -203,47 +203,6 @@ struct PaperFace: View {
         let shape = RoundedRectangle(cornerRadius: 2, style: .continuous)
         shape
             .fill(tint)
-            .overlay(
-                Image(uiImage: PaperGrain.tile)
-                    .resizable(resizingMode: .tile)
-                    .opacity(0.35)
-                    .blendMode(.multiply)
-                    .clipShape(shape)
-            )
             .overlay(shape.strokeBorder(PouchInk.edgeLine, lineWidth: 0.5))
-    }
-}
-
-/// A small tile of random speckle, generated once, tiled across every card.
-/// Procedural rather than a photo so the paper stays neutral white.
-enum PaperGrain {
-    static let tile: UIImage = {
-        let side = 96
-        let format = UIGraphicsImageRendererFormat()
-        format.scale = 2
-        format.opaque = true
-        return UIGraphicsImageRenderer(size: CGSize(width: side, height: side), format: format).image { ctx in
-            UIColor.white.setFill()
-            ctx.fill(CGRect(x: 0, y: 0, width: side, height: side))
-            var rng = SeededRandom(seed: 0x5EED)
-            for _ in 0..<900 {
-                let x = Double(rng.next() % UInt64(side * 4)) / 4
-                let y = Double(rng.next() % UInt64(side * 4)) / 4
-                let shade = 0.80 + Double(rng.next() % 18) / 100
-                let size = rng.next() % 5 == 0 ? 0.9 : 0.5
-                UIColor(white: shade, alpha: 1).setFill()
-                ctx.fill(CGRect(x: x, y: y, width: size, height: size))
-            }
-        }
-    }()
-}
-
-/// Deterministic generator so the grain is identical on every launch.
-private struct SeededRandom {
-    private var state: UInt64
-    init(seed: UInt64) { state = seed }
-    mutating func next() -> UInt64 {
-        state = state &* 6364136223846793005 &+ 1442695040888963407
-        return state >> 33
     }
 }

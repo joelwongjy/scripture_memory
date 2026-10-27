@@ -112,7 +112,7 @@ struct SettingsView: View {
             } header: {
                 Text("Daily Review")
             } footer: {
-                Text("Limits apply across all packs.")
+                Text("Review Earlier Verses brings verses before your starting point into review, a few at a time. Limits apply across all packs.")
             }
 
             Section {

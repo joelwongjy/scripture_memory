@@ -180,6 +180,23 @@ final class SRSStore: ObservableObject {
         persist()
     }
 
+    /// Puts a verse the user has just marked learnt into review, unless it
+    /// already has a schedule.
+    func scheduleLearnt(_ verse: Verse, now: Date = Date()) {
+        let key = verse.srsKey
+        guard !key.isEmpty, states[key] == nil else { return }
+        states[key] = .justLearnt(key: key, now: now)
+        persist()
+    }
+
+    /// Undoes `scheduleLearnt`: drops the schedule if it was never reviewed.
+    func unscheduleLearnt(_ verse: Verse) {
+        let key = verse.srsKey
+        guard states[key]?.isUngraded == true else { return }
+        states.removeValue(forKey: key)
+        persist()
+    }
+
     /// Wipe all SRS state.
     /// Inactive-pack choices are preserved — they're a UI preference, not progress.
     func resetAll() {

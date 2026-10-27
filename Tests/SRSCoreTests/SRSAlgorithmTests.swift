@@ -54,6 +54,18 @@ final class SRSAlgorithmTests: XCTestCase {
         XCTAssertEqual(dueOffset(s), 7.5 * day, accuracy: 0.001)
     }
 
+    func testJustLearntIsFirstDueAfterTheKnownInterval() {
+        let s = SRSCardState.justLearnt(key: "k", now: now)
+        XCTAssertEqual(s.phase, .review)
+        XCTAssertEqual(dueOffset(s), SRSConfig.default.knownCardInterval * day, accuracy: 0.001)
+        XCTAssertTrue(s.isUngraded)
+    }
+
+    func testGradingClearsUngraded() {
+        let s = updateSRS(state: .justLearnt(key: "k", now: now), grade: .good, now: now)
+        XCTAssertFalse(s.isUngraded)
+    }
+
     func testKnownCardAgainLapsesBackToLearning() {
         let s = updateSRS(state: .knownCard(key: "k", now: now), grade: .again, now: now)
         XCTAssertEqual(s.phase, .learning)
