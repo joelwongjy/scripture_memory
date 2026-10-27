@@ -70,13 +70,6 @@ struct TestSetupView: View {
         return "More Packs"
     }
 
-    private static func shortName(_ pack: Pack) -> String {
-        for separator in [": ", " · "] where pack.name.hasPrefix("DEP") || pack.name.hasPrefix("TMS 180") {
-            if let range = pack.name.range(of: separator) { return String(pack.name[range.upperBound...]) }
-        }
-        return pack.name
-    }
-
     // Flat items for packs + their expanded verses — driven by expandedPackIds
     private func packItems(_ packs: [Pack]) -> [PackListItem] {
         var items: [PackListItem] = []
@@ -290,7 +283,7 @@ struct TestSetupView: View {
                 if isExpanded { expandedPackIds.remove(pack.id) }
                 else          { expandedPackIds.insert(pack.id) }
             } label: {
-                PackRowLabel(pack: pack, title: Self.shortName(pack), showsBadge: true,
+                PackRowLabel(pack: pack, title: pack.shortName, showsBadge: true,
                              detail: packDetail(pack, selected: selectedInPack)) {
                     RowChevron()
                         .rotationEffect(isExpanded ? .degrees(90) : .zero)

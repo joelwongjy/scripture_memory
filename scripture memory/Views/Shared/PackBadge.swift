@@ -13,4 +13,15 @@ struct PackBadge: View {
 
 extension Pack {
     var tint: Color { fieldIsLight ? inkColor : fieldColor }
+
+    var shortName: String {
+        for separator in [": ", " · "] where name.hasPrefix("DEP") || name.hasPrefix("TMS 180") {
+            if let range = name.range(of: separator) { return String(name[range.upperBound...]) }
+        }
+        return name
+    }
+
+    var seriesCode: String? {
+        shortName == name ? nil : VerseNumbering.packCode(for: name)
+    }
 }

@@ -40,6 +40,7 @@ struct VerseScrubberRow: View {
         Binding {
             Double(currentIndex)
         } set: { value in
+            guard abs(value - Double(currentIndex)) >= 0.6 else { return }
             let index = Int(value.rounded())
             guard index != currentIndex, (0..<verseCount).contains(index) else { return }
             currentIndex = index

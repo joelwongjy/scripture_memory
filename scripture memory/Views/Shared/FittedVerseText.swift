@@ -66,12 +66,15 @@ struct FittedVerseText: View {
     let lineSpacing: CGFloat
     let minSize:     CGFloat
     let maxSize:     CGFloat
+    var style:       CardFont.Style = .body
+    var closingLine: String? = nil
 
     var body: some View {
         GeometryReader { geo in
             let tight = lineSpacing * 0.3
             let estimate = VerseFit.fontSize(text, width: geo.size.width, height: geo.size.height,
-                                             lineSpacing: tight, minSize: minSize, maxSize: maxSize)
+                                             style: style, lineSpacing: tight,
+                                             minSize: minSize, maxSize: maxSize)
             ViewThatFits(in: .vertical) {
                 verse(maxSize, lineSpacing).fixedSize(horizontal: false, vertical: true)
                 ForEach(Array(stride(from: min(maxSize, estimate + 2), to: minSize, by: -0.5)), id: \.self) { size in
@@ -84,9 +87,12 @@ struct FittedVerseText: View {
     }
 
     private func verse(_ size: CGFloat, _ spacing: CGFloat) -> some View {
-        Text(text)
-            .font(CardFont.font(.body, size: size))
-            .lineSpacing(spacing)
-            .frame(maxWidth: .infinity, alignment: .leading)
+        VStack(alignment: .trailing, spacing: spacing) {
+            Text(text)
+                .lineSpacing(spacing)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            if let closingLine { Text(closingLine) }
+        }
+        .font(CardFont.font(style, size: size))
     }
 }

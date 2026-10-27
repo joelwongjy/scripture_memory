@@ -80,16 +80,18 @@ struct HomeView: View {
         VStack(spacing: AppLayout.spacing) {
             NavigationLink { StreakView() } label: { HomeStreakCard() }
                 .buttonStyle(CardButtonStyle())
-            HStack(alignment: .firstTextBaseline) {
-                Text("Daily Review")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(.secondary)
-                Spacer()
-                packsReviewLink
+            VStack(spacing: 8) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text("Daily Review")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    packsReviewLink
+                }
+                .padding(.horizontal, 20)
+                DailyReviewCard(activePacks: activePacks) { cover = .review($0) }
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 4)
-            DailyReviewCard(activePacks: activePacks) { cover = .review($0) }
+            .padding(.top, 8)
             learningCards
                 .padding(.top, 8)
         }
@@ -150,8 +152,7 @@ struct HomeView: View {
             }
             .font(.system(size: 15))
             .foregroundStyle(Color.accentColor)
-            .frame(minHeight: 44)
-            .contentShape(Rectangle())
+            .contentShape(Rectangle().inset(by: -12))
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Packs in review, \(packsLinkLabel)")

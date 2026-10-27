@@ -106,6 +106,7 @@ struct ContentView: View {
                         .searchable(text: $searchText, prompt: "Search verses")
                 }
             }
+            .modifier(SearchOnTabSelection())
         } else {
             TabView {
                 NavigationStack { HomeView() }
@@ -182,5 +183,15 @@ struct ContentView: View {
                                                     dailyReviewCap: dailyReviewCap) else { return }
         TestSessionViewModel.clearPersistedProgress(for: .srs)
         cover = .review(session)
+    }
+}
+
+private struct SearchOnTabSelection: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(iOS 26, *) {
+            content.tabViewSearchActivation(.searchTabSelection)
+        } else {
+            content
+        }
     }
 }

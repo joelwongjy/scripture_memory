@@ -66,7 +66,7 @@ struct PouchView: View {
         self.shelf = shelf
         self.onPutBack = onPutBack
         _index = State(initialValue: start)
-        _listIndex = State(initialValue: start)
+        _listIndex = State(initialValue: nil)
         _openness = State(initialValue: reduce ? 1 : 0)
         _lift = State(initialValue: reduce ? 1 : 0)
         _spread = State(initialValue: reduce ? 1 : 0)
@@ -135,7 +135,7 @@ struct PouchView: View {
         } else {
             VStack(spacing: 0) {
                 topBar
-                GeometryReader { geo in scene(geo, fold: nil, turned: turned, chrome: 0) }
+                GeometryReader { geo in scene(geo, fold: nil, turned: turned, chrome: 0, below: insets.bottom) }
                     .overlay { thumb }
             }
             .padding(insets)
@@ -145,18 +145,20 @@ struct PouchView: View {
     /// The pouch and the cards out of it. `chrome` is how far down the floating
     /// controls reach, which the list keeps its cards clear of.
     @ViewBuilder
-    private func scene(_ geo: GeometryProxy, fold: CGFloat?, turned: Bool, chrome: CGFloat) -> some View {
+    private func scene(_ geo: GeometryProxy, fold: CGFloat?, turned: Bool, chrome: CGFloat,
+                       below: CGFloat = 0) -> some View {
         let listWidth = min(geo.size.width - 2 * AppLayout.screenMargin, 600)
         let listHeight = (listWidth / PouchMetrics.cardAspect * displayScale).rounded() / displayScale
 
         ZStack {
             if fanned {
-                fannedList(width: listWidth, height: listHeight, viewport: geo.size.height, chrome: chrome)
+                fannedList(width: listWidth, height: listHeight, viewport: geo.size.height + below,
+                           chrome: chrome, below: below)
                     .offset(x: swipeOffset)
                     .opacity(listSettled ? 1 : 0)
             }
             if !fanned || !listSettled {
-                pouchAndDeck(geo, fold: fold, turned: turned, chrome: chrome,
+                pouchAndDeck(geo, fold: fold, turned: turned, chrome: chrome, below: below,
                              listWidth: listWidth, listHeight: listHeight)
             }
         }
@@ -181,7 +183,7 @@ struct PouchView: View {
     /// Only drawn on the way in and out; once fanned, the list replaces it.
     @ViewBuilder
     private func pouchAndDeck(_ geo: GeometryProxy, fold: CGFloat?, turned: Bool, chrome: CGFloat,
-                              listWidth: CGFloat, listHeight: CGFloat) -> some View {
+                              below: CGFloat, listWidth: CGFloat, listHeight: CGFloat) -> some View {
         let foldY = fold.flatMap { $0 > 0 && $0 < geo.size.height ? $0 : nil }
         let m = foldY.map { PouchMetrics(width: geo.size.width, halfHeight: min($0, geo.size.height - $0)) }
             ?? PouchMetrics(fitting: CGSize(width: geo.size.width, height: geo.size.height - 12))
@@ -219,7 +221,7 @@ struct PouchView: View {
                    pocketCenter: CGPoint(x: geo.size.width / 2, y: sceneTop + m.halfHeight + m.cardFrame.midY),
                    listCenter: CGPoint(x: geo.size.width / 2,
                                        y: listMidY(of: index, height: listHeight,
-                                                   viewport: geo.size.height, chrome: chrome)),
+                                                   viewport: geo.size.height + below, chrome: chrome)),
                    pocketWidth: m.cardWidth, listWidth: listWidth,
                    listPitch: listHeight + AppLayout.spacing,
                    around: { $0 == 0 ? card(at: index) : verses.indices.contains(index + $0) ? .verse(index + $0) : .none },
@@ -240,7 +242,8 @@ struct PouchView: View {
         }
     }
 
-    private func fannedList(width: CGFloat, height: CGFloat, viewport: CGFloat, chrome: CGFloat) -> some View {
+    private func fannedList(width: CGFloat, height: CGFloat, viewport: CGFloat, chrome: CGFloat,
+                            below: CGFloat) -> some View {
         ScrollViewReader { proxy in
             ScrollView(.vertical, showsIndicators: false) {
                 LazyVStack(spacing: AppLayout.spacing) {
@@ -268,6 +271,7 @@ struct PouchView: View {
                     let shown = cardShown(at: offset, height: height, viewport: viewport, chrome: chrome)
                     if shown != index { index = shown }
                 }))
+            .ignoresSafeArea(.container, edges: below > 0 ? .bottom : [])
             .safeAreaPadding(.top, chrome)
             .mask { listMask(chrome: chrome) }
             .scrollPosition(id: $listIndex, anchor: .center)
@@ -321,15 +325,17 @@ struct PouchView: View {
     private var topBar: some View {
         ZStack {
             VStack(spacing: 1) {
-                Text(pack.name)
+                Text(pack.shortName)
                     .font(.headline)
-                Text("Card \(index + 1) of \(verses.count)")
+                    .minimumScaleFactor(0.85)
+                Text([pack.seriesCode, "Card \(index + 1) of \(verses.count)"]
+                        .compactMap { $0 }.joined(separator: " · "))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .monospacedDigit()
             }
             .lineLimit(1)
-            .padding(.horizontal, 60)
+            .padding(.horizontal, 108)
             .accessibilityElement(children: .combine)
             HStack {
                 Button { close(.closeButton) } label: {
@@ -502,7 +508,7 @@ struct PouchView: View {
             guard openness == 1, lift == 1, spread == 1, !closing, !fanned else { return }
             var t = Transaction()
             t.disablesAnimations = true
-            withTransaction(t) { listIndex = index; fanned = true }
+            withTransaction(t) { fanned = true }
         }
     }
 
@@ -756,6 +762,7 @@ private struct ListScrollTracking: ViewModifier {
                 .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y + $0.contentInsets.top } action: { _, offset in
                     onOffset(offset)
                 }
+
         } else {
             content
         }

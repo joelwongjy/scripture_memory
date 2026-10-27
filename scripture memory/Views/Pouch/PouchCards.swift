@@ -33,20 +33,27 @@ enum PouchInk {
 enum CardFont {
     enum Style {
         case title, reference, body
+        case printTitle, printBody
 
-        fileprivate var name: String {
+        fileprivate var name: String? {
             switch self {
             case .title:     return "Optima-Bold"
             case .reference: return "Optima-Bold"
             case .body:      return "Optima-Regular"
+            case .printTitle, .printBody: return nil
             }
         }
+
+        fileprivate var weight: UIFont.Weight { self == .printTitle ? .medium : .regular }
     }
 
-    static func font(_ style: Style, size: CGFloat) -> Font { .custom(style.name, size: size) }
+    static func font(_ style: Style, size: CGFloat) -> Font {
+        guard let name = style.name else { return .system(size: size, weight: style == .printTitle ? .medium : .regular) }
+        return .custom(name, size: size)
+    }
 
     static func uiFont(_ style: Style, size: CGFloat) -> UIFont {
-        UIFont(name: style.name, size: size) ?? .systemFont(ofSize: size)
+        style.name.flatMap { UIFont(name: $0, size: size) } ?? .systemFont(ofSize: size, weight: style.weight)
     }
 }
 
@@ -100,24 +107,11 @@ struct PouchVerseCard<Accessory: View>: View {
         let footer = CardFooter.label(for: verse).components(separatedBy: " · ")
 
         VStack(alignment: .leading, spacing: 0) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(verse.title)
-                    .font(CardFont.font(.title, size: 4.6 * u))
-                    .foregroundStyle(PouchInk.title)
-                    .lineLimit(2)
-                    .minimumScaleFactor(0.8)
-                Spacer(minLength: 2 * u)
-                Text(verse.pinnedVersion ?? "NIV")
-                    .font(.custom("TimesNewRomanPSMT", size: 3.4 * u))
-                    .foregroundStyle(PouchInk.caption)
+            if isPrintedDEP {
+                printedHeading(u)
+            } else {
+                heading(u)
             }
-            Text(reference)
-                .font(CardFont.font(.body, size: 4.6 * u))
-                .foregroundStyle(PouchInk.body)
-                .padding(.top, 1.4 * u)
-            FittedVerseText(text: verse.verse, lineSpacing: 0.8 * u, minSize: 2 * u, maxSize: 4 * u)
-                .foregroundStyle(PouchInk.body)
-                .padding(.top, 1.4 * u)
             HStack(spacing: 1.6 * u) {
                 Text(footer.first ?? "")
                 if footer.count > 1 { Text(footer[1]) }
@@ -144,6 +138,63 @@ struct PouchVerseCard<Accessory: View>: View {
     }
 
     private var reference: String { "\(verse.book) \(verse.reference)" }
+
+    private var isPrintedDEP: Bool { verse.packName.hasPrefix("DEP ") }
+
+    @ViewBuilder
+    private func heading(_ u: CGFloat) -> some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(verse.title)
+                .font(CardFont.font(.title, size: 4.6 * u))
+                .foregroundStyle(PouchInk.title)
+                .lineLimit(2)
+                .minimumScaleFactor(0.8)
+            Spacer(minLength: 2 * u)
+            Text(verse.pinnedVersion ?? "NIV")
+                .font(.custom("TimesNewRomanPSMT", size: 3.4 * u))
+                .foregroundStyle(PouchInk.caption)
+        }
+        Text(reference)
+            .font(CardFont.font(.body, size: 4.6 * u))
+            .foregroundStyle(PouchInk.body)
+            .padding(.top, 1.4 * u)
+        FittedVerseText(text: verse.verse, lineSpacing: 0.8 * u, minSize: 2 * u, maxSize: 4 * u)
+            .foregroundStyle(PouchInk.body)
+            .padding(.top, 1.4 * u)
+    }
+
+    @ViewBuilder
+    private func printedHeading(_ u: CGFloat) -> some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(VerseNumbering.topic(of: verse).map { "\($0)) \(verse.title)" } ?? verse.title)
+                .font(CardFont.font(.printTitle, size: 4.4 * u))
+                .foregroundStyle(PouchInk.body)
+                .lineLimit(2)
+                .minimumScaleFactor(0.8)
+            Spacer(minLength: 2 * u)
+            if let number = VerseNumbering.printedNumber(for: verse) {
+                Text("(\(number))")
+                    .font(CardFont.font(.printBody, size: 3.2 * u))
+                    .foregroundStyle(PouchInk.caption)
+            }
+        }
+        HStack(alignment: .firstTextBaseline) {
+            Text(reference)
+                .font(CardFont.font(.printBody, size: 3.8 * u))
+                .foregroundStyle(PouchInk.body)
+            Spacer(minLength: 2 * u)
+            if let version = verse.pinnedVersion {
+                Text("(\(version))")
+                    .font(CardFont.font(.printBody, size: 3.2 * u))
+                    .foregroundStyle(PouchInk.caption)
+            }
+        }
+        .padding(.top, 1.2 * u)
+        FittedVerseText(text: verse.verse, lineSpacing: 0.5 * u, minSize: 2 * u, maxSize: 3.8 * u,
+                        style: .printBody, closingLine: reference)
+            .foregroundStyle(PouchInk.body)
+            .padding(.top, 0.6 * u)
+    }
 }
 
 extension PouchVerseCard where Accessory == EmptyView {
