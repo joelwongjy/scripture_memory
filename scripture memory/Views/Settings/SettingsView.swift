@@ -31,14 +31,13 @@ struct SettingsView: View {
     /// Book + reference of the verse the user is currently on, for the Settings row.
     private var currentLearningLabel: String {
         let ordered = learningOrdered
-        guard !ordered.isEmpty else { return "—" }
+        guard !ordered.isEmpty else { return "None" }
         guard let cur = learning.current(in: ordered) else { return "All learnt 🎉" }
         return "\(cur.verse.book) \(cur.verse.reference)"
     }
 
     var body: some View {
         List {
-            // ── Most-changed: how you study ──────────────────────────────
             Section {
                 Picker("Study Mode", selection: $studyMode) {
                     ForEach(StudyMode.allCases, id: \.self) { mode in
@@ -47,96 +46,13 @@ struct SettingsView: View {
                 }
                 .pickerStyle(.inline)
                 .labelsHidden()
-            } header: {
-                Text("Study Mode")
-            } footer: {
-                Text(studyMode.instructions)
-            }
-
-            Section {
                 Toggle(isOn: $hardMode) {
                     rowLabel("Hard Mode", "eye.slash")
                 }
-            } footer: {
-                Text("Hides all hints — no word placeholders shown during review.")
-            }
-
-            // ── Daily pace ───────────────────────────────────────────────
-            Section {
-                capRow(icon: "sparkles", title: newCapUnit.settingTitle,
-                       binding: $newCapAmount, range: 0...50)
-                // The period the cap above is counted over. Two a week is the
-                // pace the printed programmes set; a per-day cap of 1 quietly
-                // permits seven a week, which is how the queue becomes a backlog.
-                Picker(selection: $newCapUnit) {
-                    ForEach(NewCapUnit.allCases, id: \.self) { unit in
-                        Text(unit.pickerLabel).tag(unit)
-                    }
-                } label: {
-                    rowLabel("Count per", "calendar")
-                }
-                .pickerStyle(.segmented)
-                capRow(icon: "arrow.clockwise", title: "Reviews / day",
-                       binding: $dailyReviewCap, range: 0...500)
-                Toggle(isOn: $reviewsKnownVerses) {
-                    rowLabel("Review earlier verses", "checkmark.circle")
-                }
             } header: {
-                Text("Daily Review")
+                Text("Study")
             } footer: {
-                Text("Both caps count across all packs. New cards start at your current verse.")
-            }
-
-            Section {
-                Toggle(isOn: $reminderEnabled) {
-                    rowLabel("Daily Reminder", "bell.badge")
-                }
-                if reminderEnabled {
-                    DatePicker("Remind me at",
-                               selection: reminderTime,
-                               displayedComponents: .hourAndMinute)
-                }
-            } header: {
-                Text("Reminders")
-            } footer: {
-                Text("Sent at this time on days you have verses due.")
-            }
-            .onChange(of: reminderEnabled) { _, on in handleReminderToggle(on) }
-            .onChange(of: reminderHour)    { _, _ in Task { await NotificationManager.refreshFromSettings() } }
-            .onChange(of: reminderMinute)  { _, _ in Task { await NotificationManager.refreshFromSettings() } }
-            .alert("Notifications are off", isPresented: $showNotifDeniedAlert) {
-                Button("Open Settings") {
-                    if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
-                }
-                Button("Cancel", role: .cancel) { }
-            } message: {
-                Text("Turn on notifications for Scripture Memory in the iOS Settings app to receive daily reminders.")
-            }
-
-            // ── Set-once content & progress ──────────────────────────────
-            Section {
-                Picker("Bible Version", selection: $bibleVersion) {
-                    ForEach(BibleVersion.allCases, id: \.self) { version in
-                        Text(version.displayName).tag(version)
-                    }
-                }
-                .pickerStyle(.inline)
-                .labelsHidden()
-            } header: {
-                Text("Bible Version")
-            }
-
-            Section {
-                Picker(selection: $cardAppearance) {
-                    ForEach(CardAppearance.allCases, id: \.self) { mode in
-                        Text(mode.displayName).tag(mode)
-                    }
-                } label: {
-                    rowLabel("Cards", "rectangle.on.rectangle")
-                }
-                .pickerStyle(.menu)
-            } footer: {
-                Text("Match Appearance prints the cards on dark card stock in Dark Mode.")
+                Text(hardMode ? "\(studyMode.instructions) Hard Mode hides the word blanks." : studyMode.instructions)
             }
 
             Section {
@@ -144,7 +60,7 @@ struct SettingsView: View {
                     showLearningSetup = true
                 } label: {
                     HStack(spacing: 8) {
-                        rowLabel("Current verse", "bookmark.fill")
+                        rowLabel("Current Verse", "bookmark.fill")
                             // The title is two words; the reference is the one
                             // that should give way, not wrap the title mid-phrase.
                             .lineLimit(1)
@@ -165,13 +81,87 @@ struct SettingsView: View {
                         Text(mode.displayName).tag(mode)
                     }
                 } label: {
-                    rowLabel("Opens in", "book")
+                    rowLabel("Home Card Opens In", "house")
                 }
                 .pickerStyle(.menu)
             } header: {
                 Text("Learning")
             } footer: {
-                Text("Your current verse shows on Home; everything before it counts as learnt. Choose whether tapping it opens to read or review.")
+                Text("Verses before your current verse count as learnt.")
+            }
+
+            Section {
+                capRow(icon: "sparkles", title: newCapUnit.settingTitle,
+                       binding: $newCapAmount, range: 0...50)
+                // The period the cap above is counted over. Two a week is the
+                // pace the printed programmes set; a per-day cap of 1 quietly
+                // permits seven a week, which is how the queue becomes a backlog.
+                Picker(selection: $newCapUnit) {
+                    ForEach(NewCapUnit.allCases, id: \.self) { unit in
+                        Text(unit.pickerLabel).tag(unit)
+                    }
+                } label: {
+                    rowLabel("Count Per", "calendar")
+                }
+                .pickerStyle(.segmented)
+                capRow(icon: "arrow.clockwise", title: "Reviews per Day",
+                       binding: $dailyReviewCap, range: 0...500)
+                Toggle(isOn: $reviewsKnownVerses) {
+                    rowLabel("Review Earlier Verses", "checkmark.circle")
+                }
+            } header: {
+                Text("Daily Review")
+            } footer: {
+                Text("Limits apply across all packs.")
+            }
+
+            Section {
+                Toggle(isOn: $reminderEnabled) {
+                    rowLabel("Daily Reminder", "bell.badge")
+                }
+                if reminderEnabled {
+                    DatePicker("Time",
+                               selection: reminderTime,
+                               displayedComponents: .hourAndMinute)
+                }
+            } header: {
+                Text("Reminders")
+            } footer: {
+                Text("Only on days with verses due.")
+            }
+            .onChange(of: reminderEnabled) { _, on in handleReminderToggle(on) }
+            .onChange(of: reminderHour)    { _, _ in Task { await NotificationManager.refreshFromSettings() } }
+            .onChange(of: reminderMinute)  { _, _ in Task { await NotificationManager.refreshFromSettings() } }
+            .alert("Notifications Are Off", isPresented: $showNotifDeniedAlert) {
+                Button("Open Settings") {
+                    if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
+                }
+                Button("Cancel", role: .cancel) { }
+            } message: {
+                Text("Turn on notifications for Scripture Memory in Settings.")
+            }
+
+            Section {
+                Picker(selection: $bibleVersion) {
+                    ForEach(BibleVersion.allCases, id: \.self) { version in
+                        Text(version.displayName).tag(version)
+                    }
+                } label: {
+                    rowLabel("Bible Version", "book.closed")
+                }
+                .pickerStyle(.menu)
+                Picker(selection: $cardAppearance) {
+                    ForEach(CardAppearance.allCases, id: \.self) { mode in
+                        Text(mode.displayName).tag(mode)
+                    }
+                } label: {
+                    rowLabel("Cards", "rectangle.on.rectangle")
+                }
+                .pickerStyle(.menu)
+            } header: {
+                Text("Display")
+            } footer: {
+                Text("Match Appearance uses dark cards in Dark Mode.")
             }
 
             Section {
@@ -182,15 +172,15 @@ struct SettingsView: View {
                         .frame(maxWidth: .infinity, alignment: .center)
                 }
             } footer: {
-                Text("Clears all card scheduling. Cannot be undone.")
+                Text("Clears all review scheduling. This can't be undone.")
             }
-            .alert("Reset review progress?", isPresented: $showResetSRSAlert) {
+            .alert("Reset Review Progress?", isPresented: $showResetSRSAlert) {
                 Button("Cancel", role: .cancel) { }
                 Button("Reset", role: .destructive) {
                     SRSStore.shared.resetAll()
                 }
             } message: {
-                Text("All intervals and ease values will be cleared.")
+                Text("Every card's review schedule will be cleared.")
             }
 
             Section {

@@ -1,8 +1,7 @@
 import SwiftUI
 
 /// Home's top row: the streak count and this week's days. Tapping it opens the
-/// streak screen. The flame stays grey until today's practice is done, and a
-/// running streak that hasn't been extended yet today says so.
+/// streak screen.
 struct HomeStreakCard: View {
     @ObservedObject private var streak = StreakStore.shared
 
@@ -20,7 +19,7 @@ struct HomeStreakCard: View {
                     .foregroundStyle(.primary)
                     .contentTransition(.numericText())
                 if !lit && count > 0 {
-                    Text("Practise today to keep it")
+                    Text("Open the app today to keep it")
                         .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(.orange)
                 }
@@ -50,7 +49,7 @@ struct HomeStreakCard: View {
         .groupedPanel()
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(lit || count == 0 ? "\(count) day streak" : "\(count) day streak, practise today to keep it")
+        .accessibilityLabel(lit || count == 0 ? "\(count) day streak" : "\(count) day streak, open the app today to keep it")
         .accessibilityHint("Shows your streak")
     }
 }

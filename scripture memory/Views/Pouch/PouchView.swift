@@ -26,6 +26,11 @@ struct PouchView: View {
     @State private var spread: CGFloat = 0
     /// The cards are fanned out and the scrolling list has taken over.
     @State private var fanned: Bool
+    /// The list has taken its scroll position, so the deck drawn over it while
+    /// it settles can go.
+    @State private var listSettled = false
+    @State private var settleToken = 0
+    @Environment(\.displayScale) private var displayScale
     @State private var closing = false
     /// The card centred in the list.
     @State private var listIndex: Int?
@@ -140,18 +145,20 @@ struct PouchView: View {
     @ViewBuilder
     private func scene(_ geo: GeometryProxy, fold: CGFloat?, turned: Bool, chrome: CGFloat) -> some View {
         let listWidth = min(geo.size.width - 2 * AppLayout.screenMargin, 600)
-        let listHeight = listWidth / PouchMetrics.cardAspect
+        let listHeight = (listWidth / PouchMetrics.cardAspect * displayScale).rounded() / displayScale
 
         ZStack {
             if fanned {
                 fannedList(width: listWidth, height: listHeight, viewport: geo.size.height, chrome: chrome)
                     .offset(x: swipeOffset)
-                    .transition(.opacity)
-            } else {
+                    .opacity(listSettled ? 1 : 0)
+            }
+            if !fanned || !listSettled {
                 pouchAndDeck(geo, fold: fold, turned: turned, chrome: chrome,
                              listWidth: listWidth, listHeight: listHeight)
             }
         }
+        .onChange(of: fanned) { _, out in if !out { listSettled = false } }
         .overlay(alignment: .bottomTrailing) {
             if fanned, let current = currentIndex, index != current {
                 JumpToCurrentButton(startExpanded: !jumpLabelShown,
@@ -163,6 +170,7 @@ struct PouchView: View {
                 }
                 .padding(.trailing, AppLayout.screenMargin)
                 .padding(.bottom, 24)
+                .transition(.opacity.animation(.easeOut(duration: 0.2)))
             }
         }
         .animation(AppMotion.content, value: index == currentIndex)
@@ -212,9 +220,11 @@ struct PouchView: View {
                                                    viewport: geo.size.height, chrome: chrome)),
                    pocketWidth: m.cardWidth, listWidth: listWidth,
                    listPitch: listHeight + AppLayout.spacing,
-                   previous: card(at: index - 1), front: card(at: index), next: card(at: index + 1),
+                   around: { $0 == 0 ? card(at: index) : verses.indices.contains(index + $0) ? .verse(index + $0) : .none },
                    edges: min(5, Int((Double(max(verses.count - index - 1, 0)) / 8).rounded(.up))),
                    face: { cardFace($0, width: $1) })
+            .clipped()
+            .mask { listMask(chrome: chrome) }
             .allowsHitTesting(false)
             .accessibilityHidden(true)
 
@@ -236,9 +246,11 @@ struct PouchView: View {
                         Button { startPractice(from: i) } label: {
                             listCard(i, width: width)
                                 .frame(width: width, height: height)
-                                .shadow(color: .black.opacity(0.08), radius: 10, y: 4)
+                                .listCardShadow()
                         }
                         .buttonStyle(CardButtonStyle())
+                        .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 2, style: .continuous))
+                        .contextMenu { cardMenu(verses[i]) }
                         .id(i)
                     }
                 }
@@ -249,67 +261,94 @@ struct PouchView: View {
             .modifier(ListScrollTracking(
                 onScroll: { listScrolled = true },
                 onOffset: { offset in
+                    if !listSettled { settleListSoon() }
                     guard listScrolled else { return }
                     let shown = cardShown(at: offset, height: height, viewport: viewport, chrome: chrome)
                     if shown != index { index = shown }
                 }))
             .safeAreaPadding(.top, chrome)
-            .mask {
-                VStack(spacing: 0) {
-                    Color.clear.frame(height: max(0, chrome - 8))
-                    LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: .bottom)
-                        .frame(height: chrome > 0 ? 32 : 0)
-                    Color.black
-                }
-            }
+            .mask { listMask(chrome: chrome) }
             .scrollPosition(id: $listIndex, anchor: .center)
             .onChange(of: listIndex) { _, new in
                 guard #unavailable(iOS 18), listScrolled, let new else { return }
                 index = new
             }
-            .onAppear { proxy.scrollTo(index, anchor: .center) }
+            .onAppear {
+                proxy.scrollTo(index, anchor: .center)
+                settleListSoon()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { settleList() }
+            }
         }
-        .simultaneousGesture(closeSwipe(fromEdge: false))
         .overlay(alignment: .leading) {
             Color.clear
                 .frame(width: Self.edgeWidth)
                 .contentShape(Rectangle())
-                .gesture(closeSwipe(fromEdge: true))
+                .gesture(closeSwipe)
+        }
+    }
+
+    /// Lets the deck go once the list's scroll position has stopped moving.
+    private func settleListSoon() {
+        settleToken += 1
+        let token = settleToken
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+            if token == settleToken { settleList() }
+        }
+    }
+
+    private func settleList() {
+        guard fanned, !listSettled else { return }
+        var t = Transaction()
+        t.disablesAnimations = true
+        withTransaction(t) { listSettled = true }
+    }
+
+    private func listMask(chrome: CGFloat) -> some View {
+        VStack(spacing: 0) {
+            Color.clear.frame(height: max(0, chrome - 8))
+            LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: .bottom)
+                .frame(height: chrome > 0 ? 32 : 0)
+            Color.black
         }
     }
 
     // MARK: - Pieces
 
+    /// Laid out like a navigation bar rather than being one, since on the iPhone
+    /// Duo it turns with the pouch.
     private var topBar: some View {
         ZStack {
             VStack(spacing: 1) {
                 Text(pack.name)
-                    .font(.system(size: 13, weight: .semibold))
-                    .lineLimit(1)
+                    .font(.headline)
                 Text("Card \(index + 1) of \(verses.count)")
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.caption)
                     .foregroundStyle(.secondary)
                     .monospacedDigit()
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 6)
-            .floatingGlass(in: Capsule())
+            .lineLimit(1)
+            .padding(.horizontal, 60)
+            .accessibilityElement(children: .combine)
             HStack {
                 Button { close() } label: {
-                    Image(systemName: "xmark").floatingGlassButton()
+                    Image(systemName: "xmark")
+                        .font(.body.weight(.medium))
+                        .frame(width: 30, height: 30)
                 }
                 .accessibilityLabel("Close")
+                .buttonBorderShape(.circle)
+                .systemGlassButton()
                 Spacer()
                 Button { startPractice(from: index) } label: {
                     Text("Practice")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(Color.accentColor)
-                        .padding(.horizontal, 16)
-                        .frame(height: 44)
-                        .floatingGlass(in: Capsule())
+                        .fontWeight(.medium)
+                        .frame(height: 30)
+                        .padding(.horizontal, 4)
                 }
+                .systemGlassButton()
             }
         }
+        .frame(height: 44)
         .padding(.horizontal, AppLayout.screenMargin)
         .padding(.vertical, 8)
         .opacity(Double(1 - flight))
@@ -358,17 +397,18 @@ struct PouchView: View {
         let verse = verses[i]
         let isCurrent = learning.isCurrent(verse)
         return PouchVerseCard(verse: verse, isLearnt: learning.isLearnt(verse), width: width) {
-            FavoriteStarButton(verse: verse)
             if isCurrent {
                 Button { markComplete(verse) } label: {
-                    Label("Complete", systemImage: "checkmark.circle.fill")
+                    Label("Complete", systemImage: "checkmark")
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(.white)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 5)
-                        .background(Color(.systemGreen), in: Capsule())
                 }
+                .buttonStyle(.borderedProminent)
+                .buttonBorderShape(.capsule)
+                .controlSize(.small)
+                .tint(PouchInk.green)
             }
+            FavoriteStarButton(verse: verse, alignment: .trailing)
         }
         .paperAppearance()
         .accessibilityAddTraits(.isButton)
@@ -377,8 +417,35 @@ struct PouchView: View {
         .accessibilityAction(named: FavoritesStore.shared.isFavorite(verse) ? "Unstar" : "Star") {
             FavoritesStore.shared.toggle(verse)
         }
-        .accessibilityAction(named: "Mark as complete") {
-            if isCurrent { markComplete(verse) }
+        .accessibilityAction(named: learning.isLearnt(verse) ? "Mark as not learnt" : "Mark as learnt") {
+            toggleLearnt(verse)
+        }
+    }
+
+    @ViewBuilder
+    private func cardMenu(_ verse: Verse) -> some View {
+        let isFavorite = FavoritesStore.shared.isFavorite(verse)
+        Button {
+            HapticEngine.light()
+            FavoritesStore.shared.toggle(verse)
+        } label: {
+            Label(isFavorite ? "Unstar" : "Star", systemImage: isFavorite ? "star.slash" : "star")
+        }
+        Button { toggleLearnt(verse) } label: {
+            if learning.isLearnt(verse) {
+                Label("Mark as Not Learnt", systemImage: "arrow.uturn.backward")
+            } else {
+                Label("Mark as Learnt", systemImage: "checkmark.circle")
+            }
+        }
+    }
+
+    private func toggleLearnt(_ verse: Verse) {
+        if learning.isLearnt(verse) {
+            learning.unmarkLearnt(verse)
+            HapticEngine.light()
+        } else {
+            markComplete(verse)
         }
     }
 
@@ -424,11 +491,13 @@ struct PouchView: View {
             guard lift > 0, !closing, !fanned else { return }
             HapticEngine.medium()
         }
-        withAnimation(.snappy(duration: 0.4).delay(0.6), completionCriteria: .logicallyComplete) {
+        withAnimation(.snappy(duration: 0.4).delay(0.6), completionCriteria: .removed) {
             spread = 1
         } completion: {
             guard openness == 1, lift == 1, spread == 1, !closing, !fanned else { return }
-            withAnimation(.easeOut(duration: 0.1)) { fanned = true }
+            var t = Transaction()
+            t.disablesAnimations = true
+            withTransaction(t) { listIndex = index; fanned = true }
         }
     }
 
@@ -443,6 +512,7 @@ struct PouchView: View {
             openness = 1
             lift = 1
             spread = 1
+            listIndex = index
             fanned = true
         }
         let target = min(max(index - Int((flick / pitch).rounded()), 0), verses.count - 1)
@@ -463,9 +533,9 @@ struct PouchView: View {
         var t = Transaction()
         t.disablesAnimations = true
         withTransaction(t) { fanned = false; swipeOffset = 0 }
-        withAnimation(.snappy(duration: 0.35), completionCriteria: .logicallyComplete) {
-            spread = 0
-            lift = 0
+        withAnimation(.snappy(duration: 0.32)) { spread = 0 }
+        withAnimation(.smooth(duration: 0.32).delay(0.2)) { lift = 0 }
+        withAnimation(.smooth(duration: 0.34).delay(0.4), completionCriteria: .logicallyComplete) {
             openness = 0
         } completion: {
             guard shelf != nil, onPutBack != nil else { dismissOrPutBack(); return }
@@ -479,22 +549,22 @@ struct PouchView: View {
         if shelf != nil, let onPutBack { onPutBack() } else { dismiss() }
     }
 
-    /// A swipe in from the leading edge, or a swipe left across the list, closes
-    /// the pack; the list follows the finger until it does or springs back.
-    private func closeSwipe(fromEdge: Bool) -> some Gesture {
+    /// A swipe in from the leading edge closes the pack; the list follows the
+    /// finger until it does or springs back.
+    private var closeSwipe: some Gesture {
         DragGesture(minimumDistance: 12)
             .onChanged { value in
                 let dx = value.translation.width, dy = value.translation.height
                 if swipeAxis == nil { swipeAxis = abs(dx) > abs(dy) * 1.5 ? .horizontal : .vertical }
                 guard swipeAxis == .horizontal else { listScrolled = true; return }
-                swipeOffset = fromEdge ? max(0, dx) * 0.6 : min(0, dx) * 0.6
+                swipeOffset = max(0, dx) * 0.6
             }
             .onEnded { value in
                 defer { swipeAxis = nil }
                 guard swipeAxis == .horizontal else { return }
                 let dx = value.translation.width
                 let flick = value.predictedEndTranslation.width
-                if fromEdge ? (dx > 80 || flick > 220) : (dx < -80 || flick < -220) {
+                if dx > 80 || flick > 220 {
                     close()
                 } else {
                     withAnimation(AppMotion.control) { swipeOffset = 0 }

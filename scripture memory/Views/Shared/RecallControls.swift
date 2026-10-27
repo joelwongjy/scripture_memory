@@ -11,7 +11,6 @@ import SwiftUI
 struct StudyControlTile: View {
     let systemImage: String
     var tint: Color = .primary
-    var fill: Color = Color(.secondarySystemGroupedBackground)
     let action: () -> Void
 
     var body: some View {
@@ -20,8 +19,7 @@ struct StudyControlTile: View {
                 .font(.system(size: 18, weight: .semibold))
                 .foregroundStyle(tint)
                 .frame(width: StudyControlMetrics.buttonSize, height: StudyControlMetrics.buttonSize)
-                .background(fill)
-                .clipShape(Capsule())
+                .systemGlass(in: Circle())
         }
         .buttonStyle(.plain)
     }
@@ -47,8 +45,7 @@ struct DictationTile: View {
 
     var body: some View {
         StudyControlTile(systemImage: isListening ? "mic.fill" : "mic",
-                         tint: isListening ? .white : .primary,
-                         fill: isListening ? .red : Color(.secondarySystemGroupedBackground),
+                         tint: isListening ? .red : .primary,
                          action: action)
             .accessibilityLabel(isListening ? "Stop dictation" : "Dictate verse")
     }
@@ -108,10 +105,7 @@ struct RecallInputField: View {
             }
             .padding(.vertical, 14)
             .padding(.horizontal, 18)
-            .background(Color(.secondarySystemGroupedBackground))
-            .clipShape(Capsule())
-            .overlay(Capsule()
-                .stroke(Color(.separator).opacity(0.5), lineWidth: 0.5))
+            .systemGlass(in: Capsule())
             .offset(x: shakeOffset)
 
             HintButton { vm.revealHint() }

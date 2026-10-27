@@ -95,10 +95,14 @@ struct ContentView: View {
         // widget, even if the onChange above is missed while the picker sheet is up.
         .onReceive(NotificationCenter.default.publisher(for: .featuredVerseDidChange)) { _ in syncWidget() }
         .onChange(of: bibleVersion)        { _, _ in syncWidget() }
-        .onChange(of: hasOnboarded)        { _, _ in syncWidget() }
+        .onChange(of: hasOnboarded)        { _, done in
+            if done { StreakStore.shared.recordToday() }
+            syncWidget()
+        }
         // Refresh the widget snapshot when leaving/returning — catches streak and
         // due-count changes made during a review session.
-        .onChange(of: scenePhase) { _, phase in
+        .onChange(of: scenePhase, initial: true) { _, phase in
+            if phase == .active, hasOnboarded { StreakStore.shared.recordToday() }
             if phase == .active || phase == .background { syncWidget() }
         }
         .onOpenURL { handleDeepLink($0) }

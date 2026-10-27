@@ -5,8 +5,8 @@ import UIKit
 // same face reads right on a phone and on the iPhone Duo's inner display.
 //
 // Styled after the physical TMS cards: bold grey title, a small serif
-// "NIV", the reference, the verse in Optima, the reference again on the right,
-// and the series code along the bottom.
+// "NIV", the reference, the verse in Optima, and the series code along the
+// bottom.
 
 /// Paper colour and ink, shared by every card face.
 enum PouchInk {
@@ -67,6 +67,12 @@ enum CardAppearance: String, CaseIterable {
 
 extension View {
     func paperAppearance() -> some View { modifier(PaperAppearance()) }
+
+    /// The soft drop shadow under each card in the pack's list; `amount` fades
+    /// it in as the deck spreads out into that list.
+    func listCardShadow(_ amount: Double = 1) -> some View {
+        shadow(color: .black.opacity(0.08 * amount), radius: 10, y: 4)
+    }
 }
 
 private struct PaperAppearance: ViewModifier {
@@ -96,10 +102,10 @@ struct PouchVerseCard<Accessory: View>: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .firstTextBaseline) {
                 Text(verse.title)
-                    .font(CardFont.font(.title, size: 5.4 * u))
+                    .font(CardFont.font(.title, size: 4.6 * u))
                     .foregroundStyle(PouchInk.title)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.5)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.8)
                 Spacer(minLength: 2 * u)
                 Text(verse.pinnedVersion ?? "NIV")
                     .font(.custom("TimesNewRomanPSMT", size: 3.4 * u))
@@ -108,14 +114,10 @@ struct PouchVerseCard<Accessory: View>: View {
             Text(reference)
                 .font(CardFont.font(.body, size: 4.6 * u))
                 .foregroundStyle(PouchInk.body)
-                .padding(.top, 1.2 * u)
-            FittedVerseText(text: verse.verse, lineSpacing: 0.9 * u, minSize: 2 * u, maxSize: 4.6 * u)
+                .padding(.top, 1.4 * u)
+            FittedVerseText(text: verse.verse, lineSpacing: 0.8 * u, minSize: 2 * u, maxSize: 4 * u)
                 .foregroundStyle(PouchInk.body)
-                .padding(.top, 0.6 * u)
-            Text(reference)
-                .font(CardFont.font(.body, size: 4.6 * u))
-                .foregroundStyle(PouchInk.body)
-                .frame(maxWidth: .infinity, alignment: .trailing)
+                .padding(.top, 1.4 * u)
             HStack(spacing: 1.6 * u) {
                 Text(footer.first ?? "")
                 if footer.count > 1 { Text(footer[1]) }
@@ -133,8 +135,8 @@ struct PouchVerseCard<Accessory: View>: View {
             .padding(.top, 1.4 * u)
         }
         .padding(.horizontal, 7 * u)
-        .padding(.top, 6.4 * u)
-        .padding(.bottom, 4.2 * u)
+        .padding(.top, 5.2 * u)
+        .padding(.bottom, 3.6 * u)
         .frame(width: width, height: width / PouchMetrics.cardAspect)
         .background(PaperFace())
         .accessibilityElement(children: .ignore)

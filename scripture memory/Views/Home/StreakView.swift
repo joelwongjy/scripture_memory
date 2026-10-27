@@ -58,9 +58,9 @@ struct StreakView: View {
 
     private var statusLine: String {
         let count = streak.current
-        if streak.isTodayDone { return "You've practised today. See you tomorrow!" }
-        if count > 0 { return "Practise today to keep your streak going." }
-        return "Practise a verse to start a streak."
+        if streak.isTodayDone { return "Streak kept for today. See you tomorrow!" }
+        if count > 0 { return "Open the app today to keep your streak going." }
+        return "Open the app each day to build a streak."
     }
 
     private var weekRow: some View { StreakWeekRow() }
@@ -72,19 +72,16 @@ struct StreakView: View {
         let goal = streak.nextMilestone
         let left = goal - count
         return VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Label("Next milestone", systemImage: "trophy.fill")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.yellow)
-                    .labelStyle(.titleAndIcon)
-                Spacer()
-                Text("\(goal) days")
+            Label {
+                Text("Next goal: \(goal)-day streak")
                     .font(.subheadline.weight(.semibold))
                     .monospacedDigit()
+            } icon: {
+                Image(systemName: "trophy.fill").foregroundStyle(.orange)
             }
             ProgressView(value: Double(count), total: Double(goal))
                 .tint(.orange)
-            Text(left == 1 ? "1 more day to go" : "\(left) more days to go")
+            Text(left == 1 ? "1 more day" : "\(left) more days")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
         }
@@ -97,7 +94,7 @@ struct StreakView: View {
     private var stats: some View {
         HStack(spacing: AppLayout.spacing) {
             statTile(value: streak.longest, label: "Best streak", systemImage: "flame.fill", tint: .orange)
-            statTile(value: streak.totalDays, label: "Days practised", systemImage: "calendar", tint: .blue)
+            statTile(value: streak.totalDays, label: "Days active", systemImage: "calendar", tint: .blue)
         }
     }
 
@@ -239,7 +236,7 @@ private struct MonthGrid: View {
     private var accessibilitySummary: String {
         let all = weeks.flatMap { $0 }.compactMap { $0 }
         let practised = all.filter(isDone).count
-        return "\(practised) of \(all.count) days practised this month"
+        return "\(practised) of \(all.count) days active this month"
     }
 }
 

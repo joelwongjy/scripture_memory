@@ -28,37 +28,9 @@ struct PackCover: View {
     private var isTMS180:     Bool  { pack.name.hasPrefix("TMS 180") }
     private var isFavorites:  Bool  { pack.name == FavoritesStore.packName }
 
-    /// The printed field colour, used as authored.
-    ///
-    /// Not `.muted`. That knocked 45% off the saturation and 30% off the
-    /// brightness of every cover — a reasonable hedge when the colours came from
-    /// a website where anyone could pick neon green, but these are read off the
-    /// physical packs and are already flat print inks. Muting them just made
-    /// every pack look like a washed-out version of itself.
-    private var fieldColor: Color { Color(hex: pack.color) ?? .gray }
-
-    /// Perceived lightness of the field, so type can pick its own colour.
-    ///
-    /// DEP 1 is printed on white stock with red type while the rest are white on
-    /// solid colour — driving that off luminance rather than the pack's name
-    /// means a colour changed later in Supabase stays legible on its own.
-    /// Only near-white stock counts. The threshold has to sit high: the yellow
-    /// pack is 0.74 and the orange 0.66 on this scale, yet both are printed white
-    /// on colour like the rest of the set — it's pack 1's white card, at 0.94,
-    /// that's the exception. A more intuitive-looking 0.65 flipped three packs to
-    /// red type and a ghosted watermark.
-    private var fieldIsLight: Bool {
-        let ui = UIColor(fieldColor)
-        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
-        ui.getRed(&r, green: &g, blue: &b, alpha: &a)
-        return (0.299 * r + 0.587 * g + 0.114 * b) > 0.85
-    }
-
-    /// Type colour for a coloured field: white, or the Navigators red on the
-    /// white-stock pack.
-    private var inkColor: Color {
-        fieldIsLight ? Color(red: 0.72, green: 0.16, blue: 0.11) : .white
-    }
+    private var fieldColor:   Color { pack.fieldColor }
+    private var fieldIsLight: Bool  { pack.fieldIsLight }
+    private var inkColor:     Color { pack.inkColor }
     private var baseColor:    Color { (Color(hex: pack.color) ?? .gray).muted }
     private var displayTitle: String {
         isDEP ? pack.name
@@ -542,5 +514,41 @@ struct PackCover: View {
             }
             .padding(18)
         }
+    }
+}
+
+// MARK: - Pack Inks
+
+extension Pack {
+    /// The printed field colour, used as authored.
+    ///
+    /// Not `.muted`. That knocked 45% off the saturation and 30% off the
+    /// brightness of every cover — a reasonable hedge when the colours came from
+    /// a website where anyone could pick neon green, but these are read off the
+    /// physical packs and are already flat print inks. Muting them just made
+    /// every pack look like a washed-out version of itself.
+    var fieldColor: Color { Color(hex: color) ?? .gray }
+
+    /// Perceived lightness of the field, so type can pick its own colour.
+    ///
+    /// DEP 1 is printed on white stock with red type while the rest are white on
+    /// solid colour — driving that off luminance rather than the pack's name
+    /// means a colour changed later in Supabase stays legible on its own.
+    /// Only near-white stock counts. The threshold has to sit high: the yellow
+    /// pack is 0.74 and the orange 0.66 on this scale, yet both are printed white
+    /// on colour like the rest of the set — it's pack 1's white card, at 0.94,
+    /// that's the exception. A more intuitive-looking 0.65 flipped three packs to
+    /// red type and a ghosted watermark.
+    var fieldIsLight: Bool {
+        let ui = UIColor(fieldColor)
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        ui.getRed(&r, green: &g, blue: &b, alpha: &a)
+        return (0.299 * r + 0.587 * g + 0.114 * b) > 0.85
+    }
+
+    /// Type colour for a coloured field: white, or the Navigators red on the
+    /// white-stock pack.
+    var inkColor: Color {
+        fieldIsLight ? Color(red: 0.72, green: 0.16, blue: 0.11) : .white
     }
 }

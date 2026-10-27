@@ -12,7 +12,7 @@ enum NewCapUnit: String, CaseIterable {
     case day
     case week
 
-    var settingTitle: String { self == .day ? "New cards / day"  : "New cards / week" }
+    var settingTitle: String { self == .day ? "New Cards per Day" : "New Cards per Week" }
     var pickerLabel:  String { self == .day ? "Day"              : "Week" }
 }
 
@@ -85,7 +85,7 @@ enum StudyMode: String, CaseIterable {
         switch self {
         case .firstLetter: return "Type the first letter of each word to reveal it."
         case .fullWord:    return "Type each word in full."
-        case .submit:      return "Type the full verse on the card, then tap Submit to check all at once."
+        case .submit:      return "Type the whole verse, then tap Submit to check it."
         }
     }
 
@@ -133,8 +133,17 @@ enum BibleVersion: String, CaseIterable {
     /// up as dropped frames in a system transition. The two bundles are fixed for
     /// the life of the process (see `VerseCatalog`), so this can be a constant.
     private static let niv11Packs: [Pack] = packsNIV11.map { pack in
-        guard !niv11PackNames.contains(pack.name) else { return pack }
-        return packsNIV84.first { $0.name == pack.name } ?? pack
+        let niv84 = packsNIV84.first { $0.name == pack.name }
+        guard niv11PackNames.contains(pack.name) else { return niv84 ?? pack }
+        guard let niv84 else { return pack }
+        let ids = Dictionary(niv84.verses.compactMap { v in v.cardUid.map { ($0, v.id) } },
+                             uniquingKeysWith: { first, _ in first })
+        let verses = pack.verses.map { v in
+            Verse(id: v.cardUid.flatMap { ids[$0] } ?? v.id, title: v.title, verse: v.verse,
+                  book: v.book, reference: v.reference, subpack: v.subpack,
+                  version: v.version, cardUid: v.cardUid, packName: v.packName)
+        }
+        return Pack(name: pack.name, color: pack.color, accentText: pack.accentText, verses: verses)
     }
 
     var packs: [Pack] { self == .niv11 ? Self.niv11Packs : packsNIV84 }

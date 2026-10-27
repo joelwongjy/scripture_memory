@@ -27,11 +27,8 @@ struct PeekHoldButton: View {
                 .contentTransition(.symbolEffect(.replace))
                 .foregroundStyle(isPeeking ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.secondary))
                 .frame(width: StudyControlMetrics.buttonSize, height: StudyControlMetrics.buttonSize)
-                .background(
-                    Capsule()
-                        .fill(isPeeking ? Color.accentColor.opacity(0.12) : Color(.secondarySystemGroupedBackground))
-                )
-                .contentShape(Rectangle())
+                .systemGlass(in: Circle())
+                .contentShape(Circle())
         }
         .buttonStyle(PressReportingButtonStyle { pressed in
             withAnimation(AppMotion.control) { isPeeking = pressed }

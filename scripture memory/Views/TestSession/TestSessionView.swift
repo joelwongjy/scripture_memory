@@ -70,6 +70,14 @@ struct TestSessionView: View {
     // MARK: - Body
 
     var body: some View {
+        NavigationStack {
+            session
+                .toolbar { toolbar }
+                .navigationBarTitleDisplayMode(.inline)
+        }
+    }
+
+    private var session: some View {
         GeometryReader { geo in
             // Full width on a phone; a centred column on a wide window.
             let columnWidth = min(geo.size.width, AppLayout.studyColumnWidth)
@@ -77,8 +85,6 @@ struct TestSessionView: View {
             let cardHeight  = cardWidth / AppLayout.cardAspect
 
             VStack(spacing: 0) {
-                topBar
-
                 GeometryReader { area in
                     let room  = max(120, area.size.height - 12)
                     let cardH = min(cardHeight, room)
@@ -151,58 +157,44 @@ struct TestSessionView: View {
         }
     }
 
-    // MARK: - Top Bar
+    // MARK: - Toolbar
 
-    private var topBar: some View {
-        ZStack {
-            VStack(spacing: 1) {
-                Text(sessionTitle)
-                    .font(.system(size: 13, weight: .semibold))
-                    .lineLimit(1)
-                Text(positionLabel)
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(Color.secondary)
-                    .monospacedDigit()
-                    .lineLimit(1)
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 6)
-            .floatingGlass(in: Capsule())
-
-            HStack {
-                Button {
-                    if speech.isListening { speech.stopListening() }
-                    dismiss()
-                } label: {
-                    Image(systemName: "xmark").floatingGlassButton()
-                }
-                .accessibilityLabel("Close session")
-
-                // Undo the last rating. On the leading edge so it stays reachable
-                // while the keyboard is up.
-                if isReview {
-                    Button(action: undoLastGrade) {
-                        Image(systemName: "arrow.uturn.backward").floatingGlassButton()
-                    }
-                    .disabled(vm.gradedOrder.isEmpty)
-                    .opacity(vm.gradedOrder.isEmpty ? 0.3 : 1)
-                    .accessibilityLabel("Undo last rating")
-                }
-
-                Spacer()
-
-                if isEditing {
-                    KeyboardDoneButton {
-                        isInputFocused = false
-                        submitFocus = nil
-                    }
-                }
+    @ToolbarContentBuilder
+    private var toolbar: some ToolbarContent {
+        ToolbarItem(placement: .topBarLeading) {
+            Button("Close", systemImage: "xmark") {
+                if speech.isListening { speech.stopListening() }
+                dismiss()
             }
         }
-        .padding(.horizontal, AppLayout.screenMargin)
-        .padding(.vertical, 8)
-        .animation(AppMotion.control, value: isInputFocused)
-        .animation(AppMotion.control, value: submitFocus)
+        if isReview {
+            // On the leading edge so it stays reachable while the keyboard is up.
+            ToolbarItem(placement: .topBarLeading) {
+                Button("Undo Last Rating", systemImage: "arrow.uturn.backward", action: undoLastGrade)
+                    .disabled(vm.gradedOrder.isEmpty)
+            }
+        }
+        ToolbarItem(placement: .principal) {
+            VStack(spacing: 1) {
+                Text(sessionTitle)
+                    .font(.headline)
+                Text(positionLabel)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+            }
+            .lineLimit(1)
+            .accessibilityElement(children: .combine)
+        }
+        if isEditing {
+            ToolbarItem(placement: .confirmationAction) {
+                Button("Done") {
+                    isInputFocused = false
+                    submitFocus = nil
+                }
+                .accessibilityLabel("Close keyboard")
+            }
+        }
     }
 
     // MARK: - Card Stack
@@ -316,7 +308,6 @@ struct TestSessionView: View {
             verseCount: vm.verses.count,
             currentIndex: $vm.currentIndex,
             isScrubbing: $isScrubbing,
-            trackHeight: 34,
             onScrubIndexChange: { vm.saveProgress() },
             onStepBack: {
                 HapticEngine.light()

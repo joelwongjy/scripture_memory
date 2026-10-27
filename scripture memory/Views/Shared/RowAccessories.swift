@@ -18,11 +18,12 @@ struct SelectionCircle: View {
     var isSelected: Bool
     var mixed = false
     var size: CGFloat = 20
+    var tint: Color = .accentColor
 
     var body: some View {
         Image(systemName: isSelected ? "checkmark.circle.fill" : mixed ? "minus.circle.fill" : "circle")
             .font(.system(size: size))
-            .foregroundStyle(isSelected || mixed ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.secondary))
+            .foregroundStyle(isSelected || mixed ? AnyShapeStyle(tint) : AnyShapeStyle(.secondary))
             .accessibilityHidden(true)
     }
 }

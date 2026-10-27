@@ -24,8 +24,7 @@ struct StreakCelebration: View {
                 .contentTransition(.numericText(value: Double(shown)))
             Text("day streak!")
                 .font(.title2.weight(.bold))
-            Text(count == 1 ? "You've started a streak. Come back tomorrow to grow it."
-                            : "Come back tomorrow to keep it going.")
+            Text("You reached a goal. Next up: \(StreakStore.milestone(after: count)) days.")
                 .font(.body)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -87,7 +86,7 @@ struct StreakWeekRow: View {
             }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("This week: \(streak.thisWeek().filter(\.done).count) of 7 days practised")
+        .accessibilityLabel("This week: \(streak.thisWeek().filter(\.done).count) of 7 days active")
     }
 }
 

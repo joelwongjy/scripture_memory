@@ -59,7 +59,7 @@ enum VerseFit {
 }
 
 /// Renders verse body text at the largest size that fills its allotted space
-/// without truncating. Measures its own allocated geometry, so it adapts to
+/// without truncating, closing up the line spacing before it shrinks the type. Measures its own allocated geometry, so it adapts to
 /// whatever height the surrounding card layout leaves for it.
 struct FittedVerseText: View {
     let text:        String
@@ -69,22 +69,24 @@ struct FittedVerseText: View {
 
     var body: some View {
         GeometryReader { geo in
+            let tight = lineSpacing * 0.3
             let estimate = VerseFit.fontSize(text, width: geo.size.width, height: geo.size.height,
-                                             lineSpacing: lineSpacing, minSize: minSize, maxSize: maxSize)
+                                             lineSpacing: tight, minSize: minSize, maxSize: maxSize)
             ViewThatFits(in: .vertical) {
+                verse(maxSize, lineSpacing).fixedSize(horizontal: false, vertical: true)
                 ForEach(Array(stride(from: min(maxSize, estimate + 2), to: minSize, by: -0.5)), id: \.self) { size in
-                    verse(size).fixedSize(horizontal: false, vertical: true)
+                    verse(size, tight).fixedSize(horizontal: false, vertical: true)
                 }
-                verse(minSize).minimumScaleFactor(0.5)
+                verse(minSize, tight).minimumScaleFactor(0.5)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
     }
 
-    private func verse(_ size: CGFloat) -> some View {
+    private func verse(_ size: CGFloat, _ spacing: CGFloat) -> some View {
         Text(text)
             .font(CardFont.font(.body, size: size))
-            .lineSpacing(lineSpacing)
+            .lineSpacing(spacing)
             .frame(maxWidth: .infinity, alignment: .leading)
     }
 }

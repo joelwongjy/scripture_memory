@@ -86,7 +86,7 @@ struct HomeView: View {
                 Spacer()
                 packsReviewLink
             }
-            .padding(.horizontal, 4)
+            .padding(.horizontal, 20)
             .padding(.top, 4)
             DailyReviewCard(activePacks: activePacks) { cover = .review($0) }
             learningCards

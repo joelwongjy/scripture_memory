@@ -3,8 +3,7 @@ import Combine
 
 /// Tracks daily study activity and derives the user's current streak.
 ///
-/// A day counts once the user practises that day: finishes or submits a card,
-/// rates a review, or marks a verse complete. Opening the app doesn't count.
+/// A day counts once the user opens the app that day.
 /// Persisted through `ProgressStorage` (a set of `yyyy-MM-dd` day keys). Days
 /// are facts, so an external copy is **unioned** in rather than replacing ours —
 /// a day studied on either device stays studied.
@@ -15,8 +14,8 @@ final class StreakStore: ObservableObject {
 
     @Published private(set) var days: Set<String> = []
 
-    /// Set to the new streak length when today's first practice extends the
-    /// streak; the celebration overlay shows it and clears it.
+    /// Set to the new streak length when today's first visit reaches a
+    /// milestone; the celebration overlay shows it and clears it.
     @Published var celebration: Int?
 
     private let storage: ProgressStorage
@@ -42,13 +41,13 @@ final class StreakStore: ObservableObject {
         if merged != incoming { persist() }   // our side had days iCloud lacked
     }
 
-    /// Mark today as practised. Idempotent; the first call of the day raises the
-    /// celebration.
+    /// Mark today as done. Idempotent; the first call of the day raises the
+    /// celebration when the streak lands on a milestone.
     func recordToday(_ now: Date = Date()) {
         let key = Self.dayKey(now)
         guard !days.contains(key) else { return }
         days.insert(key)
-        celebration = current
+        if Self.milestones.contains(current) { celebration = current }
         // Keep ~400 days so the set can't grow unbounded.
         if days.count > 400 {
             days = Set(days.sorted().suffix(400))
@@ -102,11 +101,14 @@ final class StreakStore: ObservableObject {
     /// Whether the given calendar day was practised.
     func isDone(_ date: Date) -> Bool { days.contains(Self.dayKey(date)) }
 
-    /// The next streak milestone above `current`, Duolingo-style.
-    var nextMilestone: Int {
-        let milestones = [3, 7, 14, 30, 50, 100, 200, 365, 500, 1000]
-        return milestones.first { $0 > current } ?? (current / 100 + 1) * 100
+    static let milestones = [3, 7, 14, 30, 50, 100, 200, 365, 500, 1000]
+
+    /// The next streak milestone above `count`, Duolingo-style.
+    static func milestone(after count: Int) -> Int {
+        milestones.first { $0 > count } ?? (count / 100 + 1) * 100
     }
+
+    var nextMilestone: Int { Self.milestone(after: current) }
 
     private static func date(fromKey key: String) -> Date? {
         let parts = key.split(separator: "-").compactMap { Int($0) }

@@ -4,12 +4,12 @@ import SwiftUI
 
 private enum PackListItem: Identifiable {
     case packHeader(Pack)
-    case verse(Verse)
+    case verse(Verse, Pack)
 
     var id: String {
         switch self {
         case .packHeader(let p): return "pack_\(p.id)"
-        case .verse(let v):     return "verse_\(v.id)"
+        case .verse(let v, _):  return "verse_\(v.id)"
         }
     }
 }
@@ -50,14 +50,41 @@ struct TestSetupView: View {
     /// walks, and what "everything before this one" means.
     private var catalogue: [Verse] { Catalogue.verses(in: visiblePacks) }
 
-    // Flat items for packs + their expanded verses — driven by expandedPackIds
-    private var packItems: [PackListItem] {
-        var items: [PackListItem] = []
+    private var packSeries: [(title: String, packs: [Pack])] {
+        var series: [(title: String, packs: [Pack])] = []
         for pack in visiblePacks {
+            let title = Self.seriesTitle(pack)
+            if let i = series.firstIndex(where: { $0.title == title }) {
+                series[i].packs.append(pack)
+            } else {
+                series.append((title, [pack]))
+            }
+        }
+        return series
+    }
+
+    private static func seriesTitle(_ pack: Pack) -> String {
+        if pack.name.hasPrefix("DEP") { return "DEP 242" }
+        if pack.name.hasPrefix("TMS 180") { return "TMS 180" }
+        if pack.name == "5 Assurances" || pack.name == "TMS 60" { return "Growing in Christ" }
+        return "More Packs"
+    }
+
+    private static func shortName(_ pack: Pack) -> String {
+        for separator in [": ", " · "] where pack.name.hasPrefix("DEP") || pack.name.hasPrefix("TMS 180") {
+            if let range = pack.name.range(of: separator) { return String(pack.name[range.upperBound...]) }
+        }
+        return pack.name
+    }
+
+    // Flat items for packs + their expanded verses — driven by expandedPackIds
+    private func packItems(_ packs: [Pack]) -> [PackListItem] {
+        var items: [PackListItem] = []
+        for pack in packs {
             items.append(.packHeader(pack))
             if expandedPackIds.contains(pack.id) {
                 for verse in pack.verses {
-                    items.append(.verse(verse))
+                    items.append(.verse(verse, pack))
                 }
             }
         }
@@ -73,21 +100,22 @@ struct TestSetupView: View {
                 }
             }
 
-            Section {
+            Section("Quick Pick") {
                 shortcutRows
             }
 
-            // All packs in one compact section
-            Section {
-                ForEach(packItems) { item in
-                    switch item {
-                    case .packHeader(let pack):
-                        packHeaderRow(pack)
-                            .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 8))
+            ForEach(packSeries, id: \.title) { series in
+                Section(series.title) {
+                    ForEach(packItems(series.packs)) { item in
+                        switch item {
+                        case .packHeader(let pack):
+                            packHeaderRow(pack)
+                                .listRowInsets(EdgeInsets(top: 0, leading: 4, bottom: 0, trailing: 8))
 
-                    case .verse(let verse):
-                        verseRow(verse)
-                            .listRowInsets(EdgeInsets(top: 4, leading: 40, bottom: 4, trailing: 8))
+                        case .verse(let verse, let pack):
+                            verseRow(verse, tint: pack.tint)
+                                .listRowInsets(EdgeInsets(top: 4, leading: 40, bottom: 4, trailing: 8))
+                        }
                     }
                 }
             }
@@ -103,7 +131,6 @@ struct TestSetupView: View {
             .frame(width: 0, height: 0)
         )
         .listStyle(.insetGrouped)
-        .listSectionSpacing(savedSession == nil ? 12 : 22)
         .animation(AppMotion.content, value: expandedPackIds)
         .animation(AppMotion.content, value: savedSession != nil)
         .background(Color(.systemGroupedBackground))
@@ -131,10 +158,7 @@ struct TestSetupView: View {
             if !selectedVerseIds.isEmpty { bottomBar }
         }
         .fullScreenCover(item: $activeSession) { session in
-            NavigationStack {
-                TestSessionView(session: session, onSessionEnded: clearSession)
-                    .toolbar(.hidden, for: .navigationBar)
-            }
+            TestSessionView(session: session, onSessionEnded: clearSession)
         }
     }
 
@@ -254,8 +278,8 @@ struct TestSetupView: View {
                 }
                 HapticEngine.light()
             } label: {
-                SelectionCircle(isSelected: allSelected, mixed: someSelected && !allSelected, size: 22)
-                    .frame(width: 44, height: 50)
+                SelectionCircle(isSelected: allSelected, mixed: someSelected && !allSelected, size: 22, tint: pack.tint)
+                    .frame(width: 44, height: 56)
             }
             .buttonStyle(.plain)
             .accessibilityLabel(allSelected ? "Deselect all verses in \(pack.name)" : "Select all verses in \(pack.name)")
@@ -265,11 +289,11 @@ struct TestSetupView: View {
                 if isExpanded { expandedPackIds.remove(pack.id) }
                 else          { expandedPackIds.insert(pack.id) }
             } label: {
-                PackRowLabel(pack: pack,
-                             detail: selectedInPack > 0 ? "\(selectedInPack) of \(pack.verses.count) verses" : nil) {
+                PackRowLabel(pack: pack, title: Self.shortName(pack), showsBadge: true,
+                             detail: packDetail(pack, selected: selectedInPack)) {
                     RowChevron()
                         .rotationEffect(isExpanded ? .degrees(90) : .zero)
-                        .frame(width: 44, height: 50)
+                        .frame(width: 44, height: 56)
                 }
                 .frame(maxHeight: .infinity)
             }
@@ -278,11 +302,19 @@ struct TestSetupView: View {
         }
     }
 
+    private func packDetail(_ pack: Pack, selected: Int) -> String {
+        if selected > 0 { return "\(selected) of \(pack.verses.count) selected" }
+        let learnt = pack.verses.filter(learning.isLearnt).count
+        let count = Wording.verses(pack.verses.count)
+        if learnt == 0 { return count }
+        return "\(count) · \(learnt == pack.verses.count ? "all" : "\(learnt)") learnt"
+    }
+
     // MARK: - Verse Row
 
     /// One line: tick, card number, title, reference. Tapping the row toggles it
     /// in or out of the quiz; the trailing arrow selects everything up to here.
-    private func verseRow(_ verse: Verse) -> some View {
+    private func verseRow(_ verse: Verse, tint: Color) -> some View {
         let isSelected = selectedVerseIds.contains(verse.id)
         return Button {
             if isSelected { selectedVerseIds.remove(verse.id) }
@@ -290,7 +322,7 @@ struct TestSetupView: View {
             HapticEngine.light()
         } label: {
             VerseRowLabel(verse: verse, leading: {
-                SelectionCircle(isSelected: isSelected)
+                SelectionCircle(isSelected: isSelected, tint: tint)
             }, trailing: {})
             .padding(.vertical, 2)
             // Room for the "up to here" control overlaid at the trailing edge.
@@ -368,34 +400,13 @@ struct TestSetupView: View {
     }
 
     private var bottomBarContent: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 1) {
-                Text("\(selectedCount)")
-                    .font(.system(size: 22, weight: .bold, design: .monospaced))
-                Text("verses")
-                    .font(.system(size: 11))
-                    .foregroundStyle(Color.secondary)
-            }
-            .frame(minWidth: 55, alignment: .leading)
-
-            Spacer()
-
-            QuizCountStepper(count: $quizCount, maximum: selectedCount)
-
-            Spacer()
-
-            Button {
+        VStack(spacing: 12) {
+            QuizCountMenu(count: $quizCount, maximum: selectedCount)
+            PrimaryActionButton(title: "Start") {
                 if savedSession != nil { showOverwriteAlert = true }
                 else                   { launchNewSession() }
-            } label: {
-                Text("Start").font(.headline)
             }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
-            .buttonBorderShape(.capsule)
-            .tint(.accentColor)
         }
-        .padding(.vertical, 4)
     }
 
     // MARK: - Actions

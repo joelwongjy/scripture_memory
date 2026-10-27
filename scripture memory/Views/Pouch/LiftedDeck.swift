@@ -3,8 +3,9 @@ import SwiftUI
 /// The bottom pocket's cards on their way out into the fanned list, and back.
 ///
 /// `lift` carries the stack out of the pocket to the list's size and place;
-/// `spread` lays the cards out one above the other, the card behind sliding
-/// down and the one before coming in from above. At 1 the list takes over.
+/// `spread` lays the cards out one above the other, the cards behind sliding
+/// down and the ones before coming in from above. At 1 the list takes over,
+/// so the deck draws every card the list will show around the front one.
 struct LiftedDeck<Face: View>: View, Animatable {
     var lift: CGFloat
     var spread: CGFloat
@@ -14,10 +15,12 @@ struct LiftedDeck<Face: View>: View, Animatable {
     let listWidth: CGFloat
     /// The gap from one card to the next in the list.
     let listPitch: CGFloat
-    let previous: PouchSlots.Card
-    let front: PouchSlots.Card
-    let next: PouchSlots.Card
+    /// The card `k` places from the front one: below for positive `k`, above
+    /// for negative.
+    let around: (Int) -> PouchSlots.Card
     let edges: Int
+
+    private static var reach: Int { 3 }
     let face: (PouchSlots.Card, CGFloat) -> Face
 
     var animatableData: AnimatablePair<CGFloat, CGFloat> {
@@ -44,14 +47,19 @@ struct LiftedDeck<Face: View>: View, Animatable {
                     .offset(y: CGFloat(n) * 1.1)
                     .opacity(Double(1 - spread))
             }
-            face(next, listWidth)
-                .offset(y: gap)
-            if spread > 0 {
-                face(previous, listWidth)
-                    .offset(y: -gap)
-                    .opacity(Double(min(1, spread * 2)))
+            ForEach(Array((1...Self.reach).reversed()), id: \.self) { k in
+                face(around(k), listWidth)
+                    .listCardShadow(Double(spread))
+                    .offset(y: gap * CGFloat(k))
+                if spread > 0 {
+                    face(around(-k), listWidth)
+                        .listCardShadow(Double(spread))
+                        .offset(y: -gap * CGFloat(k))
+                        .opacity(Double(min(1, max(0, spread * 2 - CGFloat(k - 1) * 0.5))))
+                }
             }
-            face(front, listWidth)
+            face(around(0), listWidth)
+                .listCardShadow(Double(spread))
         }
         .frame(width: listWidth, height: height)
         .shadow(color: .black.opacity(Double(0.14 * lift * (1 - spread))), radius: 1.5, y: 1)
