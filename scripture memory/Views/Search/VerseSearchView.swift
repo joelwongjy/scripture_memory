@@ -6,7 +6,7 @@ struct VerseSearchView: View {
     @AppStorage(BibleVersion.storageKey) private var bibleVersion: BibleVersion = .niv84
     @ObservedObject private var packPrefs = PackPreferencesStore.shared
 
-    @State private var searchText = ""
+    let searchText: String
     @State private var opened: OpenedVerse?
 
     private struct OpenedVerse: Identifiable {
@@ -18,26 +18,27 @@ struct VerseSearchView: View {
     private var visiblePacks: [Pack] { packPrefs.visible(from: bibleVersion.packs) }
 
     var body: some View {
-        ScrollView {
+        let results = VerseSearch.results(for: searchText, in: visiblePacks)
+        List {
+            VerseSearchSections(query: searchText, results: results) {
+                opened = OpenedVerse(pack: $0.pack, index: $0.verseIndex)
+            }
+        }
+        .overlay {
             if searchText.isEmpty {
                 ContentUnavailableView {
                     Label("Search Verses", systemImage: "magnifyingglass")
                 } description: {
                     Text("Find a verse by its words, reference or title.")
                 }
-                .padding(.top, 48)
-            } else {
-                VerseSearchResultsList(
-                    query: searchText,
-                    results: VerseSearch.results(for: searchText, in: visiblePacks),
-                    onSelect: { opened = OpenedVerse(pack: $0.pack, index: $0.verseIndex) }
-                )
+            } else if results.isEmpty {
+                VerseSearchNoResults(query: searchText)
             }
         }
-        .scrollDismissesKeyboard(.immediately)
+        .scrollContentBackground(.hidden)
         .background(Color(.systemGroupedBackground))
+        .scrollDismissesKeyboard(.immediately)
         .navigationTitle("Search")
-        .searchable(text: $searchText, prompt: "Search verses")
         .task { VerseSearch.prewarm(visiblePacks) }
         .fullScreenCover(item: $opened) { item in
             PouchView(pack: item.pack, startIndex: item.index)

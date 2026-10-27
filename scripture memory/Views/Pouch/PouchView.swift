@@ -487,10 +487,7 @@ struct PouchView: View {
     private func unfoldAndFanOut() {
         withAnimation(.smooth(duration: 0.4)) { openness = 1 }
         withAnimation(.smooth(duration: 0.4).delay(0.3)) { lift = 1 }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-            guard lift > 0, !closing, !fanned else { return }
-            HapticEngine.medium()
-        }
+        HapticEngine.play(HapticEngine.packOpen)
         withAnimation(.snappy(duration: 0.4).delay(0.6), completionCriteria: .removed) {
             spread = 1
         } completion: {
@@ -505,6 +502,7 @@ struct PouchView: View {
     /// flick on through it.
     private func finishOpening(flick: CGFloat, pitch: CGFloat) {
         guard !fanned, !closing, !hingeShut else { return }
+        HapticEngine.stop()
         var t = Transaction()
         t.disablesAnimations = true
         withTransaction(t) {
@@ -528,8 +526,8 @@ struct PouchView: View {
     private func close() {
         guard !closing else { return }
         closing = true
-        HapticEngine.light()
-        if AppMotion.reduceMotion { dismissOrPutBack(); return }
+        if AppMotion.reduceMotion { HapticEngine.light(); dismissOrPutBack(); return }
+        HapticEngine.play(HapticEngine.packClose)
         var t = Transaction()
         t.disablesAnimations = true
         withTransaction(t) { fanned = false; swipeOffset = 0 }
@@ -541,7 +539,7 @@ struct PouchView: View {
             guard shelf != nil, onPutBack != nil else { dismissOrPutBack(); return }
             withAnimation(.smooth(duration: 0.35), completionCriteria: .logicallyComplete) {
                 flight = 1
-            } completion: { dismissOrPutBack() }
+            } completion: { HapticEngine.soft(); dismissOrPutBack() }
         }
     }
 
@@ -620,6 +618,7 @@ struct PouchView: View {
         hingeDriven = true
         withAnimation(AppMotion.content) { hingeShut = closed }
         if closed {
+            HapticEngine.stop()
             var t = Transaction()
             t.disablesAnimations = true
             withTransaction(t) {

@@ -214,7 +214,7 @@ struct TestSetupView: View {
         if !upToCurrent.isEmpty {
             shortcutRow(
                 title: "Up to current verse",
-                detail: learning.currentVerse.flatMap { VerseNumbering.code(for: $0) }
+                detail: learning.currentVerse.map { "\($0.book) \($0.reference)" }
                     ?? Wording.verses(upToCurrent.count)
             ) { select(upToCurrent) }
         }

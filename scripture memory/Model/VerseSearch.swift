@@ -11,6 +11,25 @@ struct VerseSearchResult: Identifiable {
     let verseIndex: Int
 }
 
+/// One pack's share of the results, in the order its best match ranked.
+struct VerseSearchGroup: Identifiable {
+    let pack: Pack
+    var results: [VerseSearchResult]
+    var id: String { pack.id }
+
+    static func grouping(_ results: [VerseSearchResult]) -> [VerseSearchGroup] {
+        var groups: [VerseSearchGroup] = []
+        for result in results {
+            if let i = groups.firstIndex(where: { $0.pack.id == result.pack.id }) {
+                groups[i].results.append(result)
+            } else {
+                groups.append(VerseSearchGroup(pack: result.pack, results: [result]))
+            }
+        }
+        return groups
+    }
+}
+
 // MARK: - Matching
 
 @MainActor

@@ -15,6 +15,7 @@ struct ContentView: View {
     /// One cover, enum-driven — two `.fullScreenCover` modifiers on a single view
     /// conflict, so onboarding and widget deep-links share this.
     @State private var cover: ActiveCover?
+    @State private var searchText = ""
 
     private enum ActiveCover: Identifiable {
         case onboarding(showsWelcome: Bool)
@@ -98,7 +99,10 @@ struct ContentView: View {
                 Tab("Packs", systemImage: "rectangle.stack.fill") { NavigationStack { PackListView() } }
                 Tab("Quiz", systemImage: "checkmark.circle.fill") { NavigationStack { TestSetupView() } }
                 Tab("Settings", systemImage: "gearshape") { NavigationStack { SettingsView() } }
-                Tab(role: .search) { NavigationStack { VerseSearchView() } }
+                Tab(role: .search) {
+                    NavigationStack { VerseSearchView(searchText: searchText) }
+                        .searchable(text: $searchText, prompt: "Search verses")
+                }
             }
         } else {
             TabView {

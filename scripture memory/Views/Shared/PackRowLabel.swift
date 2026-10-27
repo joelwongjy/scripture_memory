@@ -15,7 +15,7 @@ struct PackRowLabel<Trailing: View>: View {
             if showsBadge { PackBadge(pack: pack) }
             VStack(alignment: .leading, spacing: 2) {
                 Text(title ?? pack.name)
-                    .font(.system(size: 16, weight: .medium))
+                    .font(.body.weight(.medium))
                     .foregroundStyle(.primary)
                     .lineLimit(1)
                     .truncationMode(.tail)
