@@ -81,7 +81,7 @@ struct TestSessionView: View {
 
                 GeometryReader { area in
                     let room  = max(120, area.size.height - 12)
-                    let cardH = min(max(cardHeight, min(cardWidth * 0.82, room)), room)
+                    let cardH = min(cardHeight, room)
                     ZStack {
                         cardStack
                             .frame(width: cardWidth, height: cardH)
@@ -98,7 +98,8 @@ struct TestSessionView: View {
                             .zIndex(100)
                         }
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .padding(.top, 8)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                 }
 
                 // Review is forward-only (you advance by rating; Undo goes back),
@@ -163,8 +164,6 @@ struct TestSessionView: View {
                     .foregroundStyle(Color.secondary)
                     .monospacedDigit()
                     .lineLimit(1)
-                    .contentTransition(.numericText())
-                    .animation(AppMotion.content, value: positionLabel)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 6)

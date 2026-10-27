@@ -20,9 +20,6 @@ struct VerseFastScrollOverlay: View {
     let referenceProvider: (Int) -> String
     /// Called while dragging the thumb — the parent scrolls the list to `index`.
     let onScrubTo:         (Int) -> Void
-    /// Stays on screen instead of fading out once scrolling stops: for content
-    /// that doesn't scroll by itself, where the thumb is the way through it.
-    var alwaysVisible = false
 
     @State private var isDragging       = false
     @State private var dragFraction:    Double = 0
@@ -57,7 +54,7 @@ struct VerseFastScrollOverlay: View {
         }
         .frame(width: Self.thumbSize + Self.thumbTrailingPad + 2,
                height: containerHeight, alignment: .topTrailing)
-        .opacity(visible || isDragging || alwaysVisible ? 1 : 0)
+        .opacity(visible || isDragging ? 1 : 0)
         .animation(AppMotion.control, value: visible)
         .allowsHitTesting(verseCount >= 2)
         .onAppear { flash() }

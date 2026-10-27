@@ -1,14 +1,15 @@
 import SwiftUI
 
-/// A pack as the real thing: a clear plastic pouch folded in the middle, with
-/// the cards in two inner pockets.
+/// A pack: its cards as a list of the printed cards, which come out of and go
+/// back into the pack's clear plastic pouch.
 ///
-/// The bottom pocket holds the card you're on and everything after it; turning
-/// a card flips it over the fold into the top pocket. Tap the pouch to fan the
-/// cards out into a list, and tap a card to gather them back on it.
+/// Opening, the pouch comes off its shelf tile, unfolds and fans its cards out
+/// into the list. Closing (the ×, a swipe in from the leading edge, or a swipe
+/// left across the list) gathers them back in and folds it shut. Tap a card to
+/// practise from it.
 ///
-/// On the iPhone Duo the device is the pouch: the hinge opens and shuts it, each
-/// pocket fills one half of the screen, and shut, the front screen is its cover.
+/// On the iPhone Duo the hinge is the pouch's fold: shut, the front screen is
+/// the pack's cover; open, the pouch lies flat across both halves.
 struct PouchView: View {
     let pack: Pack
     /// The pack's tile on the shelf, in global coordinates, to fly out of and
@@ -19,46 +20,52 @@ struct PouchView: View {
 
     @State private var index: Int
     @State private var openness: CGFloat
-    @State private var unfolding = false
-    @State private var turn: CGFloat = 0
-    @State private var turning: Int?
-    @State private var drag: DragMode = .none
     /// 0 with the stack in its pocket, 1 with it out over the pouch.
     @State private var lift: CGFloat = 0
     /// 0 with the cards out in a stack, 1 with them laid out as the list.
     @State private var spread: CGFloat = 0
     /// The cards are fanned out and the scrolling list has taken over.
-    @State private var fanned = false
-    @State private var gathering = false
-    /// The card centred in the fanned list.
+    @State private var fanned: Bool
+    @State private var closing = false
+    /// The card centred in the list.
     @State private var listIndex: Int?
+    @State private var listScrolled = false
+    /// The list following a horizontal swipe, before it closes or springs back.
+    @State private var swipeOffset: CGFloat = 0
+    @State private var swipeAxis: Axis?
     /// 1 with the pouch shut on its shelf tile, 0 with it in front of you.
     @State private var flight: CGFloat
     @State private var hingeDriven = false
     @State private var hingeShut = false
     @State private var practice: TestSession?
     @State private var undoToastState: UndoToastState?
-    @AppStorage("pouch.turnDemoCount.v1") private var turnDemoCount = 0
+    @AppStorage("pouch.jumpLabelShown.v1") private var jumpLabelShown = false
 
     @StateObject private var tilt = TiltMonitor()
     @ObservedObject private var learning = LearningStore.shared
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) private var dismiss
 
-    private enum DragMode { case none, opening, forward, backward }
-
     /// The top controls' height under the safe area: a 44pt control and its padding.
     private static let chromeHeight: CGFloat = 60
+    /// How far in from the leading edge a swipe counts as the edge swipe.
+    private static let edgeWidth: CGFloat = 28
 
     private var verses: [Verse] { pack.verses }
 
     init(pack: Pack, startIndex: Int, shelf: CGRect? = nil, onPutBack: (() -> Void)? = nil) {
+        let reduce = AppMotion.reduceMotion
+        let start = min(max(startIndex, 0), max(pack.verses.count - 1, 0))
         self.pack = pack
         self.shelf = shelf
         self.onPutBack = onPutBack
-        _index = State(initialValue: min(max(startIndex, 0), pack.verses.count))
-        _openness = State(initialValue: AppMotion.reduceMotion ? 1 : 0)
-        _flight = State(initialValue: shelf != nil && !AppMotion.reduceMotion ? 1 : 0)
+        _index = State(initialValue: start)
+        _listIndex = State(initialValue: start)
+        _openness = State(initialValue: reduce ? 1 : 0)
+        _lift = State(initialValue: reduce ? 1 : 0)
+        _spread = State(initialValue: reduce ? 1 : 0)
+        _fanned = State(initialValue: reduce)
+        _flight = State(initialValue: shelf != nil && !reduce ? 1 : 0)
     }
 
     var body: some View {
@@ -94,10 +101,10 @@ struct PouchView: View {
         }
         .modifier(FollowsHinge(onChange: hingeMoved))
         .onAppear { appeared() }
+        .onChange(of: fanned) { _, out in out ? tilt.stop() : tilt.start() }
         .onDisappear {
             tilt.stop()
-            let current = min(index, verses.count - 1)
-            if verses.indices.contains(current) { PackPositions.save(verses[current], inPack: pack.name) }
+            if verses.indices.contains(index) { PackPositions.save(verses[index], inPack: pack.name) }
         }
     }
 
@@ -129,16 +136,46 @@ struct PouchView: View {
     }
 
     /// The pouch and the cards out of it. `chrome` is how far down the floating
-    /// controls reach, which the fanned list keeps its cards clear of.
+    /// controls reach, which the list keeps its cards clear of.
     @ViewBuilder
     private func scene(_ geo: GeometryProxy, fold: CGFloat?, turned: Bool, chrome: CGFloat) -> some View {
+        let listWidth = min(geo.size.width - 2 * AppLayout.screenMargin, 600)
+        let listHeight = listWidth / PouchMetrics.cardAspect
+
+        ZStack {
+            if fanned {
+                fannedList(width: listWidth, height: listHeight, viewport: geo.size.height, chrome: chrome)
+                    .offset(x: swipeOffset)
+                    .transition(.opacity)
+            } else {
+                pouchAndDeck(geo, fold: fold, turned: turned, chrome: chrome,
+                             listWidth: listWidth, listHeight: listHeight)
+            }
+        }
+        .overlay(alignment: .bottomTrailing) {
+            if fanned, let current = currentIndex, index != current {
+                JumpToCurrentButton(startExpanded: !jumpLabelShown,
+                                    onExpandedShown: { jumpLabelShown = true }) {
+                    HapticEngine.light()
+                    listScrolled = false
+                    index = current
+                    withAnimation(AppMotion.movement) { listIndex = current }
+                }
+                .padding(.trailing, AppLayout.screenMargin)
+                .padding(.bottom, 24)
+            }
+        }
+        .animation(AppMotion.content, value: index == currentIndex)
+    }
+
+    /// Only drawn on the way in and out; once fanned, the list replaces it.
+    @ViewBuilder
+    private func pouchAndDeck(_ geo: GeometryProxy, fold: CGFloat?, turned: Bool, chrome: CGFloat,
+                              listWidth: CGFloat, listHeight: CGFloat) -> some View {
         let foldY = fold.flatMap { $0 > 0 && $0 < geo.size.height ? $0 : nil }
         let m = foldY.map { PouchMetrics(width: geo.size.width, halfHeight: min($0, geo.size.height - $0)) }
             ?? PouchMetrics(fitting: CGSize(width: geo.size.width, height: geo.size.height - 12))
         let sceneTop = foldY.map { $0 - m.halfHeight } ?? (geo.size.height - 2 * m.halfHeight) / 2
-
-        let listWidth = min(geo.size.width - 2 * AppLayout.screenMargin, 600)
-        let listHeight = listWidth / PouchMetrics.cardAspect
 
         let coverCenter = CGPoint(x: geo.size.width / 2, y: sceneTop + m.halfHeight / 2 + m.cardFrame.midY)
         let area = geo.frame(in: .global)
@@ -147,91 +184,97 @@ struct PouchView: View {
                                                     width: m.cardWidth, height: m.cardHeight)
         let shelfScale = tile.width / m.cardWidth
 
-        ZStack {
-            PouchScene(openness: openness, turn: turn, lift: lift, m: m,
-                       style: PlasticStyle(colorScheme), slots: slots, tilt: tilt.roll,
-                       face: { cardFace($0, width: m.cardWidth) },
-                       cover: { PackCover(pack: pack, cornerRadius: 2, showsShadow: false)
-                                    .frame(width: m.cardWidth) })
-                .frame(width: geo.size.width, height: geo.size.height)
-                .offset(y: sceneTop - (geo.size.height - 2 * m.halfHeight) / 2)
-                .opacity(Double(max(0, 1 - 0.55 * lift - 0.45 * spread)))
-                .scaleEffect(1 - 0.04 * lift)
-                .modifier(ShelfFlight(
-                    flight: flight, scale: shelfScale,
-                    anchor: UnitPoint(x: coverCenter.x / geo.size.width, y: coverCenter.y / geo.size.height),
-                    offset: CGSize(width: tile.midX - area.minX - coverCenter.x,
-                                   height: tile.midY - area.minY - coverCenter.y),
-                    tile: PackCover(pack: pack, isCurrentPack: pack.name == learning.currentVerse?.packName,
-                                    cornerRadius: AppLayout.cardRadius / shelfScale)
-                        .frame(width: m.cardWidth, height: m.cardHeight)
-                        .position(coverCenter)))
+        PouchScene(openness: openness, lift: lift, m: m,
+                   style: PlasticStyle(colorScheme), slots: slots, tilt: tilt.roll,
+                   face: { cardFace($0, width: m.cardWidth) },
+                   cover: { PackCover(pack: pack, cornerRadius: 2, showsShadow: false)
+                                .frame(width: m.cardWidth) })
+            .frame(width: geo.size.width, height: geo.size.height)
+            .offset(y: sceneTop - (geo.size.height - 2 * m.halfHeight) / 2)
+            .opacity(Double(max(0, 1 - 0.55 * lift - 0.45 * spread)))
+            .scaleEffect(1 - 0.04 * lift)
+            .modifier(ShelfFlight(
+                flight: flight, scale: shelfScale,
+                anchor: UnitPoint(x: coverCenter.x / geo.size.width, y: coverCenter.y / geo.size.height),
+                offset: CGSize(width: tile.midX - area.minX - coverCenter.x,
+                               height: tile.midY - area.minY - coverCenter.y),
+                tile: PackCover(pack: pack, isCurrentPack: pack.name == learning.currentVerse?.packName,
+                                cornerRadius: AppLayout.cardRadius / shelfScale)
+                    .frame(width: m.cardWidth, height: m.cardHeight)
+                    .position(coverCenter)))
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
+
+        LiftedDeck(lift: lift, spread: spread,
+                   pocketCenter: CGPoint(x: geo.size.width / 2, y: sceneTop + m.halfHeight + m.cardFrame.midY),
+                   listCenter: CGPoint(x: geo.size.width / 2,
+                                       y: listMidY(of: index, height: listHeight,
+                                                   viewport: geo.size.height, chrome: chrome)),
+                   pocketWidth: m.cardWidth, listWidth: listWidth,
+                   listPitch: listHeight + AppLayout.spacing,
+                   previous: card(at: index - 1), front: card(at: index), next: card(at: index + 1),
+                   edges: min(5, Int((Double(max(verses.count - index - 1, 0)) / 8).rounded(.up))),
+                   face: { cardFace($0, width: $1) })
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
+
+        if !closing {
+            Color.clear
                 .contentShape(Rectangle())
-                .onTapGesture { tapped() }
-                .gesture(dragGesture(m: m, splitY: sceneTop + m.halfHeight))
-                .allowsHitTesting(lift == 0 && flight == 0)
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(accessibilityDescription)
-                .accessibilityHint(openness < 1 ? "Double-tap to open the pouch"
-                                                 : "Double-tap to fan the cards out. Swipe up or down to turn cards")
-                .accessibilityAdjustableAction { direction in
-                    switch direction {
-                    case .increment: turnForward()
-                    case .decrement: turnBack()
-                    @unknown default: break
-                    }
-                }
-                .accessibilityAction(named: openness < 1 ? "Open the pouch" : "Fold the pouch") { toggleFold() }
-                .accessibilityHidden(lift > 0)
-
-            LiftedDeck(lift: lift, spread: spread,
-                       pocketCenter: CGPoint(x: geo.size.width / 2, y: sceneTop + m.halfHeight + m.cardFrame.midY),
-                       listCenter: CGPoint(x: geo.size.width / 2, y: geo.size.height / 2),
-                       pocketWidth: m.cardWidth, listWidth: listWidth,
-                       listPitch: listHeight + AppLayout.spacing,
-                       previous: card(at: index - 1), front: card(at: index), next: card(at: index + 1),
-                       edges: min(5, Int((Double(max(verses.count - index - 1, 0)) / 8).rounded(.up))),
-                       face: { cardFace($0, width: $1) })
-                .opacity(fanned ? 0 : 1)
-                .allowsHitTesting(false)
-                .accessibilityHidden(true)
-
-            if fanned {
-                fannedList(width: listWidth, height: listHeight, viewport: geo.size.height, chrome: chrome)
-                    .transition(.opacity)
-            }
+                .gesture(DragGesture(minimumDistance: 0).onEnded { value in
+                    finishOpening(flick: value.predictedEndTranslation.height,
+                                  pitch: listHeight + AppLayout.spacing)
+                })
         }
     }
 
     private func fannedList(width: CGFloat, height: CGFloat, viewport: CGFloat, chrome: CGFloat) -> some View {
-        ScrollView(.vertical, showsIndicators: false) {
-            LazyVStack(spacing: AppLayout.spacing) {
-                ForEach(verses.indices, id: \.self) { i in
-                    listCard(i, width: width)
-                        .frame(width: width, height: height)
-                        .shadow(color: .black.opacity(0.08), radius: 10, y: 4)
-                        .contentShape(Rectangle())
-                        .onTapGesture { gather(at: i) }
+        ScrollViewReader { proxy in
+            ScrollView(.vertical, showsIndicators: false) {
+                LazyVStack(spacing: AppLayout.spacing) {
+                    ForEach(verses.indices, id: \.self) { i in
+                        Button { startPractice(from: i) } label: {
+                            listCard(i, width: width)
+                                .frame(width: width, height: height)
+                                .shadow(color: .black.opacity(0.08), radius: 10, y: 4)
+                        }
+                        .buttonStyle(CardButtonStyle())
                         .id(i)
+                    }
+                }
+                .scrollTargetLayout()
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, AppLayout.spacing)
+            }
+            .modifier(ListScrollTracking(
+                onScroll: { listScrolled = true },
+                onOffset: { offset in
+                    guard listScrolled else { return }
+                    let shown = cardShown(at: offset, height: height, viewport: viewport, chrome: chrome)
+                    if shown != index { index = shown }
+                }))
+            .safeAreaPadding(.top, chrome)
+            .mask {
+                VStack(spacing: 0) {
+                    Color.clear.frame(height: max(0, chrome - 8))
+                    LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: .bottom)
+                        .frame(height: chrome > 0 ? 32 : 0)
+                    Color.black
                 }
             }
-            .scrollTargetLayout()
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, max(0, (viewport - chrome - height) / 2))
-        }
-        .safeAreaPadding(.top, chrome)
-        .mask {
-            VStack(spacing: 0) {
-                Color.clear.frame(height: max(0, chrome - 8))
-                LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: .bottom)
-                    .frame(height: chrome > 0 ? 32 : 0)
-                Color.black
+            .scrollPosition(id: $listIndex, anchor: .center)
+            .onChange(of: listIndex) { _, new in
+                guard #unavailable(iOS 18), listScrolled, let new else { return }
+                index = new
             }
+            .onAppear { proxy.scrollTo(index, anchor: .center) }
         }
-        .scrollPosition(id: $listIndex, anchor: .center)
-        .onChange(of: listIndex) { _, new in
-            guard let new, new != index else { return }
-            index = new
+        .simultaneousGesture(closeSwipe(fromEdge: false))
+        .overlay(alignment: .leading) {
+            Color.clear
+                .frame(width: Self.edgeWidth)
+                .contentShape(Rectangle())
+                .gesture(closeSwipe(fromEdge: true))
         }
     }
 
@@ -243,12 +286,10 @@ struct PouchView: View {
                 Text(pack.name)
                     .font(.system(size: 13, weight: .semibold))
                     .lineLimit(1)
-                Text(positionLabel)
+                Text("Card \(index + 1) of \(verses.count)")
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(.secondary)
                     .monospacedDigit()
-                    .contentTransition(.numericText())
-                    .animation(AppMotion.control, value: positionLabel)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 6)
@@ -259,7 +300,7 @@ struct PouchView: View {
                 }
                 .accessibilityLabel("Close")
                 Spacer()
-                Button { startPractice() } label: {
+                Button { startPractice(from: index) } label: {
                     Text("Practice")
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(Color.accentColor)
@@ -267,22 +308,21 @@ struct PouchView: View {
                         .frame(height: 44)
                         .floatingGlass(in: Capsule())
                 }
-                .disabled(openness < 1)
             }
         }
         .padding(.horizontal, AppLayout.screenMargin)
         .padding(.vertical, 8)
         .opacity(Double(1 - flight))
+        .disabled(!fanned)
     }
 
-    /// The fast way through the pack: over the pouch it riffles straight to any
-    /// card; fanned out, it scrolls the list.
+    /// Fast scroll through the list, on the trailing edge where a thumb reaches.
     private var thumb: some View {
         GeometryReader { area in
-            if verses.count >= 2, openness == 1, lift == 0 || fanned {
+            if fanned, verses.count >= 2 {
                 VerseFastScrollOverlay(
                     verseCount: verses.count,
-                    scrollFraction: Double(min(index, verses.count - 1)) / Double(verses.count - 1),
+                    scrollFraction: Double(index) / Double(verses.count - 1),
                     containerHeight: area.size.height,
                     titleProvider: { verses.indices.contains($0) ? verses[$0].title : "" },
                     referenceProvider: { i in
@@ -292,25 +332,19 @@ struct PouchView: View {
                     onScrubTo: { i in
                         var t = Transaction()
                         t.disablesAnimations = true
-                        withTransaction(t) {
-                            if fanned { listIndex = i } else if turning == nil { index = i }
-                        }
-                    },
-                    alwaysVisible: !fanned)
+                        withTransaction(t) { listIndex = i }
+                    })
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
                 .transition(.opacity)
             }
         }
-        .opacity(Double(1 - flight))
-        .animation(AppMotion.content, value: fanned)
     }
 
     @ViewBuilder
     private func cardFace(_ card: PouchSlots.Card, width: CGFloat) -> some View {
         switch card {
         case .verse(let i) where verses.indices.contains(i):
-            PouchVerseCard(verse: verses[i], isLearnt: learning.isLearnt(verses[i]), width: width)
-                .paperAppearance()
+            listCard(i, width: width)
         case .backPage:
             PouchBackPageCard(packName: pack.name, verseCount: verses.count,
                               learntCount: verses.filter(learning.isLearnt).count, width: width)
@@ -338,8 +372,8 @@ struct PouchView: View {
         }
         .paperAppearance()
         .accessibilityAddTraits(.isButton)
-        .accessibilityHint("Puts the cards back in the pouch on this one")
-        .accessibilityAction { gather(at: i) }
+        .accessibilityHint("Practises from this verse")
+        .accessibilityAction { startPractice(from: i) }
         .accessibilityAction(named: FavoritesStore.shared.isFavorite(verse) ? "Unstar" : "Star") {
             FavoritesStore.shared.toggle(verse)
         }
@@ -356,66 +390,148 @@ struct PouchView: View {
     }
 
     private var slots: PouchSlots {
-        let topIndex = (turning ?? index) - 1
-        let bottomIndex = turning.map { $0 + 1 } ?? index
         func edges(_ n: Int) -> Int { min(7, Int((Double(max(n, 0)) / 5).rounded(.up))) }
-        return PouchSlots(top: card(at: topIndex), bottom: card(at: bottomIndex), turning: turning,
-                          topEdges: edges(topIndex),
-                          bottomEdges: bottomIndex < verses.count ? edges(verses.count - bottomIndex) : 0)
+        return PouchSlots(top: card(at: index - 1), bottom: card(at: index),
+                          topEdges: edges(index - 1), bottomEdges: edges(verses.count - index))
     }
 
-    private var positionLabel: String {
-        index >= verses.count ? "End of the pack" : "Card \(index + 1) of \(verses.count)"
-    }
-
-    private var accessibilityDescription: String {
-        if openness < 1 { return "\(pack.name) pouch, folded shut" }
-        guard verses.indices.contains(index) else { return "\(pack.name) pouch, end of the pack" }
-        let v = verses[index]
-        return "\(positionLabel). \(v.title), \(v.book) \(v.reference). \(v.verse)"
+    /// Where the learning cursor sits in this pack, if it does.
+    private var currentIndex: Int? {
+        verses.firstIndex { learning.isCurrent($0) }
     }
 
     // MARK: - Actions
 
     private func appeared() {
-        tilt.start()
+        if !fanned { tilt.start() }
         let fromShelf = flight > 0
         if fromShelf {
-            withAnimation(.smooth(duration: 0.45)) { flight = 0 }
+            withAnimation(.smooth(duration: 0.35)) { flight = 0 }
         }
         guard openness < 1 else { return }
-        unfolding = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + (fromShelf ? 0.3 : 0.1)) {
-            guard !hingeDriven else { unfolding = false; return }
-            withAnimation(.smooth(duration: 0.6), completionCriteria: .logicallyComplete) {
-                openness = 1
-            } completion: {
-                unfolding = false
-                demoTurn()
-            }
+        DispatchQueue.main.asyncAfter(deadline: .now() + (fromShelf ? 0.08 : 0)) {
+            guard !hingeDriven else { return }
+            unfoldAndFanOut()
         }
     }
 
-    /// Off the shelf, the pouch folds shut and goes back onto its tile;
-    /// otherwise the screen just closes.
+    /// The pouch opens, and as it settles the cards rise out of the pocket and
+    /// lay out as the list, then the scrolling list takes over from them.
+    private func unfoldAndFanOut() {
+        withAnimation(.smooth(duration: 0.4)) { openness = 1 }
+        withAnimation(.smooth(duration: 0.4).delay(0.3)) { lift = 1 }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            guard lift > 0, !closing, !fanned else { return }
+            HapticEngine.medium()
+        }
+        withAnimation(.snappy(duration: 0.4).delay(0.6), completionCriteria: .logicallyComplete) {
+            spread = 1
+        } completion: {
+            guard openness == 1, lift == 1, spread == 1, !closing, !fanned else { return }
+            withAnimation(.easeOut(duration: 0.1)) { fanned = true }
+        }
+    }
+
+    /// A touch while the pack is opening goes straight to the list, carrying a
+    /// flick on through it.
+    private func finishOpening(flick: CGFloat, pitch: CGFloat) {
+        guard !fanned, !closing, !hingeShut else { return }
+        var t = Transaction()
+        t.disablesAnimations = true
+        withTransaction(t) {
+            flight = 0
+            openness = 1
+            lift = 1
+            spread = 1
+            fanned = true
+        }
+        let target = min(max(index - Int((flick / pitch).rounded()), 0), verses.count - 1)
+        guard target != index else { return }
+        index = target
+        DispatchQueue.main.async {
+            withAnimation(.smooth(duration: 0.5)) { listIndex = target }
+        }
+    }
+
+    /// The cards gather back into the pocket, the pouch folds shut and goes back
+    /// onto its shelf tile; without one, the screen closes once it's shut.
     private func close() {
-        guard shelf != nil, let onPutBack, !AppMotion.reduceMotion else { dismiss(); return }
+        guard !closing else { return }
+        closing = true
         HapticEngine.light()
-        fanned = false
-        withAnimation(.smooth(duration: 0.4)) {
-            openness = 0
-            lift = 0
+        if AppMotion.reduceMotion { dismissOrPutBack(); return }
+        var t = Transaction()
+        t.disablesAnimations = true
+        withTransaction(t) { fanned = false; swipeOffset = 0 }
+        withAnimation(.snappy(duration: 0.35), completionCriteria: .logicallyComplete) {
             spread = 0
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-            withAnimation(.smooth(duration: 0.45), completionCriteria: .logicallyComplete) {
+            lift = 0
+            openness = 0
+        } completion: {
+            guard shelf != nil, onPutBack != nil else { dismissOrPutBack(); return }
+            withAnimation(.smooth(duration: 0.35), completionCriteria: .logicallyComplete) {
                 flight = 1
-            } completion: { onPutBack() }
+            } completion: { dismissOrPutBack() }
         }
     }
 
-    private func startPractice() {
-        practice = TestSession.practice(verses, from: min(index, verses.count - 1))
+    private func dismissOrPutBack() {
+        if shelf != nil, let onPutBack { onPutBack() } else { dismiss() }
+    }
+
+    /// A swipe in from the leading edge, or a swipe left across the list, closes
+    /// the pack; the list follows the finger until it does or springs back.
+    private func closeSwipe(fromEdge: Bool) -> some Gesture {
+        DragGesture(minimumDistance: 12)
+            .onChanged { value in
+                let dx = value.translation.width, dy = value.translation.height
+                if swipeAxis == nil { swipeAxis = abs(dx) > abs(dy) * 1.5 ? .horizontal : .vertical }
+                guard swipeAxis == .horizontal else { listScrolled = true; return }
+                swipeOffset = fromEdge ? max(0, dx) * 0.6 : min(0, dx) * 0.6
+            }
+            .onEnded { value in
+                defer { swipeAxis = nil }
+                guard swipeAxis == .horizontal else { return }
+                let dx = value.translation.width
+                let flick = value.predictedEndTranslation.width
+                if fromEdge ? (dx > 80 || flick > 220) : (dx < -80 || flick < -220) {
+                    close()
+                } else {
+                    withAnimation(AppMotion.control) { swipeOffset = 0 }
+                }
+            }
+    }
+
+    /// The list's full height: its cards and the gap above and below them.
+    private func listContentHeight(cardHeight: CGFloat) -> CGFloat {
+        CGFloat(verses.count) * (cardHeight + AppLayout.spacing) + AppLayout.spacing
+    }
+
+    /// Where the list puts card `i` when it scrolls it as near the middle as it
+    /// will go, so the cards fanning out land where the list then shows them.
+    private func listMidY(of i: Int, height: CGFloat, viewport: CGFloat, chrome: CGFloat) -> CGFloat {
+        let visible = viewport - chrome
+        let mid = AppLayout.spacing + CGFloat(i) * (height + AppLayout.spacing) + height / 2
+        let most = max(0, listContentHeight(cardHeight: height) - visible)
+        return chrome + mid - min(max(0, mid - visible / 2), most)
+    }
+
+    /// The card the counter names at a scroll offset: the one in the middle,
+    /// except within half a screen of either end, where it slides to the first
+    /// or last card.
+    private func cardShown(at offset: CGFloat, height: CGFloat, viewport: CGFloat, chrome: CGFloat) -> Int {
+        let visible = viewport - chrome
+        let most = listContentHeight(cardHeight: height) - visible
+        guard most > 0 else { return index }
+        let half = visible / 2
+        let reading = offset + (offset < most / 2 ? min(max(offset, 0), half)
+                                                  : max(half, visible - max(most - offset, 0)))
+        let i = Int((reading - AppLayout.spacing / 2) / (height + AppLayout.spacing))
+        return min(max(i, 0), verses.count - 1)
+    }
+
+    private func startPractice(from i: Int) {
+        practice = TestSession.practice(verses, from: i)
     }
 
     private func markComplete(_ verse: Verse) {
@@ -424,193 +540,26 @@ struct PouchView: View {
         undoToastState = .markedComplete(verse, learning: learning)
     }
 
-    private func toggleFold() {
-        HapticEngine.light()
-        fanned = false
-        withAnimation(AppMotion.reduceMotion ? .easeInOut(duration: 0.2) : .smooth(duration: 0.65)) {
-            openness = openness < 1 ? 1 : 0
-            lift = 0
-            spread = 0
-        }
-    }
-
-    /// Shut, a tap opens it (unless the hinge does); open, it fans the cards out.
-    private func tapped() {
-        guard turning == nil, !unfolding else { return }
-        if openness < 1 {
-            if !hingeDriven { toggleFold() }
-            return
-        }
-        fanOut()
-    }
-
-    // MARK: Fanning out
-
-    /// The cards rise out of the pocket and lay out as the list, then the
-    /// scrolling list takes over from them.
-    private func fanOut() {
-        guard openness == 1, !unfolding, turning == nil, lift == 0 else { return }
-        let current = min(index, verses.count - 1)
-        guard verses.indices.contains(current) else { return }
-        index = current
-        listIndex = current
-        HapticEngine.medium()
-        if AppMotion.reduceMotion { lift = 1; spread = 1; fanned = true; return }
-        withAnimation(.snappy(duration: 0.5), completionCriteria: .logicallyComplete) {
-            lift = 1
-            spread = 1
-        } completion: {
-            guard openness == 1, lift == 1, spread == 1 else { return }
-            withAnimation(.easeOut(duration: 0.12)) { fanned = true }
-        }
-    }
-
-    /// Card `i` comes to the middle, the cards close up on it, and the stack
-    /// slides back into the pocket.
-    private func gather(at i: Int) {
-        guard fanned, !gathering else { return }
-        gathering = true
-        HapticEngine.light()
-        let settle = {
-            index = i
-            var t = Transaction()
-            t.disablesAnimations = true
-            withTransaction(t) { fanned = false }
-            if AppMotion.reduceMotion { lift = 0; spread = 0; gathering = false; return }
-            withAnimation(.snappy(duration: 0.4), completionCriteria: .logicallyComplete) {
-                spread = 0
-            } completion: {
-                withAnimation(.snappy(duration: 0.45)) { lift = 0 }
-                gathering = false
-            }
-        }
-        guard listIndex != i, !AppMotion.reduceMotion else { settle(); return }
-        withAnimation(.snappy(duration: 0.3), completionCriteria: .logicallyComplete) {
-            listIndex = i
-        } completion: { settle() }
-    }
-
-    // MARK: Turning
-
-    /// The first couple of times the pouch opens, the front card lifts partway
-    /// over the fold and settles back.
-    private func demoTurn() {
-        guard turnDemoCount < 2, !AppMotion.reduceMotion, openness == 1, turning == nil,
-              lift == 0, index < verses.count else { return }
-        turnDemoCount += 1
-        turning = index
-        turn = 0
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-            withAnimation(.smooth(duration: 0.45), completionCriteria: .logicallyComplete) {
-                turn = 0.22
-            } completion: {
-                cancelTurn(forward: true)
-            }
-        }
-    }
-
-    private func turnForward() {
-        guard openness == 1, turning == nil, index < verses.count else { return }
-        turning = index
-        turn = 0
-        DispatchQueue.main.async { finishTurn(forward: true) }
-    }
-
-    private func turnBack() {
-        guard openness == 1, turning == nil, index > 0 else { return }
-        turning = index - 1
-        turn = 1
-        DispatchQueue.main.async { finishTurn(forward: false) }
-    }
-
-    /// Carries a turn through to the other pocket, then makes it the new state.
-    private func finishTurn(forward: Bool) {
-        let commit = {
-            var t = Transaction()
-            t.disablesAnimations = true
-            withTransaction(t) {
-                index += forward ? 1 : -1
-                turning = nil
-                turn = 0
-            }
-            HapticEngine.light()
-        }
-        if AppMotion.reduceMotion { commit(); return }
-        withAnimation(.snappy(duration: 0.45), completionCriteria: .logicallyComplete) {
-            turn = forward ? 1 : 0
-        } completion: { commit() }
-    }
-
-    /// Lets go of a turn that didn't go far enough: the card falls back.
-    private func cancelTurn(forward: Bool) {
-        withAnimation(.snappy(duration: 0.3), completionCriteria: .logicallyComplete) {
-            turn = forward ? 0 : 1
-        } completion: {
-            var t = Transaction()
-            t.disablesAnimations = true
-            withTransaction(t) { turning = nil; turn = 0 }
-        }
-    }
-
-    private func dragGesture(m: PouchMetrics, splitY: CGFloat) -> some Gesture {
-        let span = m.cardHeight * 1.5
-        return DragGesture(minimumDistance: 8)
-            .onChanged { value in
-                let dy = value.translation.height
-                if drag == .none {
-                    if openness < 1 {
-                        drag = .opening
-                    } else if turning == nil, value.startLocation.y >= splitY, dy < 0, index < verses.count {
-                        drag = .forward
-                        turning = index
-                    } else if turning == nil, value.startLocation.y < splitY, dy > 0, index > 0 {
-                        drag = .backward
-                        turning = index - 1
-                    }
-                }
-                switch drag {
-                case .opening:  openness = min(1, max(0, -dy / m.halfHeight))
-                case .forward:  turn = min(1, max(0, -dy / span))
-                case .backward: turn = 1 - min(1, max(0, dy / span))
-                case .none:     break
-                }
-            }
-            .onEnded { value in
-                let flick = value.predictedEndTranslation.height
-                switch drag {
-                case .opening:
-                    let open = openness > 0.3 || -flick > m.halfHeight * 0.5
-                    withAnimation(.smooth(duration: 0.5)) { openness = open ? 1 : 0 }
-                    if open { HapticEngine.light() }
-                case .forward:
-                    if turn > 0.45 || -flick > span * 0.6 { finishTurn(forward: true) } else { cancelTurn(forward: true) }
-                case .backward:
-                    if turn < 0.55 || flick > span * 0.6 { finishTurn(forward: false) } else { cancelTurn(forward: false) }
-                case .none:
-                    break
-                }
-                drag = .none
-            }
-    }
-
     // MARK: Hinge
 
-    /// The screen folds with the hinge, so the pouch stays flat on it; only
-    /// shutting the hinge changes anything.
+    /// Shutting the Duo folds the pouch and shows its cover; opening it fans the
+    /// cards out again. In between the screen folds with the hinge, so the pouch
+    /// stays flat on it.
     private func hingeMoved(closed: Bool?) {
         guard let closed else { hingeDriven = false; hingeShut = false; return }
         hingeDriven = true
         withAnimation(AppMotion.content) { hingeShut = closed }
-        let wasShut = openness < 1
         if closed {
-            fanned = false
-            lift = 0
-            spread = 0
-        }
-        withAnimation(.smooth(duration: 0.25), completionCriteria: .logicallyComplete) {
-            openness = closed ? 0 : 1
-        } completion: {
-            if wasShut, !closed { demoTurn() }
+            var t = Transaction()
+            t.disablesAnimations = true
+            withTransaction(t) {
+                fanned = false
+                lift = 0
+                spread = 0
+                openness = 0
+            }
+        } else if openness < 1, !closing {
+            unfoldAndFanOut()
         }
     }
 
@@ -707,6 +656,27 @@ private struct FollowsHinge: ViewModifier {
             content.onHingeChange { _, new in
                 onChange(new.hinge.map { $0.status == .closed })
             }
+        } else {
+            content
+        }
+    }
+}
+
+/// How far the list has scrolled, and when the user starts scrolling it. Before
+/// iOS 18 there's neither, and the counter follows the middle card instead.
+private struct ListScrollTracking: ViewModifier {
+    let onScroll: () -> Void
+    let onOffset: (CGFloat) -> Void
+
+    func body(content: Content) -> some View {
+        if #available(iOS 18, *) {
+            content
+                .onScrollPhaseChange { _, phase in
+                    if phase == .interacting { onScroll() }
+                }
+                .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y + $0.contentInsets.top } action: { _, offset in
+                    onOffset(offset)
+                }
         } else {
             content
         }

@@ -11,39 +11,37 @@ struct PeekOverlayCard: View {
     var showCardLabel: Bool = true
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            if let pinned = verse.pinnedVersion {
-                Text("(\(pinned))")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundStyle(Color.secondary)
-                Spacer().frame(height: 6)
+        GeometryReader { geo in
+            let w = geo.size.width
+            VStack(alignment: .leading, spacing: 0) {
+                if let pinned = verse.pinnedVersion {
+                    Text("(\(pinned))")
+                        .font(.system(size: 10, weight: .bold))
+                    Spacer().frame(height: 6)
+                }
+                Text("\(verse.book) \(verse.reference)")
+                    .font(CardFont.font(.reference, size: FlashcardView.scaledTypeSize(base: 18, extra: 3.25, cardWidth: w)))
+
+                Spacer().frame(height: 12)
+
+                Text(verse.title)
+                    .font(CardFont.font(.title, size: FlashcardView.scaledTypeSize(base: 16, extra: 2.75, cardWidth: w)))
+
+                Spacer().frame(height: 8)
+
+                FittedVerseText(text: verse.verse, lineSpacing: 5, minSize: 10,
+                                maxSize: FlashcardView.scaledTypeSize(base: 16, extra: 3, cardWidth: w))
+
+                if showCardLabel {
+                    Spacer().frame(height: 16)
+                    Text(cardLabel)
+                        .font(.system(size: 12.5, weight: .medium))
+                        .opacity(0.5)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                }
             }
-            Text("\(verse.book) \(verse.reference)")
-                .font(CardFont.font(.reference, size: 18))
-                .foregroundStyle(Color.secondary)
-
-            Spacer().frame(height: 10)
-
-            Text(verse.title)
-                .font(CardFont.font(.title, size: 16))
-                .foregroundStyle(Color.secondary)
-                .padding(.bottom, 6)
-
-            Text(verse.verse)
-                .font(CardFont.font(.body, size: 15))
-                .lineSpacing(5)
-                .foregroundStyle(Color.secondary)
-                .minimumScaleFactor(0.75)
-
-            Spacer(minLength: 6)
-
-            if showCardLabel {
-                Text(cardLabel)
-                    .font(.system(size: 12.5, weight: .medium))
-                    .foregroundStyle(Color.secondary.opacity(0.5))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
-            }
+            .foregroundStyle(Color.secondary)
         }
         .flashcardStyle()
         .frame(width: width, height: height)

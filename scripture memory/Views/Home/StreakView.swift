@@ -16,7 +16,8 @@ struct StreakView: View {
                 calendar
             }
             .padding(.horizontal, AppLayout.screenMargin)
-            .padding(.vertical, 8)
+            .padding(.top, 8)
+            .padding(.bottom, 24)
             .readableColumn()
         }
         .background(Color(.systemGroupedBackground))
@@ -223,15 +224,15 @@ private struct MonthGrid: View {
         return Array(symbols[first...] + symbols[..<first])
     }
 
-    /// The month's days laid out in weeks, `nil` for the padding before day 1
-    /// and after the last day.
+    /// The month's days laid out in six weeks, `nil` for the padding before
+    /// day 1 and after the last day, so every month is the same height.
     private var weeks: [[Date?]] {
         guard let range = cal.range(of: .day, in: .month, for: month),
               let first = cal.date(from: cal.dateComponents([.year, .month], from: month)) else { return [] }
         let leading = (cal.component(.weekday, from: first) - cal.firstWeekday + 7) % 7
         var days: [Date?] = Array(repeating: nil, count: leading)
         for d in range { days.append(cal.date(byAdding: .day, value: d - 1, to: first)) }
-        while days.count % 7 != 0 { days.append(nil) }
+        while days.count < 42 { days.append(nil) }
         return stride(from: 0, to: days.count, by: 7).map { Array(days[$0..<$0 + 7]) }
     }
 

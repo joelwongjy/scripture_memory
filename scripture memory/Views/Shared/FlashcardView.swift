@@ -37,7 +37,7 @@ struct FlashcardView: View {
     // (e.g. Pro Max) where the same pt sizes read small.
 
     /// Interpolates font size between `narrowWidth` and `wideWidth` (card inner width in pt).
-    private func scaledTypeSize(base: CGFloat, extra: CGFloat, cardWidth: CGFloat, narrow: CGFloat = 322, wide: CGFloat = 398) -> CGFloat {
+    static func scaledTypeSize(base: CGFloat, extra: CGFloat, cardWidth: CGFloat, narrow: CGFloat = 322, wide: CGFloat = 398) -> CGFloat {
         let t = (cardWidth - narrow) / (wide - narrow)
         let u = min(1, max(0, t))
         return base + extra * u
@@ -142,8 +142,8 @@ struct FlashcardView: View {
     private func readContent(cardSize: CGSize) -> some View {
         let cardWidth = cardSize.width
         let lineGap = verseLineSpacing(cardWidth: cardWidth)
-        let titleSize = scaledTypeSize(base: 15, extra: 3.5, cardWidth: cardWidth)
-        let refSize = scaledTypeSize(base: 14, extra: 3.0, cardWidth: cardWidth)
+        let titleSize = Self.scaledTypeSize(base: 15, extra: 3.5, cardWidth: cardWidth)
+        let refSize = Self.scaledTypeSize(base: 14, extra: 3.0, cardWidth: cardWidth)
         return VStack(alignment: .leading, spacing: 0) {
             if verse.pinnedVersion != nil { versionBadge; Spacer().frame(height: 6) }
             Text(verse.title)
@@ -165,8 +165,8 @@ struct FlashcardView: View {
         let cardWidth = cardSize.width
         let activeWords    = activeSection == .title ? verse.titleWords : verse.verseWords
         let activeRevealed = activeSection == .title ? titleRevealedCount : verseRevealedCount
-        let refSize = scaledTypeSize(base: 18, extra: 3.25, cardWidth: cardWidth)
-        let titleSectionSize = scaledTypeSize(base: 16, extra: 2.75, cardWidth: cardWidth)
+        let refSize = Self.scaledTypeSize(base: 18, extra: 3.25, cardWidth: cardWidth)
+        let titleSectionSize = Self.scaledTypeSize(base: 16, extra: 2.75, cardWidth: cardWidth)
         let verseGap = verseLineSpacing(cardWidth: cardWidth)
 
         // Size the verse to the height the layout actually leaves after the
@@ -183,7 +183,8 @@ struct FlashcardView: View {
         let reserved = badgeH + refH + 12 + titleH + 8 + (showsProgress ? 24 : 0) + (showCardLabel ? 40 : 24)
         let avail = max(48, cardSize.height - reserved)
         let verseSize = VerseFit.fontSize(verse.verse, width: cardWidth, height: avail,
-                                          lineSpacing: verseGap, minSize: 10, maxSize: 16)
+                                          lineSpacing: verseGap, minSize: 10,
+                                          maxSize: Self.scaledTypeSize(base: 16, extra: 3, cardWidth: cardWidth))
 
         return VStack(alignment: .leading, spacing: 0) {
             if verse.pinnedVersion != nil { versionBadge; Spacer().frame(height: 6) }
@@ -239,6 +240,7 @@ struct FlashcardView: View {
                 }
             }
             .lineSpacing(section == .verse ? verseGap : 4)
+            .minimumScaleFactor(section == .verse ? 0.6 : 1)
 
             if isComplete {
                 Image(systemName: "checkmark.circle.fill")

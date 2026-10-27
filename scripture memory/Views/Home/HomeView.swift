@@ -79,14 +79,16 @@ struct HomeView: View {
         VStack(spacing: AppLayout.spacing) {
             NavigationLink { StreakView() } label: { HomeStreakCard() }
                 .buttonStyle(CardButtonStyle())
-            Text("Daily Review")
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.leading, 4)
-                .padding(.top, 4)
+            HStack(alignment: .firstTextBaseline) {
+                Text("Daily Review")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                Spacer()
+                packsReviewLink
+            }
+            .padding(.horizontal, 4)
+            .padding(.top, 4)
             DailyReviewCard(activePacks: activePacks) { cover = .review($0) }
-            packsReviewLink
             learningCards
                 .padding(.top, 8)
         }
@@ -133,8 +135,8 @@ struct HomeView: View {
 
     // MARK: - Packs Link
 
-    /// Low-emphasis link to "Packs in Review". Every pack is reviewed by default,
-    /// so this is rarely changed and doesn't warrant a section of its own.
+    /// Low-emphasis link to "Packs in Review", on the section header like a
+    /// "See All". Every pack is reviewed by default, so it's rarely changed.
     private var packsReviewLink: some View {
         NavigationLink {
             PacksReviewView()
@@ -144,12 +146,9 @@ struct HomeView: View {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 11, weight: .semibold))
             }
-            .font(.system(size: 13))
-            .foregroundStyle(.secondary)
-            // Leading-aligned, where a grouped-list footer sits.
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.leading, 4)
-            .padding(.vertical, 2)
+            .font(.system(size: 15))
+            .foregroundStyle(Color.accentColor)
+            .frame(minHeight: 44)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -160,7 +159,7 @@ struct HomeView: View {
         let active = activePacks.count
         let total  = packs.count
         return active == total
-            ? "Reviewing all \(total) packs"
-            : "Reviewing \(active) of \(total) packs"
+            ? "All \(total) packs"
+            : "\(active) of \(total) packs"
     }
 }

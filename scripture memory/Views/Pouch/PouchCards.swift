@@ -4,7 +4,7 @@ import UIKit
 // The printed cards that live in the pouch. Sized off the card's width so the
 // same face reads right on a phone and on the iPhone Duo's inner display.
 //
-// Styled after the physical TMS cards: bold grey sans title, a small serif
+// Styled after the physical TMS cards: bold grey title, a small serif
 // "NIV", the reference, the verse in Optima, the reference again on the right,
 // and the series code along the bottom.
 
@@ -28,7 +28,7 @@ enum PouchInk {
     }
 }
 
-/// The printed card's typefaces: a bold sans title, the reference and verse in
+/// The printed card's typefaces: the title, reference and verse all in
 /// Optima.
 enum CardFont {
     enum Style {
@@ -36,7 +36,7 @@ enum CardFont {
 
         fileprivate var name: String {
             switch self {
-            case .title:     return "AvenirNext-Bold"
+            case .title:     return "Optima-Bold"
             case .reference: return "Optima-Bold"
             case .body:      return "Optima-Regular"
             }
@@ -99,7 +99,7 @@ struct PouchVerseCard<Accessory: View>: View {
                     .font(CardFont.font(.title, size: 5.4 * u))
                     .foregroundStyle(PouchInk.title)
                     .lineLimit(1)
-                    .minimumScaleFactor(0.7)
+                    .minimumScaleFactor(0.5)
                 Spacer(minLength: 2 * u)
                 Text(verse.pinnedVersion ?? "NIV")
                     .font(.custom("TimesNewRomanPSMT", size: 3.4 * u))
@@ -109,13 +109,9 @@ struct PouchVerseCard<Accessory: View>: View {
                 .font(CardFont.font(.body, size: 4.6 * u))
                 .foregroundStyle(PouchInk.body)
                 .padding(.top, 1.2 * u)
-            Text(verse.verse)
-                .font(CardFont.font(.body, size: 4.6 * u))
+            FittedVerseText(text: verse.verse, lineSpacing: 0.9 * u, minSize: 2 * u, maxSize: 4.6 * u)
                 .foregroundStyle(PouchInk.body)
-                .lineSpacing(0.9 * u)
-                .minimumScaleFactor(0.55)
                 .padding(.top, 0.6 * u)
-                .frame(maxHeight: .infinity, alignment: .topLeading)
             Text(reference)
                 .font(CardFont.font(.body, size: 4.6 * u))
                 .foregroundStyle(PouchInk.body)

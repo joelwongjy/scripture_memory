@@ -24,10 +24,26 @@ enum VerseFit {
     /// Largest font size in [minSize, maxSize] whose text fits within `width × height`.
     /// Snaps to a 0.5pt grid. Returns `minSize` if even that overflows (so the
     /// floor governs readability; it won't go smaller).
+    @MainActor
     static func fontSize(_ text: String, width: CGFloat, height: CGFloat,
                          style: CardFont.Style = .body, lineSpacing: CGFloat,
                          minSize: CGFloat, maxSize: CGFloat) -> CGFloat {
         guard width > 1, height > 1, !text.isEmpty else { return maxSize }
+        let key = "\(style)|\(width)|\(height)|\(lineSpacing)|\(minSize)|\(maxSize)|\(text)"
+        if let size = sizes[key] { return size }
+        let size = search(text, width: width, height: height, style: style,
+                          lineSpacing: lineSpacing, minSize: minSize, maxSize: maxSize)
+        sizes[key] = size
+        return size
+    }
+
+    /// Sizes already worked out: the same card at the same size always fits the
+    /// same way, and a scrolling list asks again for every card it lays out.
+    @MainActor private static var sizes: [String: CGFloat] = [:]
+
+    private static func search(_ text: String, width: CGFloat, height: CGFloat,
+                               style: CardFont.Style, lineSpacing: CGFloat,
+                               minSize: CGFloat, maxSize: CGFloat) -> CGFloat {
         if Self.height(text, width: width, size: maxSize, style: style, lineSpacing: lineSpacing) <= height { return maxSize }
         var lo = minSize, hi = maxSize
         for _ in 0..<12 {
@@ -53,12 +69,22 @@ struct FittedVerseText: View {
 
     var body: some View {
         GeometryReader { geo in
-            let size = VerseFit.fontSize(text, width: geo.size.width, height: geo.size.height,
-                                         lineSpacing: lineSpacing, minSize: minSize, maxSize: maxSize)
-            Text(text)
-                .font(CardFont.font(.body, size: size))
-                .lineSpacing(lineSpacing)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            let estimate = VerseFit.fontSize(text, width: geo.size.width, height: geo.size.height,
+                                             lineSpacing: lineSpacing, minSize: minSize, maxSize: maxSize)
+            ViewThatFits(in: .vertical) {
+                ForEach(Array(stride(from: min(maxSize, estimate + 2), to: minSize, by: -0.5)), id: \.self) { size in
+                    verse(size).fixedSize(horizontal: false, vertical: true)
+                }
+                verse(minSize).minimumScaleFactor(0.5)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
+    }
+
+    private func verse(_ size: CGFloat) -> some View {
+        Text(text)
+            .font(CardFont.font(.body, size: size))
+            .lineSpacing(lineSpacing)
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 }

@@ -5,24 +5,20 @@ struct PouchSlots {
     enum Card: Equatable { case verse(Int), backPage, none }
     var top: Card            // front of the top pocket (upside down)
     var bottom: Card         // front of the bottom pocket
-    var turning: Int?        // the card being turned over the fold, if any
     var topEdges: Int
     var bottomEdges: Int
 }
 
 /// The pouch for one frame of any animation.
 ///
-/// Animatable so that the two things that change halfway through a rotation —
-/// which face of the lid shows, and which face of a turning card — are decided
-/// per frame rather than once at the end state.
+/// Animatable so which face of the lid shows is decided per frame, halfway
+/// through its rotation, rather than once at the end state.
 ///
 /// - `openness`: 0 is folded shut, 1 is lying flat.
-/// - `turn`: 0 is the turning card in the bottom pocket, 1 is it in the top one.
 /// - `lift`: 0 is the bottom stack in its pocket, above 0 it's out (drawn by
 ///   `LiftedDeck`), so the pocket shows empty.
 struct PouchScene<CardFace: View, Cover: View>: View, Animatable {
     var openness: CGFloat
-    var turn: CGFloat
     var lift: CGFloat = 0
     let m: PouchMetrics
     let style: PlasticStyle
@@ -31,9 +27,9 @@ struct PouchScene<CardFace: View, Cover: View>: View, Animatable {
     let face: (PouchSlots.Card) -> CardFace
     let cover: () -> Cover
 
-    var animatableData: AnimatablePair<AnimatablePair<CGFloat, CGFloat>, CGFloat> {
-        get { AnimatablePair(AnimatablePair(openness, turn), lift) }
-        set { openness = newValue.first.first; turn = newValue.first.second; lift = newValue.second }
+    var animatableData: AnimatablePair<CGFloat, CGFloat> {
+        get { AnimatablePair(openness, lift) }
+        set { openness = newValue.first; lift = newValue.second }
     }
 
     var body: some View {
@@ -72,41 +68,9 @@ struct PouchScene<CardFace: View, Cover: View>: View, Animatable {
                               anchor: .bottom, perspective: 0.35)
             .zIndex(lidAngle > 0.5 ? 3 : 0)
 
-            // A card being turned over the fold like a page.
-            if let i = slots.turning {
-                TurningCard(turn: turn, m: m) { face(.verse(i)) }
-                    .zIndex(2)
-            }
         }
         .frame(width: m.pouchWidth, height: m.halfHeight * 2, alignment: .top)
         // Shut, only the bottom half's footprint is left: keep it centred.
         .offset(y: -(1 - openness) * m.halfHeight / 2)
-    }
-}
-
-/// A card turning over the fold. Its front shows until it stands on edge, then
-/// its back, which (like the printed card) lands upside down in the top pocket.
-private struct TurningCard<Face: View>: View {
-    let turn: CGFloat
-    let m: PouchMetrics
-    @ViewBuilder let face: () -> Face
-
-    var body: some View {
-        let frame = m.cardFrame
-        let angle = turn * 180
-        // Hinge line, in the card's own unit space.
-        let hinge = UnitPoint(x: 0.5, y: -frame.minY / frame.height)
-        let lift = sin(turn * .pi)
-
-        face()
-            .frame(width: frame.width, height: frame.height)
-            // Past vertical we're looking at the back of the card.
-            .scaleEffect(x: angle > 90 ? -1 : 1, y: 1)
-            .shadow(color: .black.opacity(0.25 * lift), radius: 14 * lift, y: 8 * lift)
-            .rotation3DEffect(.degrees(angle), axis: (x: 1, y: 0, z: 0),
-                              anchor: hinge, perspective: 0.35)
-            .offset(x: frame.minX, y: m.halfHeight + frame.minY)
-            .frame(width: m.pouchWidth, height: m.halfHeight * 2, alignment: .topLeading)
-            .allowsHitTesting(false)
     }
 }
