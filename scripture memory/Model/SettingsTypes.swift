@@ -92,8 +92,8 @@ enum StudyMode: String, CaseIterable {
     /// Placeholder text for the single text field used in first-letter / full-word input.
     var inputPlaceholder: String {
         self == .fullWord
-            ? "Type each word, press space to check..."
-            : "Type first letter of each word..."
+            ? "Type each word"
+            : "First letter of each word"
     }
 }
 

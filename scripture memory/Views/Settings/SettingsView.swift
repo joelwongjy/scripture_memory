@@ -34,7 +34,7 @@ struct SettingsView: View {
     private var currentLearningLabel: String {
         let ordered = learningOrdered
         guard !ordered.isEmpty else { return "None" }
-        guard let cur = learning.current(in: ordered) else { return "All learnt 🎉" }
+        guard let cur = learning.current(in: ordered) else { return "All learnt" }
         return "\(cur.verse.book) \(cur.verse.reference)"
     }
 
@@ -48,9 +48,7 @@ struct SettingsView: View {
                 }
                 .pickerStyle(.inline)
                 .labelsHidden()
-                Toggle(isOn: $hardMode) {
-                    rowLabel("Hard Mode", "eye.slash")
-                }
+                Toggle("Hard Mode", isOn: $hardMode)
             } header: {
                 Text("Study")
             } footer: {

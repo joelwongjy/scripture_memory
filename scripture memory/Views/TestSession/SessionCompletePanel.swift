@@ -14,21 +14,16 @@ struct SessionCompletePanel: View {
                 .foregroundStyle(vm.sessionScore == 0 ? Color.green : Color.accentColor)
                 .symbolEffect(.bounce, options: .nonRepeating)
 
-            Text("Session Complete!")
+            Text("Session Complete")
                 .font(.system(size: 20, weight: .bold))
                 .foregroundStyle(Color.primary)
 
             // Only Entire Verse mode tracks mistakes, so only it has a score.
             if studyMode == .submit {
-                if vm.sessionScore == 0 {
-                    Text("Perfect!")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(Color.green)
-                } else {
-                    Text("Score: \(vm.sessionScore)")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(Color.red)
-                }
+                let mistakes = -vm.sessionScore
+                Text(mistakes == 0 ? "No mistakes" : mistakes == 1 ? "1 mistake" : "\(mistakes) mistakes")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(mistakes == 0 ? Color.green : Color.red)
 
                 Text("\(vm.perfectCount) of \(vm.verses.count) perfect")
                     .font(.system(size: 14))

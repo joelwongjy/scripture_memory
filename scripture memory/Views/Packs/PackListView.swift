@@ -73,12 +73,8 @@ struct PackListView: View {
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    showOrganizer = true
-                } label: {
-                    Image(systemName: "arrow.up.arrow.down")
-                }
-                .accessibilityLabel("Organize packs")
+                Button("Edit") { showOrganizer = true }
+                    .accessibilityLabel("Edit packs")
             }
         }
         .sheet(isPresented: $showOrganizer) {
