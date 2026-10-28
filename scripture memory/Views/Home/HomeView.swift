@@ -84,8 +84,8 @@ struct HomeView: View {
             VStack(spacing: 8) {
                 HStack(alignment: .firstTextBaseline) {
                     Text("Daily Review")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(.secondary)
+                        .font(.title3.weight(.bold))
+                        .accessibilityAddTraits(.isHeader)
                     Spacer()
                     packsReviewLink
                 }

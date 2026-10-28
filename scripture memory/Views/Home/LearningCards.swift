@@ -23,19 +23,20 @@ struct ContinueLearningCard: View {
     var body: some View {
         let v = spot.verse
         VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 6) {
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
                 if spot.isPinned {
                     Image(systemName: "pin.fill")
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.system(size: 15, weight: .bold))
                 }
                 Text(spot.isPinned ? "Pinned" : "Continue Learning")
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(.title3.weight(.bold))
+                    .accessibilityAddTraits(.isHeader)
                 Spacer()
                 Text("\(spot.indexInPack + 1) of \(spot.pack.verses.count)")
                     .font(.subheadline)
+                    .foregroundStyle(.secondary)
                 pinButton
             }
-            .foregroundStyle(.secondary)
             .padding(.horizontal, 20)
 
             Button(action: onOpen) {
