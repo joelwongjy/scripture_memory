@@ -193,12 +193,11 @@ struct TestSessionView: View {
             .accessibilityElement(children: .combine)
         }
         if isEditing {
-            ToolbarItem(placement: .confirmationAction) {
-                Button("Done") {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button("Hide Keyboard", systemImage: "keyboard.chevron.compact.down") {
                     isInputFocused = false
                     submitFocus = nil
                 }
-                .accessibilityLabel("Close keyboard")
             }
         }
     }
