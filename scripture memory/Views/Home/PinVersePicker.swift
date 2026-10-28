@@ -28,8 +28,6 @@ struct PinVersePicker: View {
                         } label: {
                             Label("Unpin \(pinned.book) \(pinned.reference)", systemImage: "pin.slash")
                         }
-                    } footer: {
-                        Text("Home goes back to the verse you're learning.")
                     }
                 }
                 PackVersePicker(packs: packs, selectedKey: pinnedKey, marker: .pin,
