@@ -35,8 +35,9 @@ jobs:
         run: |
           xcodebuild build \
             -project "Scripture Memory.xcodeproj" \
-            -target "Scripture Memory" \
-            -sdk iphonesimulator \
+            -scheme "Scripture Memory" \
+            -destination "generic/platform=iOS Simulator" \
+            -derivedDataPath build \
             -configuration Debug \
             CODE_SIGNING_ALLOWED=NO > build.log 2>&1 && status=0 || status=$?
           grep -E "error:|warning:|BUILD (SUCCEEDED|FAILED)" build.log | sort -u || true
@@ -60,13 +61,14 @@ jobs:
         run: |
           xcodebuild build \
             -project "Scripture Memory.xcodeproj" \
-            -target "Scripture Memory" \
-            -sdk iphoneos \
+            -scheme "Scripture Memory" \
+            -destination "generic/platform=iOS" \
+            -derivedDataPath build \
             -configuration Release \
             CODE_SIGNING_ALLOWED=NO > build.log 2>&1 || { tail -20 build.log; exit 1; }
       - name: Report size
         run: |
-          app="build/Release-iphoneos/Scripture Memory.app"
+          app="build/Build/Products/Release-iphoneos/Scripture Memory.app"
           echo "::notice::App bundle: $(du -sh "$app" | cut -f1)"
           echo "::notice::Breakdown: $(du -sh "$app"/* "$app"/PlugIns/* 2>/dev/null | sort -rh | head -8 | tr '\t' ' ' | sed "s#$app/##" | tr '\n' ';')"
           zip -qr app.zip "$app" && echo "::notice::Zipped (rough download size): $(du -sh app.zip | cut -f1)"
