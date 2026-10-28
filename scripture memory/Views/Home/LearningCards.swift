@@ -33,7 +33,7 @@ struct ContinueLearningCard: View {
                 Spacer()
                 Text("\(spot.indexInPack + 1) of \(spot.pack.verses.count)")
                     .font(.subheadline)
-                pinMenu
+                pinButton
             }
             .foregroundStyle(.secondary)
             .padding(.horizontal, 20)
@@ -83,18 +83,17 @@ struct ContinueLearningCard: View {
         }
     }
 
-    private var pinMenu: some View {
-        Menu {
-            pinActions
-        } label: {
-            Image(systemName: "ellipsis.circle")
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(.secondary)
-                .frame(width: 44, height: 44)
+    private var pinButton: some View {
+        Button(action: onChangePin) {
+            Text(spot.isPinned ? "Change" : "Pin")
+                .font(.system(size: 15))
+                .foregroundStyle(Color.accentColor)
+                .frame(minWidth: 44, minHeight: 44, alignment: .trailing)
                 .contentShape(Rectangle())
         }
-        .padding(-12)
-        .accessibilityLabel("Verse options")
+        .buttonStyle(.plain)
+        .padding(.vertical, -12)
+        .accessibilityLabel(spot.isPinned ? "Change pinned verse" : "Pin a verse")
     }
 }
 

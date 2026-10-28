@@ -8,6 +8,7 @@ struct PinVersePicker: View {
     let packs:     [Pack]
     var pinnedKey: String?
     var onPick:    (Verse) -> Void
+    var onUnpin:   () -> Void
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -17,6 +18,17 @@ struct PinVersePicker: View {
                                 footer: "Pick a verse to feature on your Home screen and widget. This doesn't change your learning progress.") { verse in
                     onPick(verse)
                     dismiss()
+                }
+                if pinnedKey != nil {
+                    Section {
+                        Button("Unpin Verse") {
+                            onUnpin()
+                            HapticEngine.light()
+                            dismiss()
+                        }
+                    } footer: {
+                        Text("Home goes back to the verse you're learning.")
+                    }
                 }
             }
             .navigationTitle("Pin a Verse")

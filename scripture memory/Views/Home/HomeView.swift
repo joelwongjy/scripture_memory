@@ -72,7 +72,8 @@ struct HomeView: View {
             }
         }
         .sheet(isPresented: $showPinPicker) {
-            PinVersePicker(packs: packs, pinnedKey: learning.pinnedKey) { learning.pin($0) }
+            PinVersePicker(packs: packs, pinnedKey: learning.pinnedKey,
+                           onPick: { learning.pin($0) }, onUnpin: { learning.unpin() })
         }
     }
 
