@@ -17,7 +17,7 @@ Memorize Bible verses a few minutes a day. The app shows each verse again just b
 - **A daily review** that picks which verses are due. Rate each one Again, Hard, Good or Easy, like Anki.
 - **Practice your way.** Type the first letter of each word, every word, or the whole verse, or say it out loud.
 - **Search** any verse by reference or words.
-- **NIV 1984 or NIV 2011**, switch any time.
+- **NIV 1984**, or NIV 2011 for TMS 60.
 - **Streaks, reminders and home-screen widgets.**
 - **iCloud sync**, with no account.
 
