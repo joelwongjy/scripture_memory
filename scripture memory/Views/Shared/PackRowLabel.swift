@@ -8,6 +8,7 @@ struct PackRowLabel<Trailing: View>: View {
     var showsBadge = false
     /// Replaces the verse count — e.g. "3 of 12 verses" while picking.
     var detail: String? = nil
+    var titleLineLimit = 1
     @ViewBuilder var trailing: Trailing
 
     var body: some View {
@@ -17,7 +18,7 @@ struct PackRowLabel<Trailing: View>: View {
                 Text(title ?? pack.name)
                     .font(.body.weight(.medium))
                     .foregroundStyle(.primary)
-                    .lineLimit(1)
+                    .lineLimit(titleLineLimit)
                     .truncationMode(.tail)
                 Text(detail ?? Wording.verses(pack.verses.count))
                     .font(VerseRowLabel<EmptyView, EmptyView>.titleFont)
@@ -31,7 +32,7 @@ struct PackRowLabel<Trailing: View>: View {
 }
 
 extension PackRowLabel where Trailing == EmptyView {
-    init(pack: Pack, detail: String? = nil) {
-        self.init(pack: pack, detail: detail, trailing: { EmptyView() })
+    init(pack: Pack, detail: String? = nil, titleLineLimit: Int = 1) {
+        self.init(pack: pack, detail: detail, titleLineLimit: titleLineLimit, trailing: { EmptyView() })
     }
 }
