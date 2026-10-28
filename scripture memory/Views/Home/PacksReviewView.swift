@@ -19,6 +19,7 @@ struct PacksReviewView: View {
 
     var body: some View {
         List {
+            let today = todaysReview
             Section {
                 columnHeadings
                 ForEach(packs) { pack in
@@ -29,7 +30,7 @@ struct PacksReviewView: View {
                         HStack(spacing: 8) {
                             PackRowLabel(pack: pack, titleLineLimit: 2)
                             Spacer(minLength: 0)
-                            waiting(in: pack)
+                            waiting(in: pack, today: today)
                         }
                     }
                     .tint(.accentColor)
@@ -68,18 +69,15 @@ struct PacksReviewView: View {
     }
 
     /// New (blue), Learn (red) and Due (green), with zeros greyed as on Home.
-    /// New and Due are what the pack would serve today, so neither passes the
-    /// shared daily limits, as on Anki's deck list. Due includes learnt verses
-    /// that haven't had a first review yet.
-    private func waiting(in pack: Pack) -> some View {
-        let policy = SRSQueueBuilder.NewCardPolicy.current
-        let due = store.dueCards(in: pack.verses)
-        let learn = due.filter { store.state(for: $0)?.phase == .learning }.count
-        let reviewLeft = max(0, dailyReviewCap - store.reviewedToday(now: Date()))
-        let review = min(due.count - learn + policy.known(in: pack.verses, store: store).count, reviewLeft)
-        let remaining = SRSQueueBuilder.globalNewRemaining(
-            store: store, newCap: NewCardCap(amount: newCapAmount, unit: newCapUnit))
-        let new = min(policy.fresh(in: pack.verses, store: store).count, remaining)
+    /// Each pack shows its share of today's actual review, so the rows add up
+    /// to Home's counts and a switched-off pack shows nothing.
+    private func waiting(in pack: Pack, today: [Verse]) -> some View {
+        let keys = Set(pack.verses.map(\.srsKey))
+        let mine = today.filter { keys.contains($0.srsKey) }
+        let learnt = LearningStore.shared.learntKeys
+        let new = mine.filter { store.state(for: $0) == nil && !learnt.contains($0.srsKey) }.count
+        let learn = mine.filter { store.state(for: $0)?.phase == .learning }.count
+        let review = mine.count - new - learn
         return HStack(spacing: 0) {
             column(new, ReviewColor.new)
             column(learn, ReviewColor.learn)
@@ -90,6 +88,13 @@ struct PacksReviewView: View {
         .opacity(store.isActive(pack.name) ? 1 : 0.4)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(new) new, \(learn) learning, \(review) due")
+    }
+
+    private var todaysReview: [Verse] {
+        SRSQueueBuilder.buildAllPacksSession(
+            packs: store.activePacks(packs), store: store,
+            newCap: NewCardCap(amount: newCapAmount, unit: newCapUnit),
+            dailyReviewCap: dailyReviewCap)
     }
 
     private func column(_ value: Int, _ color: Color) -> some View {
