@@ -43,8 +43,6 @@ final class TestSessionViewModel: RecallCardViewModel {
 
     /// Ratings given this session, by verse id.
     @Published var sessionGrades:  [Int: SRSGrade]     = [:]
-    /// The rating picked for the current card but not yet confirmed.
-    @Published var pendingGrade:   SRSGrade?
     /// The state each rated card was first rated from: its schedule, or for a
     /// card with none yet, the state rating it started from (new or known).
     @Published var preGradeStates: [Int: SRSCardState] = [:]

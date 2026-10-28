@@ -134,7 +134,6 @@ struct TestSessionView: View {
         .onChange(of: vm.currentIndex) { _, _ in
             vm.clearInputs()
             vm.resetDictation()
-            vm.pendingGrade = nil   // each card starts from its own suggestion
             if speech.isListening { speech.stopListening() }
             if isScrubbing {
                 // A programmatic move keeps the keyboard as it was; just point
@@ -354,23 +353,7 @@ struct TestSessionView: View {
                 .transition(.scale.combined(with: .opacity))
             }
 
-            // Review: pick a rating above (changeable), then Confirm to schedule
-            // the card and move on. Gated on `isCardAnswered` so a wrong Entire
-            // Verse answer still needs rating.
-            if !showSessionSummary, isReview, vm.isCardAnswered, let verse = vm.currentVerse {
-                let pick = vm.currentSelection(for: verse)
-                Button {
-                    guard let grade = pick, vm.currentVerse?.id == verse.id else { return }
-                    gradeAndAdvance(grade)
-                } label: {
-                    Text(pick == nil ? "Pick a difficulty to continue" : "Confirm")
-                        .font(.headline).frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-                .tint(.accentColor)
-                .disabled(pick == nil)
-            } else if !showSessionSummary, !isReview, vm.completedCount == vm.verses.count {
+            if !showSessionSummary, !isReview, vm.completedCount == vm.verses.count {
                 Button(action: finishSession) {
                     Text("End Session").font(.headline).frame(maxWidth: .infinity)
                 }
@@ -420,9 +403,12 @@ struct TestSessionView: View {
         SRSGradingButtons(
             state:     vm.displayState(for: verse),
             suggested: vm.suggestedGradeFor(verse),
-            selected:  vm.currentSelection(for: verse),
+            selected:  vm.sessionGrades[verse.id],
             now:       Date(),
-            onPick:    { vm.pendingGrade = $0 }
+            onPick:    { grade in
+                guard vm.currentVerse?.id == verse.id else { return }
+                gradeAndAdvance(grade)
+            }
         )
     }
 

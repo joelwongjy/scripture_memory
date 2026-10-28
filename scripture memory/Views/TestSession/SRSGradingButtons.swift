@@ -1,14 +1,13 @@
 import SwiftUI
 
 /// Four grading buttons (Again / Hard / Good / Easy) shown after a card is
-/// finished in an SRS session.
+/// finished in an SRS session. A tap rates the card and moves on, as in Anki;
+/// Undo in the top bar takes a rating back.
 ///
-/// - The **selected** grade (the one Confirm will commit) is filled with its
-///   colour. Upstream it usually defaults to the suggestion, but the user can
-///   tap any button to choose their own difficulty.
-/// - The **suggested** grade carries a clear "Suggested" tag above it, so the
-///   recommended choice is obvious — "this is your suggested one, you can pick
-///   another". `suggested` is `nil` in the typing modes, where typos make a
+/// - The **selected** grade, a rating already given this session, is filled
+///   with its colour.
+/// - The **suggested** grade is outlined and carries a "Suggested" tag above
+///   it. `suggested` is `nil` in the typing modes, where typos make a
 ///   performance-based suggestion unreliable; then no tag shows.
 struct SRSGradingButtons: View {
 
@@ -24,8 +23,9 @@ struct SRSGradingButtons: View {
                 gradeButton(grade)
             }
         }
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
         // Headroom so the "Suggested" tag can sit above its button without clipping.
-        .padding(.top, 14)
+        .padding(.top, 16)
     }
 
     private func gradeButton(_ grade: SRSGrade) -> some View {
@@ -39,10 +39,11 @@ struct SRSGradingButtons: View {
         } label: {
             VStack(spacing: 2) {
                 Text(grade.displayName)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.subheadline.weight(.semibold))
                     .foregroundStyle(textColor(grade: grade, selected: isSelected, suggested: isSuggested))
                 Text(label)
-                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                    .font(.footnote.weight(.medium))
+                    .monospacedDigit()
                     .foregroundStyle(textColor(grade: grade, selected: isSelected, suggested: isSuggested).opacity(0.85))
             }
             .frame(maxWidth: .infinity)
@@ -57,20 +58,22 @@ struct SRSGradingButtons: View {
             }
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(grade.displayName)
+        .accessibilityValue(isSuggested ? "\(label), suggested" : label)
     }
 
     /// A small pill anchored to the top edge of the suggested button. The
     /// background-coloured ring makes it read as a tag sitting on the button.
     private func suggestedTag(color: Color) -> some View {
         Text("Suggested")
-            .font(.system(size: 9, weight: .heavy))
+            .font(.caption2.weight(.bold))
             .foregroundStyle(.white)
             .fixedSize()
             .padding(.horizontal, 7)
             .padding(.vertical, 2)
             .background(Capsule().fill(color))
             .overlay(Capsule().stroke(Color(.systemBackground), lineWidth: 1.5))
-            .offset(y: -10)
+            .offset(y: -12)
     }
 
     private func color(for grade: SRSGrade) -> Color {

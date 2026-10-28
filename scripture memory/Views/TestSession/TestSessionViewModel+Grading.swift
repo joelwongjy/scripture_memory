@@ -30,13 +30,6 @@ extension TestSessionViewModel {
                                      now: Date())
     }
 
-    /// The rating shown as selected, which Confirm will commit: the user's pick,
-    /// else a rating already given this session, else the suggestion. `nil` keeps
-    /// Confirm disabled until the user picks.
-    func currentSelection(for verse: Verse) -> SRSGrade? {
-        pendingGrade ?? sessionGrades[verse.id] ?? suggestedGradeFor(verse)
-    }
-
     /// The recommended rating, shown with the "Suggested" tag. Only Entire Verse
     /// mode scores an answer, so the typing modes leave the choice to the user.
     func suggestedGradeFor(_ verse: Verse) -> SRSGrade? {
@@ -72,7 +65,6 @@ extension TestSessionViewModel {
             SRSStore.shared.regrade(verse: verse, grade: grade, from: prior)
         }
         sessionGrades[verse.id] = grade
-        pendingGrade = nil
 
         if grade == .good || grade == .easy, learning.isCurrent(verse) {
             learning.markLearnt(verse)
@@ -108,7 +100,6 @@ extension TestSessionViewModel {
         preGradeStates.removeValue(forKey: lastId)
         unscheduledAtStart.removeValue(forKey: lastId)
         gradedOrder.removeLast()
-        pendingGrade = nil
         return index
     }
 }
