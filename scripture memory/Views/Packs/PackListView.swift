@@ -20,6 +20,7 @@ struct PackListView: View {
         var index = 0
         /// Its tile's frame, to fly out of and back into.
         var origin: CGRect?
+        var fromSearch = false
         var id: String { "\(pack.id)-\(index)" }
     }
 
@@ -51,7 +52,7 @@ struct PackListView: View {
                         results: results,
                         onSelect: { result in
                             VerseSearch.logOpened(result, in: results)
-                            opened = OpenedPack(pack: result.pack, index: result.verseIndex)
+                            opened = OpenedPack(pack: result.pack, index: result.verseIndex, fromSearch: true)
                         }
                     )
                 }
@@ -85,6 +86,7 @@ struct PackListView: View {
         .task { VerseSearch.prewarm(visiblePacks) }
         .fullScreenCover(item: $opened) { item in
             PouchView(pack: item.pack, startIndex: item.index, shelf: item.origin,
+                      animatesPouch: !item.fromSearch,
                       onPutBack: { withoutPresentationAnimation { opened = nil } })
                 .presentationBackground(item.origin == nil ? AnyShapeStyle(Color(.systemGroupedBackground))
                                                             : AnyShapeStyle(Color.clear))

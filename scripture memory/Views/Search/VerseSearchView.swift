@@ -49,7 +49,7 @@ struct VerseSearchView: View {
         }
         .task { VerseSearch.prewarm(visiblePacks) }
         .fullScreenCover(item: $opened) { item in
-            PouchView(pack: item.pack, startIndex: item.index)
+            PouchView(pack: item.pack, startIndex: item.index, animatesPouch: false)
                 .presentationBackground(Color(.systemGroupedBackground))
         }
     }

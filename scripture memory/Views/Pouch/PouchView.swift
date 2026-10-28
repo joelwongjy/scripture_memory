@@ -17,6 +17,9 @@ struct PouchView: View {
     let shelf: CGRect?
     /// Takes the screen away once the pouch is back on the shelf.
     var onPutBack: (() -> Void)?
+    /// Unfolds, fans out and folds shut. Off, the pack opens on its list and
+    /// closes with the screen, as it does with Reduce Motion.
+    let animatesPouch: Bool
 
     @State private var index: Int
     @State private var openness: CGFloat
@@ -59,12 +62,14 @@ struct PouchView: View {
 
     private var verses: [Verse] { pack.verses }
 
-    init(pack: Pack, startIndex: Int, shelf: CGRect? = nil, onPutBack: (() -> Void)? = nil) {
-        let reduce = AppMotion.reduceMotion
+    init(pack: Pack, startIndex: Int, shelf: CGRect? = nil, animatesPouch: Bool = true,
+         onPutBack: (() -> Void)? = nil) {
+        let reduce = AppMotion.reduceMotion || !animatesPouch
         let start = min(max(startIndex, 0), max(pack.verses.count - 1, 0))
         self.pack = pack
         self.shelf = shelf
         self.onPutBack = onPutBack
+        self.animatesPouch = animatesPouch
         _index = State(initialValue: start)
         _listIndex = State(initialValue: nil)
         _openness = State(initialValue: reduce ? 1 : 0)
@@ -546,7 +551,7 @@ struct PouchView: View {
         guard !closing else { return }
         closing = true
         Analytics.log(.packClosed(how: how, seconds: Date().timeIntervalSince(openedAt)))
-        if AppMotion.reduceMotion { HapticEngine.light(); dismissOrPutBack(); return }
+        if AppMotion.reduceMotion || !animatesPouch { HapticEngine.light(); dismissOrPutBack(); return }
         HapticEngine.play(HapticEngine.packClose)
         var t = Transaction()
         t.disablesAnimations = true
