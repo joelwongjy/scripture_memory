@@ -11,24 +11,31 @@ struct PinVersePicker: View {
     var onUnpin:   () -> Void
     @Environment(\.dismiss) private var dismiss
 
+    private var pinned: Verse? {
+        guard let pinnedKey else { return nil }
+        return packs.lazy.flatMap(\.verses).first { $0.srsKey == pinnedKey }
+    }
+
     var body: some View {
         NavigationStack {
             List {
-                PackVersePicker(packs: packs, selectedKey: pinnedKey, marker: .pin,
-                                footer: "Pick a verse to feature on your Home screen and widget. This doesn't change your learning progress.") { verse in
-                    onPick(verse)
-                    dismiss()
-                }
-                if pinnedKey != nil {
+                if let pinned {
                     Section {
-                        Button("Unpin Verse") {
+                        Button {
                             onUnpin()
                             HapticEngine.light()
                             dismiss()
+                        } label: {
+                            Label("Unpin \(pinned.book) \(pinned.reference)", systemImage: "pin.slash")
                         }
                     } footer: {
                         Text("Home goes back to the verse you're learning.")
                     }
+                }
+                PackVersePicker(packs: packs, selectedKey: pinnedKey, marker: .pin,
+                                footer: "Pick a verse to feature on your Home screen and widget. This doesn't change your learning progress.") { verse in
+                    onPick(verse)
+                    dismiss()
                 }
             }
             .navigationTitle("Pin a Verse")
