@@ -129,7 +129,6 @@ struct TestSessionView: View {
         .background(Color(.systemGroupedBackground))
         .undoToast($undoToastState)
         .speechErrorAlert(speech)
-        .tracksStudyScreen()
         .onAppear(perform: logStart)
         .onDisappear { logEnd(finished: false) }
         .onChange(of: vm.currentIndex) { _, _ in

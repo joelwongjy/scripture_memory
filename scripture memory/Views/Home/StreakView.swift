@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// The streak in full, Duolingo-style: the flame and count, whether today is
-/// done, the next milestone, best and total, and a month calendar where
+/// The streak in full: the flame and count with this week, best and total,
+/// and a month calendar where
 /// consecutive days join into one band.
 struct StreakView: View {
     @ObservedObject private var streak = StreakStore.shared
@@ -11,7 +11,6 @@ struct StreakView: View {
         ScrollView {
             VStack(spacing: AppLayout.spacing) {
                 hero
-                milestone
                 stats
                 calendar
             }
@@ -31,63 +30,29 @@ struct StreakView: View {
     private var hero: some View {
         let count = streak.current
         let lit = streak.isTodayDone
-        return VStack(spacing: 6) {
-            Image(systemName: "flame.fill")
-                .font(.system(size: 72))
-                .foregroundStyle(lit ? AnyShapeStyle(Self.flameGradient) : AnyShapeStyle(Color(.systemGray3)))
-                .symbolEffect(.bounce, options: .nonRepeating, value: count)
-                .padding(.top, 8)
-            Text("\(count)")
-                .font(.system(size: 56, weight: .heavy, design: .rounded))
-                .foregroundStyle(lit ? Color.orange : Color.primary)
-                .contentTransition(.numericText())
-            Text("day streak")
-                .font(.headline)
-                .foregroundStyle(.secondary)
-            Text(statusLine)
-                .font(.subheadline)
-                .foregroundStyle(lit ? Color.secondary : Color.orange)
-                .multilineTextAlignment(.center)
-                .padding(.top, 6)
-            weekRow.padding(.top, 10)
+        return VStack(spacing: 14) {
+            HStack(spacing: 12) {
+                Image(systemName: "flame.fill")
+                    .font(.system(size: 52))
+                    .foregroundStyle(lit ? AnyShapeStyle(Self.flameGradient) : AnyShapeStyle(Color(.systemGray3)))
+                    .symbolEffect(.bounce, options: .nonRepeating, value: count)
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("\(count)")
+                        .font(.system(size: 48, weight: .heavy, design: .rounded))
+                        .foregroundStyle(lit ? Color.orange : Color.primary)
+                        .contentTransition(.numericText())
+                    Text("day streak")
+                        .font(.headline)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            StreakWeekRow()
         }
         .frame(maxWidth: .infinity)
-        .padding(AppLayout.cardPadding)
+        .padding(.vertical, AppLayout.panelPadding)
+        .padding(.horizontal, AppLayout.cardPadding)
         .groupedPanel()
         .accessibilityElement(children: .combine)
-    }
-
-    private var statusLine: String {
-        let count = streak.current
-        if streak.isTodayDone { return "Streak kept for today. See you tomorrow!" }
-        if count > 0 { return "Open the app today to keep your streak going." }
-        return "Open the app each day to build a streak."
-    }
-
-    private var weekRow: some View { StreakWeekRow() }
-
-    // MARK: - Milestone
-
-    private var milestone: some View {
-        let count = streak.current
-        let goal = streak.nextMilestone
-        let left = goal - count
-        return VStack(alignment: .leading, spacing: 10) {
-            Label {
-                Text("Next goal: \(goal)-day streak")
-                    .font(.subheadline.weight(.semibold))
-                    .monospacedDigit()
-            } icon: {
-                Image(systemName: "trophy.fill").foregroundStyle(.orange)
-            }
-            ProgressView(value: Double(count), total: Double(goal))
-                .tint(.orange)
-            Text(left == 1 ? "1 more day" : "\(left) more days")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-        }
-        .padding(AppLayout.panelPadding)
-        .groupedPanel()
     }
 
     // MARK: - Stats
@@ -100,16 +65,18 @@ struct StreakView: View {
     }
 
     private func statTile(value: Int, label: String, systemImage: String, tint: Color) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
+        HStack(spacing: 10) {
             Image(systemName: systemImage)
                 .font(.title3)
                 .foregroundStyle(tint)
-            Text("\(value)")
-                .font(.title2.weight(.bold))
-                .monospacedDigit()
-            Text(label)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 0) {
+                Text("\(value)")
+                    .font(.title3.weight(.bold))
+                    .monospacedDigit()
+                Text(label)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(AppLayout.panelPadding)
@@ -159,7 +126,7 @@ private struct MonthGrid: View {
     let isDone: (Date) -> Bool
 
     private let cal = Calendar.current
-    private let cell: CGFloat = 36
+    private let cell: CGFloat = 34
 
     var body: some View {
         VStack(spacing: 6) {
@@ -222,15 +189,15 @@ private struct MonthGrid: View {
         return Array(symbols[first...] + symbols[..<first])
     }
 
-    /// The month's days laid out in six weeks, `nil` for the padding before
-    /// day 1 and after the last day, so every month is the same height.
+    /// The month's days laid out by week, `nil` for the padding before day 1
+    /// and after the last day.
     private var weeks: [[Date?]] {
         guard let range = cal.range(of: .day, in: .month, for: month),
               let first = cal.date(from: cal.dateComponents([.year, .month], from: month)) else { return [] }
         let leading = (cal.component(.weekday, from: first) - cal.firstWeekday + 7) % 7
         var days: [Date?] = Array(repeating: nil, count: leading)
         for d in range { days.append(cal.date(byAdding: .day, value: d - 1, to: first)) }
-        while days.count < 42 { days.append(nil) }
+        while days.count % 7 != 0 { days.append(nil) }
         return stride(from: 0, to: days.count, by: 7).map { Array(days[$0..<$0 + 7]) }
     }
 
@@ -243,4 +210,37 @@ private struct MonthGrid: View {
 
 #Preview {
     NavigationStack { StreakView() }
+}
+
+/// This week as seven days: practised days are filled with a check, today is
+/// ringed.
+struct StreakWeekRow: View {
+    @ObservedObject private var streak = StreakStore.shared
+
+    var body: some View {
+        HStack(spacing: 10) {
+            ForEach(Array(streak.thisWeek().enumerated()), id: \.offset) { _, day in
+                VStack(spacing: 6) {
+                    Text(day.initial)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(day.isToday ? Color.orange : Color.secondary)
+                    ZStack {
+                        Circle()
+                            .fill(day.done ? Color.orange : Color(.systemGray5))
+                            .frame(width: 30, height: 30)
+                        if day.done {
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundStyle(.white)
+                        } else if day.isToday {
+                            Circle().strokeBorder(Color.orange, lineWidth: 2).frame(width: 30, height: 30)
+                        }
+                    }
+                    .opacity(day.isFuture ? 0.4 : 1)
+                }
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("This week: \(streak.thisWeek().filter(\.done).count) of 7 days active")
+    }
 }

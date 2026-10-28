@@ -88,7 +88,7 @@ struct TestSetupView: View {
         List {
             // Resume card — separate section so it stands apart
             if let session = savedSession {
-                Section {
+                Section("In Progress") {
                     resumeRow(session)
                 }
             }
@@ -159,35 +159,37 @@ struct TestSetupView: View {
     // MARK: - Resume Row
 
     private func resumeRow(_ session: TestSession) -> some View {
-        let sessionIds   = Set(session.verses.map(\.id))
-        let packNames    = bibleVersion.packs
+        let sessionIds = Set(session.verses.map(\.id))
+        let packsText  = bibleVersion.packs
             .filter { pack in pack.verses.contains { sessionIds.contains($0.id) } }
-            .map(\.name)
-        let packsText    = packNames.joined(separator: ", ")
+            .map(\.shortName)
+            .formatted(.list(type: .and))
+        let total = session.verses.count
+        let done  = TestSessionViewModel.savedCompletedCount(for: .custom, verses: session.verses)
 
-        return HStack(spacing: 10) {
-            Image(systemName: "play.circle.fill")
-                .font(.system(size: 22))
-                .foregroundStyle(Color.accentColor)
-
-            VStack(alignment: .leading, spacing: 1) {
-                Text("Session in Progress")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(Color.primary)
-                Text("\(session.verses.count) cards · \(packsText)")
-                    .font(.system(size: 12))
-                    .foregroundStyle(Color.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+        return HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("\(done) of \(total) verses done")
+                    .font(.headline)
+                    .monospacedDigit()
+                Text(packsText)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                ProgressView(value: Double(done), total: Double(total))
+                    .tint(Color.accentColor)
             }
-
-            Spacer()
-
-            RowChevron()
+            Button("Resume") { activeSession = session }
+                .buttonStyle(.borderedProminent)
+                .buttonBorderShape(.capsule)
+                .fontWeight(.semibold)
         }
-        .padding(.vertical, 3)
-        .listRowInsets(EdgeInsets(top: 2, leading: 16, bottom: 2, trailing: 14))
+        .padding(.vertical, 6)
         .contentShape(Rectangle())
         .onTapGesture { activeSession = session }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Unfinished quiz, \(done) of \(total) verses done, \(packsText)")
+        .accessibilityAction { activeSession = session }
         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
             Button(role: .destructive) {
                 dismissSavedSession()
@@ -395,7 +397,7 @@ struct TestSetupView: View {
 
     private var bottomBarContent: some View {
         VStack(spacing: 12) {
-            QuizCountMenu(count: $quizCount, maximum: selectedCount)
+            QuizCountPicker(count: $quizCount, maximum: selectedCount)
             PrimaryActionButton(title: "Start") {
                 if savedSession != nil { showOverwriteAlert = true }
                 else                   { launchNewSession() }

@@ -14,10 +14,6 @@ final class StreakStore: ObservableObject {
 
     @Published private(set) var days: Set<String> = []
 
-    /// Set to the new streak length when today's first visit reaches a
-    /// milestone; the celebration overlay shows it and clears it.
-    @Published var celebration: Int?
-
     private let storage: ProgressStorage
     private static let storageKey = "streak.days.v1"
 
@@ -41,16 +37,11 @@ final class StreakStore: ObservableObject {
         if merged != incoming { persist() }   // our side had days iCloud lacked
     }
 
-    /// Mark today as done. Idempotent; the first call of the day raises the
-    /// celebration when the streak lands on a milestone.
+    /// Mark today as done. Idempotent.
     func recordToday(_ now: Date = Date()) {
         let key = Self.dayKey(now)
         guard !days.contains(key) else { return }
         days.insert(key)
-        if Self.milestones.contains(current) {
-            celebration = current
-            Analytics.log(.streakGoalReached(days: current))
-        }
         // Keep ~400 days so the set can't grow unbounded.
         if days.count > 400 {
             days = Set(days.sorted().suffix(400))
@@ -103,15 +94,6 @@ final class StreakStore: ObservableObject {
 
     /// Whether the given calendar day was practised.
     func isDone(_ date: Date) -> Bool { days.contains(Self.dayKey(date)) }
-
-    static let milestones = [3, 7, 14, 30, 50, 100, 200, 365, 500, 1000]
-
-    /// The next streak milestone above `count`, Duolingo-style.
-    static func milestone(after count: Int) -> Int {
-        milestones.first { $0 > count } ?? (count / 100 + 1) * 100
-    }
-
-    var nextMilestone: Int { Self.milestone(after: current) }
 
     private static func date(fromKey key: String) -> Date? {
         let parts = key.split(separator: "-").compactMap { Int($0) }

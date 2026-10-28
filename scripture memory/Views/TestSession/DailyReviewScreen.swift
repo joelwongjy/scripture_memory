@@ -101,7 +101,6 @@ struct ReviewCompleteView: View {
         .readableColumn(520)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(.systemGroupedBackground).ignoresSafeArea())
-        .tracksStudyScreen()
         .task {
             withAnimation(AppMotion.movement.delay(0.05)) { appeared = true }
         }

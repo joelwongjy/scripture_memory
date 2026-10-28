@@ -23,7 +23,6 @@ enum AnalyticsEvent: Equatable {
     case searchResultOpened(rank: Int, matchedOnReference: Bool)
     case searchFoundNothing
 
-    case streakGoalReached(days: Int)
     case settingChanged(setting: String, value: String)
 
     var name: String {
@@ -41,7 +40,6 @@ enum AnalyticsEvent: Equatable {
         case .sessionEnded(let s):   return "\(s.kind.signalPrefix).ended"
         case .searchResultOpened:    return "Search.resultOpened"
         case .searchFoundNothing:    return "Search.foundNothing"
-        case .streakGoalReached:     return "Streak.goalReached"
         case .settingChanged:        return "Settings.changed"
         }
     }
@@ -72,8 +70,6 @@ enum AnalyticsEvent: Equatable {
             return s.parameters
         case .searchResultOpened(let rank, let onReference):
             return ["rank": AnalyticsRange.count(rank), "matchedOn": onReference ? "reference" : "text"]
-        case .streakGoalReached(let days):
-            return ["days": String(days)]
         case .settingChanged(let setting, let value):
             return ["setting": setting, "value": value]
         }

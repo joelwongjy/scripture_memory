@@ -101,7 +101,6 @@ struct PouchView: View {
         }
         .statusBarHidden(hingeShut)
         .undoToast($undoToastState)
-        .tracksStudyScreen()
         .fullScreenCover(item: $practice) { session in
             TestSessionView(session: session, onSessionEnded: { practice = nil })
         }
@@ -221,14 +220,14 @@ struct PouchView: View {
                    pocketCenter: CGPoint(x: geo.size.width / 2, y: sceneTop + m.halfHeight + m.cardFrame.midY),
                    listCenter: CGPoint(x: geo.size.width / 2,
                                        y: listMidY(of: index, height: listHeight,
-                                                   viewport: geo.size.height + below, chrome: chrome)),
+                                                   viewport: geo.size.height + below, chrome: chrome,
+                                                   below: below)),
                    pocketWidth: m.cardWidth, listWidth: listWidth,
                    listPitch: listHeight + AppLayout.spacing,
                    around: { $0 == 0 ? card(at: index) : verses.indices.contains(index + $0) ? .verse(index + $0) : .none },
                    edges: min(5, Int((Double(max(verses.count - index - 1, 0)) / 8).rounded(.up))),
                    face: { cardFace($0, width: $1) })
-            .clipped()
-            .mask { listMask(chrome: chrome) }
+            .mask { listMask(chrome: chrome).padding(.bottom, -below) }
             .allowsHitTesting(false)
             .accessibilityHidden(true)
 
@@ -262,18 +261,20 @@ struct PouchView: View {
                 .scrollTargetLayout()
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, AppLayout.spacing)
+                .padding(.bottom, below)
             }
             .modifier(ListScrollTracking(
                 onScroll: { listScrolled = true },
                 onOffset: { offset in
                     if !listSettled { settleListSoon() }
                     guard listScrolled else { return }
-                    let shown = cardShown(at: offset, height: height, viewport: viewport, chrome: chrome)
+                    let shown = cardShown(at: offset, height: height, viewport: viewport, chrome: chrome,
+                                          below: below)
                     if shown != index { index = shown }
                 }))
             .ignoresSafeArea(.container, edges: below > 0 ? .bottom : [])
             .safeAreaPadding(.top, chrome)
-            .mask { listMask(chrome: chrome) }
+            .mask { listMask(chrome: chrome).padding(.bottom, -below) }
             .scrollPosition(id: $listIndex, anchor: .center)
             .onChange(of: listIndex) { _, new in
                 guard #unavailable(iOS 18), listScrolled, let new else { return }
@@ -396,6 +397,10 @@ struct PouchView: View {
             PouchBackPageCard(packName: pack.name, verseCount: verses.count,
                               learntCount: verses.filter(learning.isLearnt).count, width: width)
                 .paperAppearance()
+        case .coverBack:
+            PaperFace(tint: PouchInk.paperBack)
+                .frame(width: width, height: width / PouchMetrics.cardAspect)
+                .paperAppearance()
         case .verse, .none:
             Color.clear
         }
@@ -465,9 +470,9 @@ struct PouchView: View {
 
     // MARK: - State
 
-    /// A verse, then the back page after the last one.
+    /// The title card's back, the verses, then the back page after the last one.
     private func card(at i: Int) -> PouchSlots.Card {
-        i < 0 ? .none : i < verses.count ? .verse(i) : i == verses.count ? .backPage : .none
+        i < -1 ? .none : i < 0 ? .coverBack : i < verses.count ? .verse(i) : i == verses.count ? .backPage : .none
     }
 
     private var slots: PouchSlots {
@@ -586,25 +591,27 @@ struct PouchView: View {
     }
 
     /// The list's full height: its cards and the gap above and below them.
-    private func listContentHeight(cardHeight: CGFloat) -> CGFloat {
-        CGFloat(verses.count) * (cardHeight + AppLayout.spacing) + AppLayout.spacing
+    private func listContentHeight(cardHeight: CGFloat, below: CGFloat) -> CGFloat {
+        CGFloat(verses.count) * (cardHeight + AppLayout.spacing) + AppLayout.spacing + below
     }
 
     /// Where the list puts card `i` when it scrolls it as near the middle as it
     /// will go, so the cards fanning out land where the list then shows them.
-    private func listMidY(of i: Int, height: CGFloat, viewport: CGFloat, chrome: CGFloat) -> CGFloat {
+    private func listMidY(of i: Int, height: CGFloat, viewport: CGFloat, chrome: CGFloat,
+                          below: CGFloat) -> CGFloat {
         let visible = viewport - chrome
         let mid = AppLayout.spacing + CGFloat(i) * (height + AppLayout.spacing) + height / 2
-        let most = max(0, listContentHeight(cardHeight: height) - visible)
+        let most = max(0, listContentHeight(cardHeight: height, below: below) - visible)
         return chrome + mid - min(max(0, mid - visible / 2), most)
     }
 
     /// The card the counter names at a scroll offset: the one in the middle,
     /// except within half a screen of either end, where it slides to the first
     /// or last card.
-    private func cardShown(at offset: CGFloat, height: CGFloat, viewport: CGFloat, chrome: CGFloat) -> Int {
+    private func cardShown(at offset: CGFloat, height: CGFloat, viewport: CGFloat, chrome: CGFloat,
+                           below: CGFloat) -> Int {
         let visible = viewport - chrome
-        let most = listContentHeight(cardHeight: height) - visible
+        let most = listContentHeight(cardHeight: height, below: below) - visible
         guard most > 0 else { return index }
         let half = visible / 2
         let reading = offset + (offset < most / 2 ? min(max(offset, 0), half)

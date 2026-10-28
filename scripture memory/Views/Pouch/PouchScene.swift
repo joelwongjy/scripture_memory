@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Which card occupies each place in the pouch for one frame.
 struct PouchSlots {
-    enum Card: Equatable { case verse(Int), backPage, none }
+    enum Card: Equatable { case verse(Int), backPage, coverBack, none }
     var top: Card            // front of the top pocket (upside down)
     var bottom: Card         // front of the bottom pocket
     var topEdges: Int

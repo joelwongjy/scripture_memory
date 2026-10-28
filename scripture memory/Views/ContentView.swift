@@ -32,7 +32,6 @@ struct ContentView: View {
 
     var body: some View {
         tabs
-        .streakCelebration()
         .fullScreenCover(item: $cover) { c in
             switch c {
             case .onboarding(let showsWelcome):

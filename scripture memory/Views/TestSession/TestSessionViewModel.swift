@@ -175,6 +175,13 @@ final class TestSessionViewModel: RecallCardViewModel {
         UserDefaults.standard.removeObject(forKey: key)
     }
 
+    /// How many of `verses` the saved session of this kind has finished.
+    static func savedCompletedCount(for kind: SessionKind, verses: [Verse]) -> Int {
+        guard let key = progressKey(for: kind), UserDefaults.standard.data(forKey: key) != nil else { return 0 }
+        let saved = TestSessionViewModel(verses: verses, kind: kind)
+        return verses.filter(saved.isComplete).count
+    }
+
     func saveProgress() {
         guard let progressKey else { return }
         let snapshot = submitResults.isEmpty
