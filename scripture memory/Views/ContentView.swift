@@ -15,6 +15,7 @@ struct ContentView: View {
     /// One cover, enum-driven — two `.fullScreenCover` modifiers on a single view
     /// conflict, so onboarding and widget deep-links share this.
     @State private var cover: ActiveCover?
+    @State private var searchText = ""
 
     private enum ActiveCover: Identifiable {
         case onboarding(showsWelcome: Bool)
@@ -30,27 +31,7 @@ struct ContentView: View {
     }
 
     var body: some View {
-        TabView {
-            NavigationStack {
-                HomeView()
-            }
-            .tabItem { Label("Home", systemImage: "house.fill") }
-
-            NavigationStack {
-                PackListView()
-            }
-            .tabItem { Label("Packs", systemImage: "rectangle.stack.fill") }
-
-            NavigationStack {
-                TestSetupView()
-            }
-            .tabItem { Label("Quiz", systemImage: "checkmark.circle.fill") }
-
-            NavigationStack {
-                SettingsView()
-            }
-            .tabItem { Label("Settings", systemImage: "gearshape") }
-        }
+        tabs
         .fullScreenCover(item: $cover) { c in
             switch c {
             case .onboarding(let showsWelcome):
@@ -58,11 +39,9 @@ struct ContentView: View {
                                   showsWelcome: showsWelcome,
                                   onComplete: { hasOnboarded = true })
             case .read(let pack, let index):
-                // Open the verse in Read mode, in its pack (chrome hidden so the
-                // card's own top bar shows; NavigationStack lets its keyboard work).
-                CardStudyCover(packName: pack.name, verses: pack.verses, initialIndex: index)
+                PouchView(pack: pack, startIndex: index)
             case .review(let session):
-                TestSessionView(session: session, onSessionEnded: { cover = nil })
+                DailyReviewScreen(session: session, onFinished: { cover = nil })
             }
         }
         .onAppear {
@@ -72,6 +51,7 @@ struct ContentView: View {
                     // A reinstall with progress already back from iCloud: there's
                     // nothing to set up, and asking "where have you got to?"
                     // would overwrite the answer we just restored.
+                    Analytics.log(.onboardingFinished(start: .restoredFromICloud, bibleVersion: bibleVersion.rawValue))
                     hasOnboarded = true
                 } else {
                     // Already-studying users skip the "Welcome to the app" hero and
@@ -85,6 +65,7 @@ struct ContentView: View {
         // setup question is moot — take it down.
         .onReceive(NotificationCenter.default.publisher(for: ProgressStorage.didChangeExternally)) { _ in
             if case .onboarding = cover, hasRestoredProgress {
+                Analytics.log(.onboardingFinished(start: .restoredFromICloud, bibleVersion: bibleVersion.rawValue))
                 hasOnboarded = true
                 cover = nil
             }
@@ -96,13 +77,47 @@ struct ContentView: View {
         // widget, even if the onChange above is missed while the picker sheet is up.
         .onReceive(NotificationCenter.default.publisher(for: .featuredVerseDidChange)) { _ in syncWidget() }
         .onChange(of: bibleVersion)        { _, _ in syncWidget() }
-        .onChange(of: hasOnboarded)        { _, _ in syncWidget() }
+        .onChange(of: hasOnboarded)        { _, done in
+            if done { StreakStore.shared.recordToday() }
+            syncWidget()
+        }
         // Refresh the widget snapshot when leaving/returning — catches streak and
         // due-count changes made during a review session.
-        .onChange(of: scenePhase) { _, phase in
+        .onChange(of: scenePhase, initial: true) { _, phase in
+            if phase == .active, hasOnboarded { StreakStore.shared.recordToday() }
             if phase == .active || phase == .background { syncWidget() }
         }
         .onOpenURL { handleDeepLink($0) }
+    }
+
+    /// The app's tabs. From iOS 18 search is a tab of its own, which iOS 26
+    /// draws as the search button beside the tab bar.
+    @ViewBuilder
+    private var tabs: some View {
+        if #available(iOS 18, *) {
+            TabView {
+                Tab("Home", systemImage: "house.fill") { NavigationStack { HomeView() } }
+                Tab("Packs", systemImage: "rectangle.stack.fill") { NavigationStack { PackListView() } }
+                Tab("Quiz", systemImage: "checkmark.circle.fill") { NavigationStack { TestSetupView() } }
+                Tab("Settings", systemImage: "gearshape") { NavigationStack { SettingsView() } }
+                Tab(role: .search) {
+                    NavigationStack { VerseSearchView(searchText: searchText) }
+                        .searchable(text: $searchText, prompt: "Search verses")
+                }
+            }
+            .modifier(SearchOnTabSelection())
+        } else {
+            TabView {
+                NavigationStack { HomeView() }
+                    .tabItem { Label("Home", systemImage: "house.fill") }
+                NavigationStack { PackListView() }
+                    .tabItem { Label("Packs", systemImage: "rectangle.stack.fill") }
+                NavigationStack { TestSetupView() }
+                    .tabItem { Label("Quiz", systemImage: "checkmark.circle.fill") }
+                NavigationStack { SettingsView() }
+                    .tabItem { Label("Settings", systemImage: "gearshape") }
+            }
+        }
     }
 
     /// Anything that only exists once someone has studied — a learning cursor or
@@ -137,8 +152,12 @@ struct ContentView: View {
     private func handleDeepLink(_ url: URL) {
         guard url.scheme == "scripturememory" else { return }
         switch url.host {
-        case "read":   openRead(url)
-        case "review": openReview()
+        case "read":
+            Analytics.log(.openedFromWidget(destination: .read))
+            openRead(url)
+        case "review":
+            Analytics.log(.openedFromWidget(destination: .review))
+            openReview()
         default:       break
         }
     }
@@ -152,6 +171,7 @@ struct ContentView: View {
               let pack = packPrefs.visible(from: bibleVersion.packs).first(where: { $0.name == packName })
         else { return }
         let idx = pack.verses.firstIndex { $0.book == val("book") && $0.reference == val("ref") } ?? 0
+        Analytics.log(.packOpened(pack: pack.name, from: .widget))
         cover = .read(pack: pack, index: idx)
     }
 
@@ -162,5 +182,15 @@ struct ContentView: View {
                                                     dailyReviewCap: dailyReviewCap) else { return }
         TestSessionViewModel.clearPersistedProgress(for: .srs)
         cover = .review(session)
+    }
+}
+
+private struct SearchOnTabSelection: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(iOS 26, *) {
+            content.tabViewSearchActivation(.searchTabSelection)
+        } else {
+            content
+        }
     }
 }

@@ -3,7 +3,7 @@ import Combine
 
 /// Tracks daily study activity and derives the user's current streak.
 ///
-/// A "day" counts once the user opens the app that day.
+/// A day counts once the user opens the app that day.
 /// Persisted through `ProgressStorage` (a set of `yyyy-MM-dd` day keys). Days
 /// are facts, so an external copy is **unioned** in rather than replacing ours —
 /// a day studied on either device stays studied.
@@ -37,7 +37,7 @@ final class StreakStore: ObservableObject {
         if merged != incoming { persist() }   // our side had days iCloud lacked
     }
 
-    /// Mark today as active. Idempotent.
+    /// Mark today as done. Idempotent.
     func recordToday(_ now: Date = Date()) {
         let key = Self.dayKey(now)
         guard !days.contains(key) else { return }
@@ -69,6 +69,36 @@ final class StreakStore: ObservableObject {
             day = prev
         }
         return streak
+    }
+
+    /// Whether today has been practised yet. While it hasn't, a running streak
+    /// is "at risk": still alive, but it ends at midnight.
+    var isTodayDone: Bool { days.contains(Self.dayKey(Date())) }
+
+    /// Days practised, in all (within the kept window of about 400 days).
+    var totalDays: Int { days.count }
+
+    /// The longest run of consecutive practised days on record.
+    var longest: Int {
+        let cal = Calendar.current
+        let dates = days.compactMap(Self.date(fromKey:)).sorted()
+        var best = 0, run = 0
+        var previous: Date?
+        for d in dates {
+            if let p = previous, cal.dateComponents([.day], from: p, to: d).day == 1 { run += 1 } else { run = 1 }
+            best = max(best, run)
+            previous = d
+        }
+        return best
+    }
+
+    /// Whether the given calendar day was practised.
+    func isDone(_ date: Date) -> Bool { days.contains(Self.dayKey(date)) }
+
+    private static func date(fromKey key: String) -> Date? {
+        let parts = key.split(separator: "-").compactMap { Int($0) }
+        guard parts.count == 3 else { return nil }
+        return Calendar.current.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2]))
     }
 
     /// The 7 days of the current calendar week (Duolingo-style row) — single-letter

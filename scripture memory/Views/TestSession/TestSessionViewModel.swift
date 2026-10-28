@@ -43,8 +43,6 @@ final class TestSessionViewModel: RecallCardViewModel {
 
     /// Ratings given this session, by verse id.
     @Published var sessionGrades:  [Int: SRSGrade]     = [:]
-    /// The rating picked for the current card but not yet confirmed.
-    @Published var pendingGrade:   SRSGrade?
     /// The state each rated card was first rated from: its schedule, or for a
     /// card with none yet, the state rating it started from (new or known).
     @Published var preGradeStates: [Int: SRSCardState] = [:]
@@ -83,9 +81,6 @@ final class TestSessionViewModel: RecallCardViewModel {
     var sessionScore:   Int { -verses.reduce(0) { $0 + mistakes(for: $1.id) } }
     var perfectCount:   Int { verses.filter { mistakes(for: $0.id) == 0 && isComplete($0) }.count }
     var completedCount: Int { verses.filter { isComplete($0) }.count }
-
-    /// True once the user has pressed Submit for this verse (even with mistakes).
-    func hasSubmitted(_ verse: Verse) -> Bool { submitResults[verse.id] != nil }
 
     /// Every progress mutation in the base class lands here — persist it.
     override func progressDidChange() { saveProgress() }
@@ -161,19 +156,32 @@ final class TestSessionViewModel: RecallCardViewModel {
     /// Quiz and daily review save to separate slots, so starting a review never
     /// wipes a quiz the user has in progress. The quiz keeps the original key so
     /// sessions saved by earlier versions still resume.
-    private static func progressKey(for kind: SessionKind) -> String {
-        kind == .srs ? "srsSessionProgress" : "currentSessionProgress"
+    private static func progressKey(for kind: SessionKind) -> String? {
+        switch kind {
+        case .srs:    return "srsSessionProgress"
+        case .custom: return "currentSessionProgress"
+        case .pack:   return nil
+        }
     }
 
-    private var progressKey: String { Self.progressKey(for: kind) }
+    private var progressKey: String? { Self.progressKey(for: kind) }
 
     /// Wipes saved progress: when a session ends, and before a new one starts so
     /// stale progress is never restored.
     static func clearPersistedProgress(for kind: SessionKind) {
-        UserDefaults.standard.removeObject(forKey: progressKey(for: kind))
+        guard let key = progressKey(for: kind) else { return }
+        UserDefaults.standard.removeObject(forKey: key)
+    }
+
+    /// How many of `verses` the saved session of this kind has finished.
+    static func savedCompletedCount(for kind: SessionKind, verses: [Verse]) -> Int {
+        guard let key = progressKey(for: kind), UserDefaults.standard.data(forKey: key) != nil else { return 0 }
+        let saved = TestSessionViewModel(verses: verses, kind: kind)
+        return verses.filter(saved.isComplete).count
     }
 
     func saveProgress() {
+        guard let progressKey else { return }
         let snapshot = submitResults.isEmpty
             ? nil
             : SubmitResultPersistence.encodeToMap(submitResults)
@@ -191,7 +199,8 @@ final class TestSessionViewModel: RecallCardViewModel {
     }
 
     private func restoreProgress() {
-        guard let data = UserDefaults.standard.data(forKey: progressKey),
+        guard let progressKey,
+              let data = UserDefaults.standard.data(forKey: progressKey),
               let sp   = try? JSONDecoder().decode(SessionProgress.self, from: data) else { return }
         currentIndex        = min(sp.currentIndex, max(0, verses.count - 1))
         mistakeCounts       = toIntKeys(sp.mistakeCounts)

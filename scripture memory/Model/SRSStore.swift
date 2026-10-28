@@ -20,6 +20,9 @@ final class SRSStore: ObservableObject {
     /// Outer key is `yyyy-MM-dd` (device-local). Inner key is pack name.
     @Published private(set) var dailyNewByDate: [String: [String: Int]] = [:]
 
+    /// Review cards answered per day, by key. Outer key is `yyyy-MM-dd`.
+    @Published private(set) var reviewedByDate: [String: Set<String>] = [:]
+
     /// Packs the user has turned OFF for review. Opt-OUT model: every pack is
     /// active by default (users learn all packs in order), so we only persist
     /// the exceptions. New packs are therefore active automatically.
@@ -30,7 +33,8 @@ final class SRSStore: ObservableObject {
     private static let statesKey        = "srs.cardStates.v1"
     private static let dailyNewKey      = "srs.dailyNewByDate.v1"
     private static let inactivePacksKey = "srs.inactivePackNames.v1"
-    private static let allKeys = [statesKey, dailyNewKey, inactivePacksKey]
+    private static let reviewedKey      = "srs.reviewedByDate.v1"
+    private static let allKeys = [statesKey, dailyNewKey, inactivePacksKey, reviewedKey]
 
     private init(storage: ProgressStorage = .shared) {
         self.storage = storage
@@ -71,6 +75,11 @@ final class SRSStore: ObservableObject {
         Self.weekDayKeys(containing: now).reduce(0) { total, key in
             total + (dailyNewByDate[key]?.values.reduce(0, +) ?? 0)
         }
+    }
+
+    /// Review cards answered on `now`'s day: what the daily review limit counts.
+    func reviewedToday(now: Date = Date()) -> Int {
+        reviewedByDate[Self.dayKey(now)]?.count ?? 0
     }
 
     /// Introduced in `unit`'s current period.
@@ -126,6 +135,9 @@ final class SRSStore: ObservableObject {
         if isFirstGrade && !alreadyKnew && !verse.packName.isEmpty {
             bumpDailyNew(packName: verse.packName, now: now)
         }
+        if prior.phase == .review {
+            reviewedByDate[Self.dayKey(now), default: []].insert(key)
+        }
         persist()
         return next
     }
@@ -152,8 +164,11 @@ final class SRSStore: ObservableObject {
     /// prior state means the card was brand-new, so its state is removed entirely;
     /// when `wasNewlyIntroduced`, today's consumed new-card slot is also given back
     /// so the undo doesn't leave the daily counter inflated.
-    func revert(verse: Verse, to priorState: SRSCardState?, wasNewlyIntroduced: Bool, now: Date = Date()) {
+    /// `wasReview` gives back today's review slot too.
+    func revert(verse: Verse, to priorState: SRSCardState?, wasNewlyIntroduced: Bool,
+                wasReview: Bool = false, now: Date = Date()) {
         let key = verse.srsKey
+        if wasReview { reviewedByDate[Self.dayKey(now)]?.remove(key) }
         if let priorState {
             states[key] = priorState
         } else {
@@ -165,11 +180,29 @@ final class SRSStore: ObservableObject {
         persist()
     }
 
+    /// Puts a verse the user has just marked learnt into review, unless it
+    /// already has a schedule.
+    func scheduleLearnt(_ verse: Verse, now: Date = Date()) {
+        let key = verse.srsKey
+        guard !key.isEmpty, states[key] == nil else { return }
+        states[key] = .justLearnt(key: key, now: now)
+        persist()
+    }
+
+    /// Undoes `scheduleLearnt`: drops the schedule if it was never reviewed.
+    func unscheduleLearnt(_ verse: Verse) {
+        let key = verse.srsKey
+        guard states[key]?.isUngraded == true else { return }
+        states.removeValue(forKey: key)
+        persist()
+    }
+
     /// Wipe all SRS state.
     /// Inactive-pack choices are preserved — they're a UI preference, not progress.
     func resetAll() {
         states = [:]
         dailyNewByDate = [:]
+        reviewedByDate = [:]
         persist()
     }
 
@@ -196,6 +229,7 @@ final class SRSStore: ObservableObject {
         let cutoff = Calendar.current.date(byAdding: .day, value: -14, to: now) ?? now
         let cutoffKey = Self.dayKey(cutoff)
         dailyNewByDate = dailyNewByDate.filter { $0.key >= cutoffKey }
+        reviewedByDate = reviewedByDate.filter { $0.key >= cutoffKey }
     }
 
     static func dayKey(_ date: Date) -> String {
@@ -212,6 +246,7 @@ final class SRSStore: ObservableObject {
         storage.encode(states, forKey: Self.statesKey)
         storage.encode(dailyNewByDate, forKey: Self.dailyNewKey)
         storage.encode(Array(inactivePackNames), forKey: Self.inactivePacksKey)
+        storage.encode(reviewedByDate, forKey: Self.reviewedKey)
     }
 
     private func load() {
@@ -223,6 +258,9 @@ final class SRSStore: ObservableObject {
         }
         if let decoded = storage.decode([String].self, forKey: Self.inactivePacksKey) {
             inactivePackNames = Set(decoded)
+        }
+        if let decoded = storage.decode([String: Set<String>].self, forKey: Self.reviewedKey) {
+            reviewedByDate = decoded
         }
     }
 

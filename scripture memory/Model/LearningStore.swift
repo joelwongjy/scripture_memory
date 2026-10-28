@@ -147,11 +147,14 @@ final class LearningStore: ObservableObject {
         NotificationCenter.default.post(name: .featuredVerseDidChange, object: nil)
     }
 
-    /// Mark a single verse learnt.
+    /// Mark a single verse learnt, and put it into review so it comes back
+    /// whatever the Review Earlier Verses setting says.
     func markLearnt(_ verse: Verse) {
         guard !verse.srsKey.isEmpty, !learntKeys.contains(verse.srsKey) else { return }
         learntKeys.insert(verse.srsKey)
         persist()
+        SRSStore.shared.scheduleLearnt(verse)
+        StreakStore.shared.recordToday()
     }
 
     /// Undo `markLearnt` — used when a review grade that auto-advanced the cursor is
@@ -159,6 +162,7 @@ final class LearningStore: ObservableObject {
     func unmarkLearnt(_ verse: Verse) {
         guard learntKeys.remove(verse.srsKey) != nil else { return }
         persist()
+        SRSStore.shared.unscheduleLearnt(verse)
     }
 
     /// Set the starting point: everything before `verse` (in `ordered`) becomes

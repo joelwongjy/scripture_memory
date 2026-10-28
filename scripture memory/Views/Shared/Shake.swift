@@ -3,9 +3,11 @@ import SwiftUI
 // MARK: - Shake Animation
 
 /// Fires a three-step horizontal shake by animating a `CGFloat` binding.
-/// Used to signal wrong input. Runs on the main actor; timings match across the app.
+/// Used to signal wrong input (alongside an error haptic). Skipped with Reduce
+/// Motion, where the haptic carries the signal on its own.
 @MainActor
 func triggerShake(_ offset: Binding<CGFloat>) {
+    guard !AppMotion.reduceMotion else { return }
     withAnimation(.interpolatingSpring(stiffness: 600, damping: 10)) { offset.wrappedValue = 12 }
     Task { @MainActor in
         try? await Task.sleep(for: .milliseconds(70))

@@ -21,32 +21,52 @@ struct TestSessionView: View {
     @State private var speechTarget: SubmitField = .title
     @State private var isScrubbing           = false
     @State private var isPeeking             = false
-    @State private var showVerseSelector     = false
     /// Pending "marked complete" undo prompt.
     @State private var undoToastState:       UndoToastState?
+    @State private var startedAt             = Date()
+    @State private var undoCount             = 0
+    @State private var usedVoice             = false
+    @State private var loggedStart           = false
+    @State private var loggedEnd             = false
 
     @Environment(\.dismiss) private var dismiss
 
     let onSessionEnded: (() -> Void)?
+    /// A review's last card was rated: called with this round's ratings and the
+    /// cards that went back into learning, in place of closing the screen.
+    let onRoundEnded:   ((_ grades: [SRSGrade], _ missed: [Verse]) -> Void)?
     let sessionKind:    SessionKind
+    let round:          Int
 
     // MARK: - Init
 
-    init(session: TestSession, onSessionEnded: (() -> Void)? = nil) {
+    init(session: TestSession, onSessionEnded: (() -> Void)? = nil,
+         onRoundEnded: ((_ grades: [SRSGrade], _ missed: [Verse]) -> Void)? = nil) {
         _vm = StateObject(wrappedValue: TestSessionViewModel(verses: session.verses, kind: session.kind))
         self.onSessionEnded = onSessionEnded
+        self.onRoundEnded   = onRoundEnded
         self.sessionKind    = session.kind
+        self.round          = session.round
     }
 
     private var isReview: Bool { sessionKind == .srs }
 
-    /// The daily review reads "Review"; a self-test picked on the Quiz tab, "Quiz".
-    private var sessionTitle: String { isReview ? "Review" : "Quiz" }
+    /// The daily review reads "Review", and "Another look" once it comes back
+    /// round to the cards you missed; a self-test picked on the Quiz tab, "Quiz".
+    private var sessionTitle: String {
+        switch sessionKind {
+        case .srs:    return round > 1 ? "Another look" : "Review"
+        case .pack:   return "Practice"
+        case .custom: return "Quiz"
+        }
+    }
 
     /// A quiz is drawn from packs the user picked, so naming the pack on the card
     /// would give half the answer away. The review deck mixes everything, so there
     /// the label is orientation, not a clue.
     private var showsCardLabel: Bool { isReview }
+
+    private var positionLabel: String { "Card \(vm.currentIndex + 1) of \(vm.verses.count)" }
 
     private var isEditing: Bool { isInputFocused || submitFocus != nil }
 
@@ -55,22 +75,24 @@ struct TestSessionView: View {
     // MARK: - Body
 
     var body: some View {
+        NavigationStack {
+            session
+                .toolbar { toolbar }
+                .navigationBarTitleDisplayMode(.inline)
+        }
+    }
+
+    private var session: some View {
         GeometryReader { geo in
-            let cardWidth  = geo.size.width - 2 * AppLayout.screenMargin
-            let cardHeight = cardWidth * 3.0 / 5.0
+            // Full width on a phone; a centred column on a wide window.
+            let columnWidth = min(geo.size.width, AppLayout.studyColumnWidth)
+            let cardWidth   = columnWidth - 2 * AppLayout.screenMargin
+            let cardHeight  = cardWidth / AppLayout.cardAspect
 
             VStack(spacing: 0) {
-                topBar
-
-                if studyMode == .submit {
-                    SessionProgressBar(vm: vm)
-                        .padding(.horizontal, AppLayout.screenMargin)
-                        .padding(.top, 6)
-                        .padding(.bottom, 2)
-                }
-
                 GeometryReader { area in
-                    let cardH = max(cardHeight, min(cardWidth * 0.82, area.size.height - 12))
+                    let room  = max(120, area.size.height - 12)
+                    let cardH = min(cardHeight, room)
                     ZStack {
                         cardStack
                             .frame(width: cardWidth, height: cardH)
@@ -87,7 +109,8 @@ struct TestSessionView: View {
                             .zIndex(100)
                         }
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .padding(.top, 8)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                 }
 
                 // Review is forward-only (you advance by rating; Undo goes back),
@@ -100,14 +123,17 @@ struct TestSessionView: View {
 
                 bottomControls
             }
+            .frame(width: columnWidth)
+            .frame(maxWidth: .infinity)
         }
         .background(Color(.systemGroupedBackground))
         .undoToast($undoToastState)
         .speechErrorAlert(speech)
+        .onAppear(perform: logStart)
+        .onDisappear { logEnd(finished: false) }
         .onChange(of: vm.currentIndex) { _, _ in
             vm.clearInputs()
             vm.resetDictation()
-            vm.pendingGrade = nil   // each card starts from its own suggestion
             if speech.isListening { speech.stopListening() }
             if isScrubbing {
                 // A programmatic move keeps the keyboard as it was; just point
@@ -136,68 +162,41 @@ struct TestSessionView: View {
         }
     }
 
-    // MARK: - Top Bar
+    // MARK: - Toolbar
 
-    private var topBar: some View {
-        ZStack {
-            VStack(spacing: 2) {
-                Text(sessionTitle)
-                    .font(.system(size: 15, weight: .semibold))
-                    .lineLimit(1)
-                Text("\(vm.currentIndex + 1) of \(vm.verses.count) · \(vm.completedCount) done")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(Color.secondary)
-                    .lineLimit(1)
-                    .animation(AppMotion.content, value: vm.completedCount)
-            }
-
-            HStack {
-                Button {
-                    if speech.isListening { speech.stopListening() }
-                    dismiss()
-                } label: {
-                    Image(systemName: "xmark").studyChromeCircleButton()
-                }
-                .accessibilityLabel("Close session")
-
-                // Undo the last rating. On the leading edge so it stays reachable
-                // while the keyboard is up.
-                if isReview {
-                    Button(action: undoLastGrade) {
-                        Image(systemName: "arrow.uturn.backward").studyChromeCircleButton()
-                    }
-                    .disabled(vm.gradedOrder.isEmpty)
-                    .opacity(vm.gradedOrder.isEmpty ? 0.3 : 1)
-                    .accessibilityLabel("Undo last rating")
-                }
-
-                Spacer()
-
-                if isEditing {
-                    KeyboardDoneButton {
-                        isInputFocused = false
-                        submitFocus = nil
-                    }
-                } else {
-                    HStack(spacing: 8) {
-                        if !isReview {
-                            Button { showVerseSelector = true } label: {
-                                Image(systemName: "list.bullet").studyChromeCircleButton()
-                            }
-                            .accessibilityLabel("Jump to verse")
-                        }
-                        if studyMode == .submit { SessionScoreBadge(vm: vm) }
-                    }
-                }
+    @ToolbarContentBuilder
+    private var toolbar: some ToolbarContent {
+        ToolbarItem(placement: .topBarLeading) {
+            Button("Close", systemImage: "xmark") {
+                if speech.isListening { speech.stopListening() }
+                dismiss()
             }
         }
-        .padding(.horizontal, AppLayout.screenMargin)
-        .padding(.vertical, 12)
-        .animation(AppMotion.control, value: isInputFocused)
-        .animation(AppMotion.control, value: submitFocus)
-        .sheet(isPresented: $showVerseSelector) {
-            VerseJumpSheet(verses: vm.verses, currentIndex: vm.currentIndex) { i in
-                moveProgrammatically(refocus: false) { vm.currentIndex = i }
+        if isReview {
+            // On the leading edge so it stays reachable while the keyboard is up.
+            ToolbarItem(placement: .topBarLeading) {
+                Button("Undo Last Rating", systemImage: "arrow.uturn.backward", action: undoLastGrade)
+                    .disabled(vm.gradedOrder.isEmpty)
+            }
+        }
+        ToolbarItem(placement: .principal) {
+            VStack(spacing: 1) {
+                Text(sessionTitle)
+                    .font(.headline)
+                Text(positionLabel)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+            }
+            .lineLimit(1)
+            .accessibilityElement(children: .combine)
+        }
+        if isEditing {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button("Hide Keyboard", systemImage: "keyboard.chevron.compact.down") {
+                    isInputFocused = false
+                    submitFocus = nil
+                }
             }
         }
     }
@@ -313,7 +312,6 @@ struct TestSessionView: View {
             verseCount: vm.verses.count,
             currentIndex: $vm.currentIndex,
             isScrubbing: $isScrubbing,
-            trackHeight: 34,
             onScrubIndexChange: { vm.saveProgress() },
             onStepBack: {
                 HapticEngine.light()
@@ -355,23 +353,7 @@ struct TestSessionView: View {
                 .transition(.scale.combined(with: .opacity))
             }
 
-            // Review: pick a rating above (changeable), then Confirm to schedule
-            // the card and move on. Gated on `isCardAnswered` so a wrong Entire
-            // Verse answer still needs rating.
-            if !showSessionSummary, isReview, vm.isCardAnswered, let verse = vm.currentVerse {
-                let pick = vm.currentSelection(for: verse)
-                Button {
-                    guard let grade = pick else { return }
-                    gradeAndAdvance(grade)
-                } label: {
-                    Text(pick == nil ? "Pick a difficulty to continue" : "Confirm")
-                        .font(.headline).frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-                .tint(.accentColor)
-                .disabled(pick == nil)
-            } else if !showSessionSummary, !isReview, vm.completedCount == vm.verses.count {
+            if !showSessionSummary, !isReview, vm.completedCount == vm.verses.count {
                 Button(action: finishSession) {
                     Text("End Session").font(.headline).frame(maxWidth: .infinity)
                 }
@@ -421,9 +403,12 @@ struct TestSessionView: View {
         SRSGradingButtons(
             state:     vm.displayState(for: verse),
             suggested: vm.suggestedGradeFor(verse),
-            selected:  vm.currentSelection(for: verse),
+            selected:  vm.sessionGrades[verse.id],
             now:       Date(),
-            onPick:    { vm.pendingGrade = $0 }
+            onPick:    { grade in
+                guard vm.currentVerse?.id == verse.id else { return }
+                gradeAndAdvance(grade)
+            }
         )
     }
 
@@ -443,7 +428,7 @@ struct TestSessionView: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 14.6)
             .background(Color(.secondarySystemGroupedBackground))
-            .roundedRect(StudyControlMetrics.cornerRadius)
+            .clipShape(Capsule())
         }
         .disabled(isLastCard)
         .opacity(isLastCard ? 0.5 : 1)
@@ -616,6 +601,7 @@ struct TestSessionView: View {
             // word count starts over with it.
             vm.resetDictation()
             speech.startListening()
+            usedVoice = true
         }
     }
 
@@ -623,24 +609,92 @@ struct TestSessionView: View {
 
     /// Clears saved progress and closes the session.
     private func finishSession() {
+        logEnd(finished: true)
         TestSessionViewModel.clearPersistedProgress(for: sessionKind)
         onSessionEnded?()
         dismiss()
     }
 
-    /// Rates the current card, then moves on (or closes after the last card).
+    /// Rates the current card, then moves on (or ends the round after the last card).
     private func gradeAndAdvance(_ grade: SRSGrade) {
         vm.grade(grade)
         if isLastCard {
-            finishSession()
+            if let onRoundEnded {
+                logEnd(finished: true)
+                TestSessionViewModel.clearPersistedProgress(for: sessionKind)
+                onRoundEnded(vm.verses.compactMap { vm.sessionGrades[$0.id] }, missedCards())
+            } else {
+                finishSession()
+            }
         } else {
             moveProgrammatically { vm.goForward() }
         }
     }
 
+    /// Cards this round put back into learning and due again within the
+    /// learn-ahead window.
+    private func missedCards() -> [Verse] {
+        let soon = Date().addingTimeInterval(SRSQueueBuilder.learnAhead)
+        return vm.verses.filter { verse in
+            guard let state = SRSStore.shared.state(for: verse) else { return false }
+            return state.phase == .learning && state.due <= soon
+        }
+    }
+
+    // MARK: - Analytics
+
+    private var analyticsKind: StudySessionKind {
+        switch sessionKind {
+        case .srs:    return round > 1 ? .extraRound : .review
+        case .custom: return .quiz
+        case .pack:   return .practice
+        }
+    }
+
+    private func logStart() {
+        guard !loggedStart else { return }
+        loggedStart = true
+        startedAt = Date()
+        Analytics.log(.screenViewed(isReview ? .dailyReview : sessionKind == .pack ? .practice : .quizSession))
+        var start = StudySessionStart(kind: analyticsKind, cards: vm.verses.count,
+                                      studyMode: studyMode.rawValue,
+                                      hardMode: UserDefaults.standard.bool(forKey: "hardMode"))
+        if isReview {
+            for verse in vm.verses {
+                switch SRSStore.shared.state(for: verse)?.phase {
+                case nil:       start.newCards += 1
+                case .learning: start.learningCards += 1
+                case .review:   start.dueCards += 1
+                }
+            }
+        }
+        if sessionKind == .pack { start.pack = vm.verses.first?.packName }
+        Analytics.log(.sessionStarted(start))
+    }
+
+    private func logEnd(finished: Bool) {
+        guard loggedStart, !loggedEnd else { return }
+        loggedEnd = true
+        let grades = vm.verses.compactMap { vm.sessionGrades[$0.id] }
+        var summary = StudySessionSummary(kind: analyticsKind, finished: finished,
+                                          cards: vm.verses.count,
+                                          cardsDone: isReview ? grades.count : vm.completedCount,
+                                          seconds: Date().timeIntervalSince(startedAt))
+        summary.again = grades.filter { $0 == .again }.count
+        summary.hard  = grades.filter { $0 == .hard }.count
+        summary.good  = grades.filter { $0 == .good }.count
+        summary.easy  = grades.filter { $0 == .easy }.count
+        summary.peeks = vm.peekedVerseIds.count
+        summary.undos = undoCount
+        summary.mistakes = -vm.sessionScore
+        summary.usedVoice = usedVoice
+        Analytics.log(.sessionEnded(summary))
+    }
+
     /// Undo the last rating and go back to that card to rate it again.
     private func undoLastGrade() {
         guard let index = vm.undoLastGrade() else { return }
+        undoCount += 1
         HapticEngine.light()
         moveProgrammatically(refocus: false) { vm.currentIndex = index }
     }

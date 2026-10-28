@@ -20,14 +20,14 @@ jobs:
 
   ios-build:
     name: iOS app build
-    runs-on: macos-15
+    runs-on: xcode-27
     # Compiles the app and widget for the simulator, unsigned. Catches anything
     # the Linux test job can't see (SwiftUI, WidgetKit, the Xcode project).
     steps:
       - uses: actions/checkout@v4
-      - name: Select Xcode 26
+      - name: Select Xcode 27
         # The app icon is an Icon Composer `.icon`, which Xcode 16 can't compile.
-        run: sudo xcode-select -s /Applications/Xcode_26.3.app
+        run: sudo xcode-select -s /Applications/Xcode_27.1.app
       - name: Xcode version
         run: |
           echo "::notice::$(xcodebuild -version | tr '\n' ' ')"
@@ -35,8 +35,9 @@ jobs:
         run: |
           xcodebuild build \
             -project "Scripture Memory.xcodeproj" \
-            -target "Scripture Memory" \
-            -sdk iphonesimulator \
+            -scheme "Scripture Memory" \
+            -destination "generic/platform=iOS Simulator" \
+            -derivedDataPath build \
             -configuration Debug \
             CODE_SIGNING_ALLOWED=NO > build.log 2>&1 && status=0 || status=$?
           grep -E "error:|warning:|BUILD (SUCCEEDED|FAILED)" build.log | sort -u || true
@@ -49,24 +50,25 @@ jobs:
 
   app-size:
     name: App size (Release, device)
-    runs-on: macos-15
+    runs-on: xcode-27
     # Reports the size of an unsigned Release build for a real device, as a
     # notice on the run. Informational only.
     steps:
       - uses: actions/checkout@v4
-      - name: Select Xcode 26
-        run: sudo xcode-select -s /Applications/Xcode_26.3.app
+      - name: Select Xcode 27
+        run: sudo xcode-select -s /Applications/Xcode_27.1.app
       - name: Build
         run: |
           xcodebuild build \
             -project "Scripture Memory.xcodeproj" \
-            -target "Scripture Memory" \
-            -sdk iphoneos \
+            -scheme "Scripture Memory" \
+            -destination "generic/platform=iOS" \
+            -derivedDataPath build \
             -configuration Release \
             CODE_SIGNING_ALLOWED=NO > build.log 2>&1 || { tail -20 build.log; exit 1; }
       - name: Report size
         run: |
-          app="build/Release-iphoneos/Scripture Memory.app"
+          app="build/Build/Products/Release-iphoneos/Scripture Memory.app"
           echo "::notice::App bundle: $(du -sh "$app" | cut -f1)"
           echo "::notice::Breakdown: $(du -sh "$app"/* "$app"/PlugIns/* 2>/dev/null | sort -rh | head -8 | tr '\t' ' ' | sed "s#$app/##" | tr '\n' ';')"
           zip -qr app.zip "$app" && echo "::notice::Zipped (rough download size): $(du -sh app.zip | cut -f1)"

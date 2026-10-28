@@ -1,0 +1,259 @@
+import SwiftUI
+import UIKit
+
+// The printed cards that live in the pouch. Sized off the card's width so the
+// same face reads right on a phone and on the iPhone Duo's inner display.
+//
+// Styled after the physical TMS cards: bold grey title, a small serif
+// "NIV", the reference, the verse in Optima, and the series code along the
+// bottom.
+
+/// Paper colour and ink, shared by every card face.
+enum PouchInk {
+    static let paper     = adaptive(light: (0.965, 0.962, 0.950), dark: (0.180, 0.178, 0.170))
+    static let paperBack = adaptive(light: (0.925, 0.921, 0.905), dark: (0.145, 0.143, 0.137))
+    static let paperEdge = adaptive(light: (0.890, 0.890, 0.890), dark: (0.235, 0.233, 0.225))
+    static let title     = adaptive(light: (0.33, 0.33, 0.33), dark: (0.74, 0.74, 0.72))
+    static let body      = adaptive(light: (0.14, 0.14, 0.14), dark: (0.90, 0.90, 0.88))
+    static let caption   = adaptive(light: (0.30, 0.30, 0.30), dark: (0.62, 0.62, 0.60))
+    static let green     = adaptive(light: (0.12, 0.55, 0.37), dark: (0.36, 0.78, 0.56))
+    static let mint      = adaptive(light: (0.80, 0.91, 0.86), dark: (0.16, 0.30, 0.24))
+    static let edgeLine  = adaptive(light: (0, 0, 0), dark: (1, 1, 1)).opacity(0.10)
+
+    private static func adaptive(light: (CGFloat, CGFloat, CGFloat), dark: (CGFloat, CGFloat, CGFloat)) -> Color {
+        Color(uiColor: UIColor { tc in
+            let c = tc.userInterfaceStyle == .dark ? dark : light
+            return UIColor(red: c.0, green: c.1, blue: c.2, alpha: 1)
+        })
+    }
+}
+
+/// The printed card's typefaces: the title, reference and verse all in
+/// Optima.
+enum CardFont {
+    enum Style {
+        case title, reference, body
+        case printTitle, printBody
+
+        fileprivate var name: String? {
+            switch self {
+            case .title:     return "Optima-Bold"
+            case .reference: return "Optima-Bold"
+            case .body:      return "Optima-Regular"
+            case .printTitle, .printBody: return nil
+            }
+        }
+
+        fileprivate var weight: UIFont.Weight { self == .printTitle ? .medium : .regular }
+    }
+
+    static func font(_ style: Style, size: CGFloat) -> Font {
+        guard let name = style.name else { return .system(size: size, weight: style == .printTitle ? .medium : .regular) }
+        return .custom(name, size: size)
+    }
+
+    static func uiFont(_ style: Style, size: CGFloat) -> UIFont {
+        style.name.flatMap { UIFont(name: $0, size: size) } ?? .systemFont(ofSize: size, weight: style.weight)
+    }
+}
+
+/// How the paper cards follow the system appearance.
+enum CardAppearance: String, CaseIterable {
+    case alwaysLight
+    case matchSystem
+
+    static let storageKey = "cardAppearance.v1"
+
+    var displayName: String {
+        switch self {
+        case .matchSystem: return "Match Appearance"
+        case .alwaysLight: return "Always Light"
+        }
+    }
+}
+
+extension View {
+    func paperAppearance() -> some View { modifier(PaperAppearance()) }
+
+    /// The soft drop shadow under each card in the pack's list; `amount` fades
+    /// it in as the deck spreads out into that list.
+    func listCardShadow(_ amount: Double = 1) -> some View {
+        shadow(color: .black.opacity(0.08 * amount), radius: 10, y: 4)
+    }
+}
+
+private struct PaperAppearance: ViewModifier {
+    @AppStorage(CardAppearance.storageKey) private var appearance: CardAppearance = .alwaysLight
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if appearance == .alwaysLight {
+            content.environment(\.colorScheme, .light)
+        } else {
+            content
+        }
+    }
+}
+
+/// One verse card, front face.
+struct PouchVerseCard<Accessory: View>: View {
+    let verse: Verse
+    let isLearnt: Bool
+    let width: CGFloat
+    @ViewBuilder var accessory: () -> Accessory
+
+    var body: some View {
+        let u = width / 100                       // one percent of the card's width
+        let footer = CardFooter.label(for: verse).components(separatedBy: " · ")
+
+        VStack(alignment: .leading, spacing: 0) {
+            if isPrintedDEP {
+                printedHeading(u)
+            } else {
+                heading(u)
+            }
+            HStack(spacing: 1.6 * u) {
+                Text(footer.first ?? "")
+                if footer.count > 1 { Text(footer[1]) }
+                Spacer(minLength: 0)
+                if isLearnt {
+                    Label("Learnt", systemImage: "checkmark")
+                        .labelStyle(.titleAndIcon)
+                        .font(.system(size: 2.9 * u, weight: .bold))
+                        .foregroundStyle(PouchInk.green)
+                }
+                accessory()
+            }
+            .font(.system(size: 2.9 * u))
+            .foregroundStyle(PouchInk.caption)
+            .padding(.top, 1.4 * u)
+        }
+        .padding(.horizontal, 7 * u)
+        .padding(.top, 5.2 * u)
+        .padding(.bottom, 3.6 * u)
+        .frame(width: width, height: width / PouchMetrics.cardAspect)
+        .background(PaperFace())
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(verse.title), \(reference). \(verse.verse)")
+    }
+
+    private var reference: String { "\(verse.book) \(verse.reference)" }
+
+    private var isPrintedDEP: Bool { verse.packName.hasPrefix("DEP ") }
+
+    @ViewBuilder
+    private func heading(_ u: CGFloat) -> some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(verse.title)
+                .font(CardFont.font(.title, size: 4.6 * u))
+                .foregroundStyle(PouchInk.title)
+                .lineLimit(2)
+                .minimumScaleFactor(0.8)
+            Spacer(minLength: 2 * u)
+            Text(verse.pinnedVersion ?? "NIV")
+                .font(.custom("TimesNewRomanPSMT", size: 3.4 * u))
+                .foregroundStyle(PouchInk.caption)
+        }
+        Text(reference)
+            .font(CardFont.font(.body, size: 4.6 * u))
+            .foregroundStyle(PouchInk.body)
+            .padding(.top, 1.4 * u)
+        FittedVerseText(text: verse.verse, lineSpacing: 0.8 * u, minSize: 2 * u, maxSize: 4 * u)
+            .foregroundStyle(PouchInk.body)
+            .padding(.top, 1.4 * u)
+    }
+
+    @ViewBuilder
+    private func printedHeading(_ u: CGFloat) -> some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(VerseNumbering.topic(of: verse).map { "\($0)) \(verse.title)" } ?? verse.title)
+                .font(CardFont.font(.printTitle, size: 4.4 * u))
+                .foregroundStyle(PouchInk.body)
+                .lineLimit(2)
+                .minimumScaleFactor(0.8)
+            Spacer(minLength: 2 * u)
+            if let number = VerseNumbering.printedNumber(for: verse) {
+                Text("(\(number))")
+                    .font(CardFont.font(.printBody, size: 3.2 * u))
+                    .foregroundStyle(PouchInk.caption)
+            }
+        }
+        HStack(alignment: .firstTextBaseline) {
+            Text(reference)
+                .font(CardFont.font(.printBody, size: 3.8 * u))
+                .foregroundStyle(PouchInk.body)
+            Spacer(minLength: 2 * u)
+            if let version = verse.pinnedVersion {
+                Text("(\(version))")
+                    .font(CardFont.font(.printBody, size: 3.2 * u))
+                    .foregroundStyle(PouchInk.caption)
+            }
+        }
+        .padding(.top, 1.2 * u)
+        FittedVerseText(text: verse.verse, lineSpacing: 0.5 * u, minSize: 2 * u, maxSize: 3.8 * u,
+                        style: .printBody, closingLine: reference)
+            .foregroundStyle(PouchInk.body)
+            .padding(.top, 0.6 * u)
+    }
+}
+
+extension PouchVerseCard where Accessory == EmptyView {
+    init(verse: Verse, isLearnt: Bool, width: CGFloat) {
+        self.init(verse: verse, isLearnt: isLearnt, width: width) { EmptyView() }
+    }
+}
+
+/// The last card in the pack, behind the final verse: what the pack is, and
+/// how far you've come.
+struct PouchBackPageCard: View {
+    let packName: String
+    let verseCount: Int
+    let learntCount: Int
+    let width: CGFloat
+
+    var body: some View {
+        let u = width / 100
+        VStack(alignment: .leading, spacing: 2.4 * u) {
+            Text("End of \(packName)")
+                .font(CardFont.font(.title, size: 5.4 * u))
+                .foregroundStyle(PouchInk.green)
+            Text("You've turned every card in the pack. Turn them back to go over them again.")
+                .font(CardFont.font(.body, size: 4.2 * u))
+                .foregroundStyle(PouchInk.body)
+            Spacer(minLength: 0)
+            HStack(alignment: .firstTextBaseline, spacing: 6 * u) {
+                stat("\(learntCount)", "learnt", u)
+                stat("\(verseCount - learntCount)", "to go", u)
+            }
+        }
+        .padding(.horizontal, 7 * u)
+        .padding(.vertical, 6.4 * u)
+        .frame(width: width, height: width / PouchMetrics.cardAspect, alignment: .topLeading)
+        .background(PaperFace(tint: PouchInk.paperBack))
+        .accessibilityElement(children: .combine)
+    }
+
+    private func stat(_ value: String, _ label: String, _ u: CGFloat) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(value)
+                .font(.system(size: 9 * u, weight: .semibold, design: .rounded))
+                .foregroundStyle(PouchInk.green)
+            Text(label)
+                .font(.system(size: 3.2 * u))
+                .foregroundStyle(PouchInk.caption)
+        }
+    }
+}
+
+/// Card stock: a flat paper colour with a hairline edge, nearly square
+/// corners like a die-cut card.
+struct PaperFace: View {
+    var tint: Color = PouchInk.paper
+
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: 2, style: .continuous)
+        shape
+            .fill(tint)
+            .overlay(shape.strokeBorder(PouchInk.edgeLine, lineWidth: 0.5))
+    }
+}

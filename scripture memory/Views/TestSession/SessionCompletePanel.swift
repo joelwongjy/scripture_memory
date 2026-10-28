@@ -14,21 +14,16 @@ struct SessionCompletePanel: View {
                 .foregroundStyle(vm.sessionScore == 0 ? Color.green : Color.accentColor)
                 .symbolEffect(.bounce, options: .nonRepeating)
 
-            Text("Session Complete!")
+            Text("Session Complete")
                 .font(.system(size: 20, weight: .bold))
                 .foregroundStyle(Color.primary)
 
             // Only Entire Verse mode tracks mistakes, so only it has a score.
             if studyMode == .submit {
-                if vm.sessionScore == 0 {
-                    Text("Perfect!")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(Color.green)
-                } else {
-                    Text("Score: \(vm.sessionScore)")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(Color.red)
-                }
+                let mistakes = -vm.sessionScore
+                Text(mistakes == 0 ? "No mistakes" : mistakes == 1 ? "1 mistake" : "\(mistakes) mistakes")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(mistakes == 0 ? Color.green : Color.red)
 
                 Text("\(vm.perfectCount) of \(vm.verses.count) perfect")
                     .font(.system(size: 14))
@@ -49,28 +44,5 @@ struct SessionCompletePanel: View {
             }
         }
         .transition(.scale.combined(with: .opacity))
-    }
-}
-
-/// Entire Verse mode's running score in the top bar: ✓ when the session is
-/// perfect and done, otherwise the (zero or negative) score.
-struct SessionScoreBadge: View {
-    @ObservedObject var vm: TestSessionViewModel
-
-    var body: some View {
-        Group {
-            if vm.isSessionComplete && vm.sessionScore == 0 {
-                Text("✓")
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(Color.green)
-            } else {
-                Text("\(vm.sessionScore)")
-                    .font(.system(size: 13, weight: .bold, design: .monospaced))
-                    .foregroundStyle(vm.sessionScore < 0 ? Color.red : Color.secondary)
-            }
-        }
-        .frame(width: 36, height: 36)
-        .background(Color(.secondarySystemBackground), in: Circle())
-        .animation(AppMotion.content, value: vm.sessionScore)
     }
 }

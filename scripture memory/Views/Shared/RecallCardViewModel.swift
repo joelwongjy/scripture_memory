@@ -4,12 +4,8 @@ import SwiftUI
 /// it is: the deck and position, per-card reveal progress, the three text
 /// inputs, and the typing / dictation / hint / submit logic that drives them.
 ///
-/// `CardStudyViewModel` (reading and reviewing a pack) and
-/// `TestSessionViewModel` (a scored quiz or SRS session) used to be two copies
-/// of all of this, differing only in what else they tracked. They now subclass
-/// it: the pack screen adds shuffle, the favourites filter and pack hopping;
-/// the session adds mistakes, completion and persistence. `progressDidChange()`
-/// is the one hook — the session overrides it to save.
+/// `TestSessionViewModel` subclasses it to add mistakes, completion and
+/// persistence; `progressDidChange()` is the hook it overrides to save.
 @MainActor
 class RecallCardViewModel: ObservableObject {
 

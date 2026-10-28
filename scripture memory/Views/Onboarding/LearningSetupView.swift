@@ -41,11 +41,16 @@ struct LearningSetupView: View {
                         currentKey:   learning.current(in: ordered)?.verse.srsKey,
                         onPick: { verse in
                             learning.setProgress(startingAt: verse, in: ordered)
+                            if isOnboarding {
+                                Analytics.log(.onboardingFinished(start: verse.srsKey == ordered.first?.srsKey ? .beginning : .pickedVerse,
+                                                                  bibleVersion: bibleVersion.rawValue))
+                            }
                             finish()
                         },
                         onCancel: { dismiss() }
                     )
                 }
+                .analyticsScreen(isOnboarding ? .onboarding : .currentVersePicker)
                 .transition(.opacity)
             }
         }

@@ -41,7 +41,7 @@ struct PackVersePicker: View {
                 NavigationLink {
                     VersePickList(pack: pack, selectedKey: selectedKey, marker: marker, onSelect: onSelect)
                 } label: {
-                    PackRowLabel(pack: pack) {
+                    PackRowLabel(pack: pack, showsBadge: true) {
                         if let chosen = pack.verses.first(where: { $0.srsKey == selectedKey }) {
                             Text("\(chosen.book) \(chosen.reference)")
                                 .font(.footnote.weight(.semibold))

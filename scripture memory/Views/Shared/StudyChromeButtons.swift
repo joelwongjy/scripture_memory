@@ -1,43 +1,25 @@
 import SwiftUI
 
-// MARK: - Study chrome (top bar + scrubber)
-
-extension Image {
-    /// Neutral circular icon button — close, list, reset, etc. Accent icon on a
-    /// solid neutral fill. 36pt visual circle inside a 44pt hit target (HIG min).
-    func studyChromeCircleButton() -> some View {
-        studyChromeToggle(isOn: false)
-    }
-
-    /// Toggle controls (shuffle, favourites). Background flips: neutral when off,
-    /// accent when on. Icon goes white on the accent background so there's no
-    /// accent-on-accent visibility issue. 36pt visual / 44pt hit target.
-    func studyChromeToggle(isOn: Bool) -> some View {
-        self
-            .font(.system(size: 15, weight: .semibold))
-            .foregroundStyle(isOn ? AnyShapeStyle(Color.white) : AnyShapeStyle(Color.accentColor))
-            .frame(width: 36, height: 36)
-            .background(
-                isOn ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(Color(.secondarySystemBackground)),
-                in: Circle()
-            )
-            .frame(width: 44, height: 44)
-            .contentShape(Rectangle())
-    }
-}
-
-/// The top bar's "Done" while typing: a guaranteed-visible way to put the
-/// keyboard away (the keyboard's own toolbar item is unreliable this deep in
-/// the card stack).
-struct KeyboardDoneButton: View {
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            Text("Done")
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(Color.accentColor)
+extension View {
+    /// The system's glass button on iOS 26 and later; a bordered one before it.
+    @ViewBuilder
+    func systemGlassButton() -> some View {
+        if #available(iOS 26.0, *) {
+            buttonStyle(.glass)
+        } else {
+            buttonStyle(.bordered)
         }
-        .accessibilityLabel("Close keyboard")
+    }
+
+    /// The system's glass behind a control that can't take the glass button
+    /// style (a text field, a press-and-hold button); a grouped fill before
+    /// iOS 26.
+    @ViewBuilder
+    func systemGlass(in shape: some Shape) -> some View {
+        if #available(iOS 26.0, *) {
+            glassEffect(.regular.interactive(), in: shape)
+        } else {
+            background(Color(.secondarySystemGroupedBackground), in: shape)
+        }
     }
 }

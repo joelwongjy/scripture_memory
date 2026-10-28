@@ -1,7 +1,6 @@
 import SwiftUI
 
-/// The controls both card-recall screens (`CardStudyView`, `TestSessionView`)
-/// put under the card. They used to be copies in each file; this is the one set.
+/// The controls `TestSessionView` puts under the card.
 ///
 /// Everything here is a `Button` on purpose: a bare tap target would resign the
 /// text field's first responder and dismiss the keyboard mid-verse.
@@ -12,7 +11,6 @@ import SwiftUI
 struct StudyControlTile: View {
     let systemImage: String
     var tint: Color = .primary
-    var fill: Color = Color(.secondarySystemGroupedBackground)
     let action: () -> Void
 
     var body: some View {
@@ -21,8 +19,7 @@ struct StudyControlTile: View {
                 .font(.system(size: 18, weight: .semibold))
                 .foregroundStyle(tint)
                 .frame(width: StudyControlMetrics.buttonSize, height: StudyControlMetrics.buttonSize)
-                .background(fill)
-                .roundedRect(StudyControlMetrics.cornerRadius)
+                .systemGlass(in: Circle())
         }
         .buttonStyle(.plain)
     }
@@ -48,8 +45,7 @@ struct DictationTile: View {
 
     var body: some View {
         StudyControlTile(systemImage: isListening ? "mic.fill" : "mic",
-                         tint: isListening ? .white : .primary,
-                         fill: isListening ? .red : Color(.secondarySystemGroupedBackground),
+                         tint: isListening ? .red : .primary,
                          action: action)
             .accessibilityLabel(isListening ? "Stop dictation" : "Dictate verse")
     }
@@ -107,11 +103,9 @@ struct RecallInputField: View {
                     // Keyboard dismissal lives in the top bar ("Done") — a single,
                     // reliable affordance instead of a second keyboard-toolbar one.
             }
-            .padding(14)
-            .background(Color(.secondarySystemGroupedBackground))
-            .roundedRect(StudyControlMetrics.cornerRadius)
-            .overlay(RoundedRectangle(cornerRadius: StudyControlMetrics.cornerRadius, style: .continuous)
-                .stroke(Color(.separator).opacity(0.5), lineWidth: 0.5))
+            .padding(.vertical, 14)
+            .padding(.horizontal, 18)
+            .systemGlass(in: Capsule())
             .offset(x: shakeOffset)
 
             HintButton { vm.revealHint() }
@@ -130,7 +124,7 @@ struct RecallInputField: View {
                 .foregroundStyle(isListening ? Color.red : Color.secondary)
                 .contentTransition(.symbolEffect(.replace))
                 .frame(width: 22, height: 22)
-                .contentShape(Rectangle())
+                .minimumTapTarget(visibleSize: 22)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(isListening ? "Stop dictation" : "Dictate verse")
@@ -149,7 +143,7 @@ extension View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 12)
             .background(background)
-            .roundedRect(StudyControlMetrics.cornerRadius)
+            .clipShape(Capsule())
     }
 }
 

@@ -11,10 +11,13 @@ struct SettingsView: View {
     @AppStorage(SRSQueueBuilder.NewCardPolicy.reviewsKnownKey)
     private var reviewsKnownVerses = SRSQueueBuilder.NewCardPolicy.reviewsKnownDefault
     @AppStorage(HomeVerseStartMode.storageKey) private var homeVerseStartMode: HomeVerseStartMode = .read
+    @AppStorage(CardAppearance.storageKey)     private var cardAppearance: CardAppearance = .alwaysLight
 
     @AppStorage(NotificationManager.Keys.enabled) private var reminderEnabled = false
     @AppStorage(NotificationManager.Keys.hour)    private var reminderHour    = NotificationManager.defaultHour
     @AppStorage(NotificationManager.Keys.minute)  private var reminderMinute  = NotificationManager.defaultMinute
+
+    @AppStorage(Analytics.shareUsageKey) private var shareUsage = Analytics.shareUsageDefault
 
     @State private var showResetSRSAlert      = false
     @State private var showNotifDeniedAlert   = false
@@ -30,14 +33,13 @@ struct SettingsView: View {
     /// Book + reference of the verse the user is currently on, for the Settings row.
     private var currentLearningLabel: String {
         let ordered = learningOrdered
-        guard !ordered.isEmpty else { return "—" }
-        guard let cur = learning.current(in: ordered) else { return "All learnt 🎉" }
+        guard !ordered.isEmpty else { return "None" }
+        guard let cur = learning.current(in: ordered) else { return "All learnt" }
         return "\(cur.verse.book) \(cur.verse.reference)"
     }
 
     var body: some View {
         List {
-            // ── Most-changed: how you study ──────────────────────────────
             Section {
                 Picker("Study Mode", selection: $studyMode) {
                     ForEach(StudyMode.allCases, id: \.self) { mode in
@@ -46,83 +48,11 @@ struct SettingsView: View {
                 }
                 .pickerStyle(.inline)
                 .labelsHidden()
+                Toggle("Hard Mode", isOn: $hardMode)
             } header: {
-                Text("Study Mode")
+                Text("Study")
             } footer: {
-                Text(studyMode.instructions)
-            }
-
-            Section {
-                Toggle(isOn: $hardMode) {
-                    rowLabel("Hard Mode", "eye.slash")
-                }
-            } footer: {
-                Text("Hides all hints — no word placeholders shown during review.")
-            }
-
-            // ── Daily pace ───────────────────────────────────────────────
-            Section {
-                capRow(icon: "sparkles", title: newCapUnit.settingTitle,
-                       binding: $newCapAmount, range: 0...50)
-                // The period the cap above is counted over. Two a week is the
-                // pace the printed programmes set; a per-day cap of 1 quietly
-                // permits seven a week, which is how the queue becomes a backlog.
-                Picker(selection: $newCapUnit) {
-                    ForEach(NewCapUnit.allCases, id: \.self) { unit in
-                        Text(unit.pickerLabel).tag(unit)
-                    }
-                } label: {
-                    rowLabel("Count per", "calendar")
-                }
-                .pickerStyle(.segmented)
-                capRow(icon: "arrow.clockwise", title: "Reviews / day",
-                       binding: $dailyReviewCap, range: 0...500)
-                Toggle(isOn: $reviewsKnownVerses) {
-                    rowLabel("Review earlier verses", "checkmark.circle")
-                }
-            } header: {
-                Text("Daily Review")
-            } footer: {
-                Text("Both caps count across all packs. New cards start at your current verse.")
-            }
-
-            Section {
-                Toggle(isOn: $reminderEnabled) {
-                    rowLabel("Daily Reminder", "bell.badge")
-                }
-                if reminderEnabled {
-                    DatePicker("Remind me at",
-                               selection: reminderTime,
-                               displayedComponents: .hourAndMinute)
-                }
-            } header: {
-                Text("Reminders")
-            } footer: {
-                Text("Sent at this time on days you have verses due.")
-            }
-            .onChange(of: reminderEnabled) { _, on in handleReminderToggle(on) }
-            .onChange(of: reminderHour)    { _, _ in Task { await NotificationManager.refreshFromSettings() } }
-            .onChange(of: reminderMinute)  { _, _ in Task { await NotificationManager.refreshFromSettings() } }
-            .alert("Notifications are off", isPresented: $showNotifDeniedAlert) {
-                Button("Open Settings") {
-                    if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
-                }
-                Button("Cancel", role: .cancel) { }
-            } message: {
-                Text("Turn on notifications for Scripture Memory in the iOS Settings app to receive daily reminders.")
-            }
-
-            // ── Set-once content & progress ──────────────────────────────
-            Section {
-                Picker("Bible Version", selection: $bibleVersion) {
-                    ForEach(BibleVersion.allCases, id: \.self) { version in
-                        Text(version.displayName).tag(version)
-                    }
-                }
-                .pickerStyle(.inline)
-                .labelsHidden()
-            } header: {
-                Text("Bible Version")
+                Text(hardMode ? "\(studyMode.instructions) Hard Mode hides the word blanks." : studyMode.instructions)
             }
 
             Section {
@@ -130,7 +60,7 @@ struct SettingsView: View {
                     showLearningSetup = true
                 } label: {
                     HStack(spacing: 8) {
-                        rowLabel("Current verse", "bookmark.fill")
+                        rowLabel("Current Verse", "bookmark.fill")
                             // The title is two words; the reference is the one
                             // that should give way, not wrap the title mid-phrase.
                             .lineLimit(1)
@@ -151,14 +81,99 @@ struct SettingsView: View {
                         Text(mode.displayName).tag(mode)
                     }
                 } label: {
-                    rowLabel("Opens in", "book")
+                    rowLabel("Home Card Opens In", "house")
                 }
                 .pickerStyle(.menu)
             } header: {
                 Text("Learning")
             } footer: {
-                Text("Your current verse shows on Home; everything before it counts as learnt. Choose whether tapping it opens to read or review.")
+                Text("Verses before your current verse count as learnt.")
             }
+
+            Section {
+                capRow(icon: "sparkles", title: newCapUnit.settingTitle,
+                       binding: $newCapAmount, range: 0...50)
+                // The period the cap above is counted over. Two a week is the
+                // pace the printed programmes set; a per-day cap of 1 quietly
+                // permits seven a week, which is how the queue becomes a backlog.
+                Picker(selection: $newCapUnit) {
+                    ForEach(NewCapUnit.allCases, id: \.self) { unit in
+                        Text(unit.pickerLabel).tag(unit)
+                    }
+                } label: {
+                    rowLabel("Count Per", "calendar")
+                }
+                .pickerStyle(.segmented)
+                capRow(icon: "arrow.clockwise", title: "Reviews per Day",
+                       binding: $dailyReviewCap, range: 0...500)
+                Toggle(isOn: $reviewsKnownVerses) {
+                    rowLabel("Review Earlier Verses", "checkmark.circle")
+                }
+            } header: {
+                Text("Daily Review")
+            } footer: {
+                Text("Review Earlier Verses brings verses before your starting point into review, a few at a time. Limits apply across all packs.")
+            }
+
+            Section {
+                Toggle(isOn: $reminderEnabled) {
+                    rowLabel("Daily Reminder", "bell.badge")
+                }
+                if reminderEnabled {
+                    DatePicker("Time",
+                               selection: reminderTime,
+                               displayedComponents: .hourAndMinute)
+                }
+            } header: {
+                Text("Reminders")
+            } footer: {
+                Text("Only on days with verses due.")
+            }
+            .onChange(of: reminderEnabled) { _, on in handleReminderToggle(on) }
+            .onChange(of: reminderHour)    { _, _ in Task { await NotificationManager.refreshFromSettings() } }
+            .onChange(of: reminderMinute)  { _, _ in Task { await NotificationManager.refreshFromSettings() } }
+            .alert("Notifications Are Off", isPresented: $showNotifDeniedAlert) {
+                Button("Open Settings") {
+                    if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
+                }
+                Button("Cancel", role: .cancel) { }
+            } message: {
+                Text("Turn on notifications for Scripture Memory in Settings.")
+            }
+
+            Section {
+                Picker(selection: $bibleVersion) {
+                    ForEach(BibleVersion.allCases, id: \.self) { version in
+                        Text(version.displayName).tag(version)
+                    }
+                } label: {
+                    rowLabel("Bible Version", "book.closed")
+                }
+                .pickerStyle(.menu)
+                Picker(selection: $cardAppearance) {
+                    ForEach(CardAppearance.allCases, id: \.self) { mode in
+                        Text(mode.displayName).tag(mode)
+                    }
+                } label: {
+                    rowLabel("Cards", "rectangle.on.rectangle")
+                }
+                .pickerStyle(.menu)
+            } header: {
+                Text("Display")
+            } footer: {
+                Text("Match Appearance uses dark cards in Dark Mode.")
+            }
+
+            Section {
+                Toggle(isOn: $shareUsage) {
+                    rowLabel("Share Anonymous Usage", "chart.bar")
+                }
+            } header: {
+                Text("Privacy")
+            } footer: {
+                Text("Sends which screens and features you use, never your verses or personal details.")
+            }
+            .onChange(of: shareUsage) { _, on in Analytics.setEnabled(on) }
 
             Section {
                 Button(role: .destructive) {
@@ -168,15 +183,15 @@ struct SettingsView: View {
                         .frame(maxWidth: .infinity, alignment: .center)
                 }
             } footer: {
-                Text("Clears all card scheduling. Cannot be undone.")
+                Text("Clears all review scheduling. This can't be undone.")
             }
-            .alert("Reset review progress?", isPresented: $showResetSRSAlert) {
+            .alert("Reset Review Progress?", isPresented: $showResetSRSAlert) {
                 Button("Cancel", role: .cancel) { }
                 Button("Reset", role: .destructive) {
                     SRSStore.shared.resetAll()
                 }
             } message: {
-                Text("All intervals and ease values will be cleared.")
+                Text("Every card's review schedule will be cleared.")
             }
 
             Section {
@@ -197,12 +212,27 @@ struct SettingsView: View {
             }
         }
         .navigationTitle("Settings")
+        .analyticsScreen(.settings)
+        .onChange(of: studyMode)          { _, v in logSetting("studyMode", v.rawValue) }
+        .onChange(of: hardMode)           { _, v in logSetting("hardMode", String(v)) }
+        .onChange(of: bibleVersion)       { _, v in logSetting("bibleVersion", v.rawValue) }
+        .onChange(of: newCapAmount)       { _, v in logSetting("newCards", String(v)) }
+        .onChange(of: newCapUnit)         { _, v in logSetting("newCardsPer", v.rawValue) }
+        .onChange(of: dailyReviewCap)     { _, v in logSetting("reviewsPerDay", String(v)) }
+        .onChange(of: reviewsKnownVerses) { _, v in logSetting("reviewEarlierVerses", String(v)) }
+        .onChange(of: homeVerseStartMode) { _, v in logSetting("homeCardOpensIn", v.rawValue) }
+        .onChange(of: cardAppearance)     { _, v in logSetting("cardAppearance", v.rawValue) }
+        .onChange(of: reminderEnabled)    { _, v in logSetting("dailyReminder", String(v)) }
         // Hosted on the List (not the Learning Section) so the first presentation
         // doesn't self-dismiss — a sheet anchored to a lazy List section can tear
         // down on its initial layout pass.
         .sheet(isPresented: $showLearningSetup) {
             LearningSetupView()
         }
+    }
+
+    private func logSetting(_ setting: String, _ value: String) {
+        Analytics.log(.settingChanged(setting: setting, value: value))
     }
 
     /// A settings-row label with the SF Symbol pinned to a uniform 24pt column,

@@ -53,6 +53,28 @@ enum VerseNumbering {
 
     static func position(of verse: Verse) -> Int? { positions[verse.srsKey] }
 
+    private static let topics: [String: Int] = {
+        var map: [String: Int] = [:]
+        for packs in [packsNIV84, packsNIV11] {
+            for pack in packs where pack.name.hasPrefix("DEP ") {
+                var topic = 0
+                var previous: String?
+                for verse in pack.verses {
+                    if verse.title != previous { topic += 1; previous = verse.title }
+                    map[verse.srsKey] = topic
+                }
+            }
+        }
+        return map
+    }()
+
+    static func topic(of verse: Verse) -> Int? { topics[verse.srsKey] }
+
+    static func printedNumber(for verse: Verse) -> String? {
+        guard verse.packName.hasPrefix("DEP "), let code = code(for: verse) else { return nil }
+        return String(code.dropFirst("DEP ".count))
+    }
+
     /// Short pack label on its own, e.g. `"DEP 2"`.
     static func packCode(for packName: String) -> String {
         packCodes[packName] ?? packName

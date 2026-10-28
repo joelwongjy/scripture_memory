@@ -79,6 +79,19 @@ struct SRSCardState: Codable, Equatable {
             lastReviewed: nil
         )
     }
+
+    /// The schedule a verse gets when the user marks it learnt by hand: like a
+    /// known card, but first due after `knownCardInterval` days, since they've
+    /// only just learnt it.
+    static func justLearnt(key: String, now: Date, config: SRSConfig = .default) -> SRSCardState {
+        var s = knownCard(key: key, now: now, config: config)
+        s.due = now.addingTimeInterval(config.knownCardInterval * 86_400)
+        return s
+    }
+
+    /// Scheduled but never graded. Only `justLearnt` leaves a stored state like
+    /// this, so removing it loses no review history.
+    var isUngraded: Bool { lastReviewed == nil }
 }
 
 // MARK: - Config

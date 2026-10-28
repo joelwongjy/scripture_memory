@@ -37,7 +37,7 @@ struct FlashcardView: View {
     // (e.g. Pro Max) where the same pt sizes read small.
 
     /// Interpolates font size between `narrowWidth` and `wideWidth` (card inner width in pt).
-    private func scaledTypeSize(base: CGFloat, extra: CGFloat, cardWidth: CGFloat, narrow: CGFloat = 322, wide: CGFloat = 398) -> CGFloat {
+    static func scaledTypeSize(base: CGFloat, extra: CGFloat, cardWidth: CGFloat, narrow: CGFloat = 322, wide: CGFloat = 398) -> CGFloat {
         let t = (cardWidth - narrow) / (wide - narrow)
         let u = min(1, max(0, t))
         return base + extra * u
@@ -142,15 +142,15 @@ struct FlashcardView: View {
     private func readContent(cardSize: CGSize) -> some View {
         let cardWidth = cardSize.width
         let lineGap = verseLineSpacing(cardWidth: cardWidth)
-        let titleSize = scaledTypeSize(base: 15, extra: 3.5, cardWidth: cardWidth)
-        let refSize = scaledTypeSize(base: 14, extra: 3.0, cardWidth: cardWidth)
+        let titleSize = Self.scaledTypeSize(base: 15, extra: 3.5, cardWidth: cardWidth)
+        let refSize = Self.scaledTypeSize(base: 14, extra: 3.0, cardWidth: cardWidth)
         return VStack(alignment: .leading, spacing: 0) {
             if verse.pinnedVersion != nil { versionBadge; Spacer().frame(height: 6) }
             Text(verse.title)
-                .font(.system(size: titleSize, weight: .bold, design: .serif))
+                .font(CardFont.font(.title, size: titleSize))
             Spacer().frame(height: 8)
             Text("\(verse.book) \(verse.reference)")
-                .font(.system(size: refSize))
+                .font(CardFont.font(.body, size: refSize))
             Spacer().frame(height: 6)
             // Scales the verse down to fit (never truncates) but stays within a
             // calm reading range — short verses don't balloon to headline size.
@@ -163,32 +163,30 @@ struct FlashcardView: View {
 
     private func reviewContent(cardSize: CGSize) -> some View {
         let cardWidth = cardSize.width
-        let activeWords    = activeSection == .title ? verse.titleWords : verse.verseWords
-        let activeRevealed = activeSection == .title ? titleRevealedCount : verseRevealedCount
-        let refSize = scaledTypeSize(base: 18, extra: 3.25, cardWidth: cardWidth)
-        let titleSectionSize = scaledTypeSize(base: 16, extra: 2.75, cardWidth: cardWidth)
+        let refSize = Self.scaledTypeSize(base: 18, extra: 3.25, cardWidth: cardWidth)
+        let titleSectionSize = Self.scaledTypeSize(base: 16, extra: 2.75, cardWidth: cardWidth)
         let verseGap = verseLineSpacing(cardWidth: cardWidth)
 
         // Size the verse to the height the layout actually leaves after the
-        // reference, title row, gaps, progress bar and card label — so it fills
+        // reference, title row, gaps and card label — so it fills
         // the card and never truncates, instead of guessing from word count.
-        let refH    = VerseFit.height("\(verse.book) \(verse.reference)", width: cardWidth, size: refSize, weight: .bold, lineSpacing: 0)
-        let titleH  = VerseFit.height(verse.title, width: cardWidth, size: titleSectionSize, weight: .bold, lineSpacing: 4)
-        let showsProgress = !hardMode && activeRevealed < activeWords.count
+        let refH    = VerseFit.height("\(verse.book) \(verse.reference)", width: cardWidth, size: refSize, style: .reference, lineSpacing: 0)
+        let titleH  = VerseFit.height(verse.title, width: cardWidth, size: titleSectionSize, style: .title, lineSpacing: 4)
         // Count everything below the verse so the fit target matches the space
-        // that's actually free: the progress block (spacer + bar) and the card's
-        // own bottom spacer + label. Undercounting here picks a font one step too
-        // big — which is exactly what made long verses overflow and truncate.
+        // that's actually free: the card's own bottom spacer + label.
+        // Undercounting here picks a font one step too big — which is exactly
+        // what made long verses overflow and truncate.
         let badgeH: CGFloat = verse.pinnedVersion != nil ? 22 : 0
-        let reserved = badgeH + refH + 12 + titleH + 8 + (showsProgress ? 24 : 0) + (showCardLabel ? 40 : 24)
+        let reserved = badgeH + refH + 12 + titleH + 8 + (showCardLabel ? 40 : 24)
         let avail = max(48, cardSize.height - reserved)
         let verseSize = VerseFit.fontSize(verse.verse, width: cardWidth, height: avail,
-                                          lineSpacing: verseGap, minSize: 10, maxSize: 16)
+                                          lineSpacing: verseGap, minSize: 10,
+                                          maxSize: Self.scaledTypeSize(base: 16, extra: 3, cardWidth: cardWidth))
 
         return VStack(alignment: .leading, spacing: 0) {
             if verse.pinnedVersion != nil { versionBadge; Spacer().frame(height: 6) }
             Text("\(verse.book) \(verse.reference)")
-                .font(.system(size: refSize, weight: .bold, design: .serif))
+                .font(CardFont.font(.reference, size: refSize))
 
             Spacer().frame(height: 12)
 
@@ -196,7 +194,7 @@ struct FlashcardView: View {
                          words: verse.titleWords,
                          revealed: titleRevealedCount,
                          cardWidth: cardWidth,
-                         font: .system(size: titleSectionSize, weight: .bold, design: .serif))
+                         font: CardFont.font(.title, size: titleSectionSize))
 
             Spacer().frame(height: 8)
 
@@ -204,13 +202,8 @@ struct FlashcardView: View {
                          words: verse.verseWords,
                          revealed: verseRevealedCount,
                          cardWidth: cardWidth,
-                         font: .system(size: verseSize, design: .serif),
+                         font: CardFont.font(.body, size: verseSize),
                          fillsRemainingSpace: true)
-
-            if !hardMode && activeRevealed < activeWords.count {
-                Spacer().frame(height: 10)
-                progressBar(revealed: activeRevealed, total: activeWords.count)
-            }
         }
     }
 
@@ -239,6 +232,7 @@ struct FlashcardView: View {
                 }
             }
             .lineSpacing(section == .verse ? verseGap : 4)
+            .minimumScaleFactor(section == .verse ? 0.6 : 1)
 
             if isComplete {
                 Image(systemName: "checkmark.circle.fill")
@@ -330,36 +324,12 @@ struct FlashcardView: View {
 
     private func placeholder(for section: CardSection) -> Text {
         Text(section == .title ? "Title" : "Verse")
-            .font(.system(size: 18, weight: .medium, design: .serif))
+            .font(CardFont.font(.body, size: 18))
             .foregroundStyle(.tertiary)
     }
 
     private func masked(_ word: String) -> String {
         String(word.map { $0.isLetter ? "_" : $0 })
-    }
-
-    // MARK: - Progress Bar
-
-    private func progressBar(revealed: Int, total: Int) -> some View {
-        HStack(spacing: 6) {
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    Capsule().fill(Color(.systemGray5))
-                    // Green (matching the completion check) so it reads as
-                    // "progress made" and doesn't blur into the blue active-section
-                    // bar / next-word accent sitting right above it.
-                    Capsule()
-                        .fill(Color.green)
-                        .frame(width: max(4, geo.size.width * Double(revealed) / Double(max(1, total))))
-                        .animation(AppMotion.movement, value: revealed)
-                }
-            }
-            .frame(height: 3)
-
-            Text("\(revealed)/\(total)")
-                .font(.system(size: 10, weight: .medium, design: .monospaced))
-                .foregroundStyle(Color.secondary)
-        }
     }
 }
 

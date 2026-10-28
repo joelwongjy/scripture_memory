@@ -18,104 +18,83 @@ struct ContinueLearningCard: View {
     let onChangePin: () -> Void
     let onUnpin: () -> Void
 
+    @ObservedObject private var learning = LearningStore.shared
+
     var body: some View {
         let v = spot.verse
-        VStack(alignment: .leading, spacing: 10) {
-            // Header sits outside the practise button so the menu's taps don't
-            // fight the card tap.
-            HStack(spacing: 6) {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
                 if spot.isPinned {
                     Image(systemName: "pin.fill")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(.secondary)
+                        .font(.system(size: 15, weight: .bold))
                 }
                 Text(spot.isPinned ? "Pinned" : "Continue Learning")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(.secondary)
-                    .textCase(.uppercase)
+                    .font(.title3.weight(.bold))
+                    .accessibilityAddTraits(.isHeader)
                 Spacer()
                 Text("\(spot.indexInPack + 1) of \(spot.pack.verses.count)")
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.subheadline)
                     .foregroundStyle(.secondary)
-                pinMenu
+                pinButton
             }
+            .padding(.horizontal, 20)
 
             Button(action: onOpen) {
-                VStack(alignment: .leading, spacing: 10) {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(v.title)
-                            .font(.system(size: 16, weight: .bold, design: .serif))
-                            .foregroundStyle(Color.primary)
-                            .multilineTextAlignment(.leading)
-                        Text("\(v.book) \(v.reference)")
-                            .font(.system(size: 14, design: .serif))
-                            .foregroundStyle(Color.secondary)
-                        Text(v.verse)
-                            .font(.system(size: 15, design: .serif))
-                            .foregroundStyle(Color.primary)
-                            .lineSpacing(4)
-                            .multilineTextAlignment(.leading)
-                            .fixedSize(horizontal: false, vertical: true)
+                GeometryReader { geo in
+                    PouchVerseCard(verse: v, isLearnt: learning.isLearnt(v), width: geo.size.width) {
+                        HStack(spacing: 3) {
+                            Text(startMode.ctaLabel)
+                                .fontWeight(.semibold)
+                            Image(systemName: "chevron.right")
+                                .imageScale(.small)
+                                .fontWeight(.semibold)
+                        }
+                        .foregroundStyle(Color.accentColor)
                     }
-                    HStack(spacing: 5) {
-                        Text(spot.pack.name)
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                        Spacer()
-                        Text(startMode.ctaLabel)
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(Color.accentColor)
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(Color.accentColor)
-                    }
-                    .padding(.top, 2)
+                    .paperAppearance()
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(Rectangle())
+                .aspectRatio(AppLayout.cardAspect, contentMode: .fit)
+                .listCardShadow()
             }
             .buttonStyle(CardButtonStyle())
+            .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 2, style: .continuous))
+            .contextMenu { pinActions }
             .accessibilityLabel("\(startMode.ctaLabel) \(v.book) \(v.reference)")
         }
-        .padding(18)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: AppLayout.groupedRadius, style: .continuous)
-                .fill(flashcardBackground)
-                .shadow(color: .black.opacity(0.13), radius: 14, x: 0, y: 7)
-                .shadow(color: .black.opacity(0.05), radius: 2,  x: 0, y: 1)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: AppLayout.groupedRadius, style: .continuous)
-                .strokeBorder(Color(.separator).opacity(0.4), lineWidth: 0.5)
-        )
+        .frame(maxWidth: 600)
+        .frame(maxWidth: .infinity)
     }
 
-    private var pinMenu: some View {
-        Menu {
-            if spot.isPinned {
-                Button(action: onChangePin) {
-                    Label("Change verse", systemImage: "pin")
-                }
-                Button {
-                    onUnpin()
-                    HapticEngine.light()
-                } label: {
-                    Label("Unpin verse", systemImage: "pin.slash")
-                }
-            } else {
-                Button(action: onChangePin) {
-                    Label("Pin a verse", systemImage: "pin")
-                }
+    @ViewBuilder
+    private var pinActions: some View {
+        if spot.isPinned {
+            Button(action: onChangePin) {
+                Label("Change verse", systemImage: "pin")
             }
-        } label: {
-            Image(systemName: "ellipsis.circle")
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(.secondary)
+            Button {
+                onUnpin()
+                HapticEngine.light()
+            } label: {
+                Label("Unpin verse", systemImage: "pin.slash")
+            }
+        } else {
+            Button(action: onChangePin) {
+                Label("Pin a verse", systemImage: "pin")
+            }
+        }
+    }
+
+    private var pinButton: some View {
+        Button(action: onChangePin) {
+            Text(spot.isPinned ? "Change" : "Pin")
+                .font(.system(size: 15))
+                .foregroundStyle(Color.accentColor)
+                .frame(minWidth: 44, minHeight: 44, alignment: .trailing)
                 .contentShape(Rectangle())
         }
-        .accessibilityLabel("Verse options")
+        .buttonStyle(.plain)
+        .padding(.vertical, -12)
+        .accessibilityLabel(spot.isPinned ? "Change pinned verse" : "Pin a verse")
     }
 }
 
@@ -145,8 +124,8 @@ struct GoToCurrentVerseCard: View {
                 Spacer(minLength: 8)
                 RowChevron()
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+            .padding(.horizontal, AppLayout.panelPadding)
+            .padding(.vertical, AppLayout.panelRowPadding)
             .frame(maxWidth: .infinity)
             .groupedPanel()
             .contentShape(Rectangle())
@@ -172,7 +151,7 @@ struct AllLearntCard: View {
             }
             Spacer()
         }
-        .padding(20)
+        .padding(AppLayout.cardPadding)
         .frame(maxWidth: .infinity)
         .groupedPanel()
     }

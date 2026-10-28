@@ -32,8 +32,8 @@ struct DailyReviewCard: View {
             }
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 14)
-        .padding(.horizontal, 16)
+        .padding(.vertical, AppLayout.panelRowPadding)
+        .padding(.horizontal, AppLayout.panelPadding)
         .groupedPanel()
     }
 
@@ -56,53 +56,51 @@ struct DailyReviewCard: View {
         }
     }
 
-    /// One row, iOS-summary style: what's due, with the action trailing.
+    /// Anki's three counts, in Anki's colours and words, over one Start button.
     private func due(_ counts: DueCounts) -> some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Text("\(counts.total)")
-                        .font(.system(size: 26, weight: .bold, design: .rounded))
-                        .contentTransition(.numericText())
-                    Text(counts.total == 1 ? "card due today" : "cards due today")
-                        .font(.system(size: 15))
-                        .foregroundStyle(.secondary)
-                }
-                .accessibilityElement(children: .combine)
-
-                HStack(spacing: 10) {
-                    breakdownChip(label: "Learning", value: counts.learning, color: .orange)
-                    breakdownChip(label: "Review",   value: counts.review,   color: .blue)
-                    breakdownChip(label: "New",      value: counts.newToday, color: .green)
-                }
+        VStack(spacing: 16) {
+            HStack(spacing: 0) {
+                count("New",   counts.newToday, color: ReviewColor.new)
+                count("Learn", counts.learning, color: ReviewColor.learn)
+                count("Due",   counts.review,   color: ReviewColor.due)
             }
-
-            Spacer(minLength: 8)
-
             Button(action: start) {
-                Text("Start")
-                    .font(.system(size: 15, weight: .semibold))
-                    .padding(.horizontal, 6)
+                Text("Start review")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
-            .controlSize(.regular)
+            .controlSize(.large)
             .buttonBorderShape(.capsule)
             .tint(.accentColor)
-            .accessibilityLabel("Start review")
+            .accessibilityLabel("Start review, \(counts.total) \(counts.total == 1 ? "card" : "cards")")
         }
+        .padding(.vertical, 4)
     }
 
-    /// Same row shape as the due state, so the card doesn't resize as you
-    /// finish a session.
+    private func count(_ label: String, _ value: Int, color: Color) -> some View {
+        VStack(spacing: 2) {
+            Text("\(value)")
+                .font(.system(size: 28, weight: .semibold, design: .rounded))
+                .foregroundStyle(value > 0 ? color : Color(.tertiaryLabel))
+                .contentTransition(.numericText())
+            Text(label)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .combine)
+    }
+
     private func caughtUp(_ counts: DueCounts) -> some View {
         HStack(spacing: 12) {
             Image(systemName: "checkmark.seal.fill")
-                .font(.system(size: 26))
+                .font(.system(size: 30))
                 .foregroundStyle(.green)
                 .symbolEffect(.bounce, options: .nonRepeating)
             VStack(alignment: .leading, spacing: 2) {
-                Text("All caught up")
-                    .font(.system(size: 16, weight: .semibold))
+                Text(store.reviewedToday() > 0 ? "Done for today" : "All caught up")
+                    .font(.system(size: 17, weight: .semibold))
                 Text(caughtUpMessage(counts))
                     .font(.system(size: 13))
                     .foregroundStyle(.secondary)
@@ -110,23 +108,20 @@ struct DailyReviewCard: View {
             }
             Spacer(minLength: 0)
         }
-    }
-
-    private func breakdownChip(label: String, value: Int, color: Color) -> some View {
-        HStack(spacing: 4) {
-            Circle().fill(color).frame(width: 6, height: 6)
-            Text("\(value) \(label)")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(.secondary)
-        }
+        .padding(.vertical, 6)
     }
 
     /// Whichever comes back soonest: a card due later today, the next batch of
-    /// new verses, or the next scheduled review.
+    /// new verses, or the next scheduled review, or today's limit.
     private func caughtUpMessage(_ counts: DueCounts) -> String {
         let now      = Date()
         let next     = nextDue(after: now)
         let tomorrow = Calendar.current.startOfDay(for: now).addingTimeInterval(SRSStore.secondsPerDay)
+
+        if counts.overLimit > 0 {
+            return "You've reached today's limit of \(dailyReviewCap) reviews. "
+                + "\(counts.overLimit) more \(counts.overLimit == 1 ? "is" : "are") waiting for tomorrow."
+        }
 
         if let next, next < tomorrow {
             return "Your next review is in \(formatRelative(next))."
@@ -157,6 +152,8 @@ struct DailyReviewCard: View {
         var newToday      = 0
         /// All unscheduled cards, not just today's share.
         var newCandidates = 0
+        /// Reviews waiting that today's limit holds back.
+        var overLimit     = 0
         var total: Int { learning + review + newToday }
     }
 
@@ -173,6 +170,9 @@ struct DailyReviewCard: View {
         counts.newCandidates = activePacks.reduce(0) { $0 + policy.fresh(in: $1.verses, store: store).count }
         counts.newToday = min(SRSQueueBuilder.globalNewRemaining(store: store, newCap: newCap, now: now),
                               counts.newCandidates)
+        let unlimited = SRSQueueBuilder.reviewCards(packs: activePacks, store: store,
+                                                    dailyReviewCap: .max, policy: policy, now: now)
+        counts.overLimit = unlimited.count - served.count
         return counts
     }
 

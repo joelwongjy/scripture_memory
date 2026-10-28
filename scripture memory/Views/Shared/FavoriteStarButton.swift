@@ -8,9 +8,13 @@ import SwiftUI
 /// button to say *which* verse it meant.
 struct FavoriteStarButton: View {
     let verse: Verse
+    var alignment: Alignment = .center
     @ObservedObject private var favorites = FavoritesStore.shared
 
-    init(verse: Verse) { self.verse = verse }
+    init(verse: Verse, alignment: Alignment = .center) {
+        self.verse = verse
+        self.alignment = alignment
+    }
 
     var body: some View {
         let isFavorite = favorites.isFavorite(verse)
@@ -20,6 +24,7 @@ struct FavoriteStarButton: View {
             // back to SwiftUI's default animation — around twice this long, on the
             // one control in the app that most needs to feel instant.
             HapticEngine.light()
+            Analytics.log(.starChanged(starred: !isFavorite, from: .card))
             withAnimation(AppMotion.control) { favorites.toggle(verse) }
         } label: {
             Image(systemName: isFavorite ? "star.fill" : "star")
@@ -29,10 +34,9 @@ struct FavoriteStarButton: View {
                 // other arrives instead of the two crossing, which halves the
                 // distance the swap has to cover.
                 .contentTransition(.symbolEffect(.replace.offUp))
-                // 30pt target: the card footer can't spare the full 44, and the
-                // control sits alone in its corner with nothing to mis-hit.
-                .frame(width: 30, height: 30)
-                .contentShape(Rectangle())
+                // Drawn at 30pt to fit the card footer; the tap area is the full 44.
+                .frame(width: 30, height: 30, alignment: alignment)
+                .minimumTapTarget(visibleSize: 30)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(isFavorite ? "Remove from favourites" : "Add to favourites")

@@ -300,7 +300,7 @@ struct ScriptureVerseWidget: Widget {
             VerseEntryView(entry: entry)
         }
         .configurationDisplayName("Scripture Verse")
-        .description("Your current learning verse — or one you pin in the app.")
+        .description("Your current verse, or one you pin in the app.")
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
     }
 }

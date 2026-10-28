@@ -19,18 +19,20 @@ struct PackOrganizerView: View {
                     .onMove { source, destination in
                         store.move(arranged: store.arranged(from: allPacks),
                                    from: source, to: destination)
+                        Analytics.log(.packsReordered)
                     }
                 } header: {
                     // At the top, not a footer — users won't scroll past every pack
                     // to read an instruction at the bottom. Footnote/secondary so it
                     // reads as a caption, not a heading.
-                    Text("Drag to reorder. Hidden packs are removed from Packs, Daily, and Review.")
+                    Text("Drag to reorder. Hidden packs don't appear in Packs, Daily Review, Quiz or Search.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                         .textCase(nil)
                 }
             }
-            .navigationTitle("Organize Packs")
+            .navigationTitle("Edit Packs")
+            .analyticsScreen(.organizePacks)
             .navigationBarTitleDisplayMode(.inline)
             // Always-on edit mode: drag handles are present immediately, so
             // reordering works without an Edit button. The per-row eye button
@@ -45,7 +47,7 @@ struct PackOrganizerView: View {
                     Button("Done") { dismiss() }
                 }
             }
-            .alert("Reset pack order?", isPresented: $showResetConfirm) {
+            .alert("Reset Pack Order?", isPresented: $showResetConfirm) {
                 Button("Reset", role: .destructive) {
                     store.reset()
                     HapticEngine.light()
@@ -72,6 +74,7 @@ struct PackOrganizerView: View {
 
             Button {
                 store.setHidden(pack.name, !isHidden)
+                Analytics.log(.packVisibilityChanged(hidden: !isHidden))
                 HapticEngine.light()
             } label: {
                 Image(systemName: isHidden ? "eye.slash" : "eye")
