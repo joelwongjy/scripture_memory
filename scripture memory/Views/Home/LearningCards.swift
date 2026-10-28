@@ -56,35 +56,44 @@ struct ContinueLearningCard: View {
                 .listCardShadow()
             }
             .buttonStyle(CardButtonStyle())
+            .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 2, style: .continuous))
+            .contextMenu { pinActions }
             .accessibilityLabel("\(startMode.ctaLabel) \(v.book) \(v.reference)")
         }
         .frame(maxWidth: 600)
         .frame(maxWidth: .infinity)
     }
 
+    @ViewBuilder
+    private var pinActions: some View {
+        if spot.isPinned {
+            Button(action: onChangePin) {
+                Label("Change verse", systemImage: "pin")
+            }
+            Button {
+                onUnpin()
+                HapticEngine.light()
+            } label: {
+                Label("Unpin verse", systemImage: "pin.slash")
+            }
+        } else {
+            Button(action: onChangePin) {
+                Label("Pin a verse", systemImage: "pin")
+            }
+        }
+    }
+
     private var pinMenu: some View {
         Menu {
-            if spot.isPinned {
-                Button(action: onChangePin) {
-                    Label("Change verse", systemImage: "pin")
-                }
-                Button {
-                    onUnpin()
-                    HapticEngine.light()
-                } label: {
-                    Label("Unpin verse", systemImage: "pin.slash")
-                }
-            } else {
-                Button(action: onChangePin) {
-                    Label("Pin a verse", systemImage: "pin")
-                }
-            }
+            pinActions
         } label: {
             Image(systemName: "ellipsis.circle")
                 .font(.system(size: 17, weight: .semibold))
                 .foregroundStyle(.secondary)
+                .frame(width: 44, height: 44)
                 .contentShape(Rectangle())
         }
+        .padding(-12)
         .accessibilityLabel("Verse options")
     }
 }

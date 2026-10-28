@@ -27,21 +27,29 @@ struct HomeStreakCard: View {
             Spacer(minLength: 8)
             HStack(spacing: 5) {
                 ForEach(Array(streak.thisWeek().enumerated()), id: \.offset) { _, day in
-                    ZStack {
-                        Circle()
-                            .fill(day.done ? Color.orange : Color(.systemGray5))
-                            .frame(width: 17, height: 17)
-                        if day.done {
-                            Image(systemName: "flame.fill")
-                                .font(.system(size: 8, weight: .bold))
-                                .foregroundStyle(.white)
-                        } else if day.isToday {
-                            Circle().strokeBorder(Color.orange, lineWidth: 1.5).frame(width: 17, height: 17)
+                    VStack(spacing: 3) {
+                        ZStack {
+                            Circle()
+                                .fill(day.done ? Color.orange : Color(.systemGray5))
+                                .frame(width: 17, height: 17)
+                            if day.done {
+                                Image(systemName: "flame.fill")
+                                    .font(.system(size: 8, weight: .bold))
+                                    .foregroundStyle(.white)
+                            } else if day.isToday {
+                                Circle().strokeBorder(Color.orange, lineWidth: 1.5).frame(width: 17, height: 17)
+                            }
                         }
+                        Text(day.initial)
+                            .font(.system(size: 10, weight: day.isToday ? .bold : .medium))
+                            .foregroundStyle(day.isToday ? Color.orange : Color.secondary)
+                            .fixedSize()
                     }
                     .opacity(day.isFuture ? 0.35 : 1)
                 }
             }
+            .layoutPriority(1)
+            RowChevron()
         }
         .padding(.horizontal, AppLayout.panelPadding)
         .padding(.vertical, AppLayout.panelRowPadding)
