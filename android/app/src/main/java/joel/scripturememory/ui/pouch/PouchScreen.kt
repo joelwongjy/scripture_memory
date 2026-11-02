@@ -68,6 +68,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -310,6 +311,8 @@ fun PouchScreen(
 @Composable
 private fun PouchTopBar(pack: Pack, c: PouchController, onPractice: () -> Unit) {
     val colors = AppTheme.colors
+    val density = LocalDensity.current
+    var titleInset by remember { mutableStateOf(98.dp) }
     Box(
         Modifier
             .fillMaxWidth()
@@ -319,7 +322,7 @@ private fun PouchTopBar(pack: Pack, c: PouchController, onPractice: () -> Unit) 
     ) {
         val counter = listOfNotNull(pack.seriesCode, "Card ${c.index + 1} of ${c.verses.size}").joinToString(" · ")
         Column(
-            Modifier.align(Alignment.Center).padding(horizontal = 116.dp),
+            Modifier.align(Alignment.Center).padding(horizontal = titleInset),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(1.dp),
         ) {
@@ -335,6 +338,7 @@ private fun PouchTopBar(pack: Pack, c: PouchController, onPractice: () -> Unit) 
                 style = AppType.caption.copy(fontFeatureSettings = "tnum"),
                 color = colors.secondaryLabel,
                 maxLines = 1,
+                autoSize = TextAutoSize.StepBased(AppType.caption.fontSize * 0.7f, AppType.caption.fontSize, 0.25.sp),
             )
         }
         ChromeIconButton(
@@ -345,7 +349,9 @@ private fun PouchTopBar(pack: Pack, c: PouchController, onPractice: () -> Unit) 
         )
         ChromeTextButton(
             "Practice",
-            Modifier.align(Alignment.CenterEnd),
+            Modifier
+                .align(Alignment.CenterEnd)
+                .onSizeChanged { titleInset = with(density) { it.width.toDp() } + 1.dp },
             onClick = { if (c.fanned) onPractice() },
         )
     }
