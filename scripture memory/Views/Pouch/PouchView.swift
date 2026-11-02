@@ -116,7 +116,10 @@ struct PouchView: View {
             }
             .padding(insets)
             .blur(radius: 14 * liftAmount)
-            .overlay { Color.black.opacity(0.16 * Double(liftAmount)).allowsHitTesting(false) }
+            .overlay {
+                Color.black.opacity((colorScheme == .dark ? 0.68 : 0.16) * Double(liftAmount))
+                    .allowsHitTesting(false)
+            }
             .allowsHitTesting(lifted == nil)
             .accessibilityHidden(lifted != nil)
 
