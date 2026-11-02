@@ -19,6 +19,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import joel.scripturememory.model.Verse
 import joel.scripturememory.model.VerseNumbering
+import joel.scripturememory.model.trimmingWhitespacesAndNewlines
 import joel.scripturememory.ui.theme.AppTheme
 import joel.scripturememory.ui.theme.AppType
 import java.text.Normalizer
@@ -94,7 +95,7 @@ private const val leadInLimit = 50
 private const val leadInContext = 24
 
 fun versePreview(text: String, highlight: String?, emphasis: Color): AnnotatedString {
-    val query = highlight?.trim().orEmpty()
+    val query = highlight?.trimmingWhitespacesAndNewlines().orEmpty()
     val first = if (query.isEmpty()) null else foldedMatches(text, query).firstOrNull()
     if (first == null) return AnnotatedString(text)
 

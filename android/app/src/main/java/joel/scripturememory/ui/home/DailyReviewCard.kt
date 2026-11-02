@@ -96,10 +96,10 @@ fun DailyReviewCard(activePacks: List<Pack>, modifier: Modifier = Modifier, onSt
             .groupedPanel()
             .padding(horizontal = AppLayout.panelPadding, vertical = AppLayout.panelRowPadding),
         transitionSpec = {
-            fadeIn(AppMotion.content()) togetherWith fadeOut(AppMotion.content()) using
-                SizeTransform(clip = false) { _, _ -> AppMotion.content() }
+            fadeIn(AppMotion.smooth(240, 130)) togetherWith fadeOut(AppMotion.smooth(130)) using
+                SizeTransform(clip = true) { _, _ -> AppMotion.content() }
         },
-        contentAlignment = Alignment.Center,
+        contentAlignment = Alignment.TopCenter,
         label = "dailyReviewState",
     ) { shown ->
         when (shown) {

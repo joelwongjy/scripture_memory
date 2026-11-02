@@ -86,7 +86,7 @@ private fun VersePickList(
     onSelect: (Verse) -> Unit,
 ) {
     val navigator = LocalNavigator.current
-    Column(Modifier.fillMaxSize().padding(0.dp)) {
+    Column(Modifier.fillMaxSize()) {
         TopBar(pack.name, onBack = navigator::pop)
         LazyColumn(
             Modifier.weight(1f).fillMaxWidth(),

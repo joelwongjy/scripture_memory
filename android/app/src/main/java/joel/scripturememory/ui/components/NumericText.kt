@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.IntOffset
 import joel.scripturememory.ui.theme.AppMotion
 import joel.scripturememory.ui.theme.AppType
 import joel.scripturememory.ui.theme.LocalContentColor
@@ -39,7 +40,7 @@ fun NumericText(
                     transitionSpec = {
                         val direction = if (targetState > initialState) 1 else -1
                         val offsetFraction = 0.45f
-                        val move = AppMotion.content<androidx.compose.ui.unit.IntOffset>()
+                        val move = AppMotion.content<IntOffset>()
                         val fade = AppMotion.content<Float>()
                         if (AppMotion.reduceMotion) {
                             fadeIn(fade) togetherWith fadeOut(fade)

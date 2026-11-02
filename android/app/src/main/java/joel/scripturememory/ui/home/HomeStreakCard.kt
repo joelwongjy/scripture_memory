@@ -1,5 +1,6 @@
 package joel.scripturememory.ui.home
 
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -31,6 +32,7 @@ import joel.scripturememory.ui.components.groupedPanel
 import joel.scripturememory.ui.components.pressable
 import joel.scripturememory.ui.components.symbolBounce
 import joel.scripturememory.ui.theme.AppLayout
+import joel.scripturememory.ui.theme.AppMotion
 import joel.scripturememory.ui.theme.AppTheme
 import joel.scripturememory.ui.theme.AppType
 
@@ -47,6 +49,7 @@ fun HomeStreakCard(modifier: Modifier = Modifier, onClick: () -> Unit) {
             .fillMaxWidth()
             .semantics(mergeDescendants = true) { contentDescription = label }
             .pressable(label = "Shows your streak", onClick = onClick)
+            .animateContentSize(AppMotion.content())
             .groupedPanel()
             .padding(horizontal = AppLayout.panelPadding, vertical = AppLayout.panelRowPadding),
         verticalAlignment = Alignment.CenterVertically,

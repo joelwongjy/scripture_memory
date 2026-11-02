@@ -32,6 +32,7 @@ import joel.scripturememory.ui.components.FittedVerseText
 import joel.scripturememory.ui.components.Icon
 import joel.scripturememory.ui.components.PaperShape
 import joel.scripturememory.ui.components.Text
+import joel.scripturememory.ui.theme.AppLayout
 import joel.scripturememory.ui.theme.AppTheme
 import joel.scripturememory.ui.theme.CardFont
 import joel.scripturememory.ui.theme.CardFontStyle
@@ -65,7 +66,7 @@ internal fun HomeVerseCard(
     val footerStyle = CardFont.style(CardFontStyle.PrintBody, size(2.9f))
     Column(
         modifier
-            .size(width, width / joel.scripturememory.ui.theme.AppLayout.cardAspect)
+            .size(width, width / AppLayout.cardAspect)
             .clip(PaperShape)
             .background(PouchInk.paper(dark))
             .border(0.5.dp, PouchInk.edgeLine(dark), PaperShape)

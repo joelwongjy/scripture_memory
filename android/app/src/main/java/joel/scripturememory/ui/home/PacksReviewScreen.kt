@@ -1,5 +1,6 @@
 package joel.scripturememory.ui.home
 
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -119,7 +120,7 @@ private fun PackReviewRow(pack: Pack, today: List<Verse>) {
             .toggleable(
                 value = active,
                 role = Role.Switch,
-                interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                interactionSource = remember { MutableInteractionSource() },
                 indication = null,
                 onValueChange = { store.setActive(pack.name, it) },
             )

@@ -61,7 +61,6 @@ import joel.scripturememory.ui.components.softShadow
 import joel.scripturememory.ui.pouch.PouchScreen
 import joel.scripturememory.ui.theme.AppLayout
 import joel.scripturememory.ui.theme.AppTheme
-import joel.scripturememory.ui.theme.AppType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filterIsInstance

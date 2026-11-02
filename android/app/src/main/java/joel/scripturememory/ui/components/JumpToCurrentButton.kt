@@ -1,6 +1,7 @@
 package joel.scripturememory.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
@@ -62,15 +63,15 @@ fun JumpToCurrentButton(
             .softShadow(Capsule, 6.dp)
             .clip(Capsule)
             .background(colors.accent)
-            .defaultMinSize(minimum, minimum)
-            .padding(horizontal = horizontal, vertical = vertical),
+            .defaultMinSize(minimum.coerceAtLeast(0.dp), minimum.coerceAtLeast(0.dp))
+            .padding(horizontal = horizontal.coerceAtLeast(0.dp), vertical = vertical.coerceAtLeast(0.dp)),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center,
     ) {
         Icon(R.drawable.ic_bookmark_fill, size = iconSize, tint = colors.onAccent)
         AnimatedVisibility(
             visible = expanded,
-            enter = androidx.compose.animation.EnterTransition.None,
+            enter = EnterTransition.None,
             exit = fadeOut(AppMotion.movement()) + shrinkHorizontally(AppMotion.movement()),
         ) {
             Text(
