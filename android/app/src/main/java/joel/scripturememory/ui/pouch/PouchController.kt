@@ -6,6 +6,7 @@ import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -19,7 +20,6 @@ import joel.scripturememory.system.HapticEngine
 import joel.scripturememory.ui.theme.AppMotion
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlin.math.max
@@ -64,6 +64,28 @@ internal class ListGeometry(
 }
 
 @Stable
+internal class PouchProgress(initial: Float) {
+    var value by mutableFloatStateOf(initial)
+}
+
+private class PouchSegment(
+    val progress: PouchProgress,
+    val to: Float,
+    val delay: Float,
+    val curve: SpringCurve,
+) {
+    private val from = progress.value
+
+    fun apply(t: Float) {
+        progress.value = from + (to - from) * curve.at(t - delay)
+    }
+
+    fun finish() {
+        progress.value = to
+    }
+}
+
+@Stable
 internal class PouchController(
     val verses: List<Verse>,
     start: Int,
@@ -73,10 +95,10 @@ internal class PouchController(
     private val scope: CoroutineScope,
 ) {
     var index by mutableIntStateOf(start)
-    val openness = Animatable(if (reduce) 1f else 0f, motionThreshold)
-    val lift = Animatable(if (reduce) 1f else 0f, motionThreshold)
-    val spread = Animatable(if (reduce) 1f else 0f, motionThreshold)
-    val flight = Animatable(if (hasShelf && !reduce) 1f else 0f, motionThreshold)
+    val openness = PouchProgress(if (reduce) 1f else 0f)
+    val lift = PouchProgress(if (reduce) 1f else 0f)
+    val spread = PouchProgress(if (reduce) 1f else 0f)
+    val flight = PouchProgress(if (hasShelf && !reduce) 1f else 0f)
     val swipeOffset = Animatable(0f)
     var fanned by mutableStateOf(reduce)
     var listSettled by mutableStateOf(false)
@@ -90,26 +112,44 @@ internal class PouchController(
     private val openedAt = System.currentTimeMillis()
     private var opening: Job? = null
 
+    private suspend fun awaitComposedFrame() {
+        withFrameNanos {}
+        withFrameNanos {}
+    }
+
+    private suspend fun play(segments: List<PouchSegment>, end: Float, cueAt: Float = 0f, cue: () -> Unit = {}) {
+        val start = withFrameNanos { it }
+        var cued = false
+        while (true) {
+            val t = (withFrameNanos { it } - start) / 1_000_000_000f
+            segments.forEach { it.apply(t) }
+            if (!cued && t >= cueAt) {
+                cued = true
+                cue()
+            }
+            if (t >= end) break
+        }
+        segments.forEach { it.finish() }
+    }
+
     fun appeared() {
         if (fanned) return
         opening = scope.launch {
+            awaitComposedFrame()
             val fromShelf = flight.value > 0f
-            if (fromShelf) launch { flight.animateTo(0f, PouchMotion.smooth(0.35f)) }
-            if (fromShelf) delay(80)
-            unfoldAndFanOut()
-        }
-    }
-
-    private fun CoroutineScope.unfoldAndFanOut() {
-        launch { openness.animateTo(1f, PouchMotion.smooth(0.4f)) }
-        launch {
-            delay(300)
-            lift.animateTo(1f, PouchMotion.smooth(0.4f))
-        }
-        HapticEngine.play(HapticEngine.packOpen)
-        launch {
-            delay(600)
-            spread.animateTo(1f, PouchMotion.snappy(0.4f))
+            val lead = if (fromShelf) 0.08f else 0f
+            val spreading = PouchMotion.snappy(0.4f)
+            play(
+                listOfNotNull(
+                    if (fromShelf) PouchSegment(flight, 0f, 0f, PouchMotion.smooth(0.35f)) else null,
+                    PouchSegment(openness, 1f, lead, PouchMotion.smooth(0.4f)),
+                    PouchSegment(lift, 1f, lead + 0.3f, PouchMotion.smooth(0.4f)),
+                    PouchSegment(spread, 1f, lead + 0.6f, spreading),
+                ),
+                end = lead + 0.6f + spreading.settling,
+                cueAt = lead,
+                cue = { HapticEngine.play(HapticEngine.packOpen) },
+            )
             if (!closing && !fanned) fanned = true
         }
     }
@@ -119,16 +159,16 @@ internal class PouchController(
         HapticEngine.stop()
         opening?.cancel()
         val target = (index - (flick / pitch).roundToInt()).coerceIn(0, verses.lastIndex)
+        flight.value = 0f
+        openness.value = 1f
+        lift.value = 1f
+        spread.value = 1f
+        fanned = true
+        if (target == index) return
         scope.launch {
-            flight.snapTo(0f)
-            openness.snapTo(1f)
-            lift.snapTo(1f)
-            spread.snapTo(1f)
-            fanned = true
-            if (target == index) return@launch
             snapshotFlow { listSettled }.first { it }
             index = target
-            scrollTo(target, PouchMotion.smooth(0.5f))
+            scrollTo(target, PouchMotion.smoothSpec(0.5f))
         }
     }
 
@@ -147,26 +187,20 @@ internal class PouchController(
         closeCenterY = currentCardCenterY()
         fanned = false
         scope.launch {
-            withFrameNanos {}
-            withFrameNanos {}
-            launch { swipeOffset.animateTo(0f, PouchMotion.snappy(0.32f)) }
-            launch { spread.animateTo(0f, PouchMotion.snappy(0.32f)) }
-            launch {
-                delay(200)
-                lift.animateTo(0f, PouchMotion.smooth(0.32f))
-            }
-            launch {
-                delay(400)
-                openness.animateTo(0f, PouchMotion.smooth(0.34f))
-            }
-            delay(740)
-            if (!hasShelf) {
-                onClosed()
-                return@launch
-            }
-            launch { flight.animateTo(1f, PouchMotion.smooth(0.35f)) }
-            delay(350)
-            HapticEngine.soft()
+            awaitComposedFrame()
+            launch { swipeOffset.animateTo(0f, PouchMotion.snappySpec(0.32f)) }
+            val putBack = 0.4f + 0.34f
+            val flying = PouchMotion.smooth(0.35f)
+            play(
+                listOfNotNull(
+                    PouchSegment(spread, 0f, 0f, PouchMotion.snappy(0.32f)),
+                    PouchSegment(lift, 0f, 0.2f, PouchMotion.smooth(0.32f)),
+                    PouchSegment(openness, 0f, 0.4f, PouchMotion.smooth(0.34f)),
+                    if (hasShelf) PouchSegment(flight, 1f, putBack, flying) else null,
+                ),
+                end = if (hasShelf) putBack + flying.duration else putBack,
+            )
+            if (hasShelf) HapticEngine.soft()
             onClosed()
         }
     }
