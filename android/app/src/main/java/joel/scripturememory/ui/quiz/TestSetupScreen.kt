@@ -8,14 +8,19 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
@@ -61,6 +66,7 @@ import joel.scripturememory.ui.components.LocalCovers
 import joel.scripturememory.ui.components.PrimaryButton
 import joel.scripturememory.ui.components.TrackScreen
 import joel.scripturememory.ui.components.groupedRow
+import joel.scripturememory.ui.components.readableColumn
 import joel.scripturememory.ui.components.Divider
 import joel.scripturememory.ui.study.TestSessionScreen
 import joel.scripturememory.ui.theme.AppMotion
@@ -69,6 +75,7 @@ import joel.scripturememory.ui.theme.AppType
 
 private const val savedSessionKey = "lastTestSessionVerseIds"
 private const val quizCountKey = "reviewSetupQuizCount"
+private val compactBarHeight = 480.dp
 
 private sealed interface PackListItem {
     val key: String
@@ -214,7 +221,13 @@ fun TestSetupScreen() {
     val inset = LocalBottomBarPadding.current
     val barSpace = with(density) { barHeight.toDp() }
 
-    Box(Modifier.fillMaxSize().twoFingerDragSelect(::handleDragSelect) { dragVisited.clear() }) {
+    BoxWithConstraints(
+        Modifier
+            .fillMaxSize()
+            .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))
+            .twoFingerDragSelect(::handleDragSelect) { dragVisited.clear() },
+    ) {
+        val compactBar = maxHeight < compactBarHeight
         CompositionLocalProvider(LocalBottomBarPadding provides inset + barSpace) {
             ReadableList(
                 title = "Quiz",
@@ -374,15 +387,29 @@ fun TestSetupScreen() {
                     .onSizeChanged { barHeight = it.height }
                     .background(AppTheme.colors.background),
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    QuizCountPicker(
-                        count = quizCount,
-                        maximum = selectedCount,
-                        onCountChange = { quizCount = it },
-                        entry = entry,
-                    )
-                    PrimaryButton("Start") {
+                Column(Modifier.readableColumn(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    val picker = @Composable {
+                        QuizCountPicker(
+                            count = quizCount,
+                            maximum = selectedCount,
+                            onCountChange = { quizCount = it },
+                            entry = entry,
+                        )
+                    }
+                    val start = {
                         if (savedSession != null) showOverwriteAlert = true else launchNewSession()
+                    }
+                    if (compactBar) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        ) {
+                            Box(Modifier.weight(1f)) { picker() }
+                            PrimaryButton("Start", Modifier.weight(1f), onClick = start)
+                        }
+                    } else {
+                        picker()
+                        PrimaryButton("Start", onClick = start)
                     }
                     QuizCountKeyboardBar(selectedCount, entry)
                 }
