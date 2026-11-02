@@ -38,6 +38,7 @@ ICONS = {
     "house_fill": "fill/house-fill",
     "keyboard": "regular/keyboard",
     "lightbulb": "regular/lightbulb",
+    "list": "regular/list",
     "magnifying_glass": "regular/magnifying-glass",
     "magnifying_glass_bold": "bold/magnifying-glass-bold",
     "microphone": "regular/microphone",
