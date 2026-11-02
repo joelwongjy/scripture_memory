@@ -18,6 +18,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.SaveableStateHolder
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -25,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
@@ -38,6 +40,7 @@ class StackEntry(val key: String, val content: @Composable () -> Unit)
 class Navigator {
     internal val entries = mutableStateListOf<StackEntry>()
     internal var pendingPop by mutableIntStateOf(0)
+    internal var handledPop = 0
 
     val depth: Int get() = entries.size
     val canPop: Boolean get() = entries.isNotEmpty()
@@ -54,16 +57,26 @@ class Navigator {
     fun popToRoot() {
         entries.clear()
     }
+
+    fun popToRootAnimated() {
+        while (entries.size > 1) entries.removeAt(0)
+        pop()
+    }
 }
 
 val LocalNavigator = staticCompositionLocalOf<Navigator> { error("No Navigator") }
 
 @Composable
-fun StackHost(navigator: Navigator, modifier: Modifier = Modifier, root: @Composable () -> Unit) {
-    val holder = rememberSaveableStateHolder()
+fun StackHost(
+    navigator: Navigator,
+    modifier: Modifier = Modifier,
+    backEnabled: Boolean = true,
+    holder: SaveableStateHolder = rememberSaveableStateHolder(),
+    root: @Composable () -> Unit,
+) {
     val scope = rememberCoroutineScope()
     val progress = remember { Animatable(0f) }
-    var settledDepth by remember { mutableIntStateOf(0) }
+    var settledDepth by remember { mutableIntStateOf(navigator.entries.size) }
     val depth = navigator.entries.size
 
     LaunchedEffect(depth) {
@@ -83,10 +96,13 @@ fun StackHost(navigator: Navigator, modifier: Modifier = Modifier, root: @Compos
     }
 
     LaunchedEffect(navigator.pendingPop) {
-        if (navigator.pendingPop > 0) finishPop()
+        if (navigator.pendingPop > navigator.handledPop) {
+            navigator.handledPop = navigator.pendingPop
+            finishPop()
+        }
     }
 
-    PredictiveBackHandler(enabled = depth > 0) { gesture ->
+    PredictiveBackHandler(enabled = backEnabled && depth > 0) { gesture ->
         try {
             gesture.collect { event -> progress.snapTo(event.progress * 0.6f) }
             finishPop()
@@ -134,7 +150,7 @@ fun StackHost(navigator: Navigator, modifier: Modifier = Modifier, root: @Compos
     }
 }
 
-enum class CoverTransition { SlideUp, None }
+enum class CoverTransition { SlideUp, SlideDownOnly, None }
 
 @Stable
 class CoverEntry(
@@ -151,6 +167,8 @@ class Covers {
     internal val entries = mutableStateListOf<CoverEntry>()
 
     val isPresenting: Boolean get() = entries.isNotEmpty()
+
+    fun isPresenting(key: String): Boolean = entries.any { it.key == key }
 
     fun present(
         key: String,
@@ -189,7 +207,7 @@ private fun CoverLayer(entry: CoverEntry, onGone: () -> Unit) {
     }
     LaunchedEffect(entry.closing) {
         if (entry.closing) {
-            if (entry.transition == CoverTransition.SlideUp) offset.animateTo(1f, AppMotion.snappy(280))
+            if (entry.transition != CoverTransition.None) offset.animateTo(1f, AppMotion.snappy(280))
             onGone()
         }
     }
@@ -199,7 +217,12 @@ private fun CoverLayer(entry: CoverEntry, onGone: () -> Unit) {
             Modifier
                 .fillMaxSize()
                 .graphicsLayer { translationY = height * offset.value }
-                .then(if (entry.background) Modifier.background(background) else Modifier),
+                .then(if (entry.background) Modifier.background(background) else Modifier)
+                .pointerInput(Unit) {
+                    awaitPointerEventScope {
+                        while (true) awaitPointerEvent()
+                    }
+                },
         ) {
             entry.content { entry.closing = true }
         }

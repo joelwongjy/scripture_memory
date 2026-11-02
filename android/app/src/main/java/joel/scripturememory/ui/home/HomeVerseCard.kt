@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import joel.scripturememory.R
-import joel.scripturememory.model.AppDefaults
+import joel.scripturememory.model.CardAppearance
 import joel.scripturememory.model.CardFooter
 import joel.scripturememory.model.Verse
 import joel.scripturememory.model.VerseNumbering
@@ -39,12 +39,9 @@ import joel.scripturememory.ui.theme.CardFontStyle
 import joel.scripturememory.ui.theme.LightColors
 import joel.scripturememory.ui.theme.PouchInk
 
-private const val cardAppearanceKey = "cardAppearance.v1"
-private const val cardAppearanceMatchSystem = "matchSystem"
-
 @Composable
 internal fun paperIsDark(): Boolean =
-    AppTheme.isDark && AppDefaults.standard.getString(cardAppearanceKey) == cardAppearanceMatchSystem
+    AppTheme.isDark && CardAppearance.saved() == CardAppearance.matchSystem
 
 @Composable
 internal fun paperAccent(): Color = if (paperIsDark()) AppTheme.colors.accent else LightColors.accent

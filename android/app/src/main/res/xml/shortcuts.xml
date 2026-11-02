@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/shortcut_review"
+        android:shortcutId="review"
+        android:shortcutShortLabel="@string/shortcut_review">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="scripturememory://review"
+            android:targetClass="joel.scripturememory.MainActivity"
+            android:targetPackage="joel.scripturememory">
+            <extra android:name="source" android:value="shortcut" />
+        </intent>
+    </shortcut>
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/shortcut_search"
+        android:shortcutId="search"
+        android:shortcutShortLabel="@string/shortcut_search">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="scripturememory://search"
+            android:targetClass="joel.scripturememory.MainActivity"
+            android:targetPackage="joel.scripturememory">
+            <extra android:name="source" android:value="shortcut" />
+        </intent>
+    </shortcut>
+</shortcuts>

@@ -1,3 +1,9 @@
 <resources>
     <string name="app_name">Scripture Memory</string>
+    <string name="widget_verse_name">Scripture Verse</string>
+    <string name="widget_verse_description">Your current verse, or one you pin in the app.</string>
+    <string name="widget_progress_name">Progress</string>
+    <string name="widget_progress_description">Your streak, today\'s reviews, and what\'s up next.</string>
+    <string name="shortcut_review">Start review</string>
+    <string name="shortcut_search">Search</string>
 </resources>

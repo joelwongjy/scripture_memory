@@ -116,6 +116,28 @@ enum class BibleVersion(val rawValue: String) {
     }
 }
 
+enum class CardAppearance {
+    alwaysLight,
+    matchSystem;
+
+    val rawValue: String get() = name
+
+    val displayName: String
+        get() = when (this) {
+            matchSystem -> "Match Appearance"
+            alwaysLight -> "Always Light"
+        }
+
+    companion object {
+        const val storageKey = "cardAppearance.v1"
+
+        fun saved(defaults: KeyValueStore = AppDefaults.standard): CardAppearance {
+            val raw = defaults.getString(storageKey)
+            return entries.firstOrNull { it.rawValue == raw } ?: alwaysLight
+        }
+    }
+}
+
 enum class HomeVerseStartMode {
     read,
     review;
