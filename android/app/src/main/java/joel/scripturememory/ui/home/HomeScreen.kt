@@ -12,10 +12,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import joel.scripturememory.R
 import joel.scripturememory.model.AnalyticsEvent
@@ -26,6 +28,7 @@ import joel.scripturememory.model.Catalogue
 import joel.scripturememory.model.HomeVerseStartMode
 import joel.scripturememory.model.LearningStore
 import joel.scripturememory.model.Pack
+import joel.scripturememory.model.PackListLayout
 import joel.scripturememory.model.PackPreferencesStore
 import joel.scripturememory.model.PackSource
 import joel.scripturememory.model.SRSStore
@@ -91,9 +94,11 @@ fun HomeScreen() {
     val featured = learning.displayed(ordered)?.let { spot(packs, it.verse, it.isPinned) }
     val current = learning.current(ordered)?.let { spot(packs, it.verse, false) }
 
-    LargeTitleColumn("Home") {
-        HomeStreakCard { navigator.push("streak") { StreakScreen() } }
-        Column(Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    val windowWidth = LocalConfiguration.current.screenWidthDp.toFloat()
+    val isSideBySide = PackListLayout.columns(windowWidth - 2 * AppLayout.screenMargin.value) > 1
+
+    val dailyReview: @Composable (Modifier) -> Unit = { modifier ->
+        Column(modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
                 Text(
                     "Daily Review",
@@ -110,6 +115,8 @@ fun HomeScreen() {
             }
             DailyReviewCard(activePacks) { presentReview(covers, it) }
         }
+    }
+    val learningSection: @Composable (Modifier) -> Unit = { modifier ->
         LearningSection(
             featured = featured,
             cursor = current,
@@ -117,7 +124,27 @@ fun HomeScreen() {
             startMode = startMode,
             onOpen = { spot -> openLearning(covers, spot, startMode) },
             onChangePin = { showsPinPicker = true },
+            modifier = modifier,
         )
+    }
+
+    LargeTitleColumn(
+        "Home",
+        maxContentWidth = if (isSideBySide) Dp.Infinity else AppLayout.readableWidth,
+    ) {
+        HomeStreakCard { navigator.push("streak") { StreakScreen() } }
+        if (isSideBySide) {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(AppLayout.spacing),
+            ) {
+                dailyReview(Modifier.weight(1f))
+                learningSection(Modifier.weight(1f))
+            }
+        } else {
+            dailyReview(Modifier)
+            learningSection(Modifier)
+        }
     }
 
     if (showsPinPicker) {
@@ -139,10 +166,11 @@ private fun LearningSection(
     startMode: HomeVerseStartMode,
     onOpen: (LearningSpot) -> Unit,
     onChangePin: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val learning = LearningStore.shared
     Column(
-        Modifier.fillMaxWidth().padding(top = 8.dp),
+        modifier.fillMaxWidth().padding(top = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(AppLayout.spacing),
     ) {

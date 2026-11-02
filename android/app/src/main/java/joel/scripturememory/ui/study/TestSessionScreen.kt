@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
@@ -35,10 +36,12 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -50,10 +53,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.GraphicsLayerScope
@@ -70,6 +72,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.min
 import androidx.compose.ui.zIndex
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import joel.scripturememory.R
 import joel.scripturememory.model.CardSection
 import joel.scripturememory.model.CardSwipeConfig
@@ -77,6 +81,7 @@ import joel.scripturememory.model.Date
 import joel.scripturememory.model.LearningStore
 import joel.scripturememory.model.SRSGrade
 import joel.scripturememory.model.StudyMode
+import joel.scripturememory.model.StudyWindow
 import joel.scripturememory.model.TestSession
 import joel.scripturememory.model.Verse
 import joel.scripturememory.model.displayState
@@ -187,7 +192,7 @@ fun TestSessionScreen(
         }
     }
 
-    Box(
+    BoxWithConstraints(
         Modifier
             .fillMaxSize()
             .graphicsLayer {
@@ -197,11 +202,16 @@ fun TestSessionScreen(
             }
             .background(colors.background),
     ) {
+        val keyboard = with(LocalDensity.current) { WindowInsets.ime.getBottom(this).toDp() }
+        val dropsTitle = StudyWindow.dropsTitle((maxHeight - keyboard).value, 0f)
         Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))) {
-            SessionTopBar(state, Modifier.zIndex(1f))
-            Box(Modifier.weight(1f).fillMaxWidth().navigationBarsPadding().imePadding()) {
-                SessionBody(state)
-                UndoToastHost(state.undoToastState) { state.undoToastState = it }
+            if (!dropsTitle) SessionTopBar(state, Modifier.zIndex(1f))
+            Row(Modifier.weight(1f).fillMaxWidth().then(if (dropsTitle) Modifier.statusBarsPadding() else Modifier)) {
+                if (dropsTitle) SessionRail(state)
+                Box(Modifier.weight(1f).fillMaxHeight().navigationBarsPadding().imePadding()) {
+                    SessionBody(state, showsPosition = dropsTitle)
+                    UndoToastHost(state.undoToastState) { state.undoToastState = it }
+                }
             }
         }
         SpeechErrorAlert(speech) { state.focusInput() }
@@ -234,27 +244,72 @@ private fun SessionTopBar(state: TestSessionState, modifier: Modifier) {
         },
         actions = {
             if (state.isEditing) {
-                ChromeGroup {
-                    Box(
-                        Modifier
-                            .size(44.dp)
-                            .semantics { contentDescription = "Hide Keyboard" }
-                            .pressable(pressedScale = 0.9f, onClick = state::hideKeyboard),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(R.drawable.ic_keyboard, size = 19.dp, tint = AppTheme.colors.label)
-                            Icon(R.drawable.ic_caret_down, Modifier.offset(y = (-2).dp), size = 8.dp, tint = AppTheme.colors.label)
-                        }
-                    }
-                }
+                ChromeGroup { HideKeyboardButton(state) }
             }
         },
     )
 }
 
 @Composable
-private fun SessionBody(state: TestSessionState) {
+private fun SessionRail(state: TestSessionState) {
+    Column(
+        Modifier.padding(start = 8.dp, top = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        ChromeGroup {
+            ChromeGroupButton(R.drawable.ic_x, "Close", onClick = state::close)
+        }
+        if (state.isReview) {
+            ChromeGroup {
+                ChromeGroupButton(
+                    R.drawable.ic_arrow_u_up_left,
+                    "Undo Last Rating",
+                    enabled = state.vm.gradedOrder.isNotEmpty(),
+                    onClick = state::undoLastGrade,
+                )
+            }
+        }
+        if (state.isEditing) {
+            ChromeGroup { HideKeyboardButton(state) }
+        }
+    }
+}
+
+@Composable
+private fun HideKeyboardButton(state: TestSessionState) {
+    Box(
+        Modifier
+            .size(44.dp)
+            .semantics { contentDescription = "Hide Keyboard" }
+            .pressable(pressedScale = 0.9f, onClick = state::hideKeyboard),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(R.drawable.ic_keyboard, size = 19.dp, tint = AppTheme.colors.label)
+            Icon(R.drawable.ic_caret_down, Modifier.offset(y = (-2).dp), size = 8.dp, tint = AppTheme.colors.label)
+        }
+    }
+}
+
+@Composable
+private fun PositionLabel(state: TestSessionState, modifier: Modifier) {
+    val colors = AppTheme.colors
+    Text(
+        state.positionLabel,
+        modifier
+            .padding(8.dp)
+            .clip(RoundedCornerShape(percent = 50))
+            .background(colors.background.copy(alpha = 0.82f))
+            .padding(horizontal = 8.dp, vertical = 4.dp)
+            .semantics { contentDescription = "${state.sessionTitle}, ${state.positionLabel}" },
+        style = AppType.caption,
+        color = colors.secondaryLabel,
+        maxLines = 1,
+    )
+}
+
+@Composable
+private fun SessionBody(state: TestSessionState, showsPosition: Boolean) {
     val vm = state.vm
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val columnWidth = min(maxWidth, AppLayout.studyColumnWidth)
@@ -292,6 +347,7 @@ private fun SessionBody(state: TestSessionState) {
                         CardStack(state)
                         PeekLayer(state, cardWidth, cardH)
                     }
+                    if (showsPosition) PositionLabel(state, Modifier.align(Alignment.TopEnd))
                 }
             }
 

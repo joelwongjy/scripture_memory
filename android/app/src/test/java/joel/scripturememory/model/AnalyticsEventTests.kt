@@ -135,9 +135,9 @@ class AnalyticsEventTests {
     }
 
     @Test
-    fun closingAPackSaysHowManyVersesWereCovered() {
+    fun closingAPackSaysHowManyCardsWereFlipped() {
         val event = AnalyticsEvent.PackClosed(PackCloseMethod.closeButton, 12.0, 3)
-        assertEquals("2-5", event.parameters["covers"])
-        assertEquals("0", AnalyticsEvent.PackClosed(PackCloseMethod.closeButton, 12.0, 0).parameters["covers"])
+        assertEquals("2-5", event.parameters["flips"])
+        assertEquals("0", AnalyticsEvent.PackClosed(PackCloseMethod.closeButton, 12.0, 0).parameters["flips"])
     }
 }

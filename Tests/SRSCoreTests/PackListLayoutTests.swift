@@ -73,6 +73,24 @@ final class PackListLayoutTests: XCTestCase {
         XCTAssertNil(PackListLayout(width: 408, spacing: 16).pouchWidthLimit)
     }
 
+    func testALiftedCardGrowsOutOfAColumnWithoutFillingTheScreen() {
+        let open = PackListLayout.liftedWidth(listWidth: 310, area: CGSize(width: 669, height: 860),
+                                              aspect: 1.62, margin: 16)
+        XCTAssertEqual(open, 420)
+    }
+
+    func testALiftedCardKeepsThePhoneWidth() {
+        let phone = PackListLayout.liftedWidth(listWidth: 402, area: CGSize(width: 434, height: 800),
+                                               aspect: 1.62, margin: 16)
+        XCTAssertEqual(phone, 402)
+    }
+
+    func testALiftedCardFitsAShortWindow() {
+        let short = PackListLayout.liftedWidth(listWidth: 269, area: CGSize(width: 576, height: 200),
+                                               aspect: 1.62, margin: 16)
+        XCTAssertEqual(short, 168 * 1.62, accuracy: 0.001)
+    }
+
     func testCardCentresSitEitherSideOfTheMiddle() {
         let layout = PackListLayout(width: 637, spacing: 16)
         XCTAssertEqual(layout.centerOffset(ofCard: 0), -163.25)

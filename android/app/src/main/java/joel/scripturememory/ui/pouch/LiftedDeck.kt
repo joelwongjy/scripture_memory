@@ -17,13 +17,14 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
+import joel.scripturememory.model.PackListLayout
 import joel.scripturememory.ui.packs.ShadowRadiusScale
 import joel.scripturememory.ui.theme.AppTheme
 import joel.scripturememory.ui.theme.PouchInk
+import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 
-private const val reach = 3
 private val paperShape = RoundedCornerShape(2.dp)
 
 @Composable
@@ -36,6 +37,9 @@ internal fun LiftedDeck(
     listWidth: Dp,
     listHeight: Dp,
     listPitch: Float,
+    columnPitch: Float,
+    layout: PackListLayout,
+    frontCard: Int,
     around: (Int) -> PouchCard,
     edges: Int,
     drift: () -> Float,
@@ -48,7 +52,9 @@ internal fun LiftedDeck(
     val startScale = pocketWidth / listWidth.value
 
     fun scale() = startScale + (1f - startScale) * lift()
-    fun gap() = listPitch / max(scale(), 0.01f) * spread()
+    fun down() = listPitch / max(scale(), 0.01f) * spread()
+    fun across() = columnPitch / max(scale(), 0.01f) * spread()
+    val reach = 3 * layout.columns
 
     Box(
         modifier
@@ -92,13 +98,25 @@ internal fun LiftedDeck(
             }
         }
         for (k in reach downTo 1) {
-            DeckCard(around(k), { gap() * k }, { 1f }, spread, listWidth, listHeight, face)
+            val below = layout.offset(frontCard, k)
+            val above = layout.offset(frontCard, -k)
+            DeckCard(
+                around(k),
+                { across() * below.first },
+                { down() * below.second },
+                { 1f },
+                spread,
+                listWidth,
+                listHeight,
+                face,
+            )
             DeckCard(
                 around(-k),
-                { -gap() * k },
+                { across() * above.first },
+                { down() * above.second },
                 {
                     val s = spread()
-                    if (s > 0f) min(1f, max(0f, s * 2f - (k - 1) * 0.5f)) else 0f
+                    if (s > 0f) min(1f, max(0f, s * 2f - (abs(above.second) - 1) * 0.5f)) else 0f
                 },
                 spread,
                 listWidth,
@@ -106,13 +124,14 @@ internal fun LiftedDeck(
                 face,
             )
         }
-        DeckCard(around(0), { 0f }, { 1f }, spread, listWidth, listHeight, face)
+        DeckCard(around(0), { 0f }, { 0f }, { 1f }, spread, listWidth, listHeight, face)
     }
 }
 
 @Composable
 private fun DeckCard(
     card: PouchCard,
+    offsetX: () -> Float,
     offsetY: () -> Float,
     opacity: () -> Float,
     spread: () -> Float,
@@ -125,6 +144,7 @@ private fun DeckCard(
         Modifier
             .size(width, height)
             .graphicsLayer {
+                translationX = offsetX()
                 translationY = offsetY()
                 alpha = opacity()
             }

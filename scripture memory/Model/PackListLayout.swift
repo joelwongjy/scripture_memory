@@ -4,6 +4,7 @@ struct PackListLayout: Equatable {
     static let twoColumnWidth: CGFloat = 540
     static let threeColumnWidth: CGFloat = 960
     static let pouchCardShare: CGFloat = 0.86
+    static let liftedCardWidth: CGFloat = 420
 
     let columns: Int
     let cardWidth: CGFloat
@@ -13,6 +14,11 @@ struct PackListLayout: Equatable {
         columns = Self.columns(forWidth: width)
         self.spacing = spacing
         cardWidth = (width - spacing * CGFloat(columns - 1)) / CGFloat(columns)
+    }
+
+    static func liftedWidth(listWidth: CGFloat, area: CGSize, aspect: CGFloat, margin: CGFloat) -> CGFloat {
+        let fitting = min(area.width - 2 * margin, (area.height - 2 * margin) * aspect)
+        return min(fitting, max(listWidth, liftedCardWidth))
     }
 
     static func columns(forWidth width: CGFloat) -> Int {
