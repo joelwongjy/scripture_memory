@@ -14,6 +14,8 @@ struct TestSession: Identifiable {
     var kind:  SessionKind = .custom
     /// 1 for the review itself; 2 and on for another look at cards just missed.
     var round = 1
+    /// The card it opens on.
+    var startIndex = 0
 }
 
 extension TestSession {
@@ -24,7 +26,7 @@ extension TestSession {
 
     static func practice(_ verses: [Verse], from start: Int) -> TestSession? {
         guard verses.indices.contains(start) else { return nil }
-        return TestSession(verses: Array(verses[start...]), kind: .pack)
+        return TestSession(verses: verses, kind: .pack, startIndex: start)
     }
 
     /// Today's review across `activePacks`, or `nil` when nothing is due.

@@ -54,7 +54,7 @@ internal class TestSessionState(
     private val showKeyboard: () -> Unit,
     private val dropFocus: () -> Unit,
 ) {
-    val vm = TestSessionViewModel(session.verses, session.kind)
+    val vm = TestSessionViewModel(session.verses, session.kind, session.startIndex)
 
     var onSessionEnded: () -> Unit = {}
     var onRoundEnded: ((List<SRSGrade>, List<Verse>) -> Unit)? = null

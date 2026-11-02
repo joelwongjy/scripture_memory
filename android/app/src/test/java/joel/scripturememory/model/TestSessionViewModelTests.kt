@@ -428,4 +428,19 @@ class TestSessionViewModelTests {
         m.grade(SRSGrade.good)
         assertTrue(m.allCardsGraded)
     }
+
+    @Test
+    fun testPracticeHoldsTheWholePackAndOpensOnTheChosenCard() {
+        val session = TestSession.practice(verses, 1)!!
+        assertEquals(verses, session.verses)
+        assertEquals(1, session.startIndex)
+        assertEquals(v2, TestSessionViewModel(session.verses, session.kind, session.startIndex).currentVerse)
+    }
+
+    @Test
+    fun testPracticeSavesNoProgress() {
+        val session = TestSession.practice(verses, 1)!!
+        TestSessionViewModel(session.verses, session.kind, session.startIndex).saveProgress()
+        assertEquals(0, TestSessionViewModel(session.verses, session.kind).currentIndex)
+    }
 }

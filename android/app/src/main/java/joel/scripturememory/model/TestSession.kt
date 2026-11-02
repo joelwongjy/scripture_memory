@@ -8,6 +8,7 @@ data class TestSession(
     val verses: List<Verse>,
     val kind: SessionKind = SessionKind.custom,
     val round: Int = 1,
+    val startIndex: Int = 0,
     val id: UUID = UUID.randomUUID(),
 ) {
     companion object {
@@ -15,7 +16,7 @@ data class TestSession(
 
         fun practice(verses: List<Verse>, start: Int): TestSession? {
             if (start !in verses.indices) return null
-            return TestSession(verses.drop(start), SessionKind.pack)
+            return TestSession(verses, SessionKind.pack, startIndex = start)
         }
 
         fun dailyReview(
