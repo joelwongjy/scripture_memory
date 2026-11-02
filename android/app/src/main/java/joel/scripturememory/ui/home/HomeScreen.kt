@@ -1,0 +1,182 @@
+package joel.scripturememory.ui.home
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import joel.scripturememory.R
+import joel.scripturememory.model.AnalyticsEvent
+import joel.scripturememory.model.AnalyticsScreen
+import joel.scripturememory.model.AppDefaults
+import joel.scripturememory.model.BibleVersion
+import joel.scripturememory.model.Catalogue
+import joel.scripturememory.model.HomeVerseStartMode
+import joel.scripturememory.model.LearningStore
+import joel.scripturememory.model.Pack
+import joel.scripturememory.model.PackPreferencesStore
+import joel.scripturememory.model.PackSource
+import joel.scripturememory.model.SRSStore
+import joel.scripturememory.model.TestSession
+import joel.scripturememory.model.Verse
+import joel.scripturememory.system.Analytics
+import joel.scripturememory.ui.components.Covers
+import joel.scripturememory.ui.components.Icon
+import joel.scripturememory.ui.components.LargeTitleColumn
+import joel.scripturememory.ui.components.LocalCovers
+import joel.scripturememory.ui.components.LocalNavigator
+import joel.scripturememory.ui.components.Text
+import joel.scripturememory.ui.components.TrackScreen
+import joel.scripturememory.ui.components.dimOnPress
+import joel.scripturememory.ui.pouch.PouchScreen
+import joel.scripturememory.ui.study.DailyReviewScreen
+import joel.scripturememory.ui.study.TestSessionScreen
+import joel.scripturememory.ui.theme.AppLayout
+import joel.scripturememory.ui.theme.AppTheme
+import joel.scripturememory.ui.theme.AppType
+
+private fun savedStartMode(): HomeVerseStartMode {
+    val raw = AppDefaults.standard.getString(HomeVerseStartMode.storageKey)
+    return HomeVerseStartMode.entries.firstOrNull { it.rawValue == raw } ?: HomeVerseStartMode.read
+}
+
+private fun spot(packs: List<Pack>, verse: Verse, isPinned: Boolean): LearningSpot? {
+    val pack = packs.firstOrNull { it.name == verse.packName } ?: return null
+    val index = pack.verses.indexOfFirst { it.srsKey == verse.srsKey }
+    if (index < 0) return null
+    return LearningSpot(verse, pack, index, isPinned)
+}
+
+private fun presentReview(covers: Covers, session: TestSession) {
+    covers.present("review-${session.id}") { dismiss -> DailyReviewScreen(session, onFinished = dismiss) }
+}
+
+private fun openLearning(covers: Covers, spot: LearningSpot, startMode: HomeVerseStartMode) {
+    if (startMode.opensInReview) {
+        val session = TestSession.practice(spot.pack.verses, spot.indexInPack) ?: return
+        covers.present("practice-${session.id}") { dismiss -> TestSessionScreen(session, onSessionEnded = dismiss) }
+    } else {
+        Analytics.log(AnalyticsEvent.PackOpened(spot.pack.name, PackSource.homeCard))
+        covers.present("pack-${spot.pack.id}-${spot.indexInPack}") { dismiss ->
+            PouchScreen(spot.pack, spot.indexInPack, onClosed = dismiss)
+        }
+    }
+}
+
+@Composable
+fun HomeScreen() {
+    TrackScreen(AnalyticsScreen.home)
+    val navigator = LocalNavigator.current
+    val covers = LocalCovers.current
+    val store = SRSStore.shared
+    val learning = LearningStore.shared
+    val packs = PackPreferencesStore.shared.visible(BibleVersion.saved().packs)
+    val activePacks = store.activePacks(packs)
+    val ordered = Catalogue.verses(packs)
+    val startMode = savedStartMode()
+    var showsPinPicker by rememberSaveable { mutableStateOf(false) }
+
+    val featured = learning.displayed(ordered)?.let { spot(packs, it.verse, it.isPinned) }
+    val current = learning.current(ordered)?.let { spot(packs, it.verse, false) }
+
+    LargeTitleColumn("Home") {
+        HomeStreakCard { navigator.push("streak") { StreakScreen() } }
+        Column(Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
+                Text(
+                    "Daily Review",
+                    Modifier.weight(1f).alignByBaseline().semantics { heading() },
+                    style = AppType.title3.copy(fontWeight = FontWeight.Bold),
+                    color = AppTheme.colors.label,
+                    maxLines = 2,
+                )
+                PacksReviewLink(
+                    active = activePacks.size,
+                    total = packs.size,
+                    modifier = Modifier.alignByBaseline(),
+                ) { navigator.push("packsReview") { PacksReviewScreen() } }
+            }
+            DailyReviewCard(activePacks) { presentReview(covers, it) }
+        }
+        LearningSection(
+            featured = featured,
+            cursor = current,
+            hasVerses = ordered.isNotEmpty(),
+            startMode = startMode,
+            onOpen = { spot -> openLearning(covers, spot, startMode) },
+            onChangePin = { showsPinPicker = true },
+        )
+    }
+
+    if (showsPinPicker) {
+        PinVersePicker(
+            packs = packs,
+            pinnedKey = learning.pinnedKey,
+            onPick = learning::pin,
+            onUnpin = learning::unpin,
+            onDismiss = { showsPinPicker = false },
+        )
+    }
+}
+
+@Composable
+private fun LearningSection(
+    featured: LearningSpot?,
+    cursor: LearningSpot?,
+    hasVerses: Boolean,
+    startMode: HomeVerseStartMode,
+    onOpen: (LearningSpot) -> Unit,
+    onChangePin: () -> Unit,
+) {
+    val learning = LearningStore.shared
+    Column(
+        Modifier.fillMaxWidth().padding(top = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(AppLayout.spacing),
+    ) {
+        if (featured != null) {
+            ContinueLearningCard(
+                spot = featured,
+                startMode = startMode,
+                onOpen = { onOpen(featured) },
+                onChangePin = onChangePin,
+                onUnpin = learning::unpin,
+            )
+            if (featured.isPinned && !learning.isCurrent(featured.verse) && cursor != null) {
+                GoToCurrentVerseCard(cursor.verse) { onOpen(cursor) }
+            }
+        } else if (hasVerses) {
+            AllLearntCard()
+        }
+    }
+}
+
+@Composable
+private fun PacksReviewLink(active: Int, total: Int, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    val colors = AppTheme.colors
+    val label = if (active == total) "All $total packs" else "$active of $total packs"
+    Row(
+        modifier
+            .verticalOverhang(12.dp)
+            .semantics(mergeDescendants = true) { contentDescription = "Packs in review, $label" }
+            .dimOnPress(onClick = onClick)
+            .padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Text(label, style = AppType.callout, color = colors.accent, maxLines = 1)
+        Icon(R.drawable.ic_caret_right, size = 12.dp, tint = colors.accent)
+    }
+}

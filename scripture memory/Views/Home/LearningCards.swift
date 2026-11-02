@@ -23,19 +23,9 @@ struct ContinueLearningCard: View {
     var body: some View {
         let v = spot.verse
         VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                if spot.isPinned {
-                    Image(systemName: "pin.fill")
-                        .font(.system(size: 15, weight: .bold))
-                }
-                Text(spot.isPinned ? "Pinned" : "Continue Learning")
-                    .font(.title3.weight(.bold))
-                    .accessibilityAddTraits(.isHeader)
-                Spacer()
-                Text("\(spot.indexInPack + 1) of \(spot.pack.verses.count)")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                pinButton
+            ViewThatFits(in: .horizontal) {
+                heading(showsPosition: true)
+                heading(showsPosition: false)
             }
             .padding(.horizontal, 20)
 
@@ -63,6 +53,29 @@ struct ContinueLearningCard: View {
         }
         .frame(maxWidth: 600)
         .frame(maxWidth: .infinity)
+    }
+
+    private func heading(showsPosition: Bool) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
+            if spot.isPinned {
+                Image(systemName: "pin.fill")
+                    .font(.system(size: 15, weight: .bold))
+            }
+            Text(spot.isPinned ? "Pinned" : "Continue Learning")
+                .font(.title3.weight(.bold))
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
+                .accessibilityAddTraits(.isHeader)
+            Spacer()
+            if showsPosition {
+                Text("\(spot.indexInPack + 1) of \(spot.pack.verses.count)")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+            }
+            pinButton
+        }
     }
 
     @ViewBuilder

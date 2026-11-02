@@ -1,0 +1,10 @@
+.gradle/
+build/
+local.properties
+*.iml
+.idea/
+.kotlin/
+*.jks
+*.keystore
+keystore.properties
+play-service-account.json

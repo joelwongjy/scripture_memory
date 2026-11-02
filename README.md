@@ -36,6 +36,17 @@ open scripture_memory/"Scripture Memory.xcodeproj"
 
 Run the **Scripture Memory** scheme. To run on a device, set your own team under *Signing & Capabilities*. `swift test` runs the scheduling and diffing tests without Xcode.
 
+## Android
+
+The Android app is native Kotlin and Jetpack Compose, in `android/`. It has the same features, scheduling and verses as iOS. Progress backs up with your Google account instead of iCloud. It needs JDK 17 and the Android SDK.
+
+```bash
+cd android
+./gradlew :app:assembleDebug
+```
+
+`android/PORTING.md` explains how the two apps stay in step, and `RELEASING.md` covers shipping both.
+
 ## License
 
-The code is MIT ([LICENSE](LICENSE)). Scripture text (NIV) and The Navigators' material belong to their copyright holders. This is an independent project, not affiliated with or endorsed by The Navigators.
+The code is MIT ([LICENSE](LICENSE)). The Android app bundles Inter, Belleza, Quattrocento Sans and Tinos under their open font licences, and Phosphor icons under MIT. Scripture text (NIV) and The Navigators' material belong to their copyright holders. This is an independent project, not affiliated with or endorsed by The Navigators.

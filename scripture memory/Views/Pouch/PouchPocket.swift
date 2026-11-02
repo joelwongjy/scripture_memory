@@ -20,8 +20,8 @@ struct PouchMetrics {
     let notchDepth: CGFloat
     let corner: CGFloat
 
-    init(fitting size: CGSize) {
-        var width = min(size.width - 2 * AppLayout.screenMargin, 560)
+    init(fitting size: CGSize, widthLimit: CGFloat? = nil) {
+        var width = min(size.width - 2 * AppLayout.screenMargin, widthLimit ?? 560, 560)
         var m = PouchMetrics(width: width)
         if 2 * m.halfHeight > size.height {
             width *= size.height / (2 * m.halfHeight)
@@ -35,7 +35,7 @@ struct PouchMetrics {
         let rim    = max(5, width * 0.028)
         pouchWidth = width
         self.rim   = rim
-        cardHeight = width * 0.86 / Self.cardAspect
+        cardHeight = width * PackListLayout.pouchCardShare / Self.cardAspect
         cardWidth  = cardHeight * Self.cardAspect
         foldGap    = cardHeight * foldRatio
         stackRoom  = cardHeight * stackRatio
