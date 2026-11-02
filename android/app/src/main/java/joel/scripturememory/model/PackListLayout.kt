@@ -1,5 +1,6 @@
 package joel.scripturememory.model
 
+import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 
@@ -32,11 +33,27 @@ class PackListLayout(width: Float, val spacing: Float) {
         const val threeColumnWidth = 960f
         const val pouchCardShare = 0.86f
         const val liftedCardWidth = 420f
+        const val packsOnHomeHeight = 760f
+        const val cardPullLimit = 120f
 
         fun columns(width: Float): Int = when {
             width >= threeColumnWidth -> 3
             width >= twoColumnWidth -> 2
             else -> 1
+        }
+
+        fun showsPacksOnHome(width: Float, height: Float): Boolean =
+            columns(width) > 1 && height >= packsOnHomeHeight
+
+        fun positionLabel(card: Int, count: Int, columns: Int): String {
+            val first = card / columns * columns
+            val last = min(first + columns, count)
+            return if (last > first + 1) "Cards ${first + 1}–$last of $count" else "Card ${first + 1} of $count"
+        }
+
+        fun cardPull(travel: Float): Float {
+            val pulled = cardPullLimit * (1 - 1 / (abs(travel) * 0.55f / cardPullLimit + 1))
+            return if (travel < 0) -pulled else pulled
         }
 
         fun liftedWidth(listWidth: Float, areaWidth: Float, areaHeight: Float, aspect: Float, margin: Float): Float {

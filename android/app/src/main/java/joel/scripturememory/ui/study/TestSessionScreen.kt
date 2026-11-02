@@ -51,6 +51,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -124,6 +125,7 @@ fun TestSessionScreen(
     onSessionEnded: () -> Unit,
     onRoundEnded: ((grades: List<SRSGrade>, missed: List<Verse>) -> Unit)? = null,
     onClose: (() -> Unit)? = null,
+    onCardShown: ((Verse) -> Unit)? = null,
 ) {
     val colors = AppTheme.colors
     val scope = rememberCoroutineScope()
@@ -131,6 +133,7 @@ fun TestSessionScreen(
     val keyboard = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
     val close = rememberSessionClose(onClose)
+    val cardShown by rememberUpdatedState(onCardShown)
     val state = remember(session.id) {
         TestSessionState(
             session = session,
@@ -173,7 +176,10 @@ fun TestSessionScreen(
         state.focusInput()
     }
     LaunchedEffect(state) {
-        snapshotFlow { vm.currentIndex }.drop(1).collect { state.indexChanged() }
+        snapshotFlow { vm.currentIndex }.drop(1).collect {
+            vm.currentVerse?.let { verse -> cardShown?.invoke(verse) }
+            state.indexChanged()
+        }
     }
     LaunchedEffect(state) {
         snapshotFlow { speech.transcript }.drop(1).collect(state::transcriptChanged)

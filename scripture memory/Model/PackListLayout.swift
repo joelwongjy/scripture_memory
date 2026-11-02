@@ -5,6 +5,8 @@ struct PackListLayout: Equatable {
     static let threeColumnWidth: CGFloat = 960
     static let pouchCardShare: CGFloat = 0.86
     static let liftedCardWidth: CGFloat = 420
+    static let packsOnHomeHeight: CGFloat = 760
+    static let cardPullLimit: CGFloat = 120
 
     let columns: Int
     let cardWidth: CGFloat
@@ -14,6 +16,22 @@ struct PackListLayout: Equatable {
         columns = Self.columns(forWidth: width)
         self.spacing = spacing
         cardWidth = (width - spacing * CGFloat(columns - 1)) / CGFloat(columns)
+    }
+
+    static func showsPacksOnHome(width: CGFloat, height: CGFloat) -> Bool {
+        columns(forWidth: width) > 1 && height >= packsOnHomeHeight
+    }
+
+    static func cardPull(_ travel: CGFloat) -> CGFloat {
+        let limit = cardPullLimit
+        let pulled = limit * (1 - 1 / (abs(travel) * 0.55 / limit + 1))
+        return travel < 0 ? -pulled : pulled
+    }
+
+    static func positionLabel(card: Int, count: Int, columns: Int) -> String {
+        let first = card / columns * columns
+        let last = min(first + columns, count)
+        return last > first + 1 ? "Cards \(first + 1)–\(last) of \(count)" : "Card \(first + 1) of \(count)"
     }
 
     static func liftedWidth(listWidth: CGFloat, area: CGSize, aspect: CGFloat, margin: CGFloat) -> CGFloat {

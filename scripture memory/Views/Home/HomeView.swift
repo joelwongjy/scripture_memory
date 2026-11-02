@@ -9,10 +9,11 @@ struct HomeView: View {
     @ObservedObject private var store     = SRSStore.shared
     @ObservedObject private var packPrefs = PackPreferencesStore.shared
     @ObservedObject private var learning  = LearningStore.shared
+    @ObservedObject private var favorites = FavoritesStore.shared
 
     @State private var cover: ActiveCover?
     @State private var showPinPicker = false
-    @State private var windowWidth: CGFloat = 0
+    @State private var windowSize: CGSize = .zero
 
     /// One full-screen presentation at a time (two `.fullScreenCover`s on one
     /// view conflict): the daily review, a pack's practice, or a pack.
@@ -60,7 +61,7 @@ struct HomeView: View {
         MountAfterFirstFrame {
             ScrollView { dashboard }
         }
-        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { windowWidth = $0 }
+        .onGeometryChange(for: CGSize.self) { $0.size } action: { windowSize = $0 }
         .defaultScrollAnchor(.top)
         .background(Color(.systemGroupedBackground))
         .navigationTitle("Home")
@@ -80,7 +81,44 @@ struct HomeView: View {
     }
 
     private var isSideBySide: Bool {
-        PackListLayout.columns(forWidth: windowWidth - 2 * AppLayout.screenMargin) > 1
+        PackListLayout.columns(forWidth: windowSize.width - 2 * AppLayout.screenMargin) > 1
+    }
+
+    private var showsPacks: Bool {
+        PackListLayout.showsPacksOnHome(width: windowSize.width - 2 * AppLayout.screenMargin,
+                                        height: windowSize.height)
+    }
+
+    private var shelfPacks: [Pack] {
+        (favorites.pack(in: packs).map { [$0] } ?? []) + packs
+    }
+
+    private var packShelf: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Packs")
+                .font(.title3.weight(.bold))
+                .padding(.horizontal, 20)
+                .accessibilityAddTraits(.isHeader)
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 160), spacing: AppLayout.spacing)],
+                      spacing: AppLayout.spacing) {
+                ForEach(shelfPacks) { pack in
+                    Button { openFromShelf(pack) } label: {
+                        PackCover(pack: pack, isCurrentPack: pack.name == learning.currentVerse?.packName)
+                    }
+                    .buttonStyle(CardButtonStyle())
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel("\(pack.name), \(pack.verses.count) cards")
+                    .accessibilityAddTraits(.isButton)
+                }
+            }
+        }
+        .padding(.top, 8)
+    }
+
+    private func openFromShelf(_ pack: Pack) {
+        guard !pack.verses.isEmpty else { return }
+        Analytics.log(.packOpened(pack: pack.name, from: .homeShelf))
+        cover = .pack(pack, index: PackPositions.startIndex(for: pack, currentKey: learning.currentKey))
     }
 
     private var dashboard: some View {
@@ -101,6 +139,7 @@ struct HomeView: View {
                 learningCards
                     .padding(.top, 8)
             }
+            if showsPacks { packShelf }
         }
         .padding(.horizontal, AppLayout.screenMargin)
         .padding(.top, 8)

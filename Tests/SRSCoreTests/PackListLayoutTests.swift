@@ -91,6 +91,37 @@ final class PackListLayoutTests: XCTestCase {
         XCTAssertEqual(short, 168 * 1.62, accuracy: 0.001)
     }
 
+    func testACardFollowsTheFingerAtFirstThenResists() {
+        XCTAssertEqual(PackListLayout.cardPull(0), 0)
+        XCTAssertEqual(PackListLayout.cardPull(10), 5.3, accuracy: 0.1)
+        XCTAssertLessThan(PackListLayout.cardPull(400) - PackListLayout.cardPull(200),
+                          PackListLayout.cardPull(200) - PackListLayout.cardPull(0))
+        XCTAssertLessThan(PackListLayout.cardPull(10_000), PackListLayout.cardPullLimit)
+    }
+
+    func testACardResistsTheSameBothWays() {
+        XCTAssertEqual(PackListLayout.cardPull(-90), -PackListLayout.cardPull(90))
+    }
+
+    func testOneColumnCountsOneCard() {
+        XCTAssertEqual(PackListLayout.positionLabel(card: 6, count: 26, columns: 1), "Card 7 of 26")
+    }
+
+    func testColumnsCountTheWholeRow() {
+        XCTAssertEqual(PackListLayout.positionLabel(card: 6, count: 26, columns: 2), "Cards 7–8 of 26")
+        XCTAssertEqual(PackListLayout.positionLabel(card: 7, count: 26, columns: 2), "Cards 7–8 of 26")
+    }
+
+    func testALastRowWithOneCardCountsOneCard() {
+        XCTAssertEqual(PackListLayout.positionLabel(card: 24, count: 25, columns: 2), "Card 25 of 25")
+    }
+
+    func testPacksShowOnHomeOnlyWhenTheWindowIsWideAndTall() {
+        XCTAssertTrue(PackListLayout.showsPacksOnHome(width: 637, height: 860))
+        XCTAssertFalse(PackListLayout.showsPacksOnHome(width: 576, height: 466))
+        XCTAssertFalse(PackListLayout.showsPacksOnHome(width: 408, height: 860))
+    }
+
     func testCardCentresSitEitherSideOfTheMiddle() {
         let layout = PackListLayout(width: 637, spacing: 16)
         XCTAssertEqual(layout.centerOffset(ofCard: 0), -163.25)

@@ -1,8 +1,11 @@
 package joel.scripturememory.ui.home
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
@@ -13,8 +16,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -25,10 +32,12 @@ import joel.scripturememory.model.AnalyticsScreen
 import joel.scripturememory.model.AppDefaults
 import joel.scripturememory.model.BibleVersion
 import joel.scripturememory.model.Catalogue
+import joel.scripturememory.model.FavoritesStore
 import joel.scripturememory.model.HomeVerseStartMode
 import joel.scripturememory.model.LearningStore
 import joel.scripturememory.model.Pack
 import joel.scripturememory.model.PackListLayout
+import joel.scripturememory.model.PackPositions
 import joel.scripturememory.model.PackPreferencesStore
 import joel.scripturememory.model.PackSource
 import joel.scripturememory.model.SRSStore
@@ -43,6 +52,9 @@ import joel.scripturememory.ui.components.LocalNavigator
 import joel.scripturememory.ui.components.Text
 import joel.scripturememory.ui.components.TrackScreen
 import joel.scripturememory.ui.components.dimOnPress
+import joel.scripturememory.ui.components.pressable
+import joel.scripturememory.ui.packs.PackCover
+import joel.scripturememory.ui.packs.adaptiveColumns
 import joel.scripturememory.ui.pouch.PouchScreen
 import joel.scripturememory.ui.study.DailyReviewScreen
 import joel.scripturememory.ui.study.TestSessionScreen
@@ -78,6 +90,56 @@ private fun openLearning(covers: Covers, spot: LearningSpot, startMode: HomeVers
     }
 }
 
+private fun openFromShelf(covers: Covers, pack: Pack, currentKey: String?) {
+    if (pack.verses.isEmpty()) return
+    val index = PackPositions.startIndex(pack, currentKey)
+    Analytics.log(AnalyticsEvent.PackOpened(pack.name, PackSource.homeShelf))
+    covers.present("pack-${pack.id}-$index") { dismiss ->
+        PouchScreen(pack, index, onClosed = dismiss)
+    }
+}
+
+@Composable
+private fun PackShelf(packs: List<Pack>, onOpen: (Pack) -> Unit) {
+    val currentPackName = LearningStore.shared.currentVerse?.packName
+    val tiles = listOfNotNull(FavoritesStore.shared.pack(packs)) + packs
+    Column(Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            "Packs",
+            Modifier.padding(horizontal = 20.dp).semantics { heading() },
+            style = AppType.title3.copy(fontWeight = FontWeight.Bold),
+            color = AppTheme.colors.label,
+        )
+        BoxWithConstraints(Modifier.fillMaxWidth()) {
+            val columns = adaptiveColumns(maxWidth, 160.dp, AppLayout.spacing)
+            Column(verticalArrangement = Arrangement.spacedBy(AppLayout.spacing)) {
+                tiles.chunked(columns).forEach { row ->
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AppLayout.spacing)) {
+                        row.forEach { pack ->
+                            Box(
+                                Modifier
+                                    .weight(1f)
+                                    .clearAndSetSemantics {
+                                        contentDescription = "${pack.name}, ${pack.verses.size} cards"
+                                        role = Role.Button
+                                        onClick {
+                                            onOpen(pack)
+                                            true
+                                        }
+                                    }
+                                    .pressable { onOpen(pack) },
+                            ) {
+                                PackCover(pack, isCurrentPack = pack.name == currentPackName)
+                            }
+                        }
+                        repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
+                    }
+                }
+            }
+        }
+    }
+}
+
 @Composable
 fun HomeScreen() {
     TrackScreen(AnalyticsScreen.home)
@@ -95,7 +157,10 @@ fun HomeScreen() {
     val current = learning.current(ordered)?.let { spot(packs, it.verse, false) }
 
     val windowWidth = LocalConfiguration.current.screenWidthDp.toFloat()
-    val isSideBySide = PackListLayout.columns(windowWidth - 2 * AppLayout.screenMargin.value) > 1
+    val windowHeight = LocalConfiguration.current.screenHeightDp.toFloat()
+    val contentWidth = windowWidth - 2 * AppLayout.screenMargin.value
+    val isSideBySide = PackListLayout.columns(contentWidth) > 1
+    val showsPacks = PackListLayout.showsPacksOnHome(contentWidth, windowHeight)
 
     val dailyReview: @Composable (Modifier) -> Unit = { modifier ->
         Column(modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -144,6 +209,9 @@ fun HomeScreen() {
         } else {
             dailyReview(Modifier)
             learningSection(Modifier)
+        }
+        if (showsPacks) {
+            PackShelf(packs) { pack -> openFromShelf(covers, pack, learning.currentKey) }
         }
     }
 

@@ -44,11 +44,13 @@ struct PouchView: View {
     /// 1 with the pouch shut on its shelf tile, 0 with it in front of you.
     @State private var flight: CGFloat
     @State private var practice: TestSession?
+    @State private var lastPractised: Verse?
     @State private var lifted: LiftedCard?
     /// 1 with the lifted card in the middle of the screen, 0 in its slot.
     @State private var liftAmount: CGFloat = 0
     /// 0 with the lifted card showing its verse, 180 its reference.
     @State private var liftedAngle: Double = 0
+    @State private var liftedDrag: CGSize = .zero
     @State private var flipCount = 0
     @State private var undoToastState: UndoToastState?
     @AppStorage("pouch.jumpLabelShown.v1") private var jumpLabelShown = false
@@ -60,6 +62,10 @@ struct PouchView: View {
     @Environment(\.scenePhase) private var scenePhase
 
     private static let screenSpace = "pouchScreen"
+    /// A side inset this wide is the closed Duo's rail: the buttons move into it.
+    private static let railWidth: CGFloat = 80
+    private static let cardSwipeDistance: CGFloat = 90
+    private static let cardSwipeFlick: CGFloat = 220
 
     /// How far in from the leading edge a swipe counts as the edge swipe.
     private static let edgeWidth: CGFloat = 28
@@ -90,8 +96,9 @@ struct PouchView: View {
         }
         .background(Color(.systemGroupedBackground).opacity(Double(1 - flight)).ignoresSafeArea())
         .undoToast($undoToastState)
-        .fullScreenCover(item: $practice) { session in
-            TestSessionView(session: session, onSessionEnded: { practice = nil })
+        .fullScreenCover(item: $practice, onDismiss: returnToPractisedCard) { session in
+            TestSessionView(session: session, onSessionEnded: { practice = nil },
+                            onCardShown: { lastPractised = $0 })
         }
         .onAppear { appeared() }
         .analyticsScreen(.pack)
@@ -108,13 +115,22 @@ struct PouchView: View {
     // MARK: - Layout
 
     private func pouch(insets: EdgeInsets, safeSize: CGSize) -> some View {
-        ZStack {
+        let columns = PackListLayout.columns(forWidth: safeSize.width - 2 * AppLayout.screenMargin)
+        let hasRail = max(insets.leading, insets.trailing) >= Self.railWidth
+
+        return ZStack {
             VStack(spacing: 0) {
-                topBar
+                topBar(columns: columns, showsButtons: !hasRail)
                 GeometryReader { geo in scene(geo, below: insets.bottom) }
                     .overlay { thumb }
             }
             .padding(insets)
+            .overlay(alignment: insets.leading > insets.trailing ? .leading : .trailing) {
+                if hasRail {
+                    sideButtons
+                        .frame(width: max(insets.leading, insets.trailing))
+                }
+            }
             .blur(radius: 14 * liftAmount)
             .overlay {
                 Color.black.opacity((colorScheme == .dark ? 0.68 : 0.16) * Double(liftAmount))
@@ -124,11 +140,14 @@ struct PouchView: View {
             .accessibilityHidden(lifted != nil)
 
             if let lifted {
-                Color.clear
-                    .contentShape(Rectangle())
-                    .onTapGesture(perform: putCardBack)
-                    .accessibilityHidden(true)
-                liftedCard(lifted, area: CGRect(origin: CGPoint(x: insets.leading, y: insets.top), size: safeSize))
+                ZStack {
+                    Color.clear
+                        .contentShape(Rectangle())
+                        .onTapGesture(perform: putCardBack)
+                        .accessibilityHidden(true)
+                    liftedCard(lifted, area: CGRect(origin: CGPoint(x: insets.leading, y: insets.top), size: safeSize))
+                }
+                .gesture(liftedSwipe)
             }
         }
         .coordinateSpace(name: Self.screenSpace)
@@ -138,7 +157,8 @@ struct PouchView: View {
         let verse = verses[card.index]
         let showsReference = liftedAngle > 90
         return LiftedCardView(verse: verse, isLearnt: learning.isLearnt(verse), source: card.source,
-                              area: area, lift: liftAmount, angle: liftedAngle, onFlip: flipLiftedCard)
+                              area: area, lift: liftAmount, angle: liftedAngle, drag: liftedDrag,
+                              onFlip: flipLiftedCard)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(showsReference ? "\(verse.book) \(verse.reference)"
                                                : "\(verse.title), \(verse.book) \(verse.reference). \(verse.verse)")
@@ -341,43 +361,65 @@ struct PouchView: View {
 
     // MARK: - Pieces
 
-    private var topBar: some View {
+    private func topBar(columns: Int, showsButtons: Bool) -> some View {
         ZStack {
             VStack(spacing: 1) {
                 Text(pack.shortName)
                     .font(.headline)
                     .minimumScaleFactor(0.85)
-                Text([pack.seriesCode, "Card \(index + 1) of \(verses.count)"]
+                Text([pack.seriesCode, PackListLayout.positionLabel(card: index, count: verses.count, columns: columns)]
                         .compactMap { $0 }.joined(separator: " · "))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .monospacedDigit()
             }
             .lineLimit(1)
-            .padding(.horizontal, 108)
+            .padding(.horizontal, showsButtons ? 108 : 0)
             .accessibilityElement(children: .combine)
-            HStack {
-                Button { close(.closeButton) } label: {
-                    Image(systemName: "xmark")
-                        .font(.body.weight(.medium))
-                        .frame(width: 30, height: 30)
+            if showsButtons {
+                HStack {
+                    closeButton
+                    Spacer()
+                    Button { startPractice(from: index) } label: {
+                        Text("Practice")
+                            .fontWeight(.medium)
+                            .frame(height: 30)
+                            .padding(.horizontal, 4)
+                    }
+                    .systemGlassButton()
                 }
-                .accessibilityLabel("Close")
-                .buttonBorderShape(.circle)
-                .systemGlassButton()
-                Spacer()
-                Button { startPractice(from: index) } label: {
-                    Text("Practice")
-                        .fontWeight(.medium)
-                        .frame(height: 30)
-                        .padding(.horizontal, 4)
-                }
-                .systemGlassButton()
             }
         }
         .frame(height: 44)
         .padding(.horizontal, AppLayout.screenMargin)
         .padding(.vertical, 8)
+        .opacity(Double(1 - flight))
+        .disabled(!fanned)
+    }
+
+    private var closeButton: some View {
+        Button { close(.closeButton) } label: {
+            Image(systemName: "xmark")
+                .font(.body.weight(.medium))
+                .frame(width: 30, height: 30)
+        }
+        .accessibilityLabel("Close")
+        .buttonBorderShape(.circle)
+        .systemGlassButton()
+    }
+
+    private var sideButtons: some View {
+        VStack(spacing: 12) {
+            closeButton
+            Button { startPractice(from: index) } label: {
+                Image(systemName: "keyboard")
+                    .font(.body.weight(.medium))
+                    .frame(width: 30, height: 30)
+            }
+            .accessibilityLabel("Practice")
+            .buttonBorderShape(.circle)
+            .systemGlassButton()
+        }
         .opacity(Double(1 - flight))
         .disabled(!fanned)
     }
@@ -644,6 +686,10 @@ struct PouchView: View {
         AppMotion.reduceMotion ? .easeOut(duration: 0.15) : .smooth(duration: 0.24)
     }
 
+    private var cardBounce: Animation {
+        AppMotion.reduceMotion ? .easeOut(duration: 0.15) : .spring(response: 0.32, dampingFraction: 0.62)
+    }
+
     private func liftCard(_ i: Int, from source: CGRect) {
         guard lifted == nil else { return }
         HapticEngine.light()
@@ -655,23 +701,53 @@ struct PouchView: View {
         }
     }
 
+    private var liftedSwipe: some Gesture {
+        DragGesture(minimumDistance: 10)
+            .onChanged { value in
+                liftedDrag = CGSize(width: PackListLayout.cardPull(value.translation.width),
+                                    height: PackListLayout.cardPull(value.translation.height))
+            }
+            .onEnded { value in
+                let flung = hypot(value.predictedEndTranslation.width, value.predictedEndTranslation.height)
+                let moved = hypot(value.translation.width, value.translation.height)
+                if moved > Self.cardSwipeDistance || flung > Self.cardSwipeFlick {
+                    putCardBack(motion: cardBounce)
+                } else {
+                    withAnimation(cardBounce) { liftedDrag = .zero }
+                }
+            }
+    }
+
     private func flipLiftedCard() {
         HapticEngine.light()
         withAnimation(cardMotion) { liftedAngle = liftedAngle > 90 ? 0 : 180 }
     }
 
-    private func putCardBack() {
+    private func putCardBack() { putCardBack(motion: cardMotion) }
+
+    private func putCardBack(motion: Animation) {
         guard lifted != nil, liftAmount == 1 else { return }
-        withAnimation(cardMotion, completionCriteria: .logicallyComplete) {
+        withAnimation(motion, completionCriteria: .logicallyComplete) {
             liftAmount = 0
             liftedAngle = 0
+            liftedDrag = .zero
         } completion: { lifted = nil }
     }
 
     private func dropLiftedCard() {
         lifted = nil
+        liftedDrag = .zero
         liftAmount = 0
         liftedAngle = 0
+    }
+
+    private func returnToPractisedCard() {
+        defer { lastPractised = nil }
+        guard let verse = lastPractised,
+              let i = verses.firstIndex(where: { $0.srsKey == verse.srsKey }) else { return }
+        listScrolled = false
+        index = i
+        withAnimation(AppMotion.movement) { listIndex = i }
     }
 
     private func startPractice(from i: Int) {

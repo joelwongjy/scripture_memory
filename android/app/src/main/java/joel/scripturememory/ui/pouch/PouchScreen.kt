@@ -44,6 +44,7 @@ import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -188,14 +189,35 @@ fun PouchScreen(
     var screenOrigin by remember { mutableStateOf(Offset.Zero) }
     var screenSize by remember { mutableStateOf(IntSize.Zero) }
 
+    var lastPractised by remember { mutableStateOf<Verse?>(null) }
+
+    fun returnToPractisedCard() {
+        practiceOpen = false
+        val verse = lastPractised ?: return
+        lastPractised = null
+        val i = verses.indexOfFirst { it.srsKey == verse.srsKey }
+        if (i < 0) return
+        c.listScrolled = false
+        c.index = i
+        c.scrollTo(i, AppMotion.movement())
+    }
+
     fun startPractice(i: Int) {
         val session = TestSession.practice(verses, i) ?: return
         practiceOpen = true
         covers.present("practice-${session.id}") { dismiss ->
-            TestSessionScreen(session, onSessionEnded = {
-                practiceOpen = false
-                dismiss()
-            })
+            TestSessionScreen(
+                session,
+                onSessionEnded = {
+                    returnToPractisedCard()
+                    dismiss()
+                },
+                onClose = {
+                    returnToPractisedCard()
+                    dismiss()
+                },
+                onCardShown = { lastPractised = it },
+            )
         }
     }
 
@@ -203,10 +225,17 @@ fun PouchScreen(
         val session = TestSession.practice(verse)
         practiceOpen = true
         covers.present("practice-${session.id}") { dismiss ->
-            TestSessionScreen(session, onSessionEnded = {
-                practiceOpen = false
-                dismiss()
-            })
+            TestSessionScreen(
+                session,
+                onSessionEnded = {
+                    practiceOpen = false
+                    dismiss()
+                },
+                onClose = {
+                    practiceOpen = false
+                    dismiss()
+                },
+            )
         }
     }
 
@@ -297,6 +326,7 @@ fun PouchScreen(
                     )
                 }
                 c.geometry = geometry
+                SideEffect { c.columns = layout.columns }
                 LaunchedEffect(geometry.cardWidth) { c.dropLiftedCard() }
                 val cardWidthDp = with(density) { geometry.cardWidth.toDp() }
                 val cardHeightDp = with(density) { geometry.cardHeight.toDp() }
@@ -381,6 +411,9 @@ fun PouchScreen(
                 area = area,
                 lift = { c.liftAmount.value },
                 angle = { c.liftedAngle.value },
+                drag = { Offset(c.liftedDragX.value, c.liftedDragY.value) },
+                onDrag = { c.followCardSwipe(it.x, it.y) },
+                onRelease = c::releaseCardSwipe,
                 onFlip = c::flipLiftedCard,
                 onPutBack = c::putCardBack,
             )
@@ -400,7 +433,7 @@ private fun PouchTopBar(pack: Pack, c: PouchController, onPractice: () -> Unit) 
             .padding(horizontal = AppLayout.screenMargin, vertical = 8.dp)
             .heightIn(min = 44.dp),
     ) {
-        val counter = listOfNotNull(pack.seriesCode, "Card ${c.index + 1} of ${c.verses.size}").joinToString(" · ")
+        val counter = listOfNotNull(pack.seriesCode, PackListLayout.positionLabel(c.index, c.verses.size, c.columns)).joinToString(" · ")
         Column(
             Modifier.align(Alignment.Center).padding(horizontal = titleInset),
             horizontalAlignment = Alignment.CenterHorizontally,

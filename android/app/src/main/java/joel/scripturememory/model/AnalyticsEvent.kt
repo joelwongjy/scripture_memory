@@ -89,7 +89,7 @@ enum class WidgetDestination {
 }
 
 enum class PackSource {
-    shelf, search, homeCard, widget;
+    shelf, search, homeCard, homeShelf, widget;
 
     val rawValue: String get() = name
 }
