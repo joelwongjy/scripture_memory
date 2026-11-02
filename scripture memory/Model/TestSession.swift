@@ -18,6 +18,10 @@ struct TestSession: Identifiable {
 
 extension TestSession {
     /// Practising a pack from card `start` on.
+    static func practice(card verse: Verse) -> TestSession {
+        TestSession(verses: [verse], kind: .pack)
+    }
+
     static func practice(_ verses: [Verse], from start: Int) -> TestSession? {
         guard verses.indices.contains(start) else { return nil }
         return TestSession(verses: Array(verses[start...]), kind: .pack)

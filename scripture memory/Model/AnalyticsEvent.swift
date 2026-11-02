@@ -11,7 +11,7 @@ enum AnalyticsEvent: Equatable {
     case openedFromWidget(destination: WidgetDestination)
 
     case packOpened(pack: String, from: PackSource)
-    case packClosed(how: PackCloseMethod, seconds: TimeInterval, covers: Int)
+    case packClosed(how: PackCloseMethod, seconds: TimeInterval, flips: Int)
     case learntChanged(learnt: Bool, from: VerseActionSource)
     case starChanged(starred: Bool, from: VerseActionSource)
     case packsReordered
@@ -56,9 +56,9 @@ enum AnalyticsEvent: Equatable {
             return ["destination": destination.rawValue]
         case .packOpened(let pack, let from):
             return ["pack": pack, "from": from.rawValue]
-        case .packClosed(let how, let seconds, let covers):
+        case .packClosed(let how, let seconds, let flips):
             return ["how": how.rawValue, "timeOpen": AnalyticsRange.duration(seconds),
-                    "covers": AnalyticsRange.count(covers)]
+                    "flips": AnalyticsRange.count(flips)]
         case .learntChanged(let learnt, let from):
             return ["learnt": String(learnt), "from": from.rawValue]
         case .starChanged(let starred, let from):
