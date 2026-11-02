@@ -608,7 +608,7 @@ private fun CardFace(
     val learning = LearningStore.shared
     when {
         card is PouchCard.Verse && card.index in verses.indices -> {
-            ListCard(verses[card.index], width, onComplete)
+            ListCard(verses[card.index], width, false, onComplete)
         }
         card is PouchCard.BackPage -> PaperAppearance {
             PouchBackPageCard(pack.name, verses.size, verses.count(learning::isLearnt), width)
@@ -627,6 +627,7 @@ private fun CardFace(
 private fun ListCard(
     verse: Verse,
     width: Dp,
+    isCovered: Boolean,
     onComplete: (Verse, VerseActionSource) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -634,7 +635,7 @@ private fun ListCard(
     val isCurrent = learning.isCurrent(verse)
     val density = LocalDensity.current
     PaperAppearance {
-        PouchVerseCard(verse, learning.isLearnt(verse), width, modifier) {
+        PouchVerseCard(verse, learning.isLearnt(verse), width, modifier, isCovered) {
             if (isCurrent) {
                 val green = PouchInk.green(AppTheme.isDark)
                 Row(
@@ -732,7 +733,7 @@ private fun FannedList(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             items(verses.size, key = { it }) { i ->
-                FannedCard(verses[i], width, height, { onPractice(i) }, onComplete)
+                FannedCard(verses[i], width, height, i in c.covered, { c.toggleCover(i) }, { onPractice(i) }, onComplete)
             }
         }
     }
@@ -744,6 +745,8 @@ private fun FannedCard(
     verse: Verse,
     width: Dp,
     height: Dp,
+    isCovered: Boolean,
+    onCover: () -> Unit,
     onPractice: () -> Unit,
     onComplete: (Verse, VerseActionSource) -> Unit,
 ) {
@@ -780,13 +783,18 @@ private fun FannedCard(
             }
             .listCardShadow()
             .clearAndSetSemantics {
-                contentDescription = "${verse.title}, ${verse.book} ${verse.reference}. ${verse.verse}"
+                val body = if (isCovered) "Verse covered" else verse.verse
+                contentDescription = "${verse.title}, ${verse.book} ${verse.reference}. $body"
                 role = Role.Button
-                onClick("Practises from this verse") {
-                    onPractice()
+                onClick(if (isCovered) "Reveals this verse" else "Covers this verse") {
+                    onCover()
                     true
                 }
                 customActions = listOf(
+                    CustomAccessibilityAction("Practice from Here") {
+                        onPractice()
+                        true
+                    },
                     CustomAccessibilityAction(if (isFavorite) "Unstar" else "Star") {
                         toggleStar()
                         true
@@ -800,17 +808,18 @@ private fun FannedCard(
             .combinedClickable(
                 interactionSource = source,
                 indication = null,
-                onClick = onPractice,
+                onClick = onCover,
                 onLongClick = {
                     HapticEngine.light()
                     showsMenu = true
                 },
             ),
     ) {
-        ListCard(verse, width, onComplete)
+        ListCard(verse, width, isCovered, onComplete)
         if (showsMenu) {
             AppMenu(
                 actions = listOf(
+                    MenuAction("Practice from Here", R.drawable.ic_keyboard, onClick = onPractice),
                     MenuAction(
                         if (isFavorite) "Unstar" else "Star",
                         if (isFavorite) R.drawable.ic_star_fill else R.drawable.ic_star,

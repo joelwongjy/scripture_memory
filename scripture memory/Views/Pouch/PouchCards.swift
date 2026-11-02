@@ -100,6 +100,7 @@ struct PouchVerseCard<Accessory: View>: View {
     let verse: Verse
     let isLearnt: Bool
     let width: CGFloat
+    var isCovered = false
     @ViewBuilder var accessory: () -> Accessory
 
     var body: some View {
@@ -134,7 +135,7 @@ struct PouchVerseCard<Accessory: View>: View {
         .frame(width: width, height: width / PouchMetrics.cardAspect)
         .background(PaperFace())
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(verse.title), \(reference). \(verse.verse)")
+        .accessibilityLabel("\(verse.title), \(reference). \(isCovered ? "Verse covered" : verse.verse)")
     }
 
     private var reference: String { "\(verse.book) \(verse.reference)" }
@@ -158,9 +159,22 @@ struct PouchVerseCard<Accessory: View>: View {
             .font(CardFont.font(.body, size: 4.6 * u))
             .foregroundStyle(PouchInk.body)
             .padding(.top, 1.4 * u)
-        FittedVerseText(text: verse.verse, lineSpacing: 0.8 * u, minSize: 2 * u, maxSize: 4 * u)
+        coverable(FittedVerseText(text: verse.verse, lineSpacing: 0.8 * u, minSize: 2 * u, maxSize: 4 * u), u)
             .foregroundStyle(PouchInk.body)
             .padding(.top, 1.4 * u)
+    }
+
+    private func coverable(_ text: some View, _ u: CGFloat) -> some View {
+        text
+            .opacity(isCovered ? 0 : 1)
+            .overlay {
+                if isCovered {
+                    Text("Tap to reveal")
+                        .font(.system(size: 3.4 * u, weight: .medium))
+                        .foregroundStyle(PouchInk.caption)
+                        .transition(.opacity)
+                }
+            }
     }
 
     @ViewBuilder
@@ -190,8 +204,8 @@ struct PouchVerseCard<Accessory: View>: View {
             }
         }
         .padding(.top, 1.2 * u)
-        FittedVerseText(text: verse.verse, lineSpacing: 0.5 * u, minSize: 2 * u, maxSize: 3.8 * u,
-                        style: .printBody, closingLine: reference)
+        coverable(FittedVerseText(text: verse.verse, lineSpacing: 0.5 * u, minSize: 2 * u, maxSize: 3.8 * u,
+                                  style: .printBody, closingLine: reference), u)
             .foregroundStyle(PouchInk.body)
             .padding(.top, 0.6 * u)
     }
