@@ -7,14 +7,12 @@ import SwiftUI
 /// into the list. Closing (the ×, a swipe in from the leading edge, or a swipe
 /// left across the list) gathers them back in and folds it shut. Tap a card to
 /// practise from it.
-///
-/// On the iPhone Duo the hinge is the pouch's fold: shut, the front screen is
-/// the pack's cover; open, the pouch lies flat across both halves.
 struct PouchView: View {
     let pack: Pack
     /// The pack's tile on the shelf, in global coordinates, to fly out of and
-    /// back into.
-    let shelf: CGRect?
+    /// back into. Asked again on the way back, as the tile moves if the screen
+    /// has rotated since.
+    let shelf: (() -> CGRect)?
     /// Takes the screen away once the pouch is back on the shelf.
     var onPutBack: (() -> Void)?
     /// Unfolds, fans out and folds shut. Off, the pack opens on its list and
@@ -44,8 +42,6 @@ struct PouchView: View {
     @State private var swipeAxis: Axis?
     /// 1 with the pouch shut on its shelf tile, 0 with it in front of you.
     @State private var flight: CGFloat
-    @State private var hingeDriven = false
-    @State private var hingeShut = false
     @State private var practice: TestSession?
     @State private var undoToastState: UndoToastState?
     @AppStorage("pouch.jumpLabelShown.v1") private var jumpLabelShown = false
@@ -56,14 +52,12 @@ struct PouchView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var scenePhase
 
-    /// The top controls' height under the safe area: a 44pt control and its padding.
-    private static let chromeHeight: CGFloat = 60
     /// How far in from the leading edge a swipe counts as the edge swipe.
     private static let edgeWidth: CGFloat = 28
 
     private var verses: [Verse] { pack.verses }
 
-    init(pack: Pack, startIndex: Int, shelf: CGRect? = nil, animatesPouch: Bool = true,
+    init(pack: Pack, startIndex: Int, shelf: (() -> CGRect)? = nil, animatesPouch: Bool = true,
          onPutBack: (() -> Void)? = nil) {
         let reduce = AppMotion.reduceMotion || !animatesPouch
         let start = min(max(startIndex, 0), max(pack.verses.count - 1, 0))
@@ -82,35 +76,14 @@ struct PouchView: View {
 
     var body: some View {
         GeometryReader { safe in
-            let insets = safe.safeAreaInsets
-            GeometryReader { root in
-                let fold = Self.screenFold(in: root)
-                if let fold, fold.height > fold.width {
-                    pouch(fold: root.size.width - fold.midX, turned: true,
-                          insets: EdgeInsets(top: insets.trailing, leading: insets.top,
-                                             bottom: insets.leading, trailing: insets.bottom))
-                        .frame(width: root.size.height, height: root.size.width)
-                        .rotationEffect(.degrees(90))
-                        .frame(width: root.size.width, height: root.size.height)
-                } else {
-                    pouch(fold: fold?.midY, turned: false, insets: insets)
-                }
-            }
-            .ignoresSafeArea()
+            pouch(insets: safe.safeAreaInsets)
+                .ignoresSafeArea()
         }
         .background(Color(.systemGroupedBackground).opacity(Double(1 - flight)).ignoresSafeArea())
-        .overlay {
-            if hingeShut {
-                FrontCover(pack: pack, shine: tilt.roll)
-                    .transition(.opacity)
-            }
-        }
-        .statusBarHidden(hingeShut)
         .undoToast($undoToastState)
         .fullScreenCover(item: $practice) { session in
             TestSessionView(session: session, onSessionEnded: { practice = nil })
         }
-        .modifier(FollowsHinge(onChange: hingeMoved))
         .onAppear { appeared() }
         .analyticsScreen(.pack)
         .onChange(of: fanned) { _, out in out ? tilt.stop() : tilt.start() }
@@ -125,49 +98,30 @@ struct PouchView: View {
 
     // MARK: - Layout
 
-    /// `fold` is where the screen's fold crosses the pouch, measured down from
-    /// its top; `turned`, that it's drawn a quarter turn round.
-    @ViewBuilder
-    private func pouch(fold: CGFloat?, turned: Bool, insets: EdgeInsets) -> some View {
-        if fold != nil {
-            ZStack {
-                GeometryReader { geo in
-                    scene(geo, fold: fold, turned: turned, chrome: insets.top + Self.chromeHeight)
-                }
-                VStack(spacing: 0) {
-                    topBar
-                    thumb
-                }
-                .padding(insets)
-            }
-        } else {
-            VStack(spacing: 0) {
-                topBar
-                GeometryReader { geo in scene(geo, fold: nil, turned: turned, chrome: 0, below: insets.bottom) }
-                    .overlay { thumb }
-            }
-            .padding(insets)
+    private func pouch(insets: EdgeInsets) -> some View {
+        VStack(spacing: 0) {
+            topBar
+            GeometryReader { geo in scene(geo, below: insets.bottom) }
+                .overlay { thumb }
         }
+        .padding(insets)
     }
 
-    /// The pouch and the cards out of it. `chrome` is how far down the floating
-    /// controls reach, which the list keeps its cards clear of.
+    /// The pouch and the cards out of it.
     @ViewBuilder
-    private func scene(_ geo: GeometryProxy, fold: CGFloat?, turned: Bool, chrome: CGFloat,
-                       below: CGFloat = 0) -> some View {
+    private func scene(_ geo: GeometryProxy, below: CGFloat) -> some View {
         let listWidth = min(geo.size.width - 2 * AppLayout.screenMargin, 600)
         let listHeight = (listWidth / PouchMetrics.cardAspect * displayScale).rounded() / displayScale
 
         ZStack {
             if fanned {
                 fannedList(width: listWidth, height: listHeight, viewport: geo.size.height + below,
-                           chrome: chrome, below: below)
+                           below: below)
                     .offset(x: swipeOffset)
                     .opacity(listSettled ? 1 : 0)
             }
             if !fanned || !listSettled {
-                pouchAndDeck(geo, fold: fold, turned: turned, chrome: chrome, below: below,
-                             listWidth: listWidth, listHeight: listHeight)
+                pouchAndDeck(geo, below: below, listWidth: listWidth, listHeight: listHeight)
             }
         }
         .onChange(of: fanned) { _, out in if !out { listSettled = false } }
@@ -190,18 +144,16 @@ struct PouchView: View {
 
     /// Only drawn on the way in and out; once fanned, the list replaces it.
     @ViewBuilder
-    private func pouchAndDeck(_ geo: GeometryProxy, fold: CGFloat?, turned: Bool, chrome: CGFloat,
-                              below: CGFloat, listWidth: CGFloat, listHeight: CGFloat) -> some View {
-        let foldY = fold.flatMap { $0 > 0 && $0 < geo.size.height ? $0 : nil }
-        let m = foldY.map { PouchMetrics(width: geo.size.width, halfHeight: min($0, geo.size.height - $0)) }
-            ?? PouchMetrics(fitting: CGSize(width: geo.size.width, height: geo.size.height - 12))
-        let sceneTop = foldY.map { $0 - m.halfHeight } ?? (geo.size.height - 2 * m.halfHeight) / 2
+    private func pouchAndDeck(_ geo: GeometryProxy, below: CGFloat, listWidth: CGFloat,
+                              listHeight: CGFloat) -> some View {
+        let m = PouchMetrics(fitting: CGSize(width: geo.size.width, height: geo.size.height - 12))
+        let sceneTop = (geo.size.height - 2 * m.halfHeight) / 2
 
         let coverCenter = CGPoint(x: geo.size.width / 2, y: sceneTop + m.halfHeight / 2 + m.cardFrame.midY)
         let area = geo.frame(in: .global)
-        let tile = (turned ? nil : shelf) ?? CGRect(x: area.minX + coverCenter.x - m.cardWidth / 2,
-                                                    y: area.minY + coverCenter.y - m.cardHeight / 2,
-                                                    width: m.cardWidth, height: m.cardHeight)
+        let tile = shelf?() ?? CGRect(x: area.minX + coverCenter.x - m.cardWidth / 2,
+                                   y: area.minY + coverCenter.y - m.cardHeight / 2,
+                                   width: m.cardWidth, height: m.cardHeight)
         let shelfScale = tile.width / m.cardWidth
 
         PouchScene(openness: openness, lift: lift, m: m,
@@ -210,7 +162,6 @@ struct PouchView: View {
                    cover: { PackCover(pack: pack, cornerRadius: 2, showsShadow: false)
                                 .frame(width: m.cardWidth) })
             .frame(width: geo.size.width, height: geo.size.height)
-            .offset(y: sceneTop - (geo.size.height - 2 * m.halfHeight) / 2)
             .opacity(Double(max(0, 1 - 0.55 * lift - 0.45 * spread)))
             .scaleEffect(1 - 0.04 * lift)
             .modifier(ShelfFlight(
@@ -229,14 +180,13 @@ struct PouchView: View {
                    pocketCenter: CGPoint(x: geo.size.width / 2, y: sceneTop + m.halfHeight + m.cardFrame.midY),
                    listCenter: CGPoint(x: geo.size.width / 2,
                                        y: listMidY(of: index, height: listHeight,
-                                                   viewport: geo.size.height + below, chrome: chrome,
-                                                   below: below)),
+                                                   viewport: geo.size.height + below, below: below)),
                    pocketWidth: m.cardWidth, listWidth: listWidth,
                    listPitch: listHeight + AppLayout.spacing,
                    around: { $0 == 0 ? card(at: index) : verses.indices.contains(index + $0) ? .verse(index + $0) : .none },
                    edges: min(5, Int((Double(max(verses.count - index - 1, 0)) / 8).rounded(.up))),
                    face: { cardFace($0, width: $1) })
-            .mask { listMask(chrome: chrome).padding(.bottom, -below) }
+            .mask { Color.black.padding(.bottom, -below) }
             .allowsHitTesting(false)
             .accessibilityHidden(true)
 
@@ -250,7 +200,7 @@ struct PouchView: View {
         }
     }
 
-    private func fannedList(width: CGFloat, height: CGFloat, viewport: CGFloat, chrome: CGFloat,
+    private func fannedList(width: CGFloat, height: CGFloat, viewport: CGFloat,
                             below: CGFloat) -> some View {
         ScrollViewReader { proxy in
             ScrollView(.vertical, showsIndicators: false) {
@@ -277,13 +227,11 @@ struct PouchView: View {
                 onOffset: { offset in
                     if !listSettled { settleListSoon() }
                     guard listScrolled else { return }
-                    let shown = cardShown(at: offset, height: height, viewport: viewport, chrome: chrome,
-                                          below: below)
+                    let shown = cardShown(at: offset, height: height, viewport: viewport, below: below)
                     if shown != index { index = shown }
                 }))
             .ignoresSafeArea(.container, edges: below > 0 ? .bottom : [])
-            .safeAreaPadding(.top, chrome)
-            .mask { listMask(chrome: chrome).padding(.bottom, -below) }
+            .mask { Color.black.padding(.bottom, -below) }
             .scrollPosition(id: $listIndex, anchor: .center)
             .onChange(of: listIndex) { _, new in
                 guard #unavailable(iOS 18), listScrolled, let new else { return }
@@ -294,6 +242,7 @@ struct PouchView: View {
                 settleListSoon()
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { settleList() }
             }
+            .onChange(of: width) { _, _ in proxy.scrollTo(index, anchor: .center) }
         }
         .overlay(alignment: .leading) {
             Color.clear
@@ -319,19 +268,8 @@ struct PouchView: View {
         withTransaction(t) { listSettled = true }
     }
 
-    private func listMask(chrome: CGFloat) -> some View {
-        VStack(spacing: 0) {
-            Color.clear.frame(height: max(0, chrome - 8))
-            LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: .bottom)
-                .frame(height: chrome > 0 ? 32 : 0)
-            Color.black
-        }
-    }
-
     // MARK: - Pieces
 
-    /// Laid out like a navigation bar rather than being one, since on the iPhone
-    /// Duo it turns with the pouch.
     private var topBar: some View {
         ZStack {
             VStack(spacing: 1) {
@@ -505,7 +443,6 @@ struct PouchView: View {
         }
         guard openness < 1 else { return }
         DispatchQueue.main.asyncAfter(deadline: .now() + (fromShelf ? 0.08 : 0)) {
-            guard !hingeDriven else { return }
             unfoldAndFanOut()
         }
     }
@@ -529,7 +466,7 @@ struct PouchView: View {
     /// A touch while the pack is opening goes straight to the list, carrying a
     /// flick on through it.
     private func finishOpening(flick: CGFloat, pitch: CGFloat) {
-        guard !fanned, !closing, !hingeShut else { return }
+        guard !fanned, !closing else { return }
         HapticEngine.stop()
         var t = Transaction()
         t.disablesAnimations = true
@@ -606,25 +543,21 @@ struct PouchView: View {
 
     /// Where the list puts card `i` when it scrolls it as near the middle as it
     /// will go, so the cards fanning out land where the list then shows them.
-    private func listMidY(of i: Int, height: CGFloat, viewport: CGFloat, chrome: CGFloat,
-                          below: CGFloat) -> CGFloat {
-        let visible = viewport - chrome
+    private func listMidY(of i: Int, height: CGFloat, viewport: CGFloat, below: CGFloat) -> CGFloat {
         let mid = AppLayout.spacing + CGFloat(i) * (height + AppLayout.spacing) + height / 2
-        let most = max(0, listContentHeight(cardHeight: height, below: below) - visible)
-        return chrome + mid - min(max(0, mid - visible / 2), most)
+        let most = max(0, listContentHeight(cardHeight: height, below: below) - viewport)
+        return mid - min(max(0, mid - viewport / 2), most)
     }
 
     /// The card the counter names at a scroll offset: the one in the middle,
     /// except within half a screen of either end, where it slides to the first
     /// or last card.
-    private func cardShown(at offset: CGFloat, height: CGFloat, viewport: CGFloat, chrome: CGFloat,
-                           below: CGFloat) -> Int {
-        let visible = viewport - chrome
-        let most = listContentHeight(cardHeight: height, below: below) - visible
+    private func cardShown(at offset: CGFloat, height: CGFloat, viewport: CGFloat, below: CGFloat) -> Int {
+        let most = listContentHeight(cardHeight: height, below: below) - viewport
         guard most > 0 else { return index }
-        let half = visible / 2
+        let half = viewport / 2
         let reading = offset + (offset < most / 2 ? min(max(offset, 0), half)
-                                                  : max(half, visible - max(most - offset, 0)))
+                                                  : max(half, viewport - max(most - offset, 0)))
         let i = Int((reading - AppLayout.spacing / 2) / (height + AppLayout.spacing))
         return min(max(i, 0), verses.count - 1)
     }
@@ -638,39 +571,6 @@ struct PouchView: View {
         Analytics.log(.learntChanged(learnt: true, from: source))
         HapticEngine.success()
         undoToastState = .markedComplete(verse, learning: learning)
-    }
-
-    // MARK: Hinge
-
-    /// Shutting the Duo folds the pouch and shows its cover; opening it fans the
-    /// cards out again. In between the screen folds with the hinge, so the pouch
-    /// stays flat on it.
-    private func hingeMoved(closed: Bool?) {
-        guard let closed else { hingeDriven = false; hingeShut = false; return }
-        hingeDriven = true
-        withAnimation(AppMotion.content) { hingeShut = closed }
-        if closed {
-            HapticEngine.stop()
-            var t = Transaction()
-            t.disablesAnimations = true
-            withTransaction(t) {
-                fanned = false
-                lift = 0
-                spread = 0
-                openness = 0
-            }
-        } else if openness < 1, !closing {
-            unfoldAndFanOut()
-        }
-    }
-
-    /// Where a folding screen's fold crosses this view.
-    private static func screenFold(in geo: GeometryProxy) -> CGRect? {
-        guard #available(iOS 27.1, *) else { return nil }
-        let bounds = CGRect(origin: .zero, size: geo.size)
-        return geo.reservedRegions(kind: .division, options: .includeInactive)
-            .map(\.frame)
-            .first { bounds.intersects($0) }
     }
 }
 
@@ -699,67 +599,6 @@ private struct ShelfFlight<Tile: View>: ViewModifier, Animatable {
             }
             .scaleEffect(1 + (scale - 1) * flight, anchor: anchor)
             .offset(x: offset.width * flight, y: offset.height * flight)
-    }
-}
-
-/// The shut Duo's front screen: the pack's cover under the plastic, turned to
-/// read the right way up with the folded device held sideways.
-private struct FrontCover: View {
-    let pack: Pack
-    let shine: CGFloat
-
-    @Environment(\.colorScheme) private var colorScheme
-
-    var body: some View {
-        GeometryReader { geo in
-            let long = geo.size.height, short = geo.size.width
-            let style = PlasticStyle(colorScheme)
-            let rim = max(8, short * 0.035)
-            let room = CGSize(width: long - 2 * rim - 24, height: short - 2 * rim - 24)
-            let cardWidth = min(room.width, room.height * 5 / 3)
-            ZStack {
-                Color(.systemGroupedBackground)
-                style.tint
-                PackCover(pack: pack, cornerRadius: 2, showsShadow: false)
-                    .frame(width: cardWidth, height: cardWidth * 3 / 5)
-                    .shadow(color: .black.opacity(0.12), radius: 3, y: 1)
-                LinearGradient(stops: [
-                    .init(color: .clear, location: 0),
-                    .init(color: style.shine, location: 0.14),
-                    .init(color: .clear, location: 0.3),
-                    .init(color: style.shine.opacity(0.3), location: 0.46),
-                    .init(color: .clear, location: 0.6),
-                ], startPoint: UnitPoint(x: -0.5 + shine * 0.6, y: 0),
-                   endPoint: UnitPoint(x: 0.6 + shine * 0.6, y: 1))
-                RoundedRectangle(cornerRadius: rim * 1.6, style: .continuous)
-                    .inset(by: rim / 2)
-                    .stroke(style.rim, lineWidth: rim)
-                RoundedRectangle(cornerRadius: rim * 1.6, style: .continuous)
-                    .inset(by: rim)
-                    .stroke(style.edgeShade.opacity(0.7), lineWidth: 0.6)
-            }
-            .frame(width: long, height: short)
-            .rotationEffect(.degrees(-90))
-            .frame(width: short, height: long)
-        }
-        .ignoresSafeArea()
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(pack.name), shut. Open the phone to open the pack.")
-    }
-}
-
-/// Reports whether the hinge is shut, or `nil` without one (iOS 27.1 and later).
-private struct FollowsHinge: ViewModifier {
-    let onChange: (Bool?) -> Void
-
-    func body(content: Content) -> some View {
-        if #available(iOS 27.1, *) {
-            content.onHingeChange { _, new in
-                onChange(new.hinge.map { $0.status == .closed })
-            }
-        } else {
-            content
-        }
     }
 }
 

@@ -28,13 +28,21 @@ enum AppLayout {
     /// text clears the larger corners.
     static let cardPadding: CGFloat = 20
 
-    // MARK: Wide windows (iPhone Duo's inner display)
+    // MARK: Wide windows
 
     /// Widest a scrolling column of cards gets before it centres, so lines of
     /// text stay readable on a wide window.
     static let readableWidth: CGFloat = 640
     /// Widest the study and review screens get (card plus margins).
     static let studyColumnWidth: CGFloat = 592
+
+    /// Screens at least this wide on their short side rotate; narrower phones
+    /// stay in portrait.
+    static let rotatingScreenWidth: CGFloat = 460
+
+    /// Below this height (a rotated phone with the keyboard up) the study
+    /// screens give the card the room the scrubber and bottom padding would take.
+    static let shortStudyHeight: CGFloat = 320
 
     /// The card's proportions on the study screens: 5 wide by 3 tall.
     static let cardAspect: CGFloat = 5.0 / 3.0

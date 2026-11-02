@@ -22,27 +22,24 @@ struct PouchMetrics {
 
     init(fitting size: CGSize) {
         var width = min(size.width - 2 * AppLayout.screenMargin, 560)
-        var m = PouchMetrics(width: width, halfHeight: nil)
+        var m = PouchMetrics(width: width)
         if 2 * m.halfHeight > size.height {
             width *= size.height / (2 * m.halfHeight)
-            m = PouchMetrics(width: width, halfHeight: nil)
+            m = PouchMetrics(width: width)
         }
         self = m
     }
 
-    /// With `halfHeight`, one half of a folding screen filled edge to edge, the
-    /// card as large as the half allows; without, a pouch sized to `width`.
-    init(width: CGFloat, halfHeight: CGFloat?) {
+    init(width: CGFloat) {
         let foldRatio: CGFloat = 0.13, stackRatio: CGFloat = 0.06
         let rim    = max(5, width * 0.028)
-        let widest = width * 0.86 / Self.cardAspect
         pouchWidth = width
         self.rim   = rim
-        cardHeight = halfHeight.map { min(widest, ($0 - rim - 6) / (1 + foldRatio + stackRatio)) } ?? widest
+        cardHeight = width * 0.86 / Self.cardAspect
         cardWidth  = cardHeight * Self.cardAspect
         foldGap    = cardHeight * foldRatio
         stackRoom  = cardHeight * stackRatio
-        self.halfHeight = halfHeight ?? foldGap + cardHeight + stackRoom + rim + 6
+        halfHeight = foldGap + cardHeight + stackRoom + rim + 6
         notchWidth = cardWidth * 0.42
         notchDepth = cardHeight * 0.20
         corner     = rim * 2.4

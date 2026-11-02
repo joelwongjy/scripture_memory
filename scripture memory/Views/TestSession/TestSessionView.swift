@@ -73,6 +73,15 @@ struct TestSessionView: View {
 
     private var isLastCard: Bool { vm.currentIndex >= vm.verses.count - 1 }
 
+    /// How far through the current card's words the user has typed, 0…1.
+    private var typingProgress: CGFloat {
+        guard let verse = vm.currentVerse else { return 0 }
+        let total = verse.titleWords.count + verse.verseWords.count
+        guard total > 0 else { return 0 }
+        let typed = vm.revealedCount(for: verse.id, section: .title) + vm.revealedCount(for: verse.id, section: .verse)
+        return CGFloat(typed) / CGFloat(total)
+    }
+
     // MARK: - Body
 
     var body: some View {
@@ -89,11 +98,13 @@ struct TestSessionView: View {
             let columnWidth = min(geo.size.width, AppLayout.studyColumnWidth)
             let cardWidth   = columnWidth - 2 * AppLayout.screenMargin
             let cardHeight  = cardWidth / AppLayout.cardAspect
+            let isShort     = geo.size.height < AppLayout.shortStudyHeight
 
             VStack(spacing: 0) {
                 GeometryReader { area in
-                    let room  = max(120, area.size.height - 12)
-                    let cardH = min(cardHeight, room)
+                    let room  = max(72, area.size.height - 12)
+                    let pans  = isShort && room < cardHeight
+                    let cardH = pans ? cardHeight : min(cardHeight, room)
                     ZStack {
                         cardStack
                             .frame(width: cardWidth, height: cardH)
@@ -110,19 +121,23 @@ struct TestSessionView: View {
                             .zIndex(100)
                         }
                     }
+                    .offset(y: pans ? (room - cardHeight) * typingProgress : 0)
+                    .animation(AppMotion.control, value: typingProgress)
+                    .frame(width: cardWidth, height: pans ? room : nil, alignment: .top)
+                    .mask { Rectangle().padding(pans ? 0 : -400) }
                     .padding(.top, 8)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                 }
 
                 // Review is forward-only (you advance by rating; Undo goes back),
                 // so only Quiz gets the scrubber.
-                if vm.verses.count > 1, !isReview {
+                if vm.verses.count > 1, !isReview, !isShort {
                     scrubberRow
                         .padding(.horizontal, AppLayout.screenMargin)
                         .padding(.bottom, 6)
                 }
 
-                bottomControls
+                bottomControls(isShort: isShort)
             }
             .frame(width: columnWidth)
             .frame(maxWidth: .infinity)
@@ -336,7 +351,7 @@ struct TestSessionView: View {
         isReview ? vm.allCardsGraded : vm.isSessionComplete
     }
 
-    private var bottomControls: some View {
+    private func bottomControls(isShort: Bool) -> some View {
         VStack(spacing: 12) {
             if showSessionSummary {
                 SessionCompletePanel(vm: vm, studyMode: studyMode, onDone: finishSession)
@@ -367,7 +382,7 @@ struct TestSessionView: View {
             }
         }
         .padding(.horizontal, AppLayout.screenMargin)
-        .padding(.bottom, 24)
+        .padding(.bottom, isShort ? 6 : 24)
         .padding(.top, 6)
         .animation(AppMotion.content, value: vm.isCardComplete)
         .animation(AppMotion.content, value: vm.isCardAnswered)

@@ -9,6 +9,7 @@ import SwiftUI
 
 @main
 struct ScriptureMemoryApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @Environment(\.scenePhase) private var scenePhase
 
     init() {
@@ -56,5 +57,14 @@ struct ScriptureMemoryApp: App {
                 Task { await NotificationManager.refreshFromSettings() }
             }
         }
+    }
+}
+
+final class AppDelegate: NSObject, UIApplicationDelegate {
+    func application(_ application: UIApplication,
+                     supportedInterfaceOrientationsFor window: UIWindow?) -> UIInterfaceOrientationMask {
+        guard let bounds = window?.windowScene?.screen.bounds,
+              min(bounds.width, bounds.height) >= AppLayout.rotatingScreenWidth else { return .portrait }
+        return .allButUpsideDown
     }
 }
