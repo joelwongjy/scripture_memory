@@ -110,23 +110,24 @@ struct PouchView: View {
     /// The pouch and the cards out of it.
     @ViewBuilder
     private func scene(_ geo: GeometryProxy, below: CGFloat) -> some View {
-        let listWidth = min(geo.size.width - 2 * AppLayout.screenMargin, 600)
-        let listHeight = (listWidth / PouchMetrics.cardAspect * displayScale).rounded() / displayScale
+        let layout = PackListLayout(width: geo.size.width - 2 * AppLayout.screenMargin,
+                                    spacing: AppLayout.spacing)
+        let listHeight = (layout.cardWidth / PouchMetrics.cardAspect * displayScale).rounded() / displayScale
 
         ZStack {
             if fanned {
-                fannedList(width: listWidth, height: listHeight, viewport: geo.size.height + below,
+                fannedList(layout: layout, height: listHeight, viewport: geo.size.height + below,
                            below: below)
                     .offset(x: swipeOffset)
                     .opacity(listSettled ? 1 : 0)
             }
             if !fanned || !listSettled {
-                pouchAndDeck(geo, below: below, listWidth: listWidth, listHeight: listHeight)
+                pouchAndDeck(geo, below: below, layout: layout, listHeight: listHeight)
             }
         }
         .onChange(of: fanned) { _, out in if !out { listSettled = false } }
         .overlay(alignment: .bottomTrailing) {
-            if fanned, let current = currentIndex, index != current {
+            if fanned, let current = currentIndex, layout.row(of: index) != layout.row(of: current) {
                 JumpToCurrentButton(startExpanded: !jumpLabelShown,
                                     onExpandedShown: { jumpLabelShown = true }) {
                     HapticEngine.light()
@@ -144,7 +145,7 @@ struct PouchView: View {
 
     /// Only drawn on the way in and out; once fanned, the list replaces it.
     @ViewBuilder
-    private func pouchAndDeck(_ geo: GeometryProxy, below: CGFloat, listWidth: CGFloat,
+    private func pouchAndDeck(_ geo: GeometryProxy, below: CGFloat, layout: PackListLayout,
                               listHeight: CGFloat) -> some View {
         let m = PouchMetrics(fitting: CGSize(width: geo.size.width, height: geo.size.height - 12))
         let sceneTop = (geo.size.height - 2 * m.halfHeight) / 2
@@ -178,11 +179,12 @@ struct PouchView: View {
 
         LiftedDeck(lift: lift, spread: spread,
                    pocketCenter: CGPoint(x: geo.size.width / 2, y: sceneTop + m.halfHeight + m.cardFrame.midY),
-                   listCenter: CGPoint(x: geo.size.width / 2,
-                                       y: listMidY(of: index, height: listHeight,
+                   listCenter: CGPoint(x: geo.size.width / 2 + layout.centerOffset(ofCard: index),
+                                       y: listMidY(of: index, layout: layout, height: listHeight,
                                                    viewport: geo.size.height + below, below: below)),
-                   pocketWidth: m.cardWidth, listWidth: listWidth,
-                   listPitch: listHeight + AppLayout.spacing,
+                   pocketWidth: m.cardWidth, listWidth: layout.cardWidth,
+                   rowPitch: listHeight + AppLayout.spacing,
+                   layout: layout, frontCard: index,
                    around: { $0 == 0 ? card(at: index) : verses.indices.contains(index + $0) ? .verse(index + $0) : .none },
                    edges: min(5, Int((Double(max(verses.count - index - 1, 0)) / 8).rounded(.up))),
                    face: { cardFace($0, width: $1) })
@@ -195,39 +197,57 @@ struct PouchView: View {
                 .contentShape(Rectangle())
                 .gesture(DragGesture(minimumDistance: 0).onEnded { value in
                     finishOpening(flick: value.predictedEndTranslation.height,
-                                  pitch: listHeight + AppLayout.spacing)
+                                  pitch: listHeight + AppLayout.spacing, columns: layout.columns)
                 })
         }
     }
 
-    private func fannedList(width: CGFloat, height: CGFloat, viewport: CGFloat,
+    @ViewBuilder
+    private func listCards(layout: PackListLayout, height: CGFloat) -> some View {
+        if layout.columns == 1 {
+            LazyVStack(spacing: layout.spacing) {
+                listCells(width: layout.cardWidth, height: height)
+            }
+            .scrollTargetLayout()
+        } else {
+            LazyVGrid(columns: Array(repeating: GridItem(.fixed(layout.cardWidth), spacing: layout.spacing),
+                                     count: layout.columns),
+                      spacing: layout.spacing) {
+                listCells(width: layout.cardWidth, height: height)
+            }
+            .scrollTargetLayout()
+        }
+    }
+
+    private func listCells(width: CGFloat, height: CGFloat) -> some View {
+        ForEach(verses.indices, id: \.self) { i in
+            Button { startPractice(from: i) } label: {
+                listCard(i, width: width)
+                    .frame(width: width, height: height)
+                    .listCardShadow()
+            }
+            .buttonStyle(CardButtonStyle())
+            .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 2, style: .continuous))
+            .contextMenu { cardMenu(verses[i]) }
+            .id(i)
+        }
+    }
+
+    private func fannedList(layout: PackListLayout, height: CGFloat, viewport: CGFloat,
                             below: CGFloat) -> some View {
         ScrollViewReader { proxy in
             ScrollView(.vertical, showsIndicators: false) {
-                LazyVStack(spacing: AppLayout.spacing) {
-                    ForEach(verses.indices, id: \.self) { i in
-                        Button { startPractice(from: i) } label: {
-                            listCard(i, width: width)
-                                .frame(width: width, height: height)
-                                .listCardShadow()
-                        }
-                        .buttonStyle(CardButtonStyle())
-                        .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 2, style: .continuous))
-                        .contextMenu { cardMenu(verses[i]) }
-                        .id(i)
-                    }
-                }
-                .scrollTargetLayout()
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, AppLayout.spacing)
-                .padding(.bottom, below)
+                listCards(layout: layout, height: height)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, AppLayout.spacing)
+                    .padding(.bottom, below)
             }
             .modifier(ListScrollTracking(
                 onScroll: { listScrolled = true },
                 onOffset: { offset in
                     if !listSettled { settleListSoon() }
                     guard listScrolled else { return }
-                    let shown = cardShown(at: offset, height: height, viewport: viewport, below: below)
+                    let shown = cardShown(at: offset, layout: layout, height: height, viewport: viewport, below: below)
                     if shown != index { index = shown }
                 }))
             .ignoresSafeArea(.container, edges: below > 0 ? .bottom : [])
@@ -242,7 +262,7 @@ struct PouchView: View {
                 settleListSoon()
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { settleList() }
             }
-            .onChange(of: width) { _, _ in proxy.scrollTo(index, anchor: .center) }
+            .onChange(of: layout) { _, _ in proxy.scrollTo(index, anchor: .center) }
         }
         .overlay(alignment: .leading) {
             Color.clear
@@ -465,7 +485,7 @@ struct PouchView: View {
 
     /// A touch while the pack is opening goes straight to the list, carrying a
     /// flick on through it.
-    private func finishOpening(flick: CGFloat, pitch: CGFloat) {
+    private func finishOpening(flick: CGFloat, pitch: CGFloat, columns: Int) {
         guard !fanned, !closing else { return }
         HapticEngine.stop()
         var t = Transaction()
@@ -478,7 +498,7 @@ struct PouchView: View {
             listIndex = index
             fanned = true
         }
-        let target = min(max(index - Int((flick / pitch).rounded()), 0), verses.count - 1)
+        let target = min(max(index - Int((flick / pitch).rounded()) * columns, 0), verses.count - 1)
         guard target != index else { return }
         index = target
         DispatchQueue.main.async {
@@ -537,29 +557,31 @@ struct PouchView: View {
     }
 
     /// The list's full height: its cards and the gap above and below them.
-    private func listContentHeight(cardHeight: CGFloat, below: CGFloat) -> CGFloat {
-        CGFloat(verses.count) * (cardHeight + AppLayout.spacing) + AppLayout.spacing + below
+    private func listContentHeight(layout: PackListLayout, cardHeight: CGFloat, below: CGFloat) -> CGFloat {
+        CGFloat(layout.rows(forCount: verses.count)) * (cardHeight + AppLayout.spacing) + AppLayout.spacing + below
     }
 
     /// Where the list puts card `i` when it scrolls it as near the middle as it
     /// will go, so the cards fanning out land where the list then shows them.
-    private func listMidY(of i: Int, height: CGFloat, viewport: CGFloat, below: CGFloat) -> CGFloat {
-        let mid = AppLayout.spacing + CGFloat(i) * (height + AppLayout.spacing) + height / 2
-        let most = max(0, listContentHeight(cardHeight: height, below: below) - viewport)
+    private func listMidY(of i: Int, layout: PackListLayout, height: CGFloat, viewport: CGFloat,
+                          below: CGFloat) -> CGFloat {
+        let mid = AppLayout.spacing + CGFloat(layout.row(of: i)) * (height + AppLayout.spacing) + height / 2
+        let most = max(0, listContentHeight(layout: layout, cardHeight: height, below: below) - viewport)
         return mid - min(max(0, mid - viewport / 2), most)
     }
 
     /// The card the counter names at a scroll offset: the one in the middle,
     /// except within half a screen of either end, where it slides to the first
     /// or last card.
-    private func cardShown(at offset: CGFloat, height: CGFloat, viewport: CGFloat, below: CGFloat) -> Int {
-        let most = listContentHeight(cardHeight: height, below: below) - viewport
+    private func cardShown(at offset: CGFloat, layout: PackListLayout, height: CGFloat, viewport: CGFloat,
+                           below: CGFloat) -> Int {
+        let most = listContentHeight(layout: layout, cardHeight: height, below: below) - viewport
         guard most > 0 else { return index }
         let half = viewport / 2
         let reading = offset + (offset < most / 2 ? min(max(offset, 0), half)
                                                   : max(half, viewport - max(most - offset, 0)))
-        let i = Int((reading - AppLayout.spacing / 2) / (height + AppLayout.spacing))
-        return min(max(i, 0), verses.count - 1)
+        let row = Int((reading - AppLayout.spacing / 2) / (height + AppLayout.spacing))
+        return min(max(layout.firstCard(inRow: row), 0), verses.count - 1)
     }
 
     private func startPractice(from i: Int) {

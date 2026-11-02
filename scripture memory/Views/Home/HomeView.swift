@@ -12,6 +12,7 @@ struct HomeView: View {
 
     @State private var cover: ActiveCover?
     @State private var showPinPicker = false
+    @State private var windowWidth: CGFloat = 0
 
     /// One full-screen presentation at a time (two `.fullScreenCover`s on one
     /// view conflict): the daily review, a pack's practice, or a pack.
@@ -59,6 +60,7 @@ struct HomeView: View {
         MountAfterFirstFrame {
             ScrollView { dashboard }
         }
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { windowWidth = $0 }
         .defaultScrollAnchor(.top)
         .background(Color(.systemGroupedBackground))
         .navigationTitle("Home")
@@ -77,29 +79,47 @@ struct HomeView: View {
         }
     }
 
+    private var isSideBySide: Bool {
+        PackListLayout.columns(forWidth: windowWidth - 2 * AppLayout.screenMargin) > 1
+    }
+
     private var dashboard: some View {
         VStack(spacing: AppLayout.spacing) {
             NavigationLink { StreakView() } label: { HomeStreakCard() }
                 .buttonStyle(CardButtonStyle())
-            VStack(spacing: 8) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text("Daily Review")
-                        .font(.title3.weight(.bold))
-                        .accessibilityAddTraits(.isHeader)
-                    Spacer()
-                    packsReviewLink
+            if isSideBySide {
+                HStack(alignment: .top, spacing: AppLayout.spacing) {
+                    dailyReview
+                        .frame(maxWidth: .infinity)
+                    learningCards
+                        .frame(maxWidth: .infinity)
                 }
-                .padding(.horizontal, 20)
-                DailyReviewCard(activePacks: activePacks) { cover = .review($0) }
-            }
-            .padding(.top, 8)
-            learningCards
                 .padding(.top, 8)
+            } else {
+                dailyReview
+                    .padding(.top, 8)
+                learningCards
+                    .padding(.top, 8)
+            }
         }
         .padding(.horizontal, AppLayout.screenMargin)
         .padding(.top, 8)
         .padding(.bottom, 24)
-        .readableColumn()
+        .readableColumn(isSideBySide ? .infinity : AppLayout.readableWidth)
+    }
+
+    private var dailyReview: some View {
+        VStack(spacing: 8) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Daily Review")
+                    .font(.title3.weight(.bold))
+                    .accessibilityAddTraits(.isHeader)
+                Spacer()
+                packsReviewLink
+            }
+            .padding(.horizontal, 20)
+            DailyReviewCard(activePacks: activePacks) { cover = .review($0) }
+        }
     }
 
     // MARK: - Learning
