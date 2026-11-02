@@ -2,14 +2,13 @@ package joel.scripturememory.model
 
 import androidx.compose.runtime.MutableIntState
 import androidx.compose.runtime.mutableIntStateOf
-import java.util.concurrent.ConcurrentHashMap
 
 class AppDefaults(private val store: KeyValueStore) : KeyValueStore {
 
-    private val revisions = ConcurrentHashMap<String, MutableIntState>()
+    private val revisions = Array(64) { mutableIntStateOf(0) }
 
     private fun revision(key: String): MutableIntState =
-        revisions.getOrPut(key) { mutableIntStateOf(0) }
+        revisions[key.hashCode().mod(revisions.size)]
 
     private fun observe(key: String) {
         revision(key).intValue
