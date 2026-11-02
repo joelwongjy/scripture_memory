@@ -67,6 +67,12 @@ final class PackListLayoutTests: XCTestCase {
         }
     }
 
+    func testThePouchHoldsCardsTheSizeOfTheColumns() {
+        let duoOpen = PackListLayout(width: 637, spacing: 16)
+        XCTAssertEqual(duoOpen.pouchWidthLimit! * PackListLayout.pouchCardShare, duoOpen.cardWidth, accuracy: 0.001)
+        XCTAssertNil(PackListLayout(width: 408, spacing: 16).pouchWidthLimit)
+    }
+
     func testCardCentresSitEitherSideOfTheMiddle() {
         let layout = PackListLayout(width: 637, spacing: 16)
         XCTAssertEqual(layout.centerOffset(ofCard: 0), -163.25)
