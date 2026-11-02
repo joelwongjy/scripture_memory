@@ -27,9 +27,9 @@ final class TestSessionViewModel: RecallCardViewModel {
 
     let kind: SessionKind
 
-    init(verses: [Verse], kind: SessionKind) {
+    init(verses: [Verse], kind: SessionKind, startIndex: Int = 0) {
         self.kind = kind
-        super.init(verses: verses)
+        super.init(verses: verses, initialIndex: startIndex)
         restoreProgress()
     }
 

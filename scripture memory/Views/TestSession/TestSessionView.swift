@@ -47,7 +47,8 @@ struct TestSessionView: View {
     init(session: TestSession, onSessionEnded: (() -> Void)? = nil,
          onRoundEnded: ((_ grades: [SRSGrade], _ missed: [Verse]) -> Void)? = nil,
          onCardShown: ((Verse) -> Void)? = nil) {
-        _vm = StateObject(wrappedValue: TestSessionViewModel(verses: session.verses, kind: session.kind))
+        _vm = StateObject(wrappedValue: TestSessionViewModel(verses: session.verses, kind: session.kind,
+                                                               startIndex: session.startIndex))
         self.onSessionEnded = onSessionEnded
         self.onRoundEnded   = onRoundEnded
         self.onCardShown    = onCardShown

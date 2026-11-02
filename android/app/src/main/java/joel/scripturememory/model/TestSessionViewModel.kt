@@ -20,7 +20,8 @@ private data class SessionProgress(
 class TestSessionViewModel(
     verses: List<Verse>,
     val kind: SessionKind,
-) : RecallCardViewModel(verses) {
+    startIndex: Int = 0,
+) : RecallCardViewModel(verses, startIndex) {
 
     var mistakeCounts: Map<Int, Int> by mutableStateOf(emptyMap())
         private set
