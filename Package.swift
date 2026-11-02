@@ -29,6 +29,7 @@ let package = Package(
                 "ScrubberMath.swift",
                 "PackArranger.swift",
                 "PackListLayout.swift",
+                "StudyWindow.swift",
                 "AnalyticsEvent.swift",
             ]
         ),
