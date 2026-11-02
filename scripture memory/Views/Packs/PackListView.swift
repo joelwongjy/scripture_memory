@@ -31,7 +31,7 @@ struct PackListView: View {
     /// the user can spot where to resume at a glance.
     private var currentPackName: String? { learning.currentVerse?.packName }
 
-    /// Two columns on a phone; more on a wide window (iPhone Duo's inner display).
+    /// Two columns on a phone; more on a wide window.
     private let columns = [GridItem(.adaptive(minimum: 160), spacing: AppLayout.spacing)]
 
     // MARK: - Body
@@ -85,7 +85,8 @@ struct PackListView: View {
         // See `HomeView` — index built off the interaction path.
         .task { VerseSearch.prewarm(visiblePacks) }
         .fullScreenCover(item: $opened) { item in
-            PouchView(pack: item.pack, startIndex: item.index, shelf: item.origin,
+            PouchView(pack: item.pack, startIndex: item.index,
+                      shelf: item.origin.map { origin in { tileFrames.byPack[item.pack.id] ?? origin } },
                       animatesPouch: !item.fromSearch,
                       onPutBack: { withoutPresentationAnimation { opened = nil } })
                 .presentationBackground(item.origin == nil ? AnyShapeStyle(Color(.systemGroupedBackground))

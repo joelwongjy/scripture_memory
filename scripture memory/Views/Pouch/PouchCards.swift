@@ -2,7 +2,7 @@ import SwiftUI
 import UIKit
 
 // The printed cards that live in the pouch. Sized off the card's width so the
-// same face reads right on a phone and on the iPhone Duo's inner display.
+// same face reads right on any screen.
 //
 // Styled after the physical TMS cards: bold grey title, a small serif
 // "NIV", the reference, the verse in Optima, and the series code along the
