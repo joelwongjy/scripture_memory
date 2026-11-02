@@ -3,6 +3,13 @@ import XCTest
 
 final class AnalyticsEventTests: XCTestCase {
 
+    func testClosingAPackSaysHowManyVersesWereCovered() {
+        let event = AnalyticsEvent.packClosed(how: .closeButton, seconds: 12, covers: 3)
+        XCTAssertEqual(event.parameters["covers"], "2-5")
+        XCTAssertEqual(AnalyticsEvent.packClosed(how: .closeButton, seconds: 12, covers: 0).parameters["covers"], "0")
+    }
+
+
     func testCountsAreSentAsRanges() {
         XCTAssertEqual(AnalyticsRange.count(0), "0")
         XCTAssertEqual(AnalyticsRange.count(1), "1")

@@ -6,7 +6,7 @@ import SwiftUI
 /// Opening, the pouch comes off its shelf tile, unfolds and fans its cards out
 /// into the list. Closing (the ×, a swipe in from the leading edge, or a swipe
 /// left across the list) gathers them back in and folds it shut. Tap a card to
-/// practise from it.
+/// cover its verse and say it from memory; tap again to check.
 struct PouchView: View {
     let pack: Pack
     /// The pack's tile on the shelf, in global coordinates, to fly out of and
@@ -43,6 +43,8 @@ struct PouchView: View {
     /// 1 with the pouch shut on its shelf tile, 0 with it in front of you.
     @State private var flight: CGFloat
     @State private var practice: TestSession?
+    @State private var covered: Set<Int> = []
+    @State private var coverCount = 0
     @State private var undoToastState: UndoToastState?
     @AppStorage("pouch.jumpLabelShown.v1") private var jumpLabelShown = false
 
@@ -222,14 +224,14 @@ struct PouchView: View {
 
     private func listCells(width: CGFloat, height: CGFloat) -> some View {
         ForEach(verses.indices, id: \.self) { i in
-            Button { startPractice(from: i) } label: {
+            Button { toggleCover(i) } label: {
                 listCard(i, width: width)
                     .frame(width: width, height: height)
                     .listCardShadow()
             }
             .buttonStyle(CardButtonStyle())
             .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 2, style: .continuous))
-            .contextMenu { cardMenu(verses[i]) }
+            .contextMenu { cardMenu(i) }
             .id(i)
         }
     }
@@ -377,7 +379,8 @@ struct PouchView: View {
     private func listCard(_ i: Int, width: CGFloat) -> some View {
         let verse = verses[i]
         let isCurrent = learning.isCurrent(verse)
-        return PouchVerseCard(verse: verse, isLearnt: learning.isLearnt(verse), width: width) {
+        let isCovered = covered.contains(i)
+        return PouchVerseCard(verse: verse, isLearnt: learning.isLearnt(verse), width: width, isCovered: isCovered) {
             if isCurrent {
                 Button { markComplete(verse, from: .card) } label: {
                     Label("Complete", systemImage: "checkmark")
@@ -393,8 +396,9 @@ struct PouchView: View {
         }
         .paperAppearance()
         .accessibilityAddTraits(.isButton)
-        .accessibilityHint("Practises from this verse")
-        .accessibilityAction { startPractice(from: i) }
+        .accessibilityHint(isCovered ? "Reveals this verse" : "Covers this verse")
+        .accessibilityAction { toggleCover(i) }
+        .accessibilityAction(named: "Practice from Here") { startPractice(from: i) }
         .accessibilityAction(named: FavoritesStore.shared.isFavorite(verse) ? "Unstar" : "Star") {
             toggleStar(verse)
         }
@@ -404,8 +408,12 @@ struct PouchView: View {
     }
 
     @ViewBuilder
-    private func cardMenu(_ verse: Verse) -> some View {
+    private func cardMenu(_ i: Int) -> some View {
+        let verse = verses[i]
         let isFavorite = FavoritesStore.shared.isFavorite(verse)
+        Button { startPractice(from: i) } label: {
+            Label("Practice from Here", systemImage: "keyboard")
+        }
         Button {
             HapticEngine.light()
             toggleStar(verse)
@@ -512,7 +520,7 @@ struct PouchView: View {
     private func close(_ how: PackCloseMethod) {
         guard !closing else { return }
         closing = true
-        Analytics.log(.packClosed(how: how, seconds: openTime.elapsed()))
+        Analytics.log(.packClosed(how: how, seconds: openTime.elapsed(), covers: coverCount))
         if AppMotion.reduceMotion || !animatesPouch { HapticEngine.light(); dismissOrPutBack(); return }
         HapticEngine.play(HapticEngine.packClose)
         var t = Transaction()
@@ -583,6 +591,16 @@ struct PouchView: View {
                                                   : max(half, viewport - max(most - offset, 0)))
         let row = Int((reading - AppLayout.spacing / 2) / (height + AppLayout.spacing))
         return min(max(layout.firstCard(inRow: row), 0), verses.count - 1)
+    }
+
+    private func toggleCover(_ i: Int) {
+        HapticEngine.light()
+        withAnimation(AppMotion.control) {
+            if covered.remove(i) == nil {
+                covered.insert(i)
+                coverCount += 1
+            }
+        }
     }
 
     private func startPractice(from i: Int) {
