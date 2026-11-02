@@ -1,0 +1,85 @@
+package joel.scripturememory.model
+
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Test
+
+class AnalyticsEventTests {
+
+    @Test
+    fun testCountsAreSentAsRanges() {
+        assertEquals("0", AnalyticsRange.count(0))
+        assertEquals("1", AnalyticsRange.count(1))
+        assertEquals("2-5", AnalyticsRange.count(5))
+        assertEquals("6-10", AnalyticsRange.count(6))
+        assertEquals("11-20", AnalyticsRange.count(20))
+        assertEquals("21-50", AnalyticsRange.count(50))
+        assertEquals("50+", AnalyticsRange.count(51))
+    }
+
+    @Test
+    fun testDurationsAreSentAsRanges() {
+        assertEquals("<30s", AnalyticsRange.duration(12.0))
+        assertEquals("30s-1m", AnalyticsRange.duration(45.0))
+        assertEquals("1-3m", AnalyticsRange.duration(120.0))
+        assertEquals("3-10m", AnalyticsRange.duration(400.0))
+        assertEquals("10-30m", AnalyticsRange.duration(900.0))
+        assertEquals("30m+", AnalyticsRange.duration(4000.0))
+    }
+
+    @Test
+    fun testSessionNamesFollowTheKind() {
+        val start = StudySessionStart(StudySessionKind.review, 8, "firstLetter", false)
+        assertEquals("Review.started", AnalyticsEvent.SessionStarted(start).name)
+        val extra = start.copy(kind = StudySessionKind.extraRound)
+        assertEquals("Review.extraRound.started", AnalyticsEvent.SessionStarted(extra).name)
+        val end = StudySessionSummary(StudySessionKind.quiz, true, 3, 3, 70.0)
+        assertEquals("Quiz.ended", AnalyticsEvent.SessionEnded(end).name)
+    }
+
+    @Test
+    fun testReviewStartCarriesQueueMixOnlyForReviews() {
+        val start = StudySessionStart(
+            StudySessionKind.review,
+            12,
+            "fullWord",
+            true,
+            newCards = 2,
+            learningCards = 1,
+            dueCards = 9,
+        )
+        assertEquals("6-10", start.parameters["due"])
+        assertEquals("2-5", start.parameters["new"])
+        assertEquals("true", start.parameters["hardMode"])
+        assertNull(start.copy(kind = StudySessionKind.quiz).parameters["due"])
+    }
+
+    @Test
+    fun testReviewEndSendsRatingsAndQuizEndSendsMistakes() {
+        val review = StudySessionSummary(
+            StudySessionKind.review,
+            false,
+            10,
+            4,
+            200.0,
+            again = 1,
+            good = 3,
+        )
+        assertEquals("1", review.parameters["again"])
+        assertEquals("2-5", review.parameters["good"])
+        assertEquals("false", review.parameters["finished"])
+        assertNull(review.parameters["mistakes"])
+
+        val quiz = StudySessionSummary(StudySessionKind.quiz, true, 5, 5, 90.0)
+        assertEquals("true", quiz.parameters["allCorrect"])
+        val withMistakes = quiz.copy(mistakes = 2)
+        assertEquals("false", withMistakes.parameters["allCorrect"])
+        assertNull(withMistakes.parameters["again"])
+    }
+
+    @Test
+    fun testSearchNeverCarriesTheQuery() {
+        val event = AnalyticsEvent.SearchResultOpened(3, false)
+        assertEquals(mapOf("rank" to "2-5", "matchedOn" to "text"), event.parameters)
+    }
+}

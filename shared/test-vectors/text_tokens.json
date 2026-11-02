@@ -1,0 +1,90 @@
+{
+"description": "String.wordTokens and quote trimming, plus a digest of every bundled verse's tokens. Regenerate after editing the verse JSON.",
+"tokens": [
+{"expected":[],"input":""},
+{"expected":[],"input":" "},
+{"expected":[],"input":"     "},
+{"expected":["the","quick","fox"],"input":"the quick fox"},
+{"expected":["the","quick","fox"],"input":"the   quick  fox"},
+{"expected":["hi","there"],"input":"  hi   there  "},
+{"expected":["life","death"],"input":"life--death"},
+{"expected":["a","b"],"input":"a -- b"},
+{"expected":["a","-b"],"input":"a---b"},
+{"expected":["a","b"],"input":"a----b"},
+{"expected":[],"input":"--"},
+{"expected":["-"],"input":"---"},
+{"expected":["a"],"input":"-- a"},
+{"expected":["a"],"input":"a --"},
+{"expected":["God-breathed","word"],"input":"God-breathed word"},
+{"expected":["Until"],"input":"\"Until"},
+{"expected":["Man"],"input":"`Man"},
+{"expected":["said,"],"input":"said,\""},
+{"expected":["don't"],"input":"don't"},
+{"expected":["it's","mine"],"input":"it's mine"},
+{"expected":["Man"],"input":"‘Man"},
+{"expected":["Word"],"input":"“Word”"},
+{"expected":["x"],"input":"«x»"},
+{"expected":["y"],"input":"‹y›"},
+{"expected":[],"input":"\"''\""},
+{"expected":[],"input":"' '"},
+{"expected":[],"input":"\" \""},
+{"expected":["a","b"],"input":"a \" b"},
+{"expected":["word—word"],"input":"word—word"},
+{"expected":["word","—","word"],"input":"word — word"},
+{"expected":["—"],"input":"—"},
+{"expected":["-","word"],"input":"- word"},
+{"expected":["Man","-","the","sinner"],"input":"Man - the sinner"},
+{"expected":["And","this","is","the","testimony:","God","has","given","us","eternal","life","and","this","life","is","in","his","Son."],"input":"\"And this is the testimony: God has given us eternal life--and this life is in his Son.\""},
+{"expected":["Nested"],"input":"“‘Nested’”"},
+{"expected":["tis"],"input":"'tis"},
+{"expected":["rock","n","roll"],"input":"rock 'n' roll"},
+{"expected":["1","John","1:9"],"input":"1 John 1:9"},
+{"expected":["100%"],"input":"100%"},
+{"expected":["(parens)"],"input":"(parens)"}
+],
+"quotes": [
+{"expected":"hello","input":"\"hello\""},
+{"expected":"x","input":"'x'"},
+{"expected":"smart","input":"“smart”"},
+{"expected":"plain","input":"plain"},
+{"expected":"","input":"''"},
+{"expected":"","input":""},
+{"expected":"","input":"\""},
+{"expected":"a\"b","input":"a\"b"},
+{"expected":"a\"b","input":"\"a\"b\""},
+{"expected":"x","input":"`'\"x\"'`"},
+{"expected":"x","input":"«‹x›»"},
+{"expected":" \"x\" ","input":" \"x\" "}
+],
+"legacyKeys": [
+{"book":"Psalm","expected":"TMS 60#psalm|119:9","pack":"TMS 60","reference":"119:9"},
+{"book":" Psalms ","expected":"DEP 1: Assurance#psalms|1:2-3","pack":"DEP 1: Assurance","reference":"1 : 2 - 3"},
+{"book":"1 JOHN","expected":"Pack#1 john|1:9b","pack":"Pack","reference":"1:9 b"},
+{"book":"John\n","expected":"5 Assurances#john|16:24","pack":"5 Assurances","reference":"16:24"},
+{"book":"","expected":"#|","pack":"","reference":""},
+{"book":"Ephesians\t","expected":"P#ephesians|2:8-9","pack":"P","reference":"2:8-9"}
+],
+"catalog": [
+{"count":15783,"digest":"5d051e3541182d28","file":"verseData.json"},
+{"count":15834,"digest":"e69545f3d9fd8803","file":"verseDataNIV11.json"}
+],
+"darwinTokens": [
+{"expected":["a\tb"],"input":"a\tb"},
+{"expected":["leading"],"input":"\tleading"},
+{"expected":["trailing"],"input":"trailing\t"},
+{"expected":["a\nb"],"input":"a\nb"},
+{"expected":["\na"],"input":"\na"},
+{"expected":["a\n"],"input":"a\n"},
+{"expected":["x y"],"input":"x y"},
+{"expected":["x"],"input":" x "},
+{"expected":["z"],"input":"​z​"},
+{"expected":["em"],"input":" em "},
+{"expected":["ideographic"],"input":"　ideographic　"},
+{"expected":["nel"],"input":"nel"},
+{"expected":[" ls "],"input":" ls "}
+],
+"darwinCharacterSets": [
+{"name":"whitespaces","ranges":[[9,9],[32,32],[160,160],[5760,5760],[8192,8203],[8239,8239],[8287,8287],[12288,12288]]},
+{"name":"whitespacesAndNewlines","ranges":[[9,13],[32,32],[133,133],[160,160],[5760,5760],[8192,8203],[8232,8233],[8239,8239],[8287,8287],[12288,12288]]}
+]
+}
