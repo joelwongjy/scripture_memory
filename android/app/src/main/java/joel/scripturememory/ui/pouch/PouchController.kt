@@ -2,6 +2,7 @@ package joel.scripturememory.ui.pouch
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationSpec
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.lazy.LazyListState
@@ -26,6 +27,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlin.math.PI
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -113,6 +115,9 @@ internal class PouchController(
     var lifted by mutableStateOf<LiftedCard?>(null)
     val liftAmount = Animatable(0f)
     val liftedAngle = Animatable(0f)
+    val liftedDragX = Animatable(0f)
+    val liftedDragY = Animatable(0f)
+    var columns by mutableIntStateOf(1)
     private var flipCount = 0
     var listScrolled = false
     var closeCenterY by mutableStateOf<Float?>(null)
@@ -186,6 +191,12 @@ internal class PouchController(
     private fun cardMotion(): AnimationSpec<Float> =
         if (AppMotion.reduceMotion) tween(150) else PouchMotion.smoothSpec(0.24f)
 
+    private fun cardBounce(): AnimationSpec<Float> {
+        if (AppMotion.reduceMotion) return tween(150)
+        val omega = (2 * PI / 0.32).toFloat()
+        return spring(0.62f, omega * omega)
+    }
+
     fun liftCard(i: Int, source: Rect) {
         if (lifted != null) return
         HapticEngine.light()
@@ -201,13 +212,33 @@ internal class PouchController(
         scope.launch { liftedAngle.animateTo(to, cardMotion()) }
     }
 
-    fun putCardBack() {
+    fun followCardSwipe(x: Float, y: Float) {
+        scope.launch {
+            liftedDragX.snapTo(x)
+            liftedDragY.snapTo(y)
+        }
+    }
+
+    fun releaseCardSwipe(putBack: Boolean) {
+        if (putBack) {
+            putCardBack(cardBounce())
+            return
+        }
+        scope.launch { liftedDragX.animateTo(0f, cardBounce()) }
+        scope.launch { liftedDragY.animateTo(0f, cardBounce()) }
+    }
+
+    fun putCardBack() = putCardBack(cardMotion())
+
+    private fun putCardBack(motion: AnimationSpec<Float>) {
         if (lifted == null || liftAmount.targetValue != 1f) return
         scope.launch {
-            val moving = launch { liftAmount.animateTo(0f, cardMotion()) }
-            val turning = launch { liftedAngle.animateTo(0f, cardMotion()) }
-            moving.join()
-            turning.join()
+            listOf(
+                launch { liftAmount.animateTo(0f, motion) },
+                launch { liftedAngle.animateTo(0f, motion) },
+                launch { liftedDragX.animateTo(0f, motion) },
+                launch { liftedDragY.animateTo(0f, motion) },
+            ).forEach { it.join() }
             lifted = null
         }
     }
@@ -217,6 +248,8 @@ internal class PouchController(
         scope.launch {
             liftAmount.snapTo(0f)
             liftedAngle.snapTo(0f)
+            liftedDragX.snapTo(0f)
+            liftedDragY.snapTo(0f)
         }
     }
 

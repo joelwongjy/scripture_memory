@@ -1,7 +1,9 @@
 package joel.scripturememory.model
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class PackListLayoutTests {
@@ -89,6 +91,45 @@ class PackListLayoutTests {
     @Test
     fun testALiftedCardFitsAShortWindow() {
         assertEquals(168 * 5f / 3f, PackListLayout.liftedWidth(269f, 576f, 200f, 5f / 3f, 16f), 0.001f)
+    }
+
+    @Test
+    fun testACardFollowsTheFingerAtFirstThenResists() {
+        assertEquals(0f, PackListLayout.cardPull(0f))
+        assertEquals(5.3f, PackListLayout.cardPull(10f), 0.1f)
+        assertTrue(
+            PackListLayout.cardPull(400f) - PackListLayout.cardPull(200f) <
+                PackListLayout.cardPull(200f) - PackListLayout.cardPull(0f),
+        )
+        assertTrue(PackListLayout.cardPull(10_000f) < PackListLayout.cardPullLimit)
+    }
+
+    @Test
+    fun testACardResistsTheSameBothWays() {
+        assertEquals(-PackListLayout.cardPull(90f), PackListLayout.cardPull(-90f))
+    }
+
+    @Test
+    fun testOneColumnCountsOneCard() {
+        assertEquals("Card 7 of 26", PackListLayout.positionLabel(6, 26, 1))
+    }
+
+    @Test
+    fun testColumnsCountTheWholeRow() {
+        assertEquals("Cards 7–8 of 26", PackListLayout.positionLabel(6, 26, 2))
+        assertEquals("Cards 7–8 of 26", PackListLayout.positionLabel(7, 26, 2))
+    }
+
+    @Test
+    fun testALastRowWithOneCardCountsOneCard() {
+        assertEquals("Card 25 of 25", PackListLayout.positionLabel(24, 25, 2))
+    }
+
+    @Test
+    fun testPacksShowOnHomeOnlyWhenTheWindowIsWideAndTall() {
+        assertTrue(PackListLayout.showsPacksOnHome(637f, 860f))
+        assertFalse(PackListLayout.showsPacksOnHome(576f, 466f))
+        assertFalse(PackListLayout.showsPacksOnHome(408f, 860f))
     }
 
     @Test

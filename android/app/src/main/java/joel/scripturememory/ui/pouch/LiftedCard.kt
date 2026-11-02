@@ -1,6 +1,7 @@
 package joel.scripturememory.ui.pouch
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,6 +17,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.Role
@@ -32,10 +35,14 @@ import joel.scripturememory.ui.theme.AppLayout
 import joel.scripturememory.ui.theme.AppMotion
 import kotlin.math.PI
 import kotlin.math.cos
+import kotlin.math.hypot
 
 internal data class LiftedCard(val index: Int, val source: Rect)
 
 private val paperShape = RoundedCornerShape(2.dp)
+private const val swipeDistance = 90f
+private const val swipeFlick = 220f
+private const val swipeFlickSeconds = 0.5f
 
 @Composable
 internal fun LiftedCardView(
@@ -45,6 +52,9 @@ internal fun LiftedCardView(
     area: Rect,
     lift: () -> Float,
     angle: () -> Float,
+    drag: () -> Offset,
+    onDrag: (Offset) -> Unit,
+    onRelease: (putBack: Boolean) -> Unit,
     onFlip: () -> Unit,
     onPutBack: () -> Unit,
 ) {
@@ -61,7 +71,40 @@ internal fun LiftedCardView(
     val height = width / AppLayout.cardAspect
     val showsReference by remember { derivedStateOf { angle() > 90f } }
 
-    Box(Modifier.fillMaxSize()) {
+    Box(
+        Modifier
+            .fillMaxSize()
+            .pointerInput(Unit) {
+                val tracker = VelocityTracker()
+                var travel = Offset.Zero
+                detectDragGestures(
+                    onDragStart = {
+                        tracker.resetTracking()
+                        travel = Offset.Zero
+                    },
+                    onDragEnd = {
+                        val velocity = tracker.calculateVelocity()
+                        val moved = travel.getDistance() / this.density
+                        val flung = hypot(
+                            travel.x + velocity.x * swipeFlickSeconds,
+                            travel.y + velocity.y * swipeFlickSeconds,
+                        ) / this.density
+                        onRelease(moved > swipeDistance || flung > swipeFlick)
+                    },
+                    onDragCancel = { onRelease(false) },
+                ) { change, amount ->
+                    change.consume()
+                    tracker.addPosition(change.uptimeMillis, change.position)
+                    travel += amount
+                    onDrag(
+                        Offset(
+                            PackListLayout.cardPull(travel.x / this.density) * this.density,
+                            PackListLayout.cardPull(travel.y / this.density) * this.density,
+                        ),
+                    )
+                }
+            },
+    ) {
         Box(
             Modifier
                 .matchParentSize()
@@ -73,11 +116,13 @@ internal fun LiftedCardView(
                 .size(width, height)
                 .graphicsLayer {
                     val moved = if (still) 1f else lift()
-                    val s = 1f + (source.width / size.width - 1f) * (1f - moved)
+                    val pull = drag()
+                    val squeeze = 1f - 0.05f * pull.getDistance() / this.density / PackListLayout.cardPullLimit
+                    val s = (1f + (source.width / size.width - 1f) * (1f - moved)) * squeeze
                     scaleX = s
                     scaleY = s
-                    translationX = source.center.x + (area.center.x - source.center.x) * moved - size.width / 2
-                    translationY = source.center.y + (area.center.y - source.center.y) * moved - size.height / 2
+                    translationX = source.center.x + (area.center.x - source.center.x) * moved - size.width / 2 + pull.x
+                    translationY = source.center.y + (area.center.y - source.center.y) * moved - size.height / 2 + pull.y
                     rotationY = if (still) 0f else angle()
                     cameraDistance = 12f * this.density
                     alpha = if (still) lift() else 1f
