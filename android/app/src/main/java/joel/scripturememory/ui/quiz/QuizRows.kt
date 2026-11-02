@@ -8,7 +8,6 @@ import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
@@ -37,19 +36,20 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import joel.scripturememory.R
 import joel.scripturememory.model.Pack
 import joel.scripturememory.model.Verse
-import joel.scripturememory.model.VerseNumbering
 import joel.scripturememory.ui.components.Divider
 import joel.scripturememory.ui.components.Icon
+import joel.scripturememory.ui.components.PackRowLabel
+import joel.scripturememory.ui.components.RowChevron
+import joel.scripturememory.ui.components.SelectionCircle
 import joel.scripturememory.ui.components.Text
+import joel.scripturememory.ui.components.VerseRowLabel
 import joel.scripturememory.ui.components.dimOnPress
 import joel.scripturememory.ui.components.pressable
-import joel.scripturememory.ui.packs.PackBadge
 import joel.scripturememory.ui.study.CapsuleShape
 import joel.scripturememory.ui.theme.AppLayout
 import joel.scripturememory.ui.theme.AppMotion
@@ -83,43 +83,12 @@ internal val Pack.shortName: String
     }
 
 @Composable
-internal fun Modifier.sectionRow(first: Boolean, last: Boolean): Modifier {
-    val corner = AppLayout.cornerRadius
-    val shape = RoundedCornerShape(
-        topStart = if (first) corner else 0.dp,
-        topEnd = if (first) corner else 0.dp,
-        bottomStart = if (last) corner else 0.dp,
-        bottomEnd = if (last) corner else 0.dp,
-    )
-    return padding(horizontal = AppLayout.screenMargin).clip(shape).background(AppTheme.colors.panel)
-}
-
-@Composable
 internal fun SectionHeader(title: String, modifier: Modifier = Modifier) {
     Text(
         title,
-        modifier.padding(
-            start = AppLayout.screenMargin + AppLayout.panelPadding,
-            end = AppLayout.screenMargin,
-            top = 20.dp,
-            bottom = 8.dp,
-        ),
+        modifier.padding(start = AppLayout.panelPadding, end = AppLayout.panelPadding, top = 20.dp, bottom = 8.dp),
         style = AppType.footnote,
         color = AppTheme.colors.secondaryLabel,
-    )
-}
-
-@Composable
-internal fun SelectionCircle(isSelected: Boolean, mixed: Boolean = false, size: Dp = 20.dp, tint: Color) {
-    val colors = AppTheme.colors
-    Icon(
-        when {
-            isSelected -> R.drawable.ic_check_circle_fill
-            mixed -> R.drawable.ic_minus_circle_fill
-            else -> R.drawable.ic_circle
-        },
-        size = size,
-        tint = if (isSelected || mixed) tint else colors.secondaryLabel,
     )
 }
 
@@ -154,8 +123,12 @@ internal fun PackHeaderRow(
             ) {
                 SelectionCircle(allSelected, someSelected && !allSelected, 22.dp, pack.tint)
             }
-            Row(
-                Modifier
+            PackRowLabel(
+                pack = pack,
+                title = pack.shortName,
+                showsBadge = true,
+                detail = detail,
+                modifier = Modifier
                     .weight(1f)
                     .semantics {
                         contentDescription = if (isExpanded) {
@@ -164,30 +137,20 @@ internal fun PackHeaderRow(
                             "Expand ${pack.name} to pick individual verses"
                         }
                     }
-                    .pressable(pressedScale = 1f, pressedAlpha = 0.55f, onClick = onToggleExpanded),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                PackBadge(pack)
-                Column(Modifier.weight(1f).padding(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(
-                        pack.shortName,
-                        style = AppType.body.copy(fontWeight = FontWeight.Medium),
-                        color = colors.label,
-                        maxLines = 1,
-                    )
-                    Text(detail, style = AppType.subheadline, color = colors.secondaryLabel, maxLines = 1)
-                }
-                Box(
-                    Modifier
-                        .padding(end = 4.dp)
-                        .size(width = 44.dp, height = 44.dp)
-                        .graphicsLayer { rotationZ = chevron },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(R.drawable.ic_caret_right, size = 12.dp, tint = colors.tertiaryLabel)
-                }
-            }
+                    .pressable(pressedScale = 1f, pressedAlpha = 0.55f, onClick = onToggleExpanded)
+                    .padding(vertical = 8.dp),
+                trailing = {
+                    Box(
+                        Modifier
+                            .padding(end = 4.dp)
+                            .size(44.dp)
+                            .graphicsLayer { rotationZ = chevron },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        RowChevron()
+                    }
+                },
+            )
         }
         if (showsDivider) Divider(Modifier.padding(start = 106.dp, end = AppLayout.panelPadding))
     }
@@ -204,11 +167,11 @@ internal fun VerseSelectRow(
     onSelectUpTo: () -> Unit,
 ) {
     val colors = AppTheme.colors
-    val subtitle = VerseNumbering.code(verse)?.let { "$it · ${verse.title}" } ?: verse.title
     Column(Modifier.dragSelectRow(verse.id, frames)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Row(
-                Modifier
+            VerseRowLabel(
+                verse = verse,
+                modifier = Modifier
                     .weight(1f)
                     .semantics(mergeDescendants = true) {
                         contentDescription = "${verse.title}, ${verse.book} ${verse.reference}"
@@ -217,30 +180,8 @@ internal fun VerseSelectRow(
                     }
                     .pressable(pressedScale = 1f, pressedAlpha = 0.55f, onClick = onToggle)
                     .padding(start = 40.dp, top = 6.dp, bottom = 6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                SelectionCircle(isSelected, tint = tint)
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            "${verse.book} ${verse.reference}",
-                            style = AppType.body.copy(fontWeight = FontWeight.SemiBold),
-                            color = colors.label,
-                            maxLines = 1,
-                        )
-                        verse.pinnedVersion?.let {
-                            Text(
-                                it,
-                                style = AppType.caption.copy(fontWeight = FontWeight.SemiBold),
-                                color = colors.secondaryLabel,
-                                maxLines = 1,
-                            )
-                        }
-                    }
-                    Text(subtitle, style = AppType.subheadline, color = colors.secondaryLabel, maxLines = 1)
-                }
-            }
+                leading = { SelectionCircle(isSelected, size = 20.dp, tint = tint) },
+            )
             Box(
                 Modifier
                     .padding(end = 8.dp)

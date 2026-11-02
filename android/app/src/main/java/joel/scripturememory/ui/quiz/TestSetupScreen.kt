@@ -36,7 +36,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.max
-import joel.scripturememory.model.AnalyticsEvent
 import joel.scripturememory.model.AnalyticsScreen
 import joel.scripturememory.model.AppDefaults
 import joel.scripturememory.model.BibleVersion
@@ -50,18 +49,18 @@ import joel.scripturememory.model.TestSession
 import joel.scripturememory.model.TestSessionViewModel
 import joel.scripturememory.model.Verse
 import joel.scripturememory.model.Wording
-import joel.scripturememory.system.Analytics
 import joel.scripturememory.system.HapticEngine
 import joel.scripturememory.ui.components.AlertAction
 import joel.scripturememory.ui.components.AppAlert
 import joel.scripturememory.ui.components.BottomActionBar
 import joel.scripturememory.ui.components.ChromeTextButton
-import joel.scripturememory.ui.components.LargeTitleList
+import joel.scripturememory.ui.components.ReadableList
 import joel.scripturememory.ui.components.ListRow
 import joel.scripturememory.ui.components.LocalBottomBarPadding
 import joel.scripturememory.ui.components.LocalCovers
 import joel.scripturememory.ui.components.PrimaryButton
-import joel.scripturememory.ui.components.Text
+import joel.scripturememory.ui.components.TrackScreen
+import joel.scripturememory.ui.components.groupedRow
 import joel.scripturememory.ui.components.Divider
 import joel.scripturememory.ui.study.TestSessionScreen
 import joel.scripturememory.ui.theme.AppMotion
@@ -199,8 +198,8 @@ fun TestSetupScreen() {
         HapticEngine.light()
     }
 
+    TrackScreen(AnalyticsScreen.quiz)
     LaunchedEffect(Unit) {
-        Analytics.log(AnalyticsEvent.ScreenViewed(AnalyticsScreen.quiz))
         AppDefaults.standard.getInt(quizCountKey)?.takeIf { it >= 1 }?.let { quizCount = it }
         loadSavedSession()
     }
@@ -217,8 +216,9 @@ fun TestSetupScreen() {
 
     Box(Modifier.fillMaxSize().twoFingerDragSelect(::handleDragSelect) { dragVisited.clear() }) {
         CompositionLocalProvider(LocalBottomBarPadding provides inset + barSpace) {
-            LargeTitleList(
+            ReadableList(
                 title = "Quiz",
+                showsLargeTitle = true,
                 verticalSpacing = 0.dp,
                 actions = {
                     if (selectedVerseIds.isNotEmpty()) {
@@ -247,7 +247,7 @@ fun TestSetupScreen() {
                                     TestSessionViewModel.savedCompletedCount(SessionKind.custom, session.verses)
                                 }
                             }
-                            Box(Modifier.sectionRow(first = true, last = true)) {
+                            Box(Modifier.groupedRow(0, 1)) {
                                 ResumeRow(
                                     done = done,
                                     total = session.verses.size,
@@ -267,7 +267,7 @@ fun TestSetupScreen() {
                         val starred = favorites.verses(visiblePacks)
                         val hasBoth = upToCurrent.isNotEmpty() && starred.isNotEmpty()
                         if (upToCurrent.isNotEmpty()) {
-                            Box(Modifier.sectionRow(first = true, last = !hasBoth)) {
+                            Box(Modifier.groupedRow(0, if (hasBoth) 2 else 1)) {
                                 ListRow(
                                     title = "Up to current verse",
                                     titleColor = AppTheme.colors.accent,
@@ -281,7 +281,7 @@ fun TestSetupScreen() {
                             }
                         }
                         if (starred.isNotEmpty()) {
-                            Column(Modifier.sectionRow(first = !hasBoth, last = true)) {
+                            Column(Modifier.groupedRow(if (hasBoth) 1 else 0, if (hasBoth) 2 else 1)) {
                                 if (hasBoth) Divider(Modifier.padding(start = 16.dp, end = 16.dp))
                                 ListRow(
                                     title = "Favourites",
@@ -306,9 +306,8 @@ fun TestSetupScreen() {
                         }
                     }
                     items(rows.size, key = { rows[it].key }) { index ->
-                        val first = index == 0
                         val last = index == rows.size - 1
-                        Box(Modifier.animateItem().sectionRow(first, last)) {
+                        Box(Modifier.animateItem().groupedRow(index, rows.size)) {
                             when (val row = rows[index]) {
                                 is PackListItem.Header -> {
                                     val pack = row.pack

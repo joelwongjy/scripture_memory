@@ -54,6 +54,7 @@ import joel.scripturememory.ui.components.PrimaryButton
 import joel.scripturememory.ui.components.Text
 import joel.scripturememory.ui.components.groupedPanel
 import joel.scripturememory.ui.components.readableColumn
+import joel.scripturememory.ui.components.symbolBounce
 import joel.scripturememory.ui.theme.AppLayout
 import joel.scripturememory.ui.theme.AppMotion
 import joel.scripturememory.ui.theme.AppTheme
@@ -103,7 +104,6 @@ fun DailyReviewScreen(session: TestSession, onFinished: () -> Unit, onClose: (()
 fun ReviewCompleteView(grades: List<SRSGrade>, onContinue: () -> Unit) {
     val colors = AppTheme.colors
     val density = LocalDensity.current.density
-    val bounce = rememberSymbolBounce()
     val appeared = remember { Animatable(0f) }
     val remembered = grades.count { it != SRSGrade.again }
     val percent = if (grades.isEmpty()) 0 else (remembered.toDouble() / grades.size * 100).roundToInt()
@@ -132,9 +132,11 @@ fun ReviewCompleteView(grades: List<SRSGrade>, onContinue: () -> Unit) {
                 Modifier
                     .padding(bottom = 20.dp)
                     .graphicsLayer {
-                        scaleX = bounce.value
-                        scaleY = bounce.value
-                    },
+                        val scale = if (AppMotion.reduceMotion) 1f else 0.6f + 0.4f * appeared.value
+                        scaleX = scale
+                        scaleY = scale
+                    }
+                    .symbolBounce(onAppear = true),
                 size = 88.dp,
                 tint = colors.green,
             )
