@@ -7,10 +7,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.platform.InterceptPlatformTextInput
 import androidx.compose.ui.platform.PlatformTextInputMethodRequest
-import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.input.TransformedText
-import androidx.compose.ui.text.input.OffsetMapping
-import androidx.compose.ui.text.AnnotatedString
 
 enum class StudyInputKind { Recall, Prose }
 
@@ -41,15 +37,5 @@ fun StudyInputMethod(kind: StudyInputKind, content: @Composable () -> Unit) {
             )
         },
         content = content,
-    )
-}
-
-object HiddenTyping : VisualTransformation {
-    override fun filter(text: AnnotatedString): TransformedText = TransformedText(
-        AnnotatedString(""),
-        object : OffsetMapping {
-            override fun originalToTransformed(offset: Int): Int = 0
-            override fun transformedToOriginal(offset: Int): Int = text.length
-        },
     )
 }

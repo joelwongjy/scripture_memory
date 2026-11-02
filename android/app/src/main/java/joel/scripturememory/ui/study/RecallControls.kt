@@ -47,7 +47,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import joel.scripturememory.R
@@ -188,10 +187,9 @@ fun RecallInputField(
                         .focusRequester(focusRequester)
                         .onFocusChanged { onFocusChange(it.isFocused) }
                         .semantics { contentDescription = studyMode.inputPlaceholder },
-                    textStyle = AppType.body.copy(color = colors.label),
+                    textStyle = AppType.body.copy(color = if (hidesTyping) Color.Transparent else colors.label),
                     singleLine = true,
-                    visualTransformation = if (hidesTyping) HiddenTyping else VisualTransformation.None,
-                    cursorBrush = SolidColor(colors.accent),
+                    cursorBrush = SolidColor(if (hidesTyping && field.text.isNotEmpty()) Color.Transparent else colors.accent),
                     keyboardOptions = KeyboardOptions(
                         capitalization = KeyboardCapitalization.None,
                         autoCorrectEnabled = false,
