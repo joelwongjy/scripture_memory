@@ -54,9 +54,22 @@ enum Analytics {
 }
 
 struct TelemetryDeckSink: AnalyticsSink {
+    private var isSimulator: Bool {
+        #if targetEnvironment(simulator)
+        return true
+        #else
+        return false
+        #endif
+    }
+
     func start() {
-        TelemetryDeck.initialize(config: .init(appID: "0215C34A-0573-47A2-861A-A405B0F98961",
-                                               namespace: "com.joelwong"))
+        let config = TelemetryDeck.Config(appID: "0215C34A-0573-47A2-861A-A405B0F98961",
+                                          namespace: "com.joelwong")
+        if AnalyticsBuild.isTest(isSimulator: isSimulator,
+                                 receiptName: Bundle.main.appStoreReceiptURL?.lastPathComponent) {
+            config.testMode = true
+        }
+        TelemetryDeck.initialize(config: config)
     }
 
     func stop() { TelemetryDeck.terminate() }
