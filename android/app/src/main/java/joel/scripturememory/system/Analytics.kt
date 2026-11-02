@@ -71,13 +71,21 @@ object Analytics {
 
 class TelemetryDeckSink : AnalyticsSink {
     override fun start(context: Context) {
+        val isTest = AnalyticsBuild.isTest(BuildConfig.DEBUG, isEmulator, context.installer())
         TelemetryDeck.start(
             context,
             TelemetryDeck.Builder()
                 .appID("0215C34A-0573-47A2-861A-A405B0F98961")
                 .namespace("com.joelwong")
-                .testMode(AnalyticsBuild.isTest(BuildConfig.DEBUG, isEmulator))
-                .addProvider(DefaultParameterProvider(mapOf("platform" to "android"))),
+                .testMode(isTest)
+                .addProvider(
+                    DefaultParameterProvider(
+                        mapOf(
+                            "platform" to "android",
+                            "TelemetryDeck.RunContext.isAppStore" to (!isTest).toString(),
+                        ),
+                    ),
+                ),
         )
     }
 
@@ -85,6 +93,15 @@ class TelemetryDeckSink : AnalyticsSink {
 
     private val isEmulator: Boolean
         get() = Build.HARDWARE in setOf("ranchu", "goldfish") || Build.FINGERPRINT.startsWith("generic")
+
+    private fun Context.installer(): String? = runCatching {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            packageManager.getInstallSourceInfo(packageName).installingPackageName
+        } else {
+            @Suppress("DEPRECATION")
+            packageManager.getInstallerPackageName(packageName)
+        }
+    }.getOrNull()
 
     override fun send(event: AnalyticsEvent) {
         if (event is AnalyticsEvent.ScreenViewed) {

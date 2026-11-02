@@ -184,7 +184,10 @@ data class StudySessionSummary(
 }
 
 object AnalyticsBuild {
-    fun isTest(isDebug: Boolean, isEmulator: Boolean): Boolean = isDebug || isEmulator
+    const val playStore = "com.android.vending"
+
+    fun isTest(isDebug: Boolean, isEmulator: Boolean, installer: String?): Boolean =
+        isDebug || isEmulator || installer != playStore
 }
 
 class ActiveTimer(now: Date = Date.now()) {
