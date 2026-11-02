@@ -104,6 +104,8 @@ internal class PouchController(
     var fanned by mutableStateOf(reduce)
     var listSettled by mutableStateOf(false)
     var closing by mutableStateOf(false)
+    var covered by mutableStateOf(emptySet<Int>())
+    private var coverCount = 0
     var listScrolled = false
     var closeCenterY by mutableStateOf<Float?>(null)
     var listState: LazyListState? = null
@@ -173,10 +175,20 @@ internal class PouchController(
         }
     }
 
+    fun toggleCover(i: Int) {
+        HapticEngine.light()
+        if (i in covered) {
+            covered = covered - i
+        } else {
+            covered = covered + i
+            coverCount += 1
+        }
+    }
+
     fun close(how: PackCloseMethod) {
         if (closing) return
         closing = true
-        Analytics.log(AnalyticsEvent.PackClosed(how, openTime.elapsed()))
+        Analytics.log(AnalyticsEvent.PackClosed(how, openTime.elapsed(), coverCount))
         if (AppMotion.reduceMotion || !animatesPouch) {
             HapticEngine.light()
             onClosed()

@@ -133,4 +133,11 @@ class AnalyticsEventTests {
         timer.resume(now = start.addingTimeInterval(4_005.0))
         assertEquals(30.0, timer.elapsed(now = start.addingTimeInterval(4_010.0)), 1e-9)
     }
+
+    @Test
+    fun closingAPackSaysHowManyVersesWereCovered() {
+        val event = AnalyticsEvent.PackClosed(PackCloseMethod.closeButton, 12.0, 3)
+        assertEquals("2-5", event.parameters["covers"])
+        assertEquals("0", AnalyticsEvent.PackClosed(PackCloseMethod.closeButton, 12.0, 0).parameters["covers"])
+    }
 }
