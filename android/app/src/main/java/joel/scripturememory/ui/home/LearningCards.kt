@@ -96,7 +96,7 @@ fun ContinueLearningCard(
                 Modifier.weight(1f).alignByBaseline().semantics { heading() },
                 style = AppType.title3.copy(fontWeight = FontWeight.Bold),
                 color = colors.label,
-                maxLines = 1,
+                maxLines = 2,
             )
             Text(
                 "${spot.indexInPack + 1} of ${spot.pack.verses.size}",

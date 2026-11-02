@@ -58,6 +58,7 @@ import kotlin.math.floor
 import kotlin.math.max
 
 private val minimumTileWidth = 160.dp
+private const val minimumColumns = 2
 
 private class TileFrames {
     val byPack = HashMap<String, Rect>()
@@ -114,7 +115,7 @@ fun PackListScreen() {
     }
 
     BoxWithConstraints(Modifier.windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))) {
-        val columns = adaptiveColumns(maxWidth - AppLayout.screenMargin * 2, minimumTileWidth, AppLayout.spacing)
+        val columns = minimumColumns.coerceAtLeast(adaptiveColumns(maxWidth - AppLayout.screenMargin * 2, minimumTileWidth, AppLayout.spacing))
         val rows = remember(tiles, columns) { tiles.chunked(columns) }
         LargeTitleList(
             title = "Packs",

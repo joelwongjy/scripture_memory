@@ -100,7 +100,7 @@ fun HomeScreen() {
                     Modifier.weight(1f).alignByBaseline().semantics { heading() },
                     style = AppType.title3.copy(fontWeight = FontWeight.Bold),
                     color = AppTheme.colors.label,
-                    maxLines = 1,
+                    maxLines = 2,
                 )
                 PacksReviewLink(
                     active = activePacks.size,

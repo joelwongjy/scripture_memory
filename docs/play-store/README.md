@@ -5,7 +5,7 @@ Expect about four weeks, nearly all of it waiting. Steps marked **You** need you
 ## 1. Before the Play Console
 
 - [ ] **You:** merge [#37](https://github.com/joelwongjy/scripture_memory/pull/37), then [#39](https://github.com/joelwongjy/scripture_memory/pull/39).
-- [ ] Publish `privacy-policy.html` to the privacy site. The live policy doesn't cover Android yet.
+- [x] Publish the privacy policy update.
 - [ ] **You:** back up `~/.config/scripture-memory/upload.jks` and `android-signing.properties` somewhere safe, such as a password manager.
 
 ## 2. Create your developer account (allow up to a week)
@@ -24,14 +24,9 @@ Expect about four weeks, nearly all of it waiting. Steps marked **You** need you
 
 This puts the app on your own phone before anyone else sees it.
 
-- [ ] Build the bundle:
-
-  ```bash
-  Scripts/release.sh android --notes "First Android build"
-  ```
-
+- [x] Build the bundle with `Scripts/release.sh android`.
 - [ ] **You:** Test and release > Internal testing > Create release. Accept Play App Signing, then upload `android/app/build/outputs/bundle/release/app-release.aab`.
-- [ ] **You:** add your own Gmail as a tester, install from the link, and try it on a real phone. Check the things no emulator could: dictation, reminders, haptics, and TalkBack.
+- [ ] **You:** add a tester who has an Android phone, and ask them to install from the link. Ask them to check what no emulator could: dictation, haptics, and TalkBack.
 
 ## 5. Closed test (14 days)
 
@@ -52,7 +47,6 @@ This puts the app on your own phone before anyone else sees it.
 ## 8. After launch
 
 - [ ] Add a Play API key so `Scripts/release.sh` can upload. See `RELEASING.md`.
-- [ ] Update your TelemetryDeck dashboards. They filter on `isAppStore`, so Android users won't appear until you add the `platform = android` signals.
 - [ ] Update the README and support page, which describe only the iPhone app.
 
 ## Installing before the Play release
