@@ -110,10 +110,16 @@ class AnalyticsEventTests {
     }
 
     @Test
-    fun debugAndEmulatorBuildsAreTestBuilds() {
-        assertEquals(true, AnalyticsBuild.isTest(isDebug = true, isEmulator = false))
-        assertEquals(true, AnalyticsBuild.isTest(isDebug = false, isEmulator = true))
-        assertEquals(false, AnalyticsBuild.isTest(isDebug = false, isEmulator = false))
+    fun onlyPlayInstallsOnRealDevicesAreLive() {
+        val play = AnalyticsBuild.playStore
+        assertEquals(true, AnalyticsBuild.isTest(isDebug = true, isEmulator = false, installer = play))
+        assertEquals(true, AnalyticsBuild.isTest(isDebug = false, isEmulator = true, installer = play))
+        assertEquals(true, AnalyticsBuild.isTest(isDebug = false, isEmulator = false, installer = null))
+        assertEquals(
+            true,
+            AnalyticsBuild.isTest(isDebug = false, isEmulator = false, installer = "com.google.android.packageinstaller"),
+        )
+        assertEquals(false, AnalyticsBuild.isTest(isDebug = false, isEmulator = false, installer = play))
     }
 
     @Test
