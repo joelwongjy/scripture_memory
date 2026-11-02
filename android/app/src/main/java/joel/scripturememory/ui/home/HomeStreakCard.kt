@@ -22,6 +22,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalConfiguration
 import joel.scripturememory.R
 import joel.scripturememory.model.StreakStore
 import joel.scripturememory.ui.components.Icon
@@ -36,6 +37,8 @@ import joel.scripturememory.ui.theme.AppMotion
 import joel.scripturememory.ui.theme.AppTheme
 import joel.scripturememory.ui.theme.AppType
 
+private const val narrowScreenWidth = 380
+
 @Composable
 fun HomeStreakCard(modifier: Modifier = Modifier, onClick: () -> Unit) {
     val colors = AppTheme.colors
@@ -44,6 +47,7 @@ fun HomeStreakCard(modifier: Modifier = Modifier, onClick: () -> Unit) {
     val lit = streak.isTodayDone
     val label = if (lit || count == 0) "$count day streak" else "$count day streak, open the app today to keep it"
     val titleStyle = AppType.callout.copy(fontWeight = FontWeight.SemiBold)
+    val isNarrow = LocalConfiguration.current.screenWidthDp < narrowScreenWidth
     Row(
         modifier
             .fillMaxWidth()
@@ -76,7 +80,7 @@ fun HomeStreakCard(modifier: Modifier = Modifier, onClick: () -> Unit) {
         }
         Row(
             Modifier.clearAndSetSemantics {},
-            horizontalArrangement = Arrangement.spacedBy(5.dp),
+            horizontalArrangement = Arrangement.spacedBy(if (isNarrow) 3.dp else 5.dp),
         ) {
             streak.thisWeek().forEach { day ->
                 Column(
@@ -86,7 +90,7 @@ fun HomeStreakCard(modifier: Modifier = Modifier, onClick: () -> Unit) {
                 ) {
                     Box(
                         Modifier
-                            .size(17.dp)
+                            .size(if (isNarrow) 15.dp else 17.dp)
                             .clip(CircleShape)
                             .background(if (day.done) colors.orange else dayTrack)
                             .then(

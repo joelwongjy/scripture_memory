@@ -10,13 +10,16 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import joel.scripturememory.ui.theme.AppMotion
 import joel.scripturememory.ui.theme.AppTheme
@@ -25,13 +28,16 @@ import joel.scripturememory.ui.theme.AppType
 data class TabItem(val title: String, val icon: Int, val selectedIcon: Int)
 
 val TabBarHeight = 58.dp
+private const val maxLabelFontScale = 1.3f
 
 @Composable
 fun TabBar(tabs: List<TabItem>, selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier) {
     val colors = AppTheme.colors
+    val density = LocalDensity.current
+    val cappedDensity = Density(density.density, density.fontScale.coerceAtMost(maxLabelFontScale))
     Column(modifier.fillMaxWidth().background(colors.chrome)) {
         Divider()
-        Row(
+        CompositionLocalProvider(LocalDensity provides cappedDensity) { Row(
             Modifier
                 .fillMaxWidth()
                 .navigationBarsPadding()
@@ -63,6 +69,6 @@ fun TabBar(tabs: List<TabItem>, selected: Int, onSelect: (Int) -> Unit, modifier
                     Text(tab.title, style = AppType.caption2, color = tint, maxLines = 1)
                 }
             }
-        }
+        } }
     }
 }
