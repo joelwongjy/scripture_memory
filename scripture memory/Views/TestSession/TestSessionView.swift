@@ -23,13 +23,14 @@ struct TestSessionView: View {
     @State private var isPeeking             = false
     /// Pending "marked complete" undo prompt.
     @State private var undoToastState:       UndoToastState?
-    @State private var startedAt             = Date()
+    @State private var activeTime            = ActiveTimer()
     @State private var undoCount             = 0
     @State private var usedVoice             = false
     @State private var loggedStart           = false
     @State private var loggedEnd             = false
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.scenePhase) private var scenePhase
 
     let onSessionEnded: (() -> Void)?
     /// A review's last card was rated: called with this round's ratings and the
@@ -131,6 +132,9 @@ struct TestSessionView: View {
         .speechErrorAlert(speech)
         .onAppear(perform: logStart)
         .onDisappear { logEnd(finished: false) }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { activeTime.resume() } else { activeTime.pause() }
+        }
         .onChange(of: vm.currentIndex) { _, _ in
             vm.clearInputs()
             vm.resetDictation()
@@ -654,14 +658,16 @@ struct TestSessionView: View {
     private func logStart() {
         guard !loggedStart else { return }
         loggedStart = true
-        startedAt = Date()
+        activeTime = ActiveTimer()
         Analytics.log(.screenViewed(isReview ? .dailyReview : sessionKind == .pack ? .practice : .quizSession))
         var start = StudySessionStart(kind: analyticsKind, cards: vm.verses.count,
                                       studyMode: studyMode.rawValue,
                                       hardMode: UserDefaults.standard.bool(forKey: "hardMode"))
         if isReview {
+            start.reviewedToday = SRSStore.shared.reviewedToday()
             for verse in vm.verses {
                 switch SRSStore.shared.state(for: verse)?.phase {
+                case nil where learning.isLearnt(verse): start.knownCards += 1
                 case nil:       start.newCards += 1
                 case .learning: start.learningCards += 1
                 case .review:   start.dueCards += 1
@@ -679,7 +685,7 @@ struct TestSessionView: View {
         var summary = StudySessionSummary(kind: analyticsKind, finished: finished,
                                           cards: vm.verses.count,
                                           cardsDone: isReview ? grades.count : vm.completedCount,
-                                          seconds: Date().timeIntervalSince(startedAt))
+                                          seconds: activeTime.elapsed())
         summary.again = grades.filter { $0 == .again }.count
         summary.hard  = grades.filter { $0 == .hard }.count
         summary.good  = grades.filter { $0 == .good }.count

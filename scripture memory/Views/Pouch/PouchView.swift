@@ -35,7 +35,7 @@ struct PouchView: View {
     @State private var settleToken = 0
     @Environment(\.displayScale) private var displayScale
     @State private var closing = false
-    @State private var openedAt = Date()
+    @State private var openTime = ActiveTimer()
     /// The card centred in the list.
     @State private var listIndex: Int?
     @State private var listScrolled = false
@@ -54,6 +54,7 @@ struct PouchView: View {
     @ObservedObject private var learning = LearningStore.shared
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.scenePhase) private var scenePhase
 
     /// The top controls' height under the safe area: a 44pt control and its padding.
     private static let chromeHeight: CGFloat = 60
@@ -113,6 +114,9 @@ struct PouchView: View {
         .onAppear { appeared() }
         .analyticsScreen(.pack)
         .onChange(of: fanned) { _, out in out ? tilt.stop() : tilt.start() }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { openTime.resume() } else { openTime.pause() }
+        }
         .onDisappear {
             tilt.stop()
             if verses.indices.contains(index) { PackPositions.save(verses[index], inPack: pack.name) }
@@ -550,7 +554,7 @@ struct PouchView: View {
     private func close(_ how: PackCloseMethod) {
         guard !closing else { return }
         closing = true
-        Analytics.log(.packClosed(how: how, seconds: Date().timeIntervalSince(openedAt)))
+        Analytics.log(.packClosed(how: how, seconds: openTime.elapsed()))
         if AppMotion.reduceMotion || !animatesPouch { HapticEngine.light(); dismissOrPutBack(); return }
         HapticEngine.play(HapticEngine.packClose)
         var t = Transaction()

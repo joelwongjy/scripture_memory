@@ -61,5 +61,37 @@ final class AnalyticsEventTests: XCTestCase {
     func testSearchNeverCarriesTheQuery() {
         let event = AnalyticsEvent.searchResultOpened(rank: 3, matchedOnReference: false)
         XCTAssertEqual(event.parameters, ["rank": "2-5", "matchedOn": "text"])
+        let search = AnalyticsEvent.searchPerformed(results: 7)
+        XCTAssertEqual(search.name, "Search.performed")
+        XCTAssertEqual(search.parameters, ["results": "6-10"])
+    }
+
+    func testReviewStartSeparatesKnownCardsAndEarlierReviews() {
+        var start = StudySessionStart(kind: .review, cards: 7, studyMode: "firstLetter", hardMode: false,
+                                      newCards: 2, knownCards: 5, reviewedToday: 3)
+        XCTAssertEqual(start.parameters["new"], "2-5")
+        XCTAssertEqual(start.parameters["known"], "2-5")
+        XCTAssertEqual(start.parameters["reviewedToday"], "2-5")
+        start.kind = .practice
+        XCTAssertNil(start.parameters["known"])
+        XCTAssertNil(start.parameters["reviewedToday"])
+    }
+
+    func testSimulatorsAndSandboxReceiptsAreTestBuilds() {
+        XCTAssertTrue(AnalyticsBuild.isTest(isSimulator: true, receiptName: nil))
+        XCTAssertTrue(AnalyticsBuild.isTest(isSimulator: false, receiptName: "sandboxReceipt"))
+        XCTAssertFalse(AnalyticsBuild.isTest(isSimulator: false, receiptName: "receipt"))
+        XCTAssertFalse(AnalyticsBuild.isTest(isSimulator: false, receiptName: nil))
+    }
+
+    func testActiveTimerLeavesOutTimeAway() {
+        let start = Date(timeIntervalSince1970: 1_000)
+        var timer = ActiveTimer(now: start)
+        timer.pause(now: start.addingTimeInterval(20))
+        timer.pause(now: start.addingTimeInterval(25))
+        XCTAssertEqual(timer.elapsed(now: start.addingTimeInterval(4_000)), 20)
+        timer.resume(now: start.addingTimeInterval(4_000))
+        timer.resume(now: start.addingTimeInterval(4_005))
+        XCTAssertEqual(timer.elapsed(now: start.addingTimeInterval(4_010)), 30)
     }
 }

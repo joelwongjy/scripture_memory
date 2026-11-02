@@ -20,6 +20,7 @@ enum AnalyticsEvent: Equatable {
     case sessionStarted(StudySessionStart)
     case sessionEnded(StudySessionSummary)
 
+    case searchPerformed(results: Int)
     case searchResultOpened(rank: Int, matchedOnReference: Bool)
     case searchFoundNothing
 
@@ -38,6 +39,7 @@ enum AnalyticsEvent: Equatable {
         case .packVisibilityChanged: return "Packs.visibilityChanged"
         case .sessionStarted(let s): return "\(s.kind.signalPrefix).started"
         case .sessionEnded(let s):   return "\(s.kind.signalPrefix).ended"
+        case .searchPerformed:       return "Search.performed"
         case .searchResultOpened:    return "Search.resultOpened"
         case .searchFoundNothing:    return "Search.foundNothing"
         case .settingChanged:        return "Settings.changed"
@@ -68,6 +70,8 @@ enum AnalyticsEvent: Equatable {
             return s.parameters
         case .sessionEnded(let s):
             return s.parameters
+        case .searchPerformed(let results):
+            return ["results": AnalyticsRange.count(results)]
         case .searchResultOpened(let rank, let onReference):
             return ["rank": AnalyticsRange.count(rank), "matchedOn": onReference ? "reference" : "text"]
         case .settingChanged(let setting, let value):
@@ -109,6 +113,8 @@ struct StudySessionStart: Equatable {
     var newCards = 0
     var learningCards = 0
     var dueCards = 0
+    var knownCards = 0
+    var reviewedToday = 0
     var pack: String?
 
     var parameters: [String: String] {
@@ -117,6 +123,8 @@ struct StudySessionStart: Equatable {
             p["new"] = AnalyticsRange.count(newCards)
             p["learning"] = AnalyticsRange.count(learningCards)
             p["due"] = AnalyticsRange.count(dueCards)
+            p["known"] = AnalyticsRange.count(knownCards)
+            p["reviewedToday"] = AnalyticsRange.count(reviewedToday)
         }
         if let pack { p["pack"] = pack }
         return p
@@ -156,6 +164,32 @@ struct StudySessionSummary: Equatable {
             p["allCorrect"] = String(finished && mistakes == 0)
         }
         return p
+    }
+}
+
+enum AnalyticsBuild {
+    static func isTest(isSimulator: Bool, receiptName: String?) -> Bool {
+        isSimulator || receiptName == "sandboxReceipt"
+    }
+}
+
+struct ActiveTimer: Equatable {
+    private var total: TimeInterval = 0
+    private var resumedAt: Date?
+
+    init(now: Date = Date()) { resumedAt = now }
+
+    mutating func pause(now: Date = Date()) {
+        total = elapsed(now: now)
+        resumedAt = nil
+    }
+
+    mutating func resume(now: Date = Date()) {
+        if resumedAt == nil { resumedAt = now }
+    }
+
+    func elapsed(now: Date = Date()) -> TimeInterval {
+        total + (resumedAt.map { now.timeIntervalSince($0) } ?? 0)
     }
 }
 
