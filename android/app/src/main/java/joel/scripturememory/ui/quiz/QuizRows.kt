@@ -189,7 +189,7 @@ internal fun PackHeaderRow(
                 }
             }
         }
-        if (showsDivider) Divider(Modifier.padding(start = 106.dp))
+        if (showsDivider) Divider(Modifier.padding(start = 106.dp, end = AppLayout.panelPadding))
     }
 }
 
@@ -252,7 +252,7 @@ internal fun VerseSelectRow(
                 Icon(R.drawable.ic_arrow_line_up, size = 15.dp, tint = colors.tertiaryLabel)
             }
         }
-        if (showsDivider) Divider(Modifier.padding(start = 72.dp))
+        if (showsDivider) Divider(Modifier.padding(start = 72.dp, end = AppLayout.panelPadding))
     }
 }
 
@@ -272,18 +272,20 @@ internal fun ResumeRow(
     val fraction by animateFloatAsState(done.toFloat() / total.coerceAtLeast(1), AppMotion.content(), label = "resume")
 
     Box(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
-        Box(
-            Modifier
-                .align(Alignment.CenterEnd)
-                .fillMaxHeight()
-                .width(revealWidth)
-                .background(colors.red)
-                .pressable(pressedScale = 1f, pressedAlpha = 0.6f, onClick = onEnd),
-            contentAlignment = Alignment.Center,
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Icon(R.drawable.ic_trash, size = 20.dp, tint = colors.onAccent)
-                Text("End", style = AppType.caption.copy(fontWeight = FontWeight.SemiBold), color = colors.onAccent)
+        if (offset.value < 0f) {
+            Box(
+                Modifier
+                    .align(Alignment.CenterEnd)
+                    .fillMaxHeight()
+                    .width(revealWidth)
+                    .background(colors.red)
+                    .pressable(pressedScale = 1f, pressedAlpha = 0.6f, onClick = onEnd),
+                contentAlignment = Alignment.Center,
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Icon(R.drawable.ic_trash, size = 20.dp, tint = colors.onAccent)
+                    Text("End", style = AppType.caption.copy(fontWeight = FontWeight.SemiBold), color = colors.onAccent)
+                }
             }
         }
         Row(

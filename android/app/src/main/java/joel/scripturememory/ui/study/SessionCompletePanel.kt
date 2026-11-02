@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import joel.scripturememory.R
 import joel.scripturememory.model.StudyMode
@@ -36,26 +37,33 @@ fun rememberSymbolBounce(): Animatable<Float, *> {
 }
 
 @Composable
-fun SessionCompletePanel(vm: TestSessionViewModel, studyMode: StudyMode, onDone: () -> Unit) {
+fun SessionCompletePanel(vm: TestSessionViewModel, studyMode: StudyMode, compact: Boolean, onDone: () -> Unit) {
     val colors = AppTheme.colors
     val bounce = rememberSymbolBounce()
-    Column(
-        Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
+    val mistakes = -vm.sessionScore
+    val perfect = vm.sessionScore == 0
+
+    @Composable
+    fun Seal(size: Dp) {
         Icon(
-            if (vm.sessionScore == 0) R.drawable.ic_seal_check_fill else R.drawable.ic_check_circle_fill,
+            if (perfect) R.drawable.ic_seal_check_fill else R.drawable.ic_check_circle_fill,
             Modifier.graphicsLayer {
                 scaleX = bounce.value
                 scaleY = bounce.value
             },
-            size = 44.dp,
-            tint = if (vm.sessionScore == 0) colors.green else colors.accent,
+            size = size,
+            tint = if (perfect) colors.green else colors.accent,
         )
-        Text("Session Complete", style = AppType.title3.copy(fontWeight = FontWeight.Bold), color = colors.label)
+    }
+
+    @Composable
+    fun Title() {
+        Text("Session Complete", style = AppType.title3.copy(fontWeight = FontWeight.Bold), color = colors.label, maxLines = 1)
+    }
+
+    @Composable
+    fun Score() {
         if (studyMode == StudyMode.submit) {
-            val mistakes = -vm.sessionScore
             Text(
                 when (mistakes) {
                     0 -> "No mistakes"
@@ -64,20 +72,27 @@ fun SessionCompletePanel(vm: TestSessionViewModel, studyMode: StudyMode, onDone:
                 },
                 style = AppType.body.copy(fontWeight = FontWeight.SemiBold),
                 color = if (mistakes == 0) colors.green else colors.red,
+                maxLines = 1,
             )
             Text(
                 "${vm.perfectCount} of ${vm.verses.size} perfect",
                 style = AppType.subheadline,
                 color = colors.secondaryLabel,
+                maxLines = 1,
             )
         } else {
             Text(
                 "${vm.verses.size} verses reviewed",
                 style = AppType.subheadline,
                 color = colors.secondaryLabel,
+                maxLines = 1,
             )
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    }
+
+    @Composable
+    fun Actions(modifier: Modifier) {
+        Row(modifier, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             StudyActionButton("Try Again", Modifier.weight(1f), onClick = { vm.resetAllProgress() })
             StudyActionButton(
                 "Done",
@@ -86,6 +101,32 @@ fun SessionCompletePanel(vm: TestSessionViewModel, studyMode: StudyMode, onDone:
                 background = colors.accent,
                 onClick = onDone,
             )
+        }
+    }
+
+    if (compact) {
+        Row(
+            Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Seal(32.dp)
+            Column(Modifier.weight(1f)) {
+                Title()
+                Score()
+            }
+            Actions(Modifier.weight(1f))
+        }
+    } else {
+        Column(
+            Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Seal(44.dp)
+            Title()
+            Score()
+            Actions(Modifier)
         }
     }
 }

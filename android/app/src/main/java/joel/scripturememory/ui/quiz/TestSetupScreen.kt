@@ -5,6 +5,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -281,7 +282,7 @@ fun TestSetupScreen() {
                         }
                         if (starred.isNotEmpty()) {
                             Column(Modifier.sectionRow(first = !hasBoth, last = true)) {
-                                if (hasBoth) Divider(Modifier.padding(start = 16.dp))
+                                if (hasBoth) Divider(Modifier.padding(start = 16.dp, end = 16.dp))
                                 ListRow(
                                     title = "Favourites",
                                     titleColor = AppTheme.colors.accent,
@@ -369,7 +370,11 @@ fun TestSetupScreen() {
             enter = slideInVertically(AppMotion.content()) { it } + fadeIn(AppMotion.content()),
             exit = slideOutVertically(AppMotion.content()) { it } + fadeOut(AppMotion.content()),
         ) {
-            BottomActionBar(Modifier.onSizeChanged { barHeight = it.height }) {
+            BottomActionBar(
+                Modifier
+                    .onSizeChanged { barHeight = it.height }
+                    .background(AppTheme.colors.background),
+            ) {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     QuizCountPicker(
                         count = quizCount,

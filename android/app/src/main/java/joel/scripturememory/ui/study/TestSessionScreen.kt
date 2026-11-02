@@ -37,6 +37,7 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -102,6 +103,7 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 
 private const val predictiveShrink = 0.08f
+private val compactSummaryHeight = 480.dp
 
 @Composable
 fun rememberSessionClose(onClose: (() -> Unit)?): () -> Unit {
@@ -255,6 +257,7 @@ private fun SessionBody(state: TestSessionState) {
         val cardWidth = columnWidth - AppLayout.screenMargin * 2
         val cardHeight = cardWidth / AppLayout.cardAspect
         val isShort = maxHeight < AppLayout.shortStudyHeight
+        val compactSummary = maxHeight < compactSummaryHeight
 
         Column(Modifier.width(columnWidth).fillMaxHeight().align(Alignment.TopCenter)) {
             BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
@@ -278,6 +281,7 @@ private fun SessionBody(state: TestSessionState) {
                 ) {
                     Box(
                         Modifier
+                            .wrapContentHeight(Alignment.Top, unbounded = true)
                             .size(cardWidth, cardH)
                             .graphicsLayer { translationY = travel * panned },
                     ) {
@@ -300,7 +304,7 @@ private fun SessionBody(state: TestSessionState) {
                 }
             }
 
-            BottomControls(state, isShort)
+            BottomControls(state, isShort, compactSummary)
         }
     }
 }
@@ -489,7 +493,7 @@ private fun MakeCard(state: TestSessionState, verse: Verse, verseIndex: Int, int
 }
 
 @Composable
-private fun BottomControls(state: TestSessionState, isShort: Boolean) {
+private fun BottomControls(state: TestSessionState, isShort: Boolean, compactSummary: Boolean) {
     val vm = state.vm
     val learning = LearningStore.shared
     val studyMode = state.studyMode
@@ -512,7 +516,7 @@ private fun BottomControls(state: TestSessionState, isShort: Boolean) {
             label = "summary",
         ) { summary ->
             if (summary) {
-                SessionCompletePanel(vm, studyMode, onDone = state::finishSession)
+                SessionCompletePanel(vm, studyMode, compact = compactSummary, onDone = state::finishSession)
             } else {
                 CardControlBand(state)
             }
