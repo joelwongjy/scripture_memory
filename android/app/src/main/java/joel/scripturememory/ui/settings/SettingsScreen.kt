@@ -24,7 +24,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,6 +44,7 @@ import joel.scripturememory.model.AnalyticsEvent
 import joel.scripturememory.model.AnalyticsScreen
 import joel.scripturememory.model.AppDefaults
 import joel.scripturememory.model.BibleVersion
+import joel.scripturememory.model.CardAppearance
 import joel.scripturememory.model.Catalogue
 import joel.scripturememory.model.HomeVerseStartMode
 import joel.scripturememory.model.LearningStore
@@ -56,7 +56,6 @@ import joel.scripturememory.model.SRSStore
 import joel.scripturememory.model.StudyMode
 import joel.scripturememory.system.Analytics
 import joel.scripturememory.system.NotificationManager
-import joel.scripturememory.system.analyticsScreen
 import joel.scripturememory.ui.components.AlertAction
 import joel.scripturememory.ui.components.AppAlert
 import joel.scripturememory.ui.components.AppSheet
@@ -64,7 +63,6 @@ import joel.scripturememory.ui.components.GroupedSection
 import joel.scripturememory.ui.components.Icon
 import joel.scripturememory.ui.components.LargeTitleColumn
 import joel.scripturememory.ui.components.ListRow
-import joel.scripturememory.ui.components.LocalBottomBarPadding
 import joel.scripturememory.ui.components.LocalNavigator
 import joel.scripturememory.ui.components.PickerSheet
 import joel.scripturememory.ui.components.RowDivider
@@ -76,7 +74,9 @@ import joel.scripturememory.ui.components.Text
 import joel.scripturememory.ui.components.TextButton
 import joel.scripturememory.ui.components.TimeWheelPicker
 import joel.scripturememory.ui.components.ToggleRow
+import joel.scripturememory.ui.components.TrackScreen
 import joel.scripturememory.ui.components.dimOnPress
+import joel.scripturememory.ui.onboarding.LearningSetupScreen
 import joel.scripturememory.ui.theme.AppLayout
 import joel.scripturememory.ui.theme.AppMotion
 import joel.scripturememory.ui.theme.AppTheme
@@ -85,13 +85,7 @@ import joel.scripturememory.ui.theme.CardFont
 import androidx.compose.ui.unit.sp
 
 private const val hardModeKey = "hardMode"
-private const val cardAppearanceKey = "cardAppearance.v1"
 private val iconRowInset = AppLayout.panelPadding + 36.dp
-
-private enum class CardAppearanceOption(val rawValue: String, val displayName: String) {
-    alwaysLight("alwaysLight", "Always Light"),
-    matchSystem("matchSystem", "Match Appearance"),
-}
 
 private enum class Picker { HomeCard, Bible, Cards }
 
@@ -115,9 +109,7 @@ fun SettingsScreen() {
     val homeMode = HomeVerseStartMode.entries.firstOrNull {
         it.rawValue == defaults.getString(HomeVerseStartMode.storageKey)
     } ?: HomeVerseStartMode.read
-    val cardAppearance = CardAppearanceOption.entries.firstOrNull {
-        it.rawValue == defaults.getString(cardAppearanceKey)
-    } ?: CardAppearanceOption.alwaysLight
+    val cardAppearance = CardAppearance.saved()
     val reminderEnabled = defaults.getBool(NotificationManager.Keys.enabled) ?: false
     val reminderHour = defaults.getInt(NotificationManager.Keys.hour) ?: NotificationManager.defaultHour
     val reminderMinute = defaults.getInt(NotificationManager.Keys.minute) ?: NotificationManager.defaultMinute
@@ -158,7 +150,9 @@ fun SettingsScreen() {
         else -> LearningStore.shared.current(ordered)?.let { "${it.verse.book} ${it.verse.reference}" } ?: "All learnt"
     }
 
-    LargeTitleColumn("Settings", Modifier.analyticsScreen(AnalyticsScreen.settings)) {
+    TrackScreen(AnalyticsScreen.settings)
+
+    LargeTitleColumn("Settings") {
         GroupedSection(
             title = "Study",
             footer = if (hardMode) {
@@ -392,12 +386,12 @@ fun SettingsScreen() {
         )
         Picker.Cards -> PickerSheet(
             title = "Cards",
-            options = CardAppearanceOption.entries,
+            options = CardAppearance.entries,
             selected = cardAppearance,
             label = { it.displayName },
             onSelect = {
                 if (it != cardAppearance) {
-                    defaults.putString(cardAppearanceKey, it.rawValue)
+                    defaults.putString(CardAppearance.storageKey, it.rawValue)
                     logSetting("cardAppearance", it.rawValue)
                 }
             },
@@ -428,13 +422,7 @@ fun SettingsScreen() {
 
     if (showLearningSetup) {
         AppSheet(onDismiss = { showLearningSetup = false }, fullHeight = true) { sheet ->
-            CompositionLocalProvider(LocalBottomBarPadding provides 0.dp) {
-                joel.scripturememory.ui.onboarding.LearningSetupScreen(
-                    isOnboarding = false,
-                    showsWelcome = false,
-                    onComplete = sheet.dismiss,
-                )
-            }
+            LearningSetupScreen(isOnboarding = false, showsWelcome = false, onComplete = sheet.dismiss)
         }
     }
 
