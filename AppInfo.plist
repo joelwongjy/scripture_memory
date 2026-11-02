@@ -27,5 +27,7 @@
     <string>https://jpyktgyajlvzjtpomvyz.supabase.co</string>
     <key>SupabaseAnonKey</key>
     <string>sb_publishable_cZKhdNOAhfy9TZfqszZnig_ayAcWCF1</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>
