@@ -37,6 +37,7 @@ import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
+import joel.scripturememory.model.PackListLayout
 import joel.scripturememory.ui.packs.ShadowRadiusScale
 import joel.scripturememory.ui.theme.AppLayout
 import joel.scripturememory.ui.theme.AppTheme
@@ -51,7 +52,7 @@ import kotlin.math.min
 internal class PouchMetrics private constructor(width: Float) {
     val pouchWidth: Float = width
     val rim: Float = max(5f, width * 0.028f)
-    val cardHeight: Float = width * 0.86f / cardAspect
+    val cardHeight: Float = width * PackListLayout.pouchCardShare / cardAspect
     val cardWidth: Float = cardHeight * cardAspect
     val foldGap: Float = cardHeight * 0.13f
     val stackRoom: Float = cardHeight * 0.06f
@@ -71,8 +72,8 @@ internal class PouchMetrics private constructor(width: Float) {
     companion object {
         const val cardAspect = AppLayout.cardAspect
 
-        fun fitting(width: Float, height: Float): PouchMetrics {
-            var fitted = min(width - 2 * AppLayout.screenMargin.value, 560f)
+        fun fitting(width: Float, height: Float, widthLimit: Float? = null): PouchMetrics {
+            var fitted = min(min(width - 2 * AppLayout.screenMargin.value, widthLimit ?: 560f), 560f)
             var m = PouchMetrics(fitted)
             if (2 * m.halfHeight > height) {
                 fitted *= height / (2 * m.halfHeight)

@@ -11,6 +11,8 @@ data class TestSession(
     val id: UUID = UUID.randomUUID(),
 ) {
     companion object {
+        fun practice(card: Verse): TestSession = TestSession(listOf(card), SessionKind.pack)
+
         fun practice(verses: List<Verse>, start: Int): TestSession? {
             if (start !in verses.indices) return null
             return TestSession(verses.drop(start), SessionKind.pack)

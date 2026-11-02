@@ -1,6 +1,5 @@
 package joel.scripturememory.ui.pouch
 
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -8,7 +7,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -16,7 +14,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.dropShadow
@@ -25,12 +22,12 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.FirstBaseline
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
@@ -44,7 +41,6 @@ import joel.scripturememory.ui.components.Icon
 import joel.scripturememory.ui.components.Text
 import joel.scripturememory.ui.packs.ShadowRadiusScale
 import joel.scripturememory.ui.theme.AppLayout
-import joel.scripturememory.ui.theme.AppMotion
 import joel.scripturememory.ui.theme.AppTheme
 import joel.scripturememory.ui.theme.CardFont
 import joel.scripturememory.ui.theme.CardFontStyle
@@ -105,7 +101,6 @@ internal fun PouchVerseCard(
     isLearnt: Boolean,
     width: Dp,
     modifier: Modifier = Modifier,
-    isCovered: Boolean = false,
     accessory: @Composable RowScope.() -> Unit = {},
 ) {
     val dark = AppTheme.isDark
@@ -162,23 +157,16 @@ internal fun PouchVerseCard(
                         )
                     }
                 }
-                CoverableVerse(
-                    isCovered,
-                    sp(3.4f),
-                    caption,
-                    Modifier.weight(1f).fillMaxWidth().padding(top = (0.6f * u).dp),
-                ) {
-                    FittedVerseText(
-                        verse.verse,
-                        lineSpacing = 0.5f * u,
-                        minSize = 2 * u,
-                        maxSize = 3.8f * u,
-                        modifier = Modifier.fillMaxSize(),
-                        kind = CardFontStyle.PrintBody,
-                        closingLine = reference,
-                        color = body,
-                    )
-                }
+                FittedVerseText(
+                    verse.verse,
+                    lineSpacing = 0.5f * u,
+                    minSize = 2 * u,
+                    maxSize = 3.8f * u,
+                    modifier = Modifier.weight(1f).fillMaxWidth().padding(top = (0.6f * u).dp),
+                    kind = CardFontStyle.PrintBody,
+                    closingLine = reference,
+                    color = body,
+                )
             } else {
                 Row(Modifier.fillMaxWidth()) {
                     Text(
@@ -203,21 +191,14 @@ internal fun PouchVerseCard(
                     style = CardFont.style(CardFontStyle.Body, sp(4.6f)),
                     color = body,
                 )
-                CoverableVerse(
-                    isCovered,
-                    sp(3.4f),
-                    caption,
-                    Modifier.weight(1f).fillMaxWidth().padding(top = (1.4f * u).dp),
-                ) {
-                    FittedVerseText(
-                        verse.verse,
-                        lineSpacing = 0.8f * u,
-                        minSize = 2 * u,
-                        maxSize = 4 * u,
-                        modifier = Modifier.fillMaxSize(),
-                        color = body,
-                    )
-                }
+                FittedVerseText(
+                    verse.verse,
+                    lineSpacing = 0.8f * u,
+                    minSize = 2 * u,
+                    maxSize = 4 * u,
+                    modifier = Modifier.weight(1f).fillMaxWidth().padding(top = (1.4f * u).dp),
+                    color = body,
+                )
             }
             Row(
                 Modifier.fillMaxWidth().padding(top = (1.4f * u).dp),
@@ -252,27 +233,35 @@ internal fun PouchVerseCard(
 }
 
 @Composable
-private fun CoverableVerse(
-    isCovered: Boolean,
-    labelSize: TextUnit,
-    labelColor: Color,
-    modifier: Modifier,
-    verse: @Composable () -> Unit,
-) {
-    val shown by animateFloatAsState(if (isCovered) 0f else 1f, AppMotion.control(), label = "cover")
-    Box(modifier, contentAlignment = Alignment.Center) {
-        Box(Modifier.fillMaxSize().graphicsLayer { alpha = shown }) { verse() }
-        if (isCovered || shown < 1f) {
+internal fun PouchCardBack(verse: Verse, width: Dp) {
+    val dark = AppTheme.isDark
+    val density = LocalDensity.current
+    val u = width.value / 100f
+    fun sp(value: Float): TextUnit = with(density) { (value * u).dp.toSp() }
+    val kind = if (verse.packName.startsWith("DEP ")) CardFontStyle.PrintBody else CardFontStyle.Body
+
+    Box(Modifier.size(width, width / AppLayout.cardAspect)) {
+        PaperFace(Modifier.matchParentSize())
+        Column(
+            Modifier.matchParentSize().padding(horizontal = (7 * u).dp),
+            verticalArrangement = Arrangement.spacedBy((2.4f * u).dp, Alignment.CenterVertically),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                "${verse.book} ${verse.reference}",
+                style = CardFont.style(kind, sp(6.4f)),
+                color = PouchInk.body(dark),
+                textAlign = TextAlign.Center,
+            )
             Text(
                 "Tap to reveal",
-                Modifier.graphicsLayer { alpha = 1f - shown },
                 style = TextStyle(
                     fontFamily = InterText,
-                    fontSize = labelSize,
+                    fontSize = sp(3.2f),
                     fontWeight = FontWeight.Medium,
                     platformStyle = PlatformTextStyle(includeFontPadding = false),
                 ),
-                color = labelColor,
+                color = PouchInk.caption(dark),
             )
         }
     }

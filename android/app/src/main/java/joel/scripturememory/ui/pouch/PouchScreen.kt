@@ -1,6 +1,7 @@
 package joel.scripturememory.ui.pouch
 
 import android.window.BackEvent
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
@@ -58,11 +59,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.Brush
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerEventPass
@@ -70,7 +71,10 @@ import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
@@ -87,9 +91,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import joel.scripturememory.R
 import joel.scripturememory.model.AnalyticsEvent
 import joel.scripturememory.model.AnalyticsScreen
@@ -98,6 +105,7 @@ import joel.scripturememory.model.FavoritesStore
 import joel.scripturememory.model.LearningStore
 import joel.scripturememory.model.Pack
 import joel.scripturememory.model.PackCloseMethod
+import joel.scripturememory.model.PackListLayout
 import joel.scripturememory.model.PackPositions
 import joel.scripturememory.model.TestSession
 import joel.scripturememory.model.Verse
@@ -128,16 +136,15 @@ import joel.scripturememory.ui.theme.AppMotion
 import joel.scripturememory.ui.theme.AppTheme
 import joel.scripturememory.ui.theme.AppType
 import joel.scripturememory.ui.theme.PouchInk
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.launch
 
 private const val jumpLabelShownKey = "pouch.jumpLabelShown.v1"
-private val listMaxWidth = 600.dp
 private val swipeSlop = 12.dp
 private const val swipeFollow = 0.6f
 private const val swipeCloseDistance = 80f
@@ -178,9 +185,22 @@ fun PouchScreen(
     var undoToast by remember { mutableStateOf<UndoToastState?>(null) }
     var practiceOpen by remember { mutableStateOf(false) }
     var sceneOrigin by remember { mutableStateOf(Offset.Zero) }
+    var screenOrigin by remember { mutableStateOf(Offset.Zero) }
+    var screenSize by remember { mutableStateOf(IntSize.Zero) }
 
     fun startPractice(i: Int) {
         val session = TestSession.practice(verses, i) ?: return
+        practiceOpen = true
+        covers.present("practice-${session.id}") { dismiss ->
+            TestSessionScreen(session, onSessionEnded = {
+                practiceOpen = false
+                dismiss()
+            })
+        }
+    }
+
+    fun practiseCard(verse: Verse) {
+        val session = TestSession.practice(verse)
         practiceOpen = true
         covers.present("practice-${session.id}") { dismiss ->
             TestSessionScreen(session, onSessionEnded = {
@@ -212,7 +232,8 @@ fun PouchScreen(
     val insets: PaddingValues = WindowInsets.safeDrawing.asPaddingValues()
     val below = insets.calculateBottomPadding()
 
-    PredictiveBackHandler(enabled = !c.closing && !practiceOpen) { progress ->
+    BackHandler(enabled = c.lifted != null) { c.putCardBack() }
+    PredictiveBackHandler(enabled = !c.closing && !practiceOpen && c.lifted == null) { progress ->
         val travel = with(density) { maxOf(context.resources.displayMetrics.widthPixels.toFloat(), 1f) } * backTravel
         try {
             progress.collect { event ->
@@ -226,7 +247,8 @@ fun PouchScreen(
         }
     }
 
-    Box(Modifier.fillMaxSize()) {
+    val blurPerLift = with(density) { 14.dp.toPx() }
+    Box(Modifier.fillMaxSize().onPlaced { screenSize = it.size; screenOrigin = it.positionInRoot() }) {
         Box(
             Modifier
                 .matchParentSize()
@@ -236,6 +258,10 @@ fun PouchScreen(
         Column(
             Modifier
                 .fillMaxSize()
+                .graphicsLayer {
+                    val radius = blurPerLift * c.liftAmount.value
+                    renderEffect = if (radius > 0.5f) BlurEffect(radius, radius, TileMode.Decal) else null
+                }
                 .padding(
                     start = insets.calculateStartPadding(layoutDirection),
                     end = insets.calculateEndPadding(layoutDirection),
@@ -251,9 +277,12 @@ fun PouchScreen(
                     .onGloballyPositioned { sceneOrigin = it.positionInRoot() },
             ) {
                 val sceneHeight = maxHeight - below
-                val listWidth = min(maxWidth.value - 2 * AppLayout.screenMargin.value, listMaxWidth.value).dp
+                val layout = PackListLayout(
+                    maxWidth.value - 2 * AppLayout.screenMargin.value,
+                    AppLayout.spacing.value,
+                )
                 val geometry = with(density) {
-                    val w = listWidth.toPx()
+                    val w = layout.cardWidth.dp.toPx()
                     val h = (w / AppLayout.cardAspect).roundToInt()
                     ListGeometry(
                         sceneWidth = maxWidth.roundToPx(),
@@ -263,9 +292,12 @@ fun PouchScreen(
                         below = below.roundToPx(),
                         viewport = maxHeight.roundToPx(),
                         count = verses.size,
+                        layout = layout,
+                        density = this.density,
                     )
                 }
                 c.geometry = geometry
+                LaunchedEffect(geometry.cardWidth) { c.dropLiftedCard() }
                 val cardWidthDp = with(density) { geometry.cardWidth.toDp() }
                 val cardHeightDp = with(density) { geometry.cardHeight.toDp() }
 
@@ -277,7 +309,8 @@ fun PouchScreen(
                         width = cardWidthDp,
                         height = cardHeightDp,
                         below = below,
-                        onPractice = ::startPractice,
+                        screenOrigin = { screenOrigin },
+                        onPractice = ::practiseCard,
                         onComplete = ::markComplete,
                     )
                 }
@@ -324,6 +357,33 @@ fun PouchScreen(
         }
         Box(Modifier.fillMaxSize().padding(bottom = below)) {
             UndoToastHost(undoToast) { undoToast = it }
+        }
+        c.lifted?.let { card ->
+            val dim = if (AppTheme.isDark) 0.68f else 0.16f
+            Box(
+                Modifier
+                    .matchParentSize()
+                    .graphicsLayer { alpha = dim * c.liftAmount.value }
+                    .background(Color.Black),
+            )
+            val area = with(density) {
+                Rect(
+                    insets.calculateStartPadding(layoutDirection).toPx(),
+                    insets.calculateTopPadding().toPx(),
+                    screenSize.width - insets.calculateEndPadding(layoutDirection).toPx(),
+                    screenSize.height - insets.calculateBottomPadding().toPx(),
+                )
+            }
+            LiftedCardView(
+                verse = verses[card.index],
+                isLearnt = learning.isLearnt(verses[card.index]),
+                source = card.source,
+                area = area,
+                lift = { c.liftAmount.value },
+                angle = { c.liftedAngle.value },
+                onFlip = c::flipLiftedCard,
+                onPutBack = c::putCardBack,
+            )
         }
     }
 }
@@ -400,7 +460,7 @@ private fun JumpToCurrent(c: PouchController, modifier: Modifier = Modifier) {
     val current by remember { derivedStateOf { c.verses.indexOfFirst { learning.isCurrent(it) }.takeIf { it >= 0 } } }
     val target = current
     AnimatedVisibility(
-        visible = c.fanned && target != null && c.index != target,
+        visible = c.fanned && target != null && c.geometry?.layout?.let { it.row(c.index) != it.row(target) } == true,
         modifier = modifier,
         enter = fadeIn(tween(200)),
         exit = fadeOut(tween(200)),
@@ -439,7 +499,8 @@ private fun PouchAndDeck(
     val index = c.index
     val w = sceneWidth.value
     val h = sceneHeight.value
-    val m = remember(w, h) { PouchMetrics.fitting(w, h - 12f) }
+    val widthLimit = geometry.layout.pouchWidthLimit
+    val m = remember(w, h, widthLimit) { PouchMetrics.fitting(w, h - 12f, widthLimit) }
     val style = remember(dark) { PlasticStyle(dark) }
     val sceneTop = (h - 2 * m.halfHeight) / 2
     val cardFrame = m.cardFrame
@@ -540,11 +601,14 @@ private fun PouchAndDeck(
                 lift = { c.lift.value },
                 spread = { c.spread.value },
                 pocketCenter = pocketCenter,
-                listCenter = { Offset(geometry.centerX, c.closeCenterY ?: geometry.midY(c.index)) },
+                listCenter = { Offset(geometry.centerX(c.index), c.closeCenterY ?: geometry.midY(c.index)) },
                 pocketWidth = m.cardWidth,
                 listWidth = cardWidth,
                 listHeight = cardHeight,
                 listPitch = geometry.pitch.toFloat(),
+                columnPitch = geometry.columnPitch,
+                layout = geometry.layout,
+                frontCard = index,
                 around = { k ->
                     if (k == 0) card(index) else if (index + k in verses.indices) PouchCard.Verse(index + k) else PouchCard.None
                 },
@@ -572,7 +636,7 @@ private fun PouchAndDeck(
                             } while (change.pressed)
                             val velocity = tracker.calculateVelocity().y
                             val flick = ((last.y - down.position.y) + velocity * flickSeconds)
-                            c.finishOpening(flick, geometry.pitch.toFloat())
+                            c.finishOpening(flick, geometry.pitch.toFloat(), geometry.layout.columns)
                         }
                     },
             )
@@ -608,7 +672,7 @@ private fun CardFace(
     val learning = LearningStore.shared
     when {
         card is PouchCard.Verse && card.index in verses.indices -> {
-            ListCard(verses[card.index], width, false, onComplete)
+            ListCard(verses[card.index], width, onComplete)
         }
         card is PouchCard.BackPage -> PaperAppearance {
             PouchBackPageCard(pack.name, verses.size, verses.count(learning::isLearnt), width)
@@ -627,7 +691,6 @@ private fun CardFace(
 private fun ListCard(
     verse: Verse,
     width: Dp,
-    isCovered: Boolean,
     onComplete: (Verse, VerseActionSource) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -635,7 +698,7 @@ private fun ListCard(
     val isCurrent = learning.isCurrent(verse)
     val density = LocalDensity.current
     PaperAppearance {
-        PouchVerseCard(verse, learning.isLearnt(verse), width, modifier, isCovered) {
+        PouchVerseCard(verse, learning.isLearnt(verse), width, modifier) {
             if (isCurrent) {
                 val green = PouchInk.green(AppTheme.isDark)
                 Row(
@@ -676,7 +739,8 @@ private fun FannedList(
     width: Dp,
     height: Dp,
     below: Dp,
-    onPractice: (Int) -> Unit,
+    screenOrigin: () -> Offset,
+    onPractice: (Verse) -> Unit,
     onComplete: (Verse, VerseActionSource) -> Unit,
 ) {
     val verses = c.verses
@@ -732,8 +796,25 @@ private fun FannedList(
             verticalArrangement = Arrangement.spacedBy(AppLayout.spacing),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            items(verses.size, key = { it }) { i ->
-                FannedCard(verses[i], width, height, i in c.covered, { c.toggleCover(i) }, { onPractice(i) }, onComplete)
+            items(geometry.rows, key = { it }) { row ->
+                val first = geometry.layout.firstCard(row)
+                Row(horizontalArrangement = Arrangement.spacedBy(AppLayout.spacing)) {
+                    for (i in first until first + geometry.layout.columns) {
+                        if (i < verses.size) {
+                            FannedCard(
+                                verses[i],
+                                width,
+                                height,
+                                isLifted = c.lifted?.index == i,
+                                onLift = { c.liftCard(i, it.translate(-screenOrigin())) },
+                                onPractice = { onPractice(verses[i]) },
+                                onComplete = onComplete,
+                            )
+                        } else {
+                            Spacer(Modifier.size(width, height))
+                        }
+                    }
+                }
             }
         }
     }
@@ -745,8 +826,8 @@ private fun FannedCard(
     verse: Verse,
     width: Dp,
     height: Dp,
-    isCovered: Boolean,
-    onCover: () -> Unit,
+    isLifted: Boolean,
+    onLift: (Rect) -> Unit,
     onPractice: () -> Unit,
     onComplete: (Verse, VerseActionSource) -> Unit,
 ) {
@@ -758,6 +839,11 @@ private fun FannedCard(
     val scale by animateFloatAsState(if (pressed) 0.97f else 1f, AppMotion.control(), label = "cardPress")
     val isFavorite = favorites.isFavorite(verse)
     val isLearnt = learning.isLearnt(verse)
+    val placed = remember { arrayOfNulls<LayoutCoordinates>(1) }
+
+    fun lift() {
+        placed[0]?.takeIf { it.isAttached }?.let { onLift(it.boundsInRoot()) }
+    }
 
     fun toggleStar() {
         Analytics.log(AnalyticsEvent.StarChanged(!favorites.isFavorite(verse), VerseActionSource.menu))
@@ -777,21 +863,22 @@ private fun FannedCard(
     Box(
         Modifier
             .size(width, height)
+            .onPlaced { placed[0] = it }
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
+                alpha = if (isLifted) 0f else 1f
             }
             .listCardShadow()
             .clearAndSetSemantics {
-                val body = if (isCovered) "Verse covered" else verse.verse
-                contentDescription = "${verse.title}, ${verse.book} ${verse.reference}. $body"
+                contentDescription = "${verse.title}, ${verse.book} ${verse.reference}. ${verse.verse}"
                 role = Role.Button
-                onClick(if (isCovered) "Reveals this verse" else "Covers this verse") {
-                    onCover()
+                onClick("Lifts the card and turns it over") {
+                    lift()
                     true
                 }
                 customActions = listOf(
-                    CustomAccessibilityAction("Practice from Here") {
+                    CustomAccessibilityAction("Practice This Card") {
                         onPractice()
                         true
                     },
@@ -808,18 +895,18 @@ private fun FannedCard(
             .combinedClickable(
                 interactionSource = source,
                 indication = null,
-                onClick = onCover,
+                onClick = ::lift,
                 onLongClick = {
                     HapticEngine.light()
                     showsMenu = true
                 },
             ),
     ) {
-        ListCard(verse, width, isCovered, onComplete)
+        ListCard(verse, width, onComplete)
         if (showsMenu) {
             AppMenu(
                 actions = listOf(
-                    MenuAction("Practice from Here", R.drawable.ic_keyboard, onClick = onPractice),
+                    MenuAction("Practice This Card", R.drawable.ic_keyboard, onClick = onPractice),
                     MenuAction(
                         if (isFavorite) "Unstar" else "Star",
                         if (isFavorite) R.drawable.ic_star_fill else R.drawable.ic_star,

@@ -79,49 +79,54 @@ fun ContinueLearningCard(
         modifier.fillMaxWidth().widthIn(max = 600.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Row(
-            Modifier.fillMaxWidth().padding(horizontal = 20.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            if (spot.isPinned) {
-                Icon(
-                    R.drawable.ic_push_pin_fill,
-                    Modifier.align(Alignment.CenterVertically),
-                    size = 18.dp,
-                    tint = colors.label,
-                )
-            }
-            Text(
-                if (spot.isPinned) "Pinned" else "Continue Learning",
-                Modifier.weight(1f).alignByBaseline().semantics { heading() },
-                style = AppType.title3.copy(fontWeight = FontWeight.Bold),
-                color = colors.label,
-                maxLines = 2,
-            )
-            Text(
-                "${spot.indexInPack + 1} of ${spot.pack.verses.size}",
-                Modifier.alignByBaseline(),
-                style = AppType.subheadline,
-                color = colors.secondaryLabel,
-                maxLines = 1,
-            )
-            val pinLabel = if (spot.isPinned) "Change pinned verse" else "Pin a verse"
-            Box(
-                Modifier
-                    .alignByBaseline()
-                    .verticalOverhang(12.dp)
-                    .semantics { contentDescription = pinLabel }
-                    .dimOnPress(onClick = onChangePin)
-                    .defaultMinSize(minWidth = 44.dp)
-                    .padding(vertical = 12.dp),
-                contentAlignment = Alignment.CenterEnd,
+        BoxWithConstraints(Modifier.fillMaxWidth()) {
+            val showsPosition = maxWidth >= 340.dp
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
+                if (spot.isPinned) {
+                    Icon(
+                        R.drawable.ic_push_pin_fill,
+                        Modifier.align(Alignment.CenterVertically),
+                        size = 18.dp,
+                        tint = colors.label,
+                    )
+                }
                 Text(
-                    if (spot.isPinned) "Change" else "Pin",
-                    style = AppType.callout,
-                    color = colors.accent,
-                    maxLines = 1,
+                    if (spot.isPinned) "Pinned" else "Continue Learning",
+                    Modifier.weight(1f).alignByBaseline().semantics { heading() },
+                    style = AppType.title3.copy(fontWeight = FontWeight.Bold),
+                    color = colors.label,
+                    maxLines = 2,
                 )
+                if (showsPosition) {
+                    Text(
+                        "${spot.indexInPack + 1} of ${spot.pack.verses.size}",
+                        Modifier.alignByBaseline(),
+                        style = AppType.subheadline,
+                        color = colors.secondaryLabel,
+                        maxLines = 1,
+                    )
+                }
+                val pinLabel = if (spot.isPinned) "Change pinned verse" else "Pin a verse"
+                Box(
+                    Modifier
+                        .alignByBaseline()
+                        .verticalOverhang(12.dp)
+                        .semantics { contentDescription = pinLabel }
+                        .dimOnPress(onClick = onChangePin)
+                        .defaultMinSize(minWidth = 44.dp)
+                        .padding(vertical = 12.dp),
+                    contentAlignment = Alignment.CenterEnd,
+                ) {
+                    Text(
+                        if (spot.isPinned) "Change" else "Pin",
+                        style = AppType.callout,
+                        color = colors.accent,
+                        maxLines = 1,
+                    )
+                }
             }
         }
 

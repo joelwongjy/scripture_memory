@@ -6,7 +6,7 @@ sealed class AnalyticsEvent {
     data class OpenedFromWidget(val destination: WidgetDestination) : AnalyticsEvent()
 
     data class PackOpened(val pack: String, val from: PackSource) : AnalyticsEvent()
-    data class PackClosed(val how: PackCloseMethod, val seconds: Double, val covers: Int) : AnalyticsEvent()
+    data class PackClosed(val how: PackCloseMethod, val seconds: Double, val flips: Int) : AnalyticsEvent()
     data class LearntChanged(val learnt: Boolean, val from: VerseActionSource) : AnalyticsEvent()
     data class StarChanged(val starred: Boolean, val from: VerseActionSource) : AnalyticsEvent()
     data object PacksReordered : AnalyticsEvent()
@@ -51,7 +51,7 @@ sealed class AnalyticsEvent {
                 mapOf(
                     "how" to how.rawValue,
                     "timeOpen" to AnalyticsRange.duration(seconds),
-                    "covers" to AnalyticsRange.count(covers),
+                    "flips" to AnalyticsRange.count(flips),
                 )
             is LearntChanged -> mapOf("learnt" to learnt.toString(), "from" to from.rawValue)
             is StarChanged -> mapOf("starred" to starred.toString(), "from" to from.rawValue)
