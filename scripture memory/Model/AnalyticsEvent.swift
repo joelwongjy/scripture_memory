@@ -89,7 +89,7 @@ enum AnalyticsScreen: String, CaseIterable {
 
 enum OnboardingStart: String { case beginning, pickedVerse, restoredFromICloud }
 enum WidgetDestination: String { case read, review }
-enum PackSource: String { case shelf, search, homeCard, homeShelf, widget }
+enum PackSource: String { case shelf, search, homeCard, widget }
 enum PackCloseMethod: String { case edgeSwipe, closeButton }
 enum VerseActionSource: String { case card, menu }
 

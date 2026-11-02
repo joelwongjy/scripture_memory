@@ -19,6 +19,7 @@ struct ContinueLearningCard: View {
     let onUnpin: () -> Void
 
     @ObservedObject private var learning = LearningStore.shared
+    @Environment(\.dynamicTypeSize) private var dynamicType
 
     var body: some View {
         let v = spot.verse
@@ -51,7 +52,7 @@ struct ContinueLearningCard: View {
             .contextMenu { pinActions }
             .accessibilityLabel("\(startMode.ctaLabel) \(v.book) \(v.reference)")
         }
-        .frame(maxWidth: 600)
+        .frame(maxWidth: PackListLayout.focalCardWidth(bodyTextSize: dynamicType.pointSize(of: .body)))
         .frame(maxWidth: .infinity)
     }
 

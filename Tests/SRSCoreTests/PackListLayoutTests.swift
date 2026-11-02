@@ -74,21 +74,37 @@ final class PackListLayoutTests: XCTestCase {
     }
 
     func testALiftedCardGrowsOutOfAColumnWithoutFillingTheScreen() {
-        let open = PackListLayout.liftedWidth(listWidth: 310, area: CGSize(width: 669, height: 860),
+        let open = PackListLayout.liftedWidth(listWidth: 310, focalWidth: 425, area: CGSize(width: 669, height: 860),
                                               aspect: 1.62, margin: 16)
-        XCTAssertEqual(open, 420)
+        XCTAssertEqual(open, 425)
     }
 
     func testALiftedCardKeepsThePhoneWidth() {
-        let phone = PackListLayout.liftedWidth(listWidth: 402, area: CGSize(width: 434, height: 800),
+        let phone = PackListLayout.liftedWidth(listWidth: 450, focalWidth: 425, area: CGSize(width: 482, height: 800),
                                                aspect: 1.62, margin: 16)
-        XCTAssertEqual(phone, 402)
+        XCTAssertEqual(phone, 450)
     }
 
     func testALiftedCardFitsAShortWindow() {
-        let short = PackListLayout.liftedWidth(listWidth: 269, area: CGSize(width: 576, height: 200),
+        let short = PackListLayout.liftedWidth(listWidth: 269, focalWidth: 425, area: CGSize(width: 576, height: 200),
                                                aspect: 1.62, margin: 16)
         XCTAssertEqual(short, 168 * 1.62, accuracy: 0.001)
+    }
+
+    func testAFocalCardFollowsTheSystemTextSize() {
+        XCTAssertEqual(PackListLayout.focalCardWidth(bodyTextSize: 17), 425, accuracy: 0.001)
+        XCTAssertEqual(PackListLayout.focalCardWidth(bodyTextSize: 23), 575, accuracy: 0.001)
+    }
+
+    func testVerseTextNeverStartsBelowTheReadableSize() {
+        XCTAssertEqual(PackListLayout.verseTextCeiling(cardWidth: 269, share: 0.038, readableSize: 12), 12)
+        XCTAssertEqual(PackListLayout.verseTextCeiling(cardWidth: 402, share: 0.038, readableSize: 12), 15.276, accuracy: 0.001)
+    }
+
+    func testHomeSitsSideBySideOnlyWhenWiderThanTall() {
+        XCTAssertTrue(PackListLayout.homeIsSideBySide(contentWidth: 590, height: 466))
+        XCTAssertFalse(PackListLayout.homeIsSideBySide(contentWidth: 637, height: 951))
+        XCTAssertFalse(PackListLayout.homeIsSideBySide(contentWidth: 350, height: 300))
     }
 
     func testACardFollowsTheFingerAtFirstThenResists() {
@@ -114,12 +130,6 @@ final class PackListLayoutTests: XCTestCase {
 
     func testALastRowWithOneCardCountsOneCard() {
         XCTAssertEqual(PackListLayout.positionLabel(card: 24, count: 25, columns: 2), "Card 25 of 25")
-    }
-
-    func testPacksShowOnHomeOnlyWhenTheWindowIsWideAndTall() {
-        XCTAssertTrue(PackListLayout.showsPacksOnHome(width: 637, height: 860))
-        XCTAssertFalse(PackListLayout.showsPacksOnHome(width: 576, height: 466))
-        XCTAssertFalse(PackListLayout.showsPacksOnHome(width: 408, height: 860))
     }
 
     func testCardCentresSitEitherSideOfTheMiddle() {

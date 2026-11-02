@@ -4,8 +4,7 @@ struct PackListLayout: Equatable {
     static let twoColumnWidth: CGFloat = 540
     static let threeColumnWidth: CGFloat = 960
     static let pouchCardShare: CGFloat = 0.86
-    static let liftedCardWidth: CGFloat = 420
-    static let packsOnHomeHeight: CGFloat = 760
+    static let verseTextShare: CGFloat = 0.04
     static let cardPullLimit: CGFloat = 120
 
     let columns: Int
@@ -18,8 +17,16 @@ struct PackListLayout: Equatable {
         cardWidth = (width - spacing * CGFloat(columns - 1)) / CGFloat(columns)
     }
 
-    static func showsPacksOnHome(width: CGFloat, height: CGFloat) -> Bool {
-        columns(forWidth: width) > 1 && height >= packsOnHomeHeight
+    static func homeIsSideBySide(contentWidth: CGFloat, height: CGFloat) -> Bool {
+        columns(forWidth: contentWidth) > 1 && contentWidth > height
+    }
+
+    static func focalCardWidth(bodyTextSize: CGFloat) -> CGFloat {
+        bodyTextSize / verseTextShare
+    }
+
+    static func verseTextCeiling(cardWidth: CGFloat, share: CGFloat, readableSize: CGFloat) -> CGFloat {
+        max(cardWidth * share, readableSize)
     }
 
     static func cardPull(_ travel: CGFloat) -> CGFloat {
@@ -34,9 +41,10 @@ struct PackListLayout: Equatable {
         return last > first + 1 ? "Cards \(first + 1)–\(last) of \(count)" : "Card \(first + 1) of \(count)"
     }
 
-    static func liftedWidth(listWidth: CGFloat, area: CGSize, aspect: CGFloat, margin: CGFloat) -> CGFloat {
+    static func liftedWidth(listWidth: CGFloat, focalWidth: CGFloat, area: CGSize, aspect: CGFloat,
+                            margin: CGFloat) -> CGFloat {
         let fitting = min(area.width - 2 * margin, (area.height - 2 * margin) * aspect)
-        return min(fitting, max(listWidth, liftedCardWidth))
+        return min(fitting, max(listWidth, focalWidth))
     }
 
     static func columns(forWidth width: CGFloat) -> Int {
