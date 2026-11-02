@@ -32,6 +32,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
@@ -93,10 +94,13 @@ private fun logSetting(setting: String, value: String) {
     Analytics.log(AnalyticsEvent.SettingChanged(setting, value))
 }
 
+private const val privacyPolicyUrl = "https://joelwongjy.github.io/scripture-memory-privacy/"
+
 @Composable
 fun SettingsScreen() {
     val defaults = AppDefaults.standard
     val context = LocalContext.current
+    val uriHandler = LocalUriHandler.current
     val navigator = LocalNavigator.current
 
     val studyMode = StudyMode.saved()
@@ -343,6 +347,12 @@ fun SettingsScreen() {
                     title = "Acknowledgments",
                     showsChevron = true,
                     onClick = { navigator.push("acknowledgments") { AcknowledgmentsScreen() } },
+                )
+                RowDivider()
+                ListRow(
+                    title = "Privacy Policy",
+                    showsChevron = true,
+                    onClick = { runCatching { uriHandler.openUri(privacyPolicyUrl) } },
                 )
             }
             Text(

@@ -39,6 +39,8 @@ Secrets stay outside the repo, in `~/.config/scripture-memory/`.
 | `android-signing.properties` | Passwords for that key. Created already. |
 | `play-service-account.json` | Google Play API key. Still needed. |
 
+The first Play release has more steps. Follow `docs/play-store/README.md`, which also holds the store listing, graphics and form answers.
+
 To finish Android publishing:
 
 1. Create the app in Play Console with the package name `joel.scripturememory`.
