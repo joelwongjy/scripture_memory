@@ -20,7 +20,6 @@ import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -53,7 +52,6 @@ import joel.scripturememory.model.AnalyticsEvent
 import joel.scripturememory.model.AnalyticsScreen
 import joel.scripturememory.model.Pack
 import joel.scripturememory.model.PackPreferencesStore
-import joel.scripturememory.model.Wording
 import joel.scripturememory.system.Analytics
 import joel.scripturememory.system.HapticEngine
 import joel.scripturememory.ui.components.AlertAction
@@ -61,9 +59,11 @@ import joel.scripturememory.ui.components.AppAlert
 import joel.scripturememory.ui.components.AppSheet
 import joel.scripturememory.ui.components.Divider
 import joel.scripturememory.ui.components.Icon
+import joel.scripturememory.ui.components.PackRowLabel
 import joel.scripturememory.ui.components.SheetHeader
 import joel.scripturememory.ui.components.Text
 import joel.scripturememory.ui.components.TextButton
+import joel.scripturememory.ui.components.TrackScreen
 import joel.scripturememory.ui.components.dimOnPress
 import joel.scripturememory.ui.components.softShadow
 import joel.scripturememory.ui.theme.AppLayout
@@ -150,7 +150,7 @@ fun PackOrganizerSheet(allPacks: List<Pack>, onDismiss: () -> Unit) {
     val zone = with(LocalDensity.current) { autoScrollZone.toPx() }
     val reorder = remember { PackReorder(scroll, scope, zone) }
 
-    LaunchedEffect(Unit) { Analytics.log(AnalyticsEvent.ScreenViewed(AnalyticsScreen.organizePacks)) }
+    TrackScreen(AnalyticsScreen.organizePacks)
 
     val arranged = store.arranged(allPacks)
     val current by rememberUpdatedState(arranged)
@@ -298,18 +298,7 @@ private fun OrganizerRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Column(
-            Modifier.weight(1f).alpha(if (isHidden) 0.5f else 1f),
-            verticalArrangement = Arrangement.spacedBy(2.dp),
-        ) {
-            Text(
-                pack.name,
-                style = AppType.body.copy(fontWeight = FontWeight.Medium),
-                color = colors.label,
-                maxLines = 1,
-            )
-            Text(Wording.verses(pack.verses.size), style = AppType.subheadline, color = colors.secondaryLabel)
-        }
+        PackRowLabel(pack, Modifier.weight(1f).alpha(if (isHidden) 0.5f else 1f))
         Box(
             Modifier
                 .size(width = 44.dp, height = 30.dp)

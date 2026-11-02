@@ -106,9 +106,11 @@ import joel.scripturememory.ui.components.ChromeIconButton
 import joel.scripturememory.ui.components.ChromeTextButton
 import joel.scripturememory.ui.components.FavoriteStarButton
 import joel.scripturememory.ui.components.Icon
+import joel.scripturememory.ui.components.JumpToCurrentButton
 import joel.scripturememory.ui.components.LocalCovers
 import joel.scripturememory.ui.components.MenuAction
 import joel.scripturememory.ui.components.Text
+import joel.scripturememory.ui.components.TrackScreen
 import joel.scripturememory.ui.components.UndoToastHost
 import joel.scripturememory.ui.components.UndoToastState
 import joel.scripturememory.ui.components.VerseFastScrollOverlay
@@ -191,10 +193,8 @@ fun PouchScreen(
         undoToast = UndoToastState.markedComplete(verse, learning)
     }
 
-    LaunchedEffect(Unit) {
-        Analytics.log(AnalyticsEvent.ScreenViewed(AnalyticsScreen.pack))
-        c.appeared()
-    }
+    TrackScreen(AnalyticsScreen.pack)
+    LaunchedEffect(Unit) { c.appeared() }
     LaunchedEffect(c.fanned) { if (c.fanned) tilt.stop() else tilt.start() }
     DisposableEffect(Unit) {
         onDispose {
@@ -319,7 +319,7 @@ private fun PouchTopBar(pack: Pack, c: PouchController, onPractice: () -> Unit) 
     ) {
         val counter = listOfNotNull(pack.seriesCode, "Card ${c.index + 1} of ${c.verses.size}").joinToString(" · ")
         Column(
-            Modifier.align(Alignment.Center).padding(horizontal = 92.dp),
+            Modifier.align(Alignment.Center).padding(horizontal = 116.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(1.dp),
         ) {
@@ -379,11 +379,11 @@ private fun JumpToCurrent(c: PouchController, modifier: Modifier = Modifier) {
         enter = fadeIn(tween(200)),
         exit = fadeOut(tween(200)),
     ) {
-        PouchJumpButton(
+        JumpToCurrentButton(
             startExpanded = AppDefaults.standard.getBool(jumpLabelShownKey) != true,
             onExpandedShown = { AppDefaults.standard.putBool(jumpLabelShownKey, true) },
         ) {
-            val to = current ?: return@PouchJumpButton
+            val to = current ?: return@JumpToCurrentButton
             HapticEngine.light()
             c.listScrolled = false
             c.index = to

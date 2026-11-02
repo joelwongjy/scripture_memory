@@ -47,6 +47,7 @@ import joel.scripturememory.ui.components.ChromeTextButton
 import joel.scripturememory.ui.components.CoverTransition
 import joel.scripturememory.ui.components.LargeTitleList
 import joel.scripturememory.ui.components.LocalCovers
+import joel.scripturememory.ui.components.TrackScreen
 import joel.scripturememory.ui.components.pressable
 import joel.scripturememory.ui.pouch.PouchScreen
 import joel.scripturememory.ui.theme.AppLayout
@@ -84,7 +85,7 @@ fun PackListScreen() {
     }
     val currentPackName = learning.currentVerse?.packName
 
-    LaunchedEffect(Unit) { Analytics.log(AnalyticsEvent.ScreenViewed(AnalyticsScreen.packs)) }
+    TrackScreen(AnalyticsScreen.packs)
     LaunchedEffect(visiblePacks) { withContext(Dispatchers.Default) { VerseSearch.prewarm(visiblePacks) } }
 
     fun open(pack: Pack) {
