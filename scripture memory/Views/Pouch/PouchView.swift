@@ -62,8 +62,9 @@ struct PouchView: View {
     @Environment(\.scenePhase) private var scenePhase
 
     private static let screenSpace = "pouchScreen"
-    /// A side inset this wide is the closed Duo's rail: the buttons move into it.
-    private static let railWidth: CGFloat = 80
+    private static let sideButtonSize: CGFloat = 44
+    /// A side inset that holds a button and its margins: the buttons move into it.
+    private static let railWidth = sideButtonSize + 2 * AppLayout.screenMargin
     private static let cardSwipeDistance: CGFloat = 90
     private static let cardSwipeFlick: CGFloat = 220
 

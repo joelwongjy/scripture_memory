@@ -80,17 +80,36 @@ class PackListLayoutTests {
 
     @Test
     fun testALiftedCardGrowsOutOfAColumnWithoutFillingTheScreen() {
-        assertEquals(420f, PackListLayout.liftedWidth(310f, 669f, 860f, 5f / 3f, 16f))
+        assertEquals(425f, PackListLayout.liftedWidth(310f, 425f, 669f, 860f, 5f / 3f, 16f))
     }
 
     @Test
     fun testALiftedCardKeepsThePhoneWidth() {
-        assertEquals(402f, PackListLayout.liftedWidth(402f, 434f, 800f, 5f / 3f, 16f))
+        assertEquals(450f, PackListLayout.liftedWidth(450f, 425f, 482f, 800f, 5f / 3f, 16f))
     }
 
     @Test
     fun testALiftedCardFitsAShortWindow() {
-        assertEquals(168 * 5f / 3f, PackListLayout.liftedWidth(269f, 576f, 200f, 5f / 3f, 16f), 0.001f)
+        assertEquals(168 * 5f / 3f, PackListLayout.liftedWidth(269f, 425f, 576f, 200f, 5f / 3f, 16f), 0.001f)
+    }
+
+    @Test
+    fun testAFocalCardFollowsTheSystemTextSize() {
+        assertEquals(400f, PackListLayout.focalCardWidth(16f), 0.001f)
+        assertEquals(500f, PackListLayout.focalCardWidth(20f), 0.001f)
+    }
+
+    @Test
+    fun testVerseTextNeverStartsBelowTheReadableSize() {
+        assertEquals(12f, PackListLayout.verseTextCeiling(269f, 0.038f, 12f))
+        assertEquals(15.276f, PackListLayout.verseTextCeiling(402f, 0.038f, 12f), 0.001f)
+    }
+
+    @Test
+    fun testHomeSitsSideBySideOnlyWhenWiderThanTall() {
+        assertTrue(PackListLayout.homeIsSideBySide(590f, 466f))
+        assertFalse(PackListLayout.homeIsSideBySide(637f, 951f))
+        assertFalse(PackListLayout.homeIsSideBySide(350f, 300f))
     }
 
     @Test
@@ -123,13 +142,6 @@ class PackListLayoutTests {
     @Test
     fun testALastRowWithOneCardCountsOneCard() {
         assertEquals("Card 25 of 25", PackListLayout.positionLabel(24, 25, 2))
-    }
-
-    @Test
-    fun testPacksShowOnHomeOnlyWhenTheWindowIsWideAndTall() {
-        assertTrue(PackListLayout.showsPacksOnHome(637f, 860f))
-        assertFalse(PackListLayout.showsPacksOnHome(576f, 466f))
-        assertFalse(PackListLayout.showsPacksOnHome(408f, 860f))
     }
 
     @Test

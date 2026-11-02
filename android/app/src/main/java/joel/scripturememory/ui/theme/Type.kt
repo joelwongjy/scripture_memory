@@ -1,6 +1,8 @@
 package joel.scripturememory.ui.theme
 
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
@@ -59,6 +61,9 @@ private fun style(
     lineHeightStyle = trimmed,
     platformStyle = PlatformTextStyle(includeFontPadding = false),
 )
+
+@Composable
+fun TextStyle.sizeInDp(): Float = with(LocalDensity.current) { fontSize.toDp().value }
 
 @Immutable
 object AppType {

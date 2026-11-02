@@ -97,3 +97,11 @@ extension View {
         contentShape(Rectangle().inset(by: min(0, (visibleSize - 44) / 2)))
     }
 }
+
+extension DynamicTypeSize {
+    /// A system text style's size at this Text Size setting.
+    func pointSize(of style: UIFont.TextStyle) -> CGFloat {
+        let traits = UITraitCollection(preferredContentSizeCategory: UIContentSizeCategory(self))
+        return UIFont.preferredFont(forTextStyle: style, compatibleWith: traits).pointSize
+    }
+}

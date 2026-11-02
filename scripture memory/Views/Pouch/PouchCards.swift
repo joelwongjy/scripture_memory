@@ -102,6 +102,13 @@ struct PouchVerseCard<Accessory: View>: View {
     let width: CGFloat
     @ViewBuilder var accessory: () -> Accessory
 
+    @Environment(\.dynamicTypeSize) private var dynamicType
+
+    private func ceiling(share: CGFloat) -> CGFloat {
+        PackListLayout.verseTextCeiling(cardWidth: width, share: share,
+                                        readableSize: dynamicType.pointSize(of: .caption1))
+    }
+
     var body: some View {
         let u = width / 100                       // one percent of the card's width
         let footer = CardFooter.label(for: verse).components(separatedBy: " · ")
@@ -158,7 +165,8 @@ struct PouchVerseCard<Accessory: View>: View {
             .font(CardFont.font(.body, size: 4.6 * u))
             .foregroundStyle(PouchInk.body)
             .padding(.top, 1.4 * u)
-        FittedVerseText(text: verse.verse, lineSpacing: 0.8 * u, minSize: 2 * u, maxSize: 4 * u)
+        FittedVerseText(text: verse.verse, lineSpacing: 0.8 * u, minSize: 2 * u,
+                        maxSize: ceiling(share: PackListLayout.verseTextShare))
             .foregroundStyle(PouchInk.body)
             .padding(.top, 1.4 * u)
     }
@@ -180,7 +188,7 @@ struct PouchVerseCard<Accessory: View>: View {
         }
         HStack(alignment: .firstTextBaseline) {
             Text(reference)
-                .font(CardFont.font(.printBody, size: 3.8 * u))
+                .font(CardFont.font(.printBody, size: min(ceiling(share: 0.038), 4.4 * u)))
                 .foregroundStyle(PouchInk.body)
             Spacer(minLength: 2 * u)
             if let version = verse.pinnedVersion {
@@ -190,7 +198,7 @@ struct PouchVerseCard<Accessory: View>: View {
             }
         }
         .padding(.top, 1.2 * u)
-        FittedVerseText(text: verse.verse, lineSpacing: 0.5 * u, minSize: 2 * u, maxSize: 3.8 * u,
+        FittedVerseText(text: verse.verse, lineSpacing: 0.5 * u, minSize: 2 * u, maxSize: ceiling(share: 0.038),
                         style: .printBody, closingLine: reference)
             .foregroundStyle(PouchInk.body)
             .padding(.top, 0.6 * u)

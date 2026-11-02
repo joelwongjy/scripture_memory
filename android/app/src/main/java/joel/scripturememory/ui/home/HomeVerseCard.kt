@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import joel.scripturememory.R
 import joel.scripturememory.model.CardAppearance
 import joel.scripturememory.model.CardFooter
+import joel.scripturememory.model.PackListLayout
 import joel.scripturememory.model.Verse
 import joel.scripturememory.model.VerseNumbering
 import joel.scripturememory.ui.components.FittedVerseText
@@ -34,10 +35,13 @@ import joel.scripturememory.ui.components.PaperShape
 import joel.scripturememory.ui.components.Text
 import joel.scripturememory.ui.theme.AppLayout
 import joel.scripturememory.ui.theme.AppTheme
+import joel.scripturememory.ui.theme.AppType
 import joel.scripturememory.ui.theme.CardFont
 import joel.scripturememory.ui.theme.CardFontStyle
 import joel.scripturememory.ui.theme.LightColors
 import joel.scripturememory.ui.theme.PouchInk
+import joel.scripturememory.ui.theme.sizeInDp
+import kotlin.math.min
 
 @Composable
 internal fun paperIsDark(): Boolean =
@@ -106,6 +110,7 @@ private fun TextStyle.bold() = copy(fontWeight = FontWeight.Bold)
 
 @Composable
 private fun Heading(verse: Verse, u: Float, dark: Boolean, size: (Float) -> TextUnit, verseModifier: Modifier) {
+    val readable = AppType.caption.sizeInDp()
     val title = CardFont.style(CardFontStyle.Title, size(4.6f))
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy((2 * u).dp)) {
         Text(
@@ -135,7 +140,7 @@ private fun Heading(verse: Verse, u: Float, dark: Boolean, size: (Float) -> Text
         verse.verse,
         lineSpacing = 0.8f * u,
         minSize = 2 * u,
-        maxSize = 4 * u,
+        maxSize = PackListLayout.verseTextCeiling(100 * u, PackListLayout.verseTextShare, readable),
         modifier = verseModifier.fillMaxWidth().padding(top = (1.4f * u).dp),
         color = PouchInk.body(dark),
     )
@@ -145,6 +150,8 @@ private fun Heading(verse: Verse, u: Float, dark: Boolean, size: (Float) -> Text
 private fun PrintedHeading(verse: Verse, u: Float, dark: Boolean, size: (Float) -> TextUnit, verseModifier: Modifier) {
     val reference = "${verse.book} ${verse.reference}"
     val small = CardFont.style(CardFontStyle.PrintBody, size(3.2f))
+    val density = LocalDensity.current
+    val verseCeiling = PackListLayout.verseTextCeiling(100 * u, 0.038f, AppType.caption.sizeInDp())
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy((2 * u).dp)) {
         Text(
             VerseNumbering.topic(verse)?.let { "$it) ${verse.title}" } ?: verse.title,
@@ -165,7 +172,10 @@ private fun PrintedHeading(verse: Verse, u: Float, dark: Boolean, size: (Float) 
         Text(
             reference,
             Modifier.weight(1f).alignByBaseline(),
-            style = CardFont.style(CardFontStyle.PrintBody, size(3.8f)),
+            style = CardFont.style(
+                CardFontStyle.PrintBody,
+                with(density) { min(verseCeiling, 4.4f * u).dp.toSp() },
+            ),
             color = PouchInk.body(dark),
             maxLines = 1,
         )
@@ -177,7 +187,7 @@ private fun PrintedHeading(verse: Verse, u: Float, dark: Boolean, size: (Float) 
         verse.verse,
         lineSpacing = 0.5f * u,
         minSize = 2 * u,
-        maxSize = 3.8f * u,
+        maxSize = verseCeiling,
         modifier = verseModifier.fillMaxWidth().padding(top = (0.6f * u).dp),
         kind = CardFontStyle.PrintBody,
         closingLine = reference,

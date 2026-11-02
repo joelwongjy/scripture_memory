@@ -20,8 +20,11 @@ struct LiftedCardView: View {
     let drag: CGSize
     let onFlip: () -> Void
 
+    @Environment(\.dynamicTypeSize) private var dynamicType
+
     var body: some View {
-        let width = PackListLayout.liftedWidth(listWidth: source.width, area: area.size,
+        let focal = PackListLayout.focalCardWidth(bodyTextSize: dynamicType.pointSize(of: .body))
+        let width = PackListLayout.liftedWidth(listWidth: source.width, focalWidth: focal, area: area.size,
                                                aspect: PouchMetrics.cardAspect, margin: AppLayout.screenMargin)
         let still = AppMotion.reduceMotion
         let moved = still ? 1 : lift
