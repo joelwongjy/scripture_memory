@@ -56,6 +56,7 @@ import androidx.compose.ui.window.DialogWindowProvider
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupPositionProvider
 import androidx.compose.ui.window.PopupProperties
+import androidx.core.view.WindowCompat
 import kotlinx.coroutines.launch
 import joel.scripturememory.ui.theme.AppMotion
 import joel.scripturememory.ui.theme.AppTheme
@@ -72,10 +73,13 @@ private fun FullWindowDialog(onBack: () -> Unit, content: @Composable () -> Unit
             dismissOnClickOutside = false,
         ),
     ) {
-        val window = (LocalView.current.parent as? DialogWindowProvider)?.window
-        LaunchedEffect(window) {
+        val view = LocalView.current
+        val window = (view.parent as? DialogWindowProvider)?.window
+        val isDark = AppTheme.isDark
+        LaunchedEffect(window, isDark) {
             window?.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
             window?.setWindowAnimations(0)
+            window?.let { WindowCompat.getInsetsController(it, view).isAppearanceLightNavigationBars = !isDark }
         }
         content()
     }
