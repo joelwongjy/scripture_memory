@@ -44,8 +44,9 @@ struct VerseSearchView: View {
         .task(id: searchText) {
             guard !searchText.isEmpty else { return }
             try? await Task.sleep(for: .seconds(1.5))
-            guard !Task.isCancelled, results.isEmpty else { return }
-            Analytics.log(.searchFoundNothing)
+            guard !Task.isCancelled else { return }
+            Analytics.log(.searchPerformed(results: results.count))
+            if results.isEmpty { Analytics.log(.searchFoundNothing) }
         }
         .task { VerseSearch.prewarm(visiblePacks) }
         .fullScreenCover(item: $opened) { item in

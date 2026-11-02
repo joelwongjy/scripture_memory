@@ -22,6 +22,7 @@ struct SettingsView: View {
     @State private var showResetSRSAlert      = false
     @State private var showNotifDeniedAlert   = false
     @State private var showLearningSetup      = false
+    @State private var settlingLogs: [String: Task<Void, Never>] = [:]
 
     @ObservedObject private var learning  = LearningStore.shared
     @ObservedObject private var packPrefs = PackPreferencesStore.shared
@@ -216,9 +217,9 @@ struct SettingsView: View {
         .onChange(of: studyMode)          { _, v in logSetting("studyMode", v.rawValue) }
         .onChange(of: hardMode)           { _, v in logSetting("hardMode", String(v)) }
         .onChange(of: bibleVersion)       { _, v in logSetting("bibleVersion", v.rawValue) }
-        .onChange(of: newCapAmount)       { _, v in logSetting("newCards", String(v)) }
+        .onChange(of: newCapAmount)       { _, v in logSettingOnceSettled("newCards", String(v)) }
         .onChange(of: newCapUnit)         { _, v in logSetting("newCardsPer", v.rawValue) }
-        .onChange(of: dailyReviewCap)     { _, v in logSetting("reviewsPerDay", String(v)) }
+        .onChange(of: dailyReviewCap)     { _, v in logSettingOnceSettled("reviewsPerDay", String(v)) }
         .onChange(of: reviewsKnownVerses) { _, v in logSetting("reviewEarlierVerses", String(v)) }
         .onChange(of: homeVerseStartMode) { _, v in logSetting("homeCardOpensIn", v.rawValue) }
         .onChange(of: cardAppearance)     { _, v in logSetting("cardAppearance", v.rawValue) }
@@ -233,6 +234,15 @@ struct SettingsView: View {
 
     private func logSetting(_ setting: String, _ value: String) {
         Analytics.log(.settingChanged(setting: setting, value: value))
+    }
+
+    private func logSettingOnceSettled(_ setting: String, _ value: String) {
+        settlingLogs[setting]?.cancel()
+        settlingLogs[setting] = Task {
+            try? await Task.sleep(for: .seconds(1.5))
+            guard !Task.isCancelled else { return }
+            logSetting(setting, value)
+        }
     }
 
     /// A settings-row label with the SF Symbol pinned to a uniform 24pt column,
