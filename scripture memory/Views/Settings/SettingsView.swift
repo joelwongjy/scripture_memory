@@ -10,7 +10,6 @@ struct SettingsView: View {
     @AppStorage(NewCardCap.dailyReviewCapKey) private var dailyReviewCap: Int = NewCardCap.dailyReviewCapDefault
     @AppStorage(SRSQueueBuilder.NewCardPolicy.reviewsKnownKey)
     private var reviewsKnownVerses = SRSQueueBuilder.NewCardPolicy.reviewsKnownDefault
-    @AppStorage(HomeVerseStartMode.storageKey) private var homeVerseStartMode: HomeVerseStartMode = .read
     @AppStorage(CardAppearance.storageKey)     private var cardAppearance: CardAppearance = .alwaysLight
 
     @AppStorage(NotificationManager.Keys.enabled) private var reminderEnabled = false
@@ -41,6 +40,17 @@ struct SettingsView: View {
 
     var body: some View {
         List {
+            Section {
+                Picker(selection: $bibleVersion) {
+                    ForEach(BibleVersion.allCases, id: \.self) { version in
+                        Text(version.displayName).tag(version)
+                    }
+                } label: {
+                    rowLabel("Bible Version", "book.closed")
+                }
+                .pickerStyle(.menu)
+            }
+
             Section {
                 Picker("Study Mode", selection: $studyMode) {
                     ForEach(StudyMode.allCases, id: \.self) { mode in
@@ -76,15 +86,6 @@ struct SettingsView: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-
-                Picker(selection: $homeVerseStartMode) {
-                    ForEach(HomeVerseStartMode.allCases, id: \.self) { mode in
-                        Text(mode.displayName).tag(mode)
-                    }
-                } label: {
-                    rowLabel("Home Card Opens In", "house")
-                }
-                .pickerStyle(.menu)
             } header: {
                 Text("Learning")
             } footer: {
@@ -143,14 +144,6 @@ struct SettingsView: View {
             }
 
             Section {
-                Picker(selection: $bibleVersion) {
-                    ForEach(BibleVersion.allCases, id: \.self) { version in
-                        Text(version.displayName).tag(version)
-                    }
-                } label: {
-                    rowLabel("Bible Version", "book.closed")
-                }
-                .pickerStyle(.menu)
                 Picker(selection: $cardAppearance) {
                     ForEach(CardAppearance.allCases, id: \.self) { mode in
                         Text(mode.displayName).tag(mode)
@@ -221,7 +214,6 @@ struct SettingsView: View {
         .onChange(of: newCapUnit)         { _, v in logSetting("newCardsPer", v.rawValue) }
         .onChange(of: dailyReviewCap)     { _, v in logSettingOnceSettled("reviewsPerDay", String(v)) }
         .onChange(of: reviewsKnownVerses) { _, v in logSetting("reviewEarlierVerses", String(v)) }
-        .onChange(of: homeVerseStartMode) { _, v in logSetting("homeCardOpensIn", v.rawValue) }
         .onChange(of: cardAppearance)     { _, v in logSetting("cardAppearance", v.rawValue) }
         .onChange(of: reminderEnabled)    { _, v in logSetting("dailyReminder", String(v)) }
         // Hosted on the List (not the Learning Section) so the first presentation

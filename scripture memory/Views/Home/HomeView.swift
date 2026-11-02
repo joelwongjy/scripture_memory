@@ -4,7 +4,6 @@ import SwiftUI
 struct HomeView: View {
 
     @AppStorage(BibleVersion.storageKey)       private var bibleVersion: BibleVersion = .niv84
-    @AppStorage(HomeVerseStartMode.storageKey) private var homeVerseStartMode: HomeVerseStartMode = .read
 
     @ObservedObject private var store     = SRSStore.shared
     @ObservedObject private var packPrefs = PackPreferencesStore.shared
@@ -15,15 +14,13 @@ struct HomeView: View {
     @State private var windowSize: CGSize = .zero
 
     /// One full-screen presentation at a time (two `.fullScreenCover`s on one
-    /// view conflict): the daily review, a pack's practice, or a pack.
+    /// view conflict): the daily review or a pack.
     private enum ActiveCover: Identifiable {
         case review(TestSession)
-        case practice(TestSession)
         case pack(Pack, index: Int)
         var id: String {
             switch self {
             case .review(let s):          return "review-\(s.id)"
-            case .practice(let s):        return "practice-\(s.id)"
             case .pack(let p, let index): return "pack-\(p.id)-\(index)"
             }
         }
@@ -69,7 +66,6 @@ struct HomeView: View {
         .fullScreenCover(item: $cover) { c in
             switch c {
             case .review(let s): DailyReviewScreen(session: s, onFinished: { cover = nil })
-            case .practice(let s): TestSessionView(session: s, onSessionEnded: { cover = nil })
             case .pack(let pack, let index): PouchView(pack: pack, startIndex: index)
             }
         }
@@ -130,7 +126,6 @@ struct HomeView: View {
         if let spot = featured {
             ContinueLearningCard(
                 spot: spot,
-                startMode: homeVerseStartMode,
                 onOpen: { openLearning(forceCurrent: false) },
                 onChangePin: { showPinPicker = true },
                 onUnpin: { learning.unpin() }
@@ -149,14 +144,8 @@ struct HomeView: View {
     /// pinned (the "Go to current verse" shortcut).
     private func openLearning(forceCurrent: Bool) {
         guard let spot = forceCurrent ? current : featured else { return }
-        if homeVerseStartMode.opensInReview {
-            if let session = TestSession.practice(spot.pack.verses, from: spot.indexInPack) {
-                cover = .practice(session)
-            }
-        } else {
-            Analytics.log(.packOpened(pack: spot.pack.name, from: .homeCard))
-            cover = .pack(spot.pack, index: spot.indexInPack)
-        }
+        Analytics.log(.packOpened(pack: spot.pack.name, from: .homeCard))
+        cover = .pack(spot.pack, index: spot.indexInPack)
     }
 
     // MARK: - Packs Link

@@ -137,28 +137,3 @@ enum class CardAppearance {
         }
     }
 }
-
-enum class HomeVerseStartMode {
-    read,
-    review;
-
-    val rawValue: String get() = name
-
-    val displayName: String
-        get() = when (this) {
-            read -> "Read"
-            review -> "Review"
-        }
-
-    val ctaLabel: String
-        get() = when (this) {
-            read -> "Read"
-            review -> "Practice"
-        }
-
-    val opensInReview: Boolean get() = this == review
-
-    companion object {
-        const val storageKey = "homeVerseStartMode.v1"
-    }
-}

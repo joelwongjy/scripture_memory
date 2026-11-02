@@ -32,7 +32,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import joel.scripturememory.R
-import joel.scripturememory.model.HomeVerseStartMode
 import joel.scripturememory.model.LearningStore
 import joel.scripturememory.model.Pack
 import joel.scripturememory.model.PackListLayout
@@ -65,7 +64,6 @@ data class LearningSpot(
 @Composable
 fun ContinueLearningCard(
     spot: LearningSpot,
-    startMode: HomeVerseStartMode,
     modifier: Modifier = Modifier,
     onOpen: () -> Unit,
     onChangePin: () -> Unit,
@@ -78,7 +76,7 @@ fun ContinueLearningCard(
     val source = remember { MutableInteractionSource() }
     val pressed by source.collectIsPressedAsState()
     val scale by animateFloatAsState(if (pressed) 0.97f else 1f, AppMotion.control(), label = "cardPress")
-    val label = "${startMode.ctaLabel} ${verse.book} ${verse.reference}"
+    val label = "Read ${verse.book} ${verse.reference}"
 
     Column(
         modifier.widthIn(max = PackListLayout.focalCardWidth(AppType.body.sizeInDp()).dp).fillMaxWidth(),
@@ -166,7 +164,7 @@ fun ContinueLearningCard(
                     onClick = onOpen,
                 ),
         ) {
-            HomeVerseCard(verse, learning.isLearnt(verse), maxWidth, startMode.ctaLabel)
+            HomeVerseCard(verse, learning.isLearnt(verse), maxWidth)
             if (showsMenu) {
                 AppMenu(
                     actions = if (spot.isPinned) {

@@ -55,7 +55,6 @@ internal fun HomeVerseCard(
     verse: Verse,
     isLearnt: Boolean,
     width: Dp,
-    ctaLabel: String,
     modifier: Modifier = Modifier,
 ) {
     val u = width.value / 100f
@@ -98,7 +97,7 @@ internal fun HomeVerseCard(
             }
             val accent = paperAccent()
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(ctaLabel, style = footerStyle.copy(fontWeight = FontWeight.SemiBold), color = accent, maxLines = 1)
+                Text("Read", style = footerStyle.copy(fontWeight = FontWeight.SemiBold), color = accent, maxLines = 1)
                 Spacer(Modifier.width((0.7f * u).dp))
                 Icon(R.drawable.ic_caret_right, size = (2.8f * u).dp, tint = accent)
             }
