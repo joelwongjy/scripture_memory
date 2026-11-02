@@ -47,7 +47,6 @@ import joel.scripturememory.model.AppDefaults
 import joel.scripturememory.model.BibleVersion
 import joel.scripturememory.model.CardAppearance
 import joel.scripturememory.model.Catalogue
-import joel.scripturememory.model.HomeVerseStartMode
 import joel.scripturememory.model.LearningStore
 import joel.scripturememory.model.NewCapUnit
 import joel.scripturememory.model.NewCardCap
@@ -91,7 +90,7 @@ import androidx.compose.ui.unit.sp
 private const val hardModeKey = "hardMode"
 private val iconRowInset = AppLayout.panelPadding + 36.dp
 
-private enum class Picker { HomeCard, Bible, Cards }
+private enum class Picker { Bible, Cards }
 
 private fun logSetting(setting: String, value: String) {
     Analytics.log(AnalyticsEvent.SettingChanged(setting, value))
@@ -125,9 +124,6 @@ fun SettingsScreen() {
     val dailyReviewCap = defaults.getInt(NewCardCap.dailyReviewCapKey) ?: NewCardCap.dailyReviewCapDefault
     val reviewsKnown = defaults.getBool(SRSQueueBuilder.NewCardPolicy.reviewsKnownKey)
         ?: SRSQueueBuilder.NewCardPolicy.reviewsKnownDefault
-    val homeMode = HomeVerseStartMode.entries.firstOrNull {
-        it.rawValue == defaults.getString(HomeVerseStartMode.storageKey)
-    } ?: HomeVerseStartMode.read
     val cardAppearance = CardAppearance.saved()
     val reminderEnabled = defaults.getBool(NotificationManager.Keys.enabled) ?: false
     val reminderHour = defaults.getInt(NotificationManager.Keys.hour) ?: NotificationManager.defaultHour
@@ -172,6 +168,16 @@ fun SettingsScreen() {
     TrackScreen(AnalyticsScreen.settings)
 
     LargeTitleColumn("Settings") {
+        GroupedSection {
+            ValueRow(
+                title = "Bible Version",
+                icon = R.drawable.ic_book,
+                value = bibleVersion.displayName,
+                trailingIcon = R.drawable.ic_caret_up_down,
+                onClick = { picker = Picker.Bible },
+            )
+        }
+
         GroupedSection(
             title = "Study",
             footer = if (hardMode) {
@@ -211,14 +217,6 @@ fun SettingsScreen() {
                 value = currentLearningLabel,
                 trailingIcon = R.drawable.ic_caret_right,
                 onClick = { showLearningSetup = true },
-            )
-            RowDivider(iconRowInset)
-            ValueRow(
-                title = "Home Card Opens In",
-                icon = R.drawable.ic_house,
-                value = homeMode.displayName,
-                trailingIcon = R.drawable.ic_caret_up_down,
-                onClick = { picker = Picker.HomeCard },
             )
         }
 
@@ -314,14 +312,6 @@ fun SettingsScreen() {
 
         GroupedSection(title = "Display", footer = "Match Appearance uses dark cards in Dark Mode.") {
             ValueRow(
-                title = "Bible Version",
-                icon = R.drawable.ic_book,
-                value = bibleVersion.displayName,
-                trailingIcon = R.drawable.ic_caret_up_down,
-                onClick = { picker = Picker.Bible },
-            )
-            RowDivider(iconRowInset)
-            ValueRow(
                 title = "Cards",
                 icon = R.drawable.ic_cards,
                 value = cardAppearance.displayName,
@@ -383,19 +373,6 @@ fun SettingsScreen() {
     }
 
     when (picker) {
-        Picker.HomeCard -> PickerSheet(
-            title = "Home Card Opens In",
-            options = HomeVerseStartMode.entries,
-            selected = homeMode,
-            label = { it.displayName },
-            onSelect = {
-                if (it != homeMode) {
-                    defaults.putString(HomeVerseStartMode.storageKey, it.rawValue)
-                    logSetting("homeCardOpensIn", it.rawValue)
-                }
-            },
-            onDismiss = { picker = null },
-        )
         Picker.Bible -> PickerSheet(
             title = "Bible Version",
             options = BibleVersion.entries,

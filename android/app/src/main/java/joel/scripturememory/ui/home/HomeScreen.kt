@@ -23,10 +23,8 @@ import androidx.compose.ui.unit.dp
 import joel.scripturememory.R
 import joel.scripturememory.model.AnalyticsEvent
 import joel.scripturememory.model.AnalyticsScreen
-import joel.scripturememory.model.AppDefaults
 import joel.scripturememory.model.BibleVersion
 import joel.scripturememory.model.Catalogue
-import joel.scripturememory.model.HomeVerseStartMode
 import joel.scripturememory.model.LearningStore
 import joel.scripturememory.model.Pack
 import joel.scripturememory.model.PackListLayout
@@ -46,15 +44,9 @@ import joel.scripturememory.ui.components.TrackScreen
 import joel.scripturememory.ui.components.dimOnPress
 import joel.scripturememory.ui.pouch.PouchScreen
 import joel.scripturememory.ui.study.DailyReviewScreen
-import joel.scripturememory.ui.study.TestSessionScreen
 import joel.scripturememory.ui.theme.AppLayout
 import joel.scripturememory.ui.theme.AppTheme
 import joel.scripturememory.ui.theme.AppType
-
-private fun savedStartMode(): HomeVerseStartMode {
-    val raw = AppDefaults.standard.getString(HomeVerseStartMode.storageKey)
-    return HomeVerseStartMode.entries.firstOrNull { it.rawValue == raw } ?: HomeVerseStartMode.read
-}
 
 private fun spot(packs: List<Pack>, verse: Verse, isPinned: Boolean): LearningSpot? {
     val pack = packs.firstOrNull { it.name == verse.packName } ?: return null
@@ -67,15 +59,10 @@ private fun presentReview(covers: Covers, session: TestSession) {
     covers.present("review-${session.id}") { dismiss -> DailyReviewScreen(session, onFinished = dismiss) }
 }
 
-private fun openLearning(covers: Covers, spot: LearningSpot, startMode: HomeVerseStartMode) {
-    if (startMode.opensInReview) {
-        val session = TestSession.practice(spot.pack.verses, spot.indexInPack) ?: return
-        covers.present("practice-${session.id}") { dismiss -> TestSessionScreen(session, onSessionEnded = dismiss) }
-    } else {
-        Analytics.log(AnalyticsEvent.PackOpened(spot.pack.name, PackSource.homeCard))
-        covers.present("pack-${spot.pack.id}-${spot.indexInPack}") { dismiss ->
-            PouchScreen(spot.pack, spot.indexInPack, onClosed = dismiss)
-        }
+private fun openLearning(covers: Covers, spot: LearningSpot) {
+    Analytics.log(AnalyticsEvent.PackOpened(spot.pack.name, PackSource.homeCard))
+    covers.present("pack-${spot.pack.id}-${spot.indexInPack}") { dismiss ->
+        PouchScreen(spot.pack, spot.indexInPack, onClosed = dismiss)
     }
 }
 
@@ -89,7 +76,6 @@ fun HomeScreen() {
     val packs = PackPreferencesStore.shared.visible(BibleVersion.saved().packs)
     val activePacks = store.activePacks(packs)
     val ordered = Catalogue.verses(packs)
-    val startMode = savedStartMode()
     var showsPinPicker by rememberSaveable { mutableStateOf(false) }
 
     val featured = learning.displayed(ordered)?.let { spot(packs, it.verse, it.isPinned) }
@@ -124,8 +110,7 @@ fun HomeScreen() {
             featured = featured,
             cursor = current,
             hasVerses = ordered.isNotEmpty(),
-            startMode = startMode,
-            onOpen = { spot -> openLearning(covers, spot, startMode) },
+            onOpen = { spot -> openLearning(covers, spot) },
             onChangePin = { showsPinPicker = true },
             modifier = modifier,
         )
@@ -166,7 +151,6 @@ private fun LearningSection(
     featured: LearningSpot?,
     cursor: LearningSpot?,
     hasVerses: Boolean,
-    startMode: HomeVerseStartMode,
     onOpen: (LearningSpot) -> Unit,
     onChangePin: () -> Unit,
     modifier: Modifier = Modifier,
@@ -180,7 +164,6 @@ private fun LearningSection(
         if (featured != null) {
             ContinueLearningCard(
                 spot = featured,
-                startMode = startMode,
                 onOpen = { onOpen(featured) },
                 onChangePin = onChangePin,
                 onUnpin = learning::unpin,

@@ -10,10 +10,9 @@ struct LearningSpot {
 }
 
 /// Home's featured verse: the pinned one, else the current learning verse.
-/// Tapping the verse opens it to practise.
+/// Tapping the verse opens its pack.
 struct ContinueLearningCard: View {
     let spot: LearningSpot
-    let startMode: HomeVerseStartMode
     let onOpen: () -> Void
     let onChangePin: () -> Void
     let onUnpin: () -> Void
@@ -34,7 +33,7 @@ struct ContinueLearningCard: View {
                 GeometryReader { geo in
                     PouchVerseCard(verse: v, isLearnt: learning.isLearnt(v), width: geo.size.width) {
                         HStack(spacing: 3) {
-                            Text(startMode.ctaLabel)
+                            Text("Read")
                                 .fontWeight(.semibold)
                             Image(systemName: "chevron.right")
                                 .imageScale(.small)
@@ -50,7 +49,7 @@ struct ContinueLearningCard: View {
             .buttonStyle(CardButtonStyle())
             .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 2, style: .continuous))
             .contextMenu { pinActions }
-            .accessibilityLabel("\(startMode.ctaLabel) \(v.book) \(v.reference)")
+            .accessibilityLabel("Read \(v.book) \(v.reference)")
         }
         .frame(maxWidth: PackListLayout.focalCardWidth(bodyTextSize: dynamicType.pointSize(of: .body)))
         .frame(maxWidth: .infinity)

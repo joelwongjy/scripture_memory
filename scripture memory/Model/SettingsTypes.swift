@@ -148,31 +148,3 @@ enum BibleVersion: String, CaseIterable {
 
     var packs: [Pack] { self == .niv11 ? Self.niv11Packs : packsNIV84 }
 }
-
-// MARK: - Home Verse Start Mode
-
-/// Which mode the Home "current verse" card opens in when tapped: `.read` opens
-/// its pack's pouch on the verse; `.review` starts practising from it.
-enum HomeVerseStartMode: String, CaseIterable {
-    case read
-    case review
-
-    static let storageKey = "homeVerseStartMode.v1"
-
-    var displayName: String {
-        switch self {
-        case .read:   return "Read"
-        case .review: return "Review"
-        }
-    }
-
-    /// CTA verb shown on the Home current-verse card.
-    var ctaLabel: String {
-        switch self {
-        case .read:   return "Read"
-        case .review: return "Practice"
-        }
-    }
-
-    var opensInReview: Bool { self == .review }
-}
