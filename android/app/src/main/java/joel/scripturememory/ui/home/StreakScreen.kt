@@ -1,5 +1,9 @@
 package joel.scripturememory.ui.home
 
+import kotlin.math.abs
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import android.text.format.DateFormat
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
@@ -226,10 +230,26 @@ private fun Calendar() {
     val month = YearMonth.parse(monthText)
     val isCurrentMonth = month >= thisMonth
 
+    fun shiftMonth(by: Long) {
+        if (by < 0 || !isCurrentMonth) monthText = month.plusMonths(by).toString()
+    }
+
+    val swipeDistance = with(LocalDensity.current) { monthSwipeDistance.toPx() }
+
     Column(
         Modifier
             .fillMaxWidth()
             .groupedPanel()
+            .pointerInput(monthText) {
+                var travelled = 0f
+                detectHorizontalDragGestures(
+                    onDragStart = { travelled = 0f },
+                    onHorizontalDrag = { _, amount -> travelled += amount },
+                    onDragEnd = {
+                        if (abs(travelled) >= swipeDistance) shiftMonth(if (travelled < 0) 1 else -1)
+                    },
+                )
+            }
             .padding(vertical = AppLayout.panelPadding),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
@@ -246,10 +266,10 @@ private fun Calendar() {
                 Text(monthTitle(shown), style = AppType.headline, color = AppTheme.colors.label, maxLines = 1)
             }
             MonthButton(R.drawable.ic_caret_left, "Previous month", enabled = true) {
-                monthText = month.minusMonths(1).toString()
+                shiftMonth(-1)
             }
             MonthButton(R.drawable.ic_caret_right, "Next month", enabled = !isCurrentMonth) {
-                monthText = month.plusMonths(1).toString()
+                shiftMonth(1)
             }
         }
         AnimatedContent(
@@ -272,6 +292,8 @@ private fun Calendar() {
         }
     }
 }
+
+private val monthSwipeDistance = 24.dp
 
 @Composable
 private fun MonthButton(icon: Int, label: String, enabled: Boolean, onClick: () -> Unit) {

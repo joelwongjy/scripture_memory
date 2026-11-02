@@ -59,6 +59,8 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.TransformOrigin
@@ -196,6 +198,8 @@ fun PouchScreen(
     }
 
     TrackScreen(AnalyticsScreen.pack)
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { c.openTime.resume() }
+    LifecycleEventEffect(Lifecycle.Event.ON_PAUSE) { c.openTime.pause() }
     LaunchedEffect(Unit) { c.appeared() }
     LaunchedEffect(c.fanned) { if (c.fanned) tilt.stop() else tilt.start() }
     DisposableEffect(Unit) {

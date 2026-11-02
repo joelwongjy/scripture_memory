@@ -12,6 +12,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameNanos
+import joel.scripturememory.model.ActiveTimer
 import joel.scripturememory.model.AnalyticsEvent
 import joel.scripturememory.model.PackCloseMethod
 import joel.scripturememory.model.Verse
@@ -109,7 +110,7 @@ internal class PouchController(
     var geometry: ListGeometry? = null
     var onClosed: () -> Unit = {}
 
-    private val openedAt = System.currentTimeMillis()
+    val openTime = ActiveTimer()
     private var opening: Job? = null
 
     private suspend fun awaitComposedFrame() {
@@ -175,8 +176,7 @@ internal class PouchController(
     fun close(how: PackCloseMethod) {
         if (closing) return
         closing = true
-        val seconds = (System.currentTimeMillis() - openedAt) / 1000.0
-        Analytics.log(AnalyticsEvent.PackClosed(how, seconds))
+        Analytics.log(AnalyticsEvent.PackClosed(how, openTime.elapsed()))
         if (AppMotion.reduceMotion || !animatesPouch) {
             HapticEngine.light()
             onClosed()

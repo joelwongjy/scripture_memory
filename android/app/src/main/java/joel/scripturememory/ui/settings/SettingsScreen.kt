@@ -56,6 +56,9 @@ import joel.scripturememory.model.SRSQueueBuilder
 import joel.scripturememory.model.SRSStore
 import joel.scripturememory.model.StudyMode
 import joel.scripturememory.system.Analytics
+import joel.scripturememory.system.Background
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import joel.scripturememory.system.NotificationManager
 import joel.scripturememory.ui.components.AlertAction
 import joel.scripturememory.ui.components.AppAlert
@@ -93,6 +96,18 @@ private enum class Picker { HomeCard, Bible, Cards }
 private fun logSetting(setting: String, value: String) {
     Analytics.log(AnalyticsEvent.SettingChanged(setting, value))
 }
+
+private val settlingLogs = mutableMapOf<String, Job>()
+
+private fun logSettingOnceSettled(setting: String, value: String) {
+    settlingLogs[setting]?.cancel()
+    settlingLogs[setting] = Background.launch {
+        delay(settledLogMillis)
+        logSetting(setting, value)
+    }
+}
+
+private const val settledLogMillis = 1500L
 
 private const val privacyPolicyUrl = "https://joelwongjy.github.io/scripture-memory-privacy/"
 
@@ -218,7 +233,7 @@ fun SettingsScreen() {
                 range = 0..50,
                 onValueChange = {
                     defaults.putInt(NewCardCap.amountKey, it)
-                    logSetting("newCards", it.toString())
+                    logSettingOnceSettled("newCards", it.toString())
                 },
             )
             RowDivider(iconRowInset)
@@ -251,7 +266,7 @@ fun SettingsScreen() {
                 range = 0..500,
                 onValueChange = {
                     defaults.putInt(NewCardCap.dailyReviewCapKey, it)
-                    logSetting("reviewsPerDay", it.toString())
+                    logSettingOnceSettled("reviewsPerDay", it.toString())
                 },
             )
             RowDivider(iconRowInset)

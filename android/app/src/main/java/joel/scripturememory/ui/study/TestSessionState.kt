@@ -9,6 +9,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.geometry.Offset
+import joel.scripturememory.model.ActiveTimer
 import joel.scripturememory.model.AnalyticsEvent
 import joel.scripturememory.model.AnalyticsScreen
 import joel.scripturememory.model.AppDefaults
@@ -80,7 +81,8 @@ internal class TestSessionState(
     private var dragJob: Job? = null
     private var dissolveJob: Job? = null
 
-    private val startedAt = Date.now()
+    var activeTime = ActiveTimer()
+        private set
     private var undoCount = 0
     private var usedVoice = false
     private var loggedStart = false
@@ -404,6 +406,7 @@ internal class TestSessionState(
     fun logStart() {
         if (loggedStart) return
         loggedStart = true
+        activeTime = ActiveTimer()
         val screen = when {
             isReview -> AnalyticsScreen.dailyReview
             session.kind == SessionKind.pack -> AnalyticsScreen.practice
@@ -413,10 +416,11 @@ internal class TestSessionState(
         var newCards = 0
         var learningCards = 0
         var dueCards = 0
+        var knownCards = 0
         if (isReview) {
             for (verse in vm.verses) {
                 when (SRSStore.shared.state(verse)?.phase) {
-                    null -> newCards += 1
+                    null -> if (LearningStore.shared.isLearnt(verse)) knownCards += 1 else newCards += 1
                     SRSPhase.learning -> learningCards += 1
                     SRSPhase.review -> dueCards += 1
                 }
@@ -432,6 +436,8 @@ internal class TestSessionState(
                     newCards = newCards,
                     learningCards = learningCards,
                     dueCards = dueCards,
+                    knownCards = knownCards,
+                    reviewedToday = if (isReview) SRSStore.shared.reviewedToday() else 0,
                     pack = if (session.kind == SessionKind.pack) vm.verses.firstOrNull()?.packName else null,
                 ),
             ),
@@ -449,7 +455,7 @@ internal class TestSessionState(
                     finished = finished,
                     cards = vm.verses.size,
                     cardsDone = if (isReview) grades.size else vm.completedCount,
-                    seconds = Date.now().timeIntervalSince(startedAt),
+                    seconds = activeTime.elapsed(),
                     again = grades.count { it == SRSGrade.again },
                     hard = grades.count { it == SRSGrade.hard },
                     good = grades.count { it == SRSGrade.good },

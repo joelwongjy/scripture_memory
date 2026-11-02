@@ -2,6 +2,7 @@ package joel.scripturememory.system
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.os.Build
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -9,6 +10,7 @@ import androidx.compose.runtime.setValue
 import com.telemetrydeck.sdk.TelemetryDeck
 import com.telemetrydeck.sdk.providers.DefaultParameterProvider
 import joel.scripturememory.BuildConfig
+import joel.scripturememory.model.AnalyticsBuild
 import joel.scripturememory.model.AnalyticsEvent
 
 interface AnalyticsSink {
@@ -74,11 +76,15 @@ class TelemetryDeckSink : AnalyticsSink {
             TelemetryDeck.Builder()
                 .appID("0215C34A-0573-47A2-861A-A405B0F98961")
                 .namespace("com.joelwong")
+                .testMode(AnalyticsBuild.isTest(BuildConfig.DEBUG, isEmulator))
                 .addProvider(DefaultParameterProvider(mapOf("platform" to "android"))),
         )
     }
 
     override fun stop() = TelemetryDeck.stop()
+
+    private val isEmulator: Boolean
+        get() = Build.HARDWARE in setOf("ranchu", "goldfish") || Build.FINGERPRINT.startsWith("generic")
 
     override fun send(event: AnalyticsEvent) {
         if (event is AnalyticsEvent.ScreenViewed) {

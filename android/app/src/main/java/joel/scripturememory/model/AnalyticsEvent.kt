@@ -15,6 +15,7 @@ sealed class AnalyticsEvent {
     data class SessionStarted(val start: StudySessionStart) : AnalyticsEvent()
     data class SessionEnded(val summary: StudySessionSummary) : AnalyticsEvent()
 
+    data class SearchPerformed(val results: Int) : AnalyticsEvent()
     data class SearchResultOpened(val rank: Int, val matchedOnReference: Boolean) : AnalyticsEvent()
     data object SearchFoundNothing : AnalyticsEvent()
 
@@ -33,6 +34,7 @@ sealed class AnalyticsEvent {
             is PackVisibilityChanged -> "Packs.visibilityChanged"
             is SessionStarted -> "${start.kind.signalPrefix}.started"
             is SessionEnded -> "${summary.kind.signalPrefix}.ended"
+            is SearchPerformed -> "Search.performed"
             is SearchResultOpened -> "Search.resultOpened"
             SearchFoundNothing -> "Search.foundNothing"
             is SettingChanged -> "Settings.changed"
@@ -53,6 +55,7 @@ sealed class AnalyticsEvent {
             is PackVisibilityChanged -> mapOf("hidden" to hidden.toString())
             is SessionStarted -> start.parameters
             is SessionEnded -> summary.parameters
+            is SearchPerformed -> mapOf("results" to AnalyticsRange.count(results))
             is SearchResultOpened -> mapOf(
                 "rank" to AnalyticsRange.count(rank),
                 "matchedOn" to if (matchedOnReference) "reference" else "text",
@@ -121,6 +124,8 @@ data class StudySessionStart(
     val newCards: Int = 0,
     val learningCards: Int = 0,
     val dueCards: Int = 0,
+    val knownCards: Int = 0,
+    val reviewedToday: Int = 0,
     val pack: String? = null,
 ) {
     val parameters: Map<String, String>
@@ -132,6 +137,8 @@ data class StudySessionStart(
                 put("new", AnalyticsRange.count(newCards))
                 put("learning", AnalyticsRange.count(learningCards))
                 put("due", AnalyticsRange.count(dueCards))
+                put("known", AnalyticsRange.count(knownCards))
+                put("reviewedToday", AnalyticsRange.count(reviewedToday))
             }
             pack?.let { put("pack", it) }
         }
@@ -174,6 +181,27 @@ data class StudySessionSummary(
                 }
             }
         }
+}
+
+object AnalyticsBuild {
+    fun isTest(isDebug: Boolean, isEmulator: Boolean): Boolean = isDebug || isEmulator
+}
+
+class ActiveTimer(now: Date = Date.now()) {
+    private var total = 0.0
+    private var resumedAt: Date? = now
+
+    fun pause(now: Date = Date.now()) {
+        total = elapsed(now)
+        resumedAt = null
+    }
+
+    fun resume(now: Date = Date.now()) {
+        if (resumedAt == null) resumedAt = now
+    }
+
+    fun elapsed(now: Date = Date.now()): Double =
+        total + (resumedAt?.let { now.timeIntervalSince(it) } ?: 0.0)
 }
 
 object AnalyticsRange {

@@ -82,4 +82,49 @@ class AnalyticsEventTests {
         val event = AnalyticsEvent.SearchResultOpened(3, false)
         assertEquals(mapOf("rank" to "2-5", "matchedOn" to "text"), event.parameters)
     }
+
+    @Test
+    fun searchPerformedCarriesOnlyTheRange() {
+        val search = AnalyticsEvent.SearchPerformed(results = 7)
+        assertEquals("Search.performed", search.name)
+        assertEquals(mapOf("results" to "6-10"), search.parameters)
+    }
+
+    @Test
+    fun reviewStartSeparatesKnownCardsAndEarlierReviews() {
+        val review = StudySessionStart(
+            kind = StudySessionKind.review,
+            cards = 7,
+            studyMode = "firstLetter",
+            hardMode = false,
+            newCards = 2,
+            knownCards = 5,
+            reviewedToday = 3,
+        )
+        assertEquals("2-5", review.parameters["new"])
+        assertEquals("2-5", review.parameters["known"])
+        assertEquals("2-5", review.parameters["reviewedToday"])
+        val practice = review.copy(kind = StudySessionKind.practice)
+        assertEquals(null, practice.parameters["known"])
+        assertEquals(null, practice.parameters["reviewedToday"])
+    }
+
+    @Test
+    fun debugAndEmulatorBuildsAreTestBuilds() {
+        assertEquals(true, AnalyticsBuild.isTest(isDebug = true, isEmulator = false))
+        assertEquals(true, AnalyticsBuild.isTest(isDebug = false, isEmulator = true))
+        assertEquals(false, AnalyticsBuild.isTest(isDebug = false, isEmulator = false))
+    }
+
+    @Test
+    fun activeTimerLeavesOutTimeAway() {
+        val start = Date.fromTimeIntervalSince1970(1_000.0)
+        val timer = ActiveTimer(now = start)
+        timer.pause(now = start.addingTimeInterval(20.0))
+        timer.pause(now = start.addingTimeInterval(25.0))
+        assertEquals(20.0, timer.elapsed(now = start.addingTimeInterval(4_000.0)), 1e-9)
+        timer.resume(now = start.addingTimeInterval(4_000.0))
+        timer.resume(now = start.addingTimeInterval(4_005.0))
+        assertEquals(30.0, timer.elapsed(now = start.addingTimeInterval(4_010.0)), 1e-9)
+    }
 }

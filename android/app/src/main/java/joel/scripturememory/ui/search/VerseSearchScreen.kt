@@ -108,6 +108,7 @@ fun VerseSearchScreen() {
         listState.scrollToItem(0)
         if (searchText.isEmpty()) return@LaunchedEffect
         delay(foundNothingDelayMillis)
+        Analytics.log(AnalyticsEvent.SearchPerformed(results.size))
         if (results.isEmpty()) Analytics.log(AnalyticsEvent.SearchFoundNothing)
     }
 

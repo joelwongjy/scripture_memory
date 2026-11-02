@@ -50,6 +50,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
@@ -155,6 +157,8 @@ fun TestSessionScreen(
         }
     }
 
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { state.activeTime.resume() }
+    LifecycleEventEffect(Lifecycle.Event.ON_PAUSE) { state.activeTime.pause() }
     DisposableEffect(state) {
         state.logStart()
         onDispose { state.logEnd(finished = false) }
