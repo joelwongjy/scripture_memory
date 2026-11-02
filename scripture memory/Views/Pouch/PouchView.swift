@@ -6,7 +6,8 @@ import SwiftUI
 /// Opening, the pouch comes off its shelf tile, unfolds and fans its cards out
 /// into the list. Closing (the ×, a swipe in from the leading edge, or a swipe
 /// left across the list) gathers them back in and folds it shut. Tap a card to
-/// practise from it.
+/// lift it out and turn it over to its reference, tap it to check the verse,
+/// and tap outside to put it back.
 struct PouchView: View {
     let pack: Pack
     /// The pack's tile on the shelf, in global coordinates, to fly out of and
@@ -43,6 +44,12 @@ struct PouchView: View {
     /// 1 with the pouch shut on its shelf tile, 0 with it in front of you.
     @State private var flight: CGFloat
     @State private var practice: TestSession?
+    @State private var lifted: LiftedCard?
+    /// 1 with the lifted card in the middle of the screen, 0 in its slot.
+    @State private var liftAmount: CGFloat = 0
+    /// 0 with the lifted card showing its verse, 180 its reference.
+    @State private var liftedAngle: Double = 0
+    @State private var flipCount = 0
     @State private var undoToastState: UndoToastState?
     @AppStorage("pouch.jumpLabelShown.v1") private var jumpLabelShown = false
 
@@ -51,6 +58,8 @@ struct PouchView: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var scenePhase
+
+    private static let screenSpace = "pouchScreen"
 
     /// How far in from the leading edge a swipe counts as the edge swipe.
     private static let edgeWidth: CGFloat = 28
@@ -76,7 +85,7 @@ struct PouchView: View {
 
     var body: some View {
         GeometryReader { safe in
-            pouch(insets: safe.safeAreaInsets)
+            pouch(insets: safe.safeAreaInsets, safeSize: safe.size)
                 .ignoresSafeArea()
         }
         .background(Color(.systemGroupedBackground).opacity(Double(1 - flight)).ignoresSafeArea())
@@ -98,13 +107,46 @@ struct PouchView: View {
 
     // MARK: - Layout
 
-    private func pouch(insets: EdgeInsets) -> some View {
-        VStack(spacing: 0) {
-            topBar
-            GeometryReader { geo in scene(geo, below: insets.bottom) }
-                .overlay { thumb }
+    private func pouch(insets: EdgeInsets, safeSize: CGSize) -> some View {
+        ZStack {
+            VStack(spacing: 0) {
+                topBar
+                GeometryReader { geo in scene(geo, below: insets.bottom) }
+                    .overlay { thumb }
+            }
+            .padding(insets)
+            .blur(radius: 14 * liftAmount)
+            .overlay {
+                Color.black.opacity((colorScheme == .dark ? 0.68 : 0.16) * Double(liftAmount))
+                    .allowsHitTesting(false)
+            }
+            .allowsHitTesting(lifted == nil)
+            .accessibilityHidden(lifted != nil)
+
+            if let lifted {
+                Color.clear
+                    .contentShape(Rectangle())
+                    .onTapGesture(perform: putCardBack)
+                    .accessibilityHidden(true)
+                liftedCard(lifted, area: CGRect(origin: CGPoint(x: insets.leading, y: insets.top), size: safeSize))
+            }
         }
-        .padding(insets)
+        .coordinateSpace(name: Self.screenSpace)
+    }
+
+    private func liftedCard(_ card: LiftedCard, area: CGRect) -> some View {
+        let verse = verses[card.index]
+        let showsReference = liftedAngle > 90
+        return LiftedCardView(verse: verse, isLearnt: learning.isLearnt(verse), source: card.source,
+                              area: area, lift: liftAmount, angle: liftedAngle, onFlip: flipLiftedCard)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(showsReference ? "\(verse.book) \(verse.reference)"
+                                               : "\(verse.title), \(verse.book) \(verse.reference). \(verse.verse)")
+            .accessibilityHint("Turns the card over")
+            .accessibilityAddTraits([.isButton, .isModal])
+            .accessibilityAction { flipLiftedCard() }
+            .accessibilityAction(named: "Put Back", putCardBack)
+            .accessibilityAction(.escape, putCardBack)
     }
 
     /// The pouch and the cards out of it.
@@ -222,14 +264,19 @@ struct PouchView: View {
 
     private func listCells(width: CGFloat, height: CGFloat) -> some View {
         ForEach(verses.indices, id: \.self) { i in
-            Button { startPractice(from: i) } label: {
-                listCard(i, width: width)
-                    .frame(width: width, height: height)
-                    .listCardShadow()
+            GeometryReader { cell in
+                let lift = { liftCard(i, from: cell.frame(in: .named(Self.screenSpace))) }
+                Button(action: lift) {
+                    listCard(i, width: width, onLift: lift)
+                        .frame(width: width, height: height)
+                        .listCardShadow()
+                }
+                .buttonStyle(CardButtonStyle())
+                .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 2, style: .continuous))
+                .contextMenu { cardMenu(i) }
             }
-            .buttonStyle(CardButtonStyle())
-            .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 2, style: .continuous))
-            .contextMenu { cardMenu(verses[i]) }
+            .frame(width: width, height: height)
+            .opacity(lifted?.index == i ? 0 : 1)
             .id(i)
         }
     }
@@ -263,7 +310,10 @@ struct PouchView: View {
                 settleListSoon()
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { settleList() }
             }
-            .onChange(of: layout) { _, _ in proxy.scrollTo(index, anchor: .center) }
+            .onChange(of: layout) { _, _ in
+                dropLiftedCard()
+                proxy.scrollTo(index, anchor: .center)
+            }
         }
         .overlay(alignment: .leading) {
             Color.clear
@@ -374,7 +424,7 @@ struct PouchView: View {
         }
     }
 
-    private func listCard(_ i: Int, width: CGFloat) -> some View {
+    private func listCard(_ i: Int, width: CGFloat, onLift: @escaping () -> Void = {}) -> some View {
         let verse = verses[i]
         let isCurrent = learning.isCurrent(verse)
         return PouchVerseCard(verse: verse, isLearnt: learning.isLearnt(verse), width: width) {
@@ -393,8 +443,9 @@ struct PouchView: View {
         }
         .paperAppearance()
         .accessibilityAddTraits(.isButton)
-        .accessibilityHint("Practises from this verse")
-        .accessibilityAction { startPractice(from: i) }
+        .accessibilityHint("Lifts the card and turns it over")
+        .accessibilityAction { onLift() }
+        .accessibilityAction(named: "Practice This Card") { practice = .practice(card: verse) }
         .accessibilityAction(named: FavoritesStore.shared.isFavorite(verse) ? "Unstar" : "Star") {
             toggleStar(verse)
         }
@@ -404,8 +455,12 @@ struct PouchView: View {
     }
 
     @ViewBuilder
-    private func cardMenu(_ verse: Verse) -> some View {
+    private func cardMenu(_ i: Int) -> some View {
+        let verse = verses[i]
         let isFavorite = FavoritesStore.shared.isFavorite(verse)
+        Button { practice = .practice(card: verse) } label: {
+            Label("Practice This Card", systemImage: "keyboard")
+        }
         Button {
             HapticEngine.light()
             toggleStar(verse)
@@ -512,7 +567,7 @@ struct PouchView: View {
     private func close(_ how: PackCloseMethod) {
         guard !closing else { return }
         closing = true
-        Analytics.log(.packClosed(how: how, seconds: openTime.elapsed()))
+        Analytics.log(.packClosed(how: how, seconds: openTime.elapsed(), flips: flipCount))
         if AppMotion.reduceMotion || !animatesPouch { HapticEngine.light(); dismissOrPutBack(); return }
         HapticEngine.play(HapticEngine.packClose)
         var t = Transaction()
@@ -583,6 +638,40 @@ struct PouchView: View {
                                                   : max(half, viewport - max(most - offset, 0)))
         let row = Int((reading - AppLayout.spacing / 2) / (height + AppLayout.spacing))
         return min(max(layout.firstCard(inRow: row), 0), verses.count - 1)
+    }
+
+    private var cardMotion: Animation {
+        AppMotion.reduceMotion ? .easeOut(duration: 0.15) : .smooth(duration: 0.24)
+    }
+
+    private func liftCard(_ i: Int, from source: CGRect) {
+        guard lifted == nil else { return }
+        HapticEngine.light()
+        flipCount += 1
+        lifted = LiftedCard(index: i, source: source)
+        withAnimation(cardMotion) {
+            liftAmount = 1
+            liftedAngle = 180
+        }
+    }
+
+    private func flipLiftedCard() {
+        HapticEngine.light()
+        withAnimation(cardMotion) { liftedAngle = liftedAngle > 90 ? 0 : 180 }
+    }
+
+    private func putCardBack() {
+        guard lifted != nil, liftAmount == 1 else { return }
+        withAnimation(cardMotion, completionCriteria: .logicallyComplete) {
+            liftAmount = 0
+            liftedAngle = 0
+        } completion: { lifted = nil }
+    }
+
+    private func dropLiftedCard() {
+        lifted = nil
+        liftAmount = 0
+        liftedAngle = 0
     }
 
     private func startPractice(from i: Int) {

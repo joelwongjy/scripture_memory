@@ -2,6 +2,7 @@ package joel.scripturememory.ui.pouch
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationSpec
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Stable
@@ -12,9 +13,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameNanos
+import androidx.compose.ui.geometry.Rect
 import joel.scripturememory.model.ActiveTimer
 import joel.scripturememory.model.AnalyticsEvent
 import joel.scripturememory.model.PackCloseMethod
+import joel.scripturememory.model.PackListLayout
 import joel.scripturememory.model.Verse
 import joel.scripturememory.system.Analytics
 import joel.scripturememory.system.HapticEngine
@@ -35,21 +38,24 @@ internal class ListGeometry(
     val below: Int,
     val viewport: Int,
     val count: Int,
+    val layout: PackListLayout,
+    private val density: Float,
 ) {
     val pitch = cardHeight + spacing
-    val left = ((sceneWidth - cardWidth) / 2f).roundToInt()
-    private val contentHeight = count * pitch + spacing + below
+    val columnPitch: Float get() = layout.columnPitch * density
+    val rows: Int get() = layout.rows(count)
+    private val contentHeight = rows * pitch + spacing + below
     private val rawMost = contentHeight - viewport
     private val most = max(0, rawMost)
 
     fun scrollFor(i: Int): Int {
-        val mid = spacing + i * pitch + cardHeight / 2f
+        val mid = spacing + layout.row(i) * pitch + cardHeight / 2f
         return min(max(0f, mid - viewport / 2f), most.toFloat()).roundToInt()
     }
 
-    fun midY(i: Int, scroll: Int = scrollFor(i)): Float = spacing + i * pitch + cardHeight / 2f - scroll
+    fun midY(i: Int, scroll: Int = scrollFor(i)): Float = spacing + layout.row(i) * pitch + cardHeight / 2f - scroll
 
-    val centerX: Float get() = left + cardWidth / 2f
+    fun centerX(i: Int): Float = sceneWidth / 2f + layout.centerOffset(i) * density
 
     fun cardShown(offset: Float, fallback: Int): Int {
         if (rawMost <= 0) return fallback
@@ -59,8 +65,8 @@ internal class ListGeometry(
         } else {
             max(half, viewport - max(rawMost - offset, 0f))
         }
-        val i = ((reading - spacing / 2f) / pitch).toInt()
-        return min(max(i, 0), count - 1)
+        val row = ((reading - spacing / 2f) / pitch).toInt()
+        return min(max(layout.firstCard(row), 0), count - 1)
     }
 }
 
@@ -104,6 +110,10 @@ internal class PouchController(
     var fanned by mutableStateOf(reduce)
     var listSettled by mutableStateOf(false)
     var closing by mutableStateOf(false)
+    var lifted by mutableStateOf<LiftedCard?>(null)
+    val liftAmount = Animatable(0f)
+    val liftedAngle = Animatable(0f)
+    private var flipCount = 0
     var listScrolled = false
     var closeCenterY by mutableStateOf<Float?>(null)
     var listState: LazyListState? = null
@@ -155,11 +165,11 @@ internal class PouchController(
         }
     }
 
-    fun finishOpening(flick: Float, pitch: Float) {
+    fun finishOpening(flick: Float, pitch: Float, columns: Int) {
         if (fanned || closing) return
         HapticEngine.stop()
         opening?.cancel()
-        val target = (index - (flick / pitch).roundToInt()).coerceIn(0, verses.lastIndex)
+        val target = (index - (flick / pitch).roundToInt() * columns).coerceIn(0, verses.lastIndex)
         flight.value = 0f
         openness.value = 1f
         lift.value = 1f
@@ -173,10 +183,47 @@ internal class PouchController(
         }
     }
 
+    private fun cardMotion(): AnimationSpec<Float> =
+        if (AppMotion.reduceMotion) tween(150) else PouchMotion.smoothSpec(0.24f)
+
+    fun liftCard(i: Int, source: Rect) {
+        if (lifted != null) return
+        HapticEngine.light()
+        flipCount += 1
+        lifted = LiftedCard(i, source)
+        scope.launch { liftAmount.animateTo(1f, cardMotion()) }
+        scope.launch { liftedAngle.animateTo(180f, cardMotion()) }
+    }
+
+    fun flipLiftedCard() {
+        HapticEngine.light()
+        val to = if (liftedAngle.targetValue > 90f) 0f else 180f
+        scope.launch { liftedAngle.animateTo(to, cardMotion()) }
+    }
+
+    fun putCardBack() {
+        if (lifted == null || liftAmount.targetValue != 1f) return
+        scope.launch {
+            val moving = launch { liftAmount.animateTo(0f, cardMotion()) }
+            val turning = launch { liftedAngle.animateTo(0f, cardMotion()) }
+            moving.join()
+            turning.join()
+            lifted = null
+        }
+    }
+
+    fun dropLiftedCard() {
+        lifted = null
+        scope.launch {
+            liftAmount.snapTo(0f)
+            liftedAngle.snapTo(0f)
+        }
+    }
+
     fun close(how: PackCloseMethod) {
         if (closing) return
         closing = true
-        Analytics.log(AnalyticsEvent.PackClosed(how, openTime.elapsed()))
+        Analytics.log(AnalyticsEvent.PackClosed(how, openTime.elapsed(), flipCount))
         if (AppMotion.reduceMotion || !animatesPouch) {
             HapticEngine.light()
             onClosed()

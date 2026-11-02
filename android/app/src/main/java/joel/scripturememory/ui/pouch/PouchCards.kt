@@ -27,6 +27,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
@@ -227,6 +228,41 @@ internal fun PouchVerseCard(
                 }
                 accessory()
             }
+        }
+    }
+}
+
+@Composable
+internal fun PouchCardBack(verse: Verse, width: Dp) {
+    val dark = AppTheme.isDark
+    val density = LocalDensity.current
+    val u = width.value / 100f
+    fun sp(value: Float): TextUnit = with(density) { (value * u).dp.toSp() }
+    val kind = if (verse.packName.startsWith("DEP ")) CardFontStyle.PrintBody else CardFontStyle.Body
+
+    Box(Modifier.size(width, width / AppLayout.cardAspect)) {
+        PaperFace(Modifier.matchParentSize())
+        Column(
+            Modifier.matchParentSize().padding(horizontal = (7 * u).dp),
+            verticalArrangement = Arrangement.spacedBy((2.4f * u).dp, Alignment.CenterVertically),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                "${verse.book} ${verse.reference}",
+                style = CardFont.style(kind, sp(6.4f)),
+                color = PouchInk.body(dark),
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                "Tap to reveal",
+                style = TextStyle(
+                    fontFamily = InterText,
+                    fontSize = sp(3.2f),
+                    fontWeight = FontWeight.Medium,
+                    platformStyle = PlatformTextStyle(includeFontPadding = false),
+                ),
+                color = PouchInk.caption(dark),
+            )
         }
     }
 }

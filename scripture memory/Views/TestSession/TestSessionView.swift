@@ -21,6 +21,7 @@ struct TestSessionView: View {
     @State private var speechTarget: SubmitField = .title
     @State private var isScrubbing           = false
     @State private var isPeeking             = false
+    @State private var isShortWindow         = false
     /// Pending "marked complete" undo prompt.
     @State private var undoToastState:       UndoToastState?
     @State private var activeTime            = ActiveTimer()
@@ -125,6 +126,9 @@ struct TestSessionView: View {
                     .animation(AppMotion.control, value: typingProgress)
                     .frame(width: cardWidth, height: pans ? room : nil, alignment: .top)
                     .mask { Rectangle().padding(pans ? 0 : -400) }
+                    .overlay(alignment: .topTrailing) {
+                        if isShortWindow { shortWindowPosition }
+                    }
                     .padding(.top, 8)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                 }
@@ -143,6 +147,9 @@ struct TestSessionView: View {
             .frame(maxWidth: .infinity)
         }
         .background(Color(.systemGroupedBackground))
+        .onGeometryChange(for: Bool.self) {
+            StudyWindow.dropsTitle(height: $0.size.height, topInset: $0.safeAreaInsets.top)
+        } action: { isShortWindow = $0 }
         .undoToast($undoToastState)
         .speechErrorAlert(speech)
         .onAppear(perform: logStart)
@@ -181,6 +188,19 @@ struct TestSessionView: View {
         }
     }
 
+    private var shortWindowPosition: some View {
+        Text(positionLabel)
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .monospacedDigit()
+            .lineLimit(1)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(.regularMaterial, in: Capsule())
+            .padding(8)
+            .accessibilityLabel("\(sessionTitle), \(positionLabel)")
+    }
+
     // MARK: - Toolbar
 
     @ToolbarContentBuilder
@@ -198,17 +218,19 @@ struct TestSessionView: View {
                     .disabled(vm.gradedOrder.isEmpty)
             }
         }
-        ToolbarItem(placement: .principal) {
-            VStack(spacing: 1) {
-                Text(sessionTitle)
-                    .font(.headline)
-                Text(positionLabel)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .monospacedDigit()
+        if !isShortWindow {
+            ToolbarItem(placement: .principal) {
+                VStack(spacing: 1) {
+                    Text(sessionTitle)
+                        .font(.headline)
+                    Text(positionLabel)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
+                }
+                .lineLimit(1)
+                .accessibilityElement(children: .combine)
             }
-            .lineLimit(1)
-            .accessibilityElement(children: .combine)
         }
         if isEditing {
             ToolbarItem(placement: .topBarTrailing) {
