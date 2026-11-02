@@ -58,6 +58,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.TransformOrigin
@@ -301,6 +302,21 @@ fun PouchScreen(
                     PouchThumb(c, sceneHeight, Modifier.align(Alignment.TopEnd))
                 }
             }
+        }
+        if (c.fanned && below > 0.dp) {
+            Box(
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .height(below + 20.dp)
+                    .background(
+                        Brush.verticalGradient(
+                            0f to colors.background.copy(alpha = 0f),
+                            0.45f to colors.background,
+                            1f to colors.background,
+                        ),
+                    ),
+            )
         }
         Box(Modifier.fillMaxSize().padding(bottom = below)) {
             UndoToastHost(undoToast) { undoToast = it }
