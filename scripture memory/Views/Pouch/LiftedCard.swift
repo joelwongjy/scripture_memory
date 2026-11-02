@@ -16,6 +16,8 @@ struct LiftedCardView: View {
     let area: CGRect
     let lift: CGFloat
     let angle: Double
+    /// How far a swipe has carried the card from the middle of the screen.
+    let drag: CGSize
     let onFlip: () -> Void
 
     var body: some View {
@@ -34,9 +36,11 @@ struct LiftedCardView: View {
         .contentShape(Rectangle())
         .onTapGesture(perform: onFlip)
         .shadow(color: .black.opacity(0.28 * Double(lift)), radius: 22, y: 12)
-        .scaleEffect(1 + (source.width / width - 1) * (1 - moved))
+        .scaleEffect((1 + (source.width / width - 1) * (1 - moved))
+                     * (1 - 0.05 * hypot(drag.width, drag.height) / PackListLayout.cardPullLimit))
         .position(x: source.midX + (area.midX - source.midX) * moved,
                   y: source.midY + (area.midY - source.midY) * moved)
+        .offset(drag)
         .opacity(still ? Double(lift) : 1)
     }
 }

@@ -37,16 +37,20 @@ struct TestSessionView: View {
     /// A review's last card was rated: called with this round's ratings and the
     /// cards that went back into learning, in place of closing the screen.
     let onRoundEnded:   ((_ grades: [SRSGrade], _ missed: [Verse]) -> Void)?
+    /// The session moved on to this card.
+    let onCardShown:    ((Verse) -> Void)?
     let sessionKind:    SessionKind
     let round:          Int
 
     // MARK: - Init
 
     init(session: TestSession, onSessionEnded: (() -> Void)? = nil,
-         onRoundEnded: ((_ grades: [SRSGrade], _ missed: [Verse]) -> Void)? = nil) {
+         onRoundEnded: ((_ grades: [SRSGrade], _ missed: [Verse]) -> Void)? = nil,
+         onCardShown: ((Verse) -> Void)? = nil) {
         _vm = StateObject(wrappedValue: TestSessionViewModel(verses: session.verses, kind: session.kind))
         self.onSessionEnded = onSessionEnded
         self.onRoundEnded   = onRoundEnded
+        self.onCardShown    = onCardShown
         self.sessionKind    = session.kind
         self.round          = session.round
     }
@@ -158,6 +162,7 @@ struct TestSessionView: View {
             if phase == .active { activeTime.resume() } else { activeTime.pause() }
         }
         .onChange(of: vm.currentIndex) { _, _ in
+            if let verse = vm.currentVerse { onCardShown?(verse) }
             vm.clearInputs()
             vm.resetDictation()
             if speech.isListening { speech.stopListening() }
