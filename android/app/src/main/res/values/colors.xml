@@ -1,0 +1,8 @@
+<resources>
+    <color name="window_background">#FFF3F2EE</color>
+    <color name="widget_paper">#FFFAF6F0</color>
+    <color name="widget_label">#FF191917</color>
+    <color name="widget_secondary">#FF6E6D68</color>
+    <color name="shortcut_background">#FFF3F2EE</color>
+    <color name="shortcut_glyph">#FF0A7AF0</color>
+</resources>
