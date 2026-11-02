@@ -147,7 +147,8 @@ struct PouchView: View {
     @ViewBuilder
     private func pouchAndDeck(_ geo: GeometryProxy, below: CGFloat, layout: PackListLayout,
                               listHeight: CGFloat) -> some View {
-        let m = PouchMetrics(fitting: CGSize(width: geo.size.width, height: geo.size.height - 12))
+        let m = PouchMetrics(fitting: CGSize(width: geo.size.width, height: geo.size.height - 12),
+                             widthLimit: layout.pouchWidthLimit)
         let sceneTop = (geo.size.height - 2 * m.halfHeight) / 2
 
         let coverCenter = CGPoint(x: geo.size.width / 2, y: sceneTop + m.halfHeight / 2 + m.cardFrame.midY)

@@ -3,6 +3,7 @@ import Foundation
 struct PackListLayout: Equatable {
     static let twoColumnWidth: CGFloat = 540
     static let threeColumnWidth: CGFloat = 960
+    static let pouchCardShare: CGFloat = 0.86
 
     let columns: Int
     let cardWidth: CGFloat
@@ -19,6 +20,10 @@ struct PackListLayout: Equatable {
     }
 
     var columnPitch: CGFloat { cardWidth + spacing }
+
+    var pouchWidthLimit: CGFloat? {
+        columns > 1 ? cardWidth / Self.pouchCardShare : nil
+    }
 
     func row(of card: Int) -> Int {
         card >= 0 ? card / columns : -((columns - 1 - card) / columns)
