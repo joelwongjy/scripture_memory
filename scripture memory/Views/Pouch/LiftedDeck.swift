@@ -13,14 +13,16 @@ struct LiftedDeck<Face: View>: View, Animatable {
     let listCenter: CGPoint
     let pocketWidth: CGFloat
     let listWidth: CGFloat
-    /// The gap from one card to the next in the list.
-    let listPitch: CGFloat
+    /// The gap from one row of the list to the next.
+    let rowPitch: CGFloat
+    let layout: PackListLayout
+    let frontCard: Int
     /// The card `k` places from the front one: below for positive `k`, above
     /// for negative.
     let around: (Int) -> PouchSlots.Card
     let edges: Int
 
-    private static var reach: Int { 3 }
+    private var reach: Int { 3 * layout.columns }
     let face: (PouchSlots.Card, CGFloat) -> Face
 
     var animatableData: AnimatablePair<CGFloat, CGFloat> {
@@ -34,7 +36,8 @@ struct LiftedDeck<Face: View>: View, Animatable {
         let scale = startScale + (1 - startScale) * lift
         let center = CGPoint(x: pocketCenter.x + (listCenter.x - pocketCenter.x) * lift,
                              y: pocketCenter.y + (listCenter.y - pocketCenter.y) * lift)
-        let gap = listPitch / max(scale, 0.01) * spread
+        let across = layout.columnPitch / max(scale, 0.01) * spread
+        let down = rowPitch / max(scale, 0.01) * spread
 
         ZStack {
             ForEach(0..<edges, id: \.self) { i in
@@ -47,15 +50,17 @@ struct LiftedDeck<Face: View>: View, Animatable {
                     .offset(y: CGFloat(n) * 1.1)
                     .opacity(Double(1 - spread))
             }
-            ForEach(Array((1...Self.reach).reversed()), id: \.self) { k in
+            ForEach(Array((1...reach).reversed()), id: \.self) { k in
+                let below = layout.offset(from: frontCard, by: k)
+                let above = layout.offset(from: frontCard, by: -k)
                 face(around(k), listWidth)
                     .listCardShadow(Double(spread))
-                    .offset(y: gap * CGFloat(k))
+                    .offset(x: across * CGFloat(below.columns), y: down * CGFloat(below.rows))
                 if spread > 0 {
                     face(around(-k), listWidth)
                         .listCardShadow(Double(spread))
-                        .offset(y: -gap * CGFloat(k))
-                        .opacity(Double(min(1, max(0, spread * 2 - CGFloat(k - 1) * 0.5))))
+                        .offset(x: across * CGFloat(above.columns), y: down * CGFloat(above.rows))
+                        .opacity(Double(min(1, max(0, spread * 2 - CGFloat(abs(above.rows) - 1) * 0.5))))
                 }
             }
             face(around(0), listWidth)
