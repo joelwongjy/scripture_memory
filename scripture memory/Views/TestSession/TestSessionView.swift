@@ -127,7 +127,7 @@ struct TestSessionView: View {
                     .frame(width: cardWidth, height: pans ? room : nil, alignment: .top)
                     .mask { Rectangle().padding(pans ? 0 : -400) }
                     .overlay(alignment: .topTrailing) {
-                        if isShort { shortWindowPosition }
+                        if isShortWindow { shortWindowPosition }
                     }
                     .padding(.top, 8)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -147,7 +147,9 @@ struct TestSessionView: View {
             .frame(maxWidth: .infinity)
         }
         .background(Color(.systemGroupedBackground))
-        .onGeometryChange(for: Bool.self) { $0.size.height < AppLayout.shortStudyHeight } action: { isShortWindow = $0 }
+        .onGeometryChange(for: Bool.self) {
+            StudyWindow.dropsTitle(height: $0.size.height, topInset: $0.safeAreaInsets.top)
+        } action: { isShortWindow = $0 }
         .undoToast($undoToastState)
         .speechErrorAlert(speech)
         .onAppear(perform: logStart)
