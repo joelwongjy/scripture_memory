@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
@@ -49,6 +50,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import joel.scripturememory.R
 import joel.scripturememory.model.RecallCardViewModel
 import joel.scripturememory.model.StudyMode
@@ -205,6 +207,11 @@ fun RecallInputField(
                                     color = colors.tertiaryLabel,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
+                                    autoSize = TextAutoSize.StepBased(
+                                        minFontSize = 12.sp,
+                                        maxFontSize = AppType.body.fontSize,
+                                        stepSize = 0.5.sp,
+                                    ),
                                 )
                             }
                             inner()
