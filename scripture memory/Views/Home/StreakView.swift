@@ -6,6 +6,7 @@ import SwiftUI
 struct StreakView: View {
     @ObservedObject private var streak = StreakStore.shared
     @State private var month = Calendar.current.dateInterval(of: .month, for: Date())?.start ?? Date()
+    @State private var monthEdge = Edge.trailing
 
     var body: some View {
         ScrollView {
@@ -101,9 +102,23 @@ struct StreakView: View {
                     .accessibilityLabel("Next month")
             }
             MonthGrid(month: month, isDone: streak.isDone)
+                .id(month)
+                .transition(.push(from: monthEdge))
         }
+        .clipped()
         .padding(AppLayout.panelPadding)
         .groupedPanel()
+        .contentShape(Rectangle())
+        .simultaneousGesture(monthSwipe)
+    }
+
+    private var monthSwipe: some Gesture {
+        DragGesture(minimumDistance: 24)
+            .onEnded { drag in
+                let width = drag.translation.width
+                guard abs(width) > abs(drag.translation.height) else { return }
+                shiftMonth(width < 0 ? 1 : -1)
+            }
     }
 
     private var isCurrentMonth: Bool {
@@ -111,7 +126,9 @@ struct StreakView: View {
     }
 
     private func shiftMonth(_ by: Int) {
-        guard let next = Calendar.current.date(byAdding: .month, value: by, to: month) else { return }
+        guard by < 0 || !isCurrentMonth,
+              let next = Calendar.current.date(byAdding: .month, value: by, to: month) else { return }
+        monthEdge = by > 0 ? .trailing : .leading
         withAnimation(AppMotion.content) { month = next }
     }
 
