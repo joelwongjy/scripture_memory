@@ -6,7 +6,9 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.setValue
 import joel.scripturememory.ui.theme.AppMotion
 import kotlin.math.abs
 import kotlin.math.atan2
