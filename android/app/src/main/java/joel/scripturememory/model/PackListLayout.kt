@@ -32,8 +32,7 @@ class PackListLayout(width: Float, val spacing: Float) {
         const val twoColumnWidth = 540f
         const val threeColumnWidth = 960f
         const val pouchCardShare = 0.86f
-        const val liftedCardWidth = 420f
-        const val packsOnHomeHeight = 760f
+        const val verseTextShare = 0.04f
         const val cardPullLimit = 120f
 
         fun columns(width: Float): Int = when {
@@ -42,8 +41,13 @@ class PackListLayout(width: Float, val spacing: Float) {
             else -> 1
         }
 
-        fun showsPacksOnHome(width: Float, height: Float): Boolean =
-            columns(width) > 1 && height >= packsOnHomeHeight
+        fun homeIsSideBySide(contentWidth: Float, height: Float): Boolean =
+            columns(contentWidth) > 1 && contentWidth > height
+
+        fun focalCardWidth(bodyTextSize: Float): Float = bodyTextSize / verseTextShare
+
+        fun verseTextCeiling(cardWidth: Float, share: Float, readableSize: Float): Float =
+            max(cardWidth * share, readableSize)
 
         fun positionLabel(card: Int, count: Int, columns: Int): String {
             val first = card / columns * columns
@@ -56,9 +60,16 @@ class PackListLayout(width: Float, val spacing: Float) {
             return if (travel < 0) -pulled else pulled
         }
 
-        fun liftedWidth(listWidth: Float, areaWidth: Float, areaHeight: Float, aspect: Float, margin: Float): Float {
+        fun liftedWidth(
+            listWidth: Float,
+            focalWidth: Float,
+            areaWidth: Float,
+            areaHeight: Float,
+            aspect: Float,
+            margin: Float,
+        ): Float {
             val fitting = min(areaWidth - 2 * margin, (areaHeight - 2 * margin) * aspect)
-            return min(fitting, max(listWidth, liftedCardWidth))
+            return min(fitting, max(listWidth, focalWidth))
         }
     }
 }

@@ -23,15 +23,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import joel.scripturememory.R
 import joel.scripturememory.model.HomeVerseStartMode
 import joel.scripturememory.model.LearningStore
 import joel.scripturememory.model.Pack
+import joel.scripturememory.model.PackListLayout
 import joel.scripturememory.model.Verse
 import joel.scripturememory.system.HapticEngine
 import joel.scripturememory.ui.components.AppMenu
@@ -48,6 +52,7 @@ import joel.scripturememory.ui.theme.AppLayout
 import joel.scripturememory.ui.theme.AppMotion
 import joel.scripturememory.ui.theme.AppTheme
 import joel.scripturememory.ui.theme.AppType
+import joel.scripturememory.ui.theme.sizeInDp
 
 data class LearningSpot(
     val verse: Verse,
@@ -76,11 +81,21 @@ fun ContinueLearningCard(
     val label = "${startMode.ctaLabel} ${verse.book} ${verse.reference}"
 
     Column(
-        modifier.fillMaxWidth().widthIn(max = 600.dp),
+        modifier.widthIn(max = PackListLayout.focalCardWidth(AppType.body.sizeInDp()).dp).fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         BoxWithConstraints(Modifier.fillMaxWidth()) {
-            val showsPosition = maxWidth >= 340.dp
+            val heading = if (spot.isPinned) "Pinned" else "Continue Learning"
+            val position = "${spot.indexInPack + 1} of ${spot.pack.verses.size}"
+            val measurer = rememberTextMeasurer()
+            val density = LocalDensity.current
+            fun width(text: String, style: TextStyle) =
+                with(density) { measurer.measure(text, style, maxLines = 1).size.width.toDp() }
+            val taken = width(heading, AppType.title3.copy(fontWeight = FontWeight.Bold)) +
+                width(position, AppType.subheadline) +
+                maxOf(width("Change", AppType.callout), 44.dp) +
+                (if (spot.isPinned) 24.dp else 0.dp) + 12.dp
+            val showsPosition = maxWidth - 40.dp >= taken
             Row(
                 Modifier.fillMaxWidth().padding(horizontal = 20.dp),
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -94,7 +109,7 @@ fun ContinueLearningCard(
                     )
                 }
                 Text(
-                    if (spot.isPinned) "Pinned" else "Continue Learning",
+                    heading,
                     Modifier.weight(1f).alignByBaseline().semantics { heading() },
                     style = AppType.title3.copy(fontWeight = FontWeight.Bold),
                     color = colors.label,
@@ -102,7 +117,7 @@ fun ContinueLearningCard(
                 )
                 if (showsPosition) {
                     Text(
-                        "${spot.indexInPack + 1} of ${spot.pack.verses.size}",
+                        position,
                         Modifier.alignByBaseline(),
                         style = AppType.subheadline,
                         color = colors.secondaryLabel,

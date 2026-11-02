@@ -33,6 +33,8 @@ import joel.scripturememory.model.Verse
 import joel.scripturememory.ui.packs.ShadowRadiusScale
 import joel.scripturememory.ui.theme.AppLayout
 import joel.scripturememory.ui.theme.AppMotion
+import joel.scripturememory.ui.theme.AppType
+import joel.scripturememory.ui.theme.sizeInDp
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.hypot
@@ -62,6 +64,7 @@ internal fun LiftedCardView(
     val still = AppMotion.reduceMotion
     val widthDp = PackListLayout.liftedWidth(
         source.width / density,
+        PackListLayout.focalCardWidth(AppType.body.sizeInDp()),
         area.width / density,
         area.height / density,
         AppLayout.cardAspect,

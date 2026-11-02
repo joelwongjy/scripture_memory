@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import joel.scripturememory.R
 import joel.scripturememory.model.AppDefaults
 import joel.scripturememory.model.CardFooter
+import joel.scripturememory.model.PackListLayout
 import joel.scripturememory.model.Verse
 import joel.scripturememory.model.VerseNumbering
 import joel.scripturememory.ui.components.FittedVerseText
@@ -42,6 +43,7 @@ import joel.scripturememory.ui.components.Text
 import joel.scripturememory.ui.packs.ShadowRadiusScale
 import joel.scripturememory.ui.theme.AppLayout
 import joel.scripturememory.ui.theme.AppTheme
+import joel.scripturememory.ui.theme.AppType
 import joel.scripturememory.ui.theme.CardFont
 import joel.scripturememory.ui.theme.CardFontStyle
 import joel.scripturememory.ui.theme.InterText
@@ -49,7 +51,9 @@ import joel.scripturememory.ui.theme.LightColors
 import joel.scripturememory.ui.theme.LocalAppColors
 import joel.scripturememory.ui.theme.LocalContentColor
 import joel.scripturememory.ui.theme.PouchInk
+import joel.scripturememory.ui.theme.sizeInDp
 import kotlin.math.max
+import kotlin.math.min
 
 private const val cardAppearanceKey = "cardAppearance.v1"
 private const val matchSystemAppearance = "matchSystem"
@@ -107,6 +111,8 @@ internal fun PouchVerseCard(
     val density = LocalDensity.current
     val u = width.value / 100f
     fun sp(value: Float): TextUnit = with(density) { (value * u).dp.toSp() }
+    val readable = AppType.caption.sizeInDp()
+    fun ceiling(share: Float) = PackListLayout.verseTextCeiling(width.value, share, readable)
     val footer = CardFooter.label(verse).split(" · ")
     val caption = PouchInk.caption(dark)
     val isPrintedDEP = verse.packName.startsWith("DEP ")
@@ -145,7 +151,10 @@ internal fun PouchVerseCard(
                     Text(
                         reference,
                         Modifier.weight(1f).alignBy(FirstBaseline),
-                        style = CardFont.style(CardFontStyle.PrintBody, sp(3.8f)),
+                        style = CardFont.style(
+                            CardFontStyle.PrintBody,
+                            with(density) { min(ceiling(0.038f), 4.4f * u).dp.toSp() },
+                        ),
                         color = body,
                     )
                     verse.pinnedVersion?.let { version ->
@@ -161,7 +170,7 @@ internal fun PouchVerseCard(
                     verse.verse,
                     lineSpacing = 0.5f * u,
                     minSize = 2 * u,
-                    maxSize = 3.8f * u,
+                    maxSize = ceiling(0.038f),
                     modifier = Modifier.weight(1f).fillMaxWidth().padding(top = (0.6f * u).dp),
                     kind = CardFontStyle.PrintBody,
                     closingLine = reference,
@@ -195,7 +204,7 @@ internal fun PouchVerseCard(
                     verse.verse,
                     lineSpacing = 0.8f * u,
                     minSize = 2 * u,
-                    maxSize = 4 * u,
+                    maxSize = ceiling(PackListLayout.verseTextShare),
                     modifier = Modifier.weight(1f).fillMaxWidth().padding(top = (1.4f * u).dp),
                     color = body,
                 )
