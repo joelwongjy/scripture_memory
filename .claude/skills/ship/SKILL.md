@@ -1,11 +1,19 @@
 ---
 name: ship
-description: Merge a pull request and ship Scripture Memory to testers. iOS goes to TestFlight with Scripts/release.sh; Android goes to the Play internal testing track through a secret gist and the built-in browser. Use when Joel says "merge and ship", "merge and build", "ship it", "update the test build", or "put it on Play".
+description: Merge a pull request and ship Scripture Memory to testers. Xcode Cloud builds iOS for TestFlight on every push to main; Android is built with Scripts/release.sh and put on the Play internal testing track through a secret gist and the built-in browser. Use when Joel says "merge and ship", "merge and build", "ship it", "update the test build", or "put it on Play".
 ---
 
 # Ship
 
-Nothing ships on its own: merging builds nothing, and Xcode Cloud has no workflow. A build exists only when you run these steps.
+**iOS ships itself.** Xcode Cloud's "Default" workflow (set up in App Store Connect, not in the repo) archives the app on every push to `main`. When pushes land close together, it cancels the older run. Its builds use Xcode Cloud's own build numbers (in the 40s for 1.3.1), not `VERSION`. To check a run, look for the `xcode-cloud` check on the commit:
+
+```bash
+gh api repos/joelwongjy/scripture_memory/commits/$(git rev-parse origin/main)/check-runs -q '.check_runs[] | select(.app.slug=="xcode-cloud") | "\(.conclusion // .status) \(.name)"'
+```
+
+Don't upload iOS with `release.sh` as well; it only adds duplicate builds. Use `Scripts/release.sh ios` only to ship a branch before it merges.
+
+**Android needs steps 2 and 3** every time.
 
 ## What needs Joel's yes
 
@@ -27,16 +35,16 @@ git fetch -q origin && git checkout -q main && git merge -q --ff-only origin/mai
 
 A branch made with `git checkout -b X origin/main` tracks origin/main, so a bare `git push` pushes nothing. Push new branches with `git push -u origin X`.
 
-## 2. Build
+## 2. Build Android
 
 Run from `main`, or from a branch when shipping it for testing before merge. Gradle needs the corporate truststore:
 
 ```bash
 export GRADLE_OPTS="-Djavax.net.ssl.trustStore=$HOME/.gradle/ssl/truststore.jks -Djavax.net.ssl.trustStorePassword=changeit"
-Scripts/release.sh <ios|android|all> --notes "<one or two plain sentences for testers>"
+Scripts/release.sh android --notes "<one or two plain sentences for testers>"
 ```
 
-Pick the target from what changed: `ios`, `android`, or `all`. The script tests, bumps `VERSION`, uploads iOS, builds the Android bundle, then commits, tags and pushes. It prints `No …/play-service-account.json yet, so nothing was uploaded`: that is expected. Android goes up in step 3. Run it in the background; it takes 5 to 10 minutes.
+The script tests, bumps `VERSION`, builds the Android bundle, then commits, tags and pushes. It prints `No …/play-service-account.json yet, so nothing was uploaded`: that is expected. Android goes up in step 3. Run it in the background; it takes 5 to 10 minutes.
 
 ## 3. Android to Play (secret gist)
 
@@ -82,12 +90,12 @@ Typed URLs to other Play Console pages can bounce to Home; click through the app
 
 ## 5. Report
 
-Say what shipped where, with build numbers: iOS reaches TestFlight once Apple finishes processing; Android shows "Available to internal testers". Mention anything skipped, such as a gist or branch deletion that needs his yes.
+Say what shipped where: the Xcode Cloud run's result for iOS (its build appears in TestFlight once Apple finishes processing), and the versionCode Play shows as "Available to internal testers". Mention anything skipped, such as a gist or branch deletion that needs his yes.
 
 ## When it goes wrong
 
 - **`release.sh` exits 128 at `git tag`:** another session released at the same time. The upload worked; fix the tag and push the version commit by hand.
 - **iOS export fails with an rsync error:** Homebrew's rsync is on PATH. The script already runs the export on the system PATH; keep it that way.
 - **"PLA Update available" or no distribution certificate:** Joel must accept the new agreement at developer.apple.com.
-- **Apple closed the version:** `release.sh` moves to the next patch version and uploads again by itself.
+- **Apple closed the version:** Xcode Cloud's builds start failing on upload. Raise `version` in `VERSION` and the Xcode project (`Scripts/release.sh ios --patch --dry-run` shows the next one), then merge.
 - **A real Android phone is plugged in:** set `ANDROID_SERIAL=emulator-5554` before any `adb` command.
