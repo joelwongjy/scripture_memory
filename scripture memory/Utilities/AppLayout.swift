@@ -42,10 +42,12 @@ enum AppLayout {
 
     /// Below this height (a rotated phone with the keyboard up) the study
     /// screens give the card the room the scrubber and bottom padding would take.
-    static let shortStudyHeight: CGFloat = 320
+    static let shortStudyHeight = StudyWindow.shortHeight
 
     /// The card's proportions on the study screens: 5 wide by 3 tall.
     static let cardAspect: CGFloat = 5.0 / 3.0
+
+    static let minimumTapSize: CGFloat = 44
 }
 
 extension View {
@@ -94,7 +96,7 @@ extension View {
     /// Grows the tappable area to Apple's 44×44pt minimum without changing the
     /// layout, for a control drawn smaller than that.
     func minimumTapTarget(visibleSize: CGFloat) -> some View {
-        contentShape(Rectangle().inset(by: min(0, (visibleSize - 44) / 2)))
+        contentShape(Rectangle().inset(by: min(0, (visibleSize - AppLayout.minimumTapSize) / 2)))
     }
 }
 

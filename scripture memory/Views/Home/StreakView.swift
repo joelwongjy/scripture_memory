@@ -88,24 +88,25 @@ struct StreakView: View {
 
     private var calendar: some View {
         let shown = page ?? 0
+        let oldest = oldestPage
         return VStack(spacing: 12) {
             HStack {
                 Text(month(shown), format: .dateTime.month(.wide).year())
                     .font(.headline)
                     .contentTransition(.numericText())
                 Spacer()
-                Button { turn(to: shown - 1) } label: { Image(systemName: "chevron.left") }
+                Button { turn(to: shown - 1, oldest: oldest) } label: { Image(systemName: "chevron.left") }
                     .frame(width: 44, height: 44)
-                    .disabled(shown <= oldestPage)
+                    .disabled(shown <= oldest)
                     .accessibilityLabel("Previous month")
-                Button { turn(to: shown + 1) } label: { Image(systemName: "chevron.right") }
+                Button { turn(to: shown + 1, oldest: oldest) } label: { Image(systemName: "chevron.right") }
                     .frame(width: 44, height: 44)
                     .disabled(shown >= 0)
                     .accessibilityLabel("Next month")
             }
             ScrollView(.horizontal) {
                 LazyHStack(spacing: 0) {
-                    ForEach(oldestPage...0, id: \.self) { offset in
+                    ForEach(oldest...0, id: \.self) { offset in
                         MonthGrid(month: month(offset), isDone: streak.isDone)
                             .containerRelativeFrame(.horizontal)
                     }
@@ -136,8 +137,8 @@ struct StreakView: View {
         return -max(months, 0)
     }
 
-    private func turn(to offset: Int) {
-        withAnimation(AppMotion.content) { page = min(max(offset, oldestPage), 0) }
+    private func turn(to offset: Int, oldest: Int) {
+        withAnimation(AppMotion.repeated) { page = min(max(offset, oldest), 0) }
     }
 
     static let flameGradient = LinearGradient(colors: [.yellow, .orange, .red],

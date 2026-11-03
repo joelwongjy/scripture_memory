@@ -61,6 +61,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -74,7 +75,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.LayoutCoordinates
-import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.layout.positionInRoot
@@ -88,6 +88,8 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
@@ -307,6 +309,7 @@ fun PouchScreen(
                     val radius = blurPerLift * c.liftAmount.value
                     renderEffect = if (radius > 0.5f) BlurEffect(radius, radius, TileMode.Decal) else null
                 }
+                .then(if (c.lifted != null) Modifier.clearAndSetSemantics { } else Modifier)
                 .padding(
                     start = insets.calculateStartPadding(layoutDirection),
                     end = insets.calculateEndPadding(layoutDirection),
@@ -383,6 +386,7 @@ fun PouchScreen(
                 }
                 JumpToCurrent(
                     c,
+                    geometry,
                     Modifier
                         .align(Alignment.BottomEnd)
                         .padding(end = AppLayout.screenMargin, bottom = 24.dp + below),
@@ -406,9 +410,6 @@ fun PouchScreen(
                         ),
                     ),
             )
-        }
-        Box(Modifier.fillMaxSize().padding(bottom = below)) {
-            UndoToastHost(undoToast) { undoToast = it }
         }
         c.lifted?.let { card ->
             val dim = if (AppTheme.isDark) 0.68f else 0.16f
@@ -439,6 +440,9 @@ fun PouchScreen(
                 onFlip = c::flipLiftedCard,
                 onPutBack = c::putCardBack,
             )
+        }
+        Box(Modifier.fillMaxSize().padding(bottom = below)) {
+            UndoToastHost(undoToast) { undoToast = it }
         }
     }
 }
@@ -483,7 +487,11 @@ private fun PouchTopBar(
                     if (version != null) {
                         Box(
                             Modifier
-                                .pressable(label = "Bible Version, ${version.displayName}") {
+                                .semantics {
+                                    contentDescription = "Bible Version"
+                                    stateDescription = version.displayName
+                                }
+                                .pressable(label = "Change the Bible version") {
                                     if (c.fanned) showsVersions = true
                                 }
                                 .clip(CapsuleShape)
@@ -492,6 +500,7 @@ private fun PouchTopBar(
                         ) {
                             Text(
                                 version.displayName,
+                                Modifier.clearAndSetSemantics { },
                                 style = AppType.subheadline.copy(fontWeight = FontWeight.SemiBold),
                                 color = colors.label,
                                 maxLines = 1,
@@ -564,12 +573,12 @@ private fun PouchThumb(c: PouchController, height: Dp, modifier: Modifier = Modi
 }
 
 @Composable
-private fun JumpToCurrent(c: PouchController, modifier: Modifier = Modifier) {
+private fun JumpToCurrent(c: PouchController, geometry: ListGeometry, modifier: Modifier = Modifier) {
     val learning = LearningStore.shared
     val current by remember { derivedStateOf { c.verses.indexOfFirst { learning.isCurrent(it) }.takeIf { it >= 0 } } }
     val target = current
     AnimatedVisibility(
-        visible = c.fanned && target != null && c.geometry?.layout?.let { it.row(c.index) != it.row(target) } == true,
+        visible = c.fanned && target != null && geometry.layout.row(c.index) != geometry.layout.row(target),
         modifier = modifier,
         enter = fadeIn(tween(200)),
         exit = fadeOut(tween(200)),
@@ -952,7 +961,7 @@ private fun FannedCard(
     val placed = remember { arrayOfNulls<LayoutCoordinates>(1) }
 
     fun lift() {
-        placed[0]?.takeIf { it.isAttached }?.let { onLift(it.boundsInRoot()) }
+        placed[0]?.takeIf { it.isAttached }?.let { onLift(Rect(it.positionInRoot(), it.size.toSize())) }
     }
 
     fun toggleStar() {

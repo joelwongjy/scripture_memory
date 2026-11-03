@@ -2,8 +2,6 @@ package joel.scripturememory.ui.pouch
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationSpec
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Stable
@@ -27,7 +25,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlin.math.PI
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -57,7 +54,7 @@ internal class ListGeometry(
 
     fun scrollAt(fraction: Double): Int = (fraction.coerceIn(0.0, 1.0) * most).roundToInt()
 
-    fun fraction(offset: Int): Double = if (most > 0) (offset.toDouble() / most).coerceIn(0.0, 1.0) else 0.0
+    fun fraction(offset: Int): Double? = if (most > 0) (offset.toDouble() / most).coerceIn(0.0, 1.0) else null
 
     fun midY(i: Int, scroll: Int = scrollFor(i)): Float = spacing + layout.row(i) * pitch + cardHeight / 2f - scroll
 
@@ -194,14 +191,9 @@ internal class PouchController(
         }
     }
 
-    private fun cardMotion(): AnimationSpec<Float> =
-        if (AppMotion.reduceMotion) tween(150) else PouchMotion.smoothSpec(0.24f)
+    private fun cardMotion(): AnimationSpec<Float> = AppMotion.repeated()
 
-    private fun cardBounce(): AnimationSpec<Float> {
-        if (AppMotion.reduceMotion) return tween(150)
-        val omega = (2 * PI / 0.32).toFloat()
-        return spring(0.62f, omega * omega)
-    }
+    private fun cardBounce(): AnimationSpec<Float> = AppMotion.recoil()
 
     fun liftCard(i: Int, source: Rect) {
         if (lifted != null) return

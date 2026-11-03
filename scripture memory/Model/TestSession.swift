@@ -19,7 +19,6 @@ struct TestSession: Identifiable {
 }
 
 extension TestSession {
-    /// Practising a pack from card `start` on.
     static func practice(card verse: Verse) -> TestSession {
         TestSession(verses: [verse], kind: .pack)
     }

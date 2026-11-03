@@ -24,10 +24,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -225,13 +222,13 @@ private fun Calendar() {
     val thisMonth = YearMonth.from(today())
     val oldest = streak.firstDay?.let { YearMonth.from(it) }?.takeIf { it < thisMonth } ?: thisMonth
     val pageCount = (ChronoUnit.MONTHS.between(oldest, thisMonth) + 1).toInt()
-    val pager = rememberPagerState(initialPage = pageCount - 1) { pageCount }
+    val pager = rememberPagerState { pageCount }
     val scope = rememberCoroutineScope()
-    val month = thisMonth.minusMonths((pageCount - 1 - pager.currentPage).toLong())
+    val month = thisMonth.minusMonths(pager.currentPage.toLong())
 
-    fun turn(by: Int) {
-        val target = (pager.currentPage + by).coerceIn(0, pageCount - 1)
-        scope.launch { pager.animateScrollToPage(target, animationSpec = AppMotion.content()) }
+    fun turn(monthsBack: Int) {
+        val target = (pager.currentPage + monthsBack).coerceIn(0, pageCount - 1)
+        scope.launch { pager.animateScrollToPage(target, animationSpec = AppMotion.repeated()) }
     }
 
     Column(
@@ -253,15 +250,15 @@ private fun Calendar() {
             ) { shown ->
                 Text(monthTitle(shown), style = AppType.headline, color = AppTheme.colors.label, maxLines = 1)
             }
-            MonthButton(R.drawable.ic_caret_left, "Previous month", enabled = pager.currentPage > 0) {
-                turn(-1)
-            }
-            MonthButton(R.drawable.ic_caret_right, "Next month", enabled = pager.currentPage < pageCount - 1) {
+            MonthButton(R.drawable.ic_caret_left, "Previous month", enabled = pager.currentPage < pageCount - 1) {
                 turn(1)
             }
+            MonthButton(R.drawable.ic_caret_right, "Next month", enabled = pager.currentPage > 0) {
+                turn(-1)
+            }
         }
-        HorizontalPager(pager, Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) { page ->
-            val shown = thisMonth.minusMonths((pageCount - 1 - page).toLong())
+        HorizontalPager(pager, Modifier.fillMaxWidth(), reverseLayout = true, verticalAlignment = Alignment.Top) { page ->
+            val shown = thisMonth.minusMonths(page.toLong())
             MonthGrid(shown, Modifier.padding(horizontal = AppLayout.panelPadding)) { SRSStore.dayKey(it) in days }
         }
     }

@@ -41,7 +41,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -208,8 +207,8 @@ fun TestSessionScreen(
             }
             .background(colors.background),
     ) {
-        val keyboard = with(LocalDensity.current) { WindowInsets.ime.getBottom(this).toDp() }
-        val dropsTitle = StudyWindow.dropsTitle((maxHeight - keyboard).value, 0f)
+        val keyboardHeight = with(LocalDensity.current) { WindowInsets.ime.getBottom(this).toDp() }
+        val dropsTitle = StudyWindow.dropsTitle((maxHeight - keyboardHeight).value, 0f)
         Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))) {
             if (!dropsTitle) SessionTopBar(state, Modifier.zIndex(1f))
             Row(Modifier.weight(1f).fillMaxWidth().then(if (dropsTitle) Modifier.statusBarsPadding() else Modifier)) {
@@ -304,11 +303,11 @@ private fun PositionLabel(state: TestSessionState, modifier: Modifier) {
         state.positionLabel,
         modifier
             .padding(8.dp)
-            .clip(RoundedCornerShape(percent = 50))
+            .clip(CapsuleShape)
             .background(colors.background.copy(alpha = 0.82f))
             .padding(horizontal = 8.dp, vertical = 4.dp)
             .semantics { contentDescription = "${state.sessionTitle}, ${state.positionLabel}" },
-        style = AppType.caption,
+        style = AppType.caption.copy(fontFeatureSettings = "tnum"),
         color = colors.secondaryLabel,
         maxLines = 1,
     )

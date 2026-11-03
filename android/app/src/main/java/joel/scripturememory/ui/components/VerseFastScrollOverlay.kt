@@ -23,7 +23,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -69,8 +68,8 @@ fun VerseFastScrollOverlay(
     titleProvider: (Int) -> String,
     referenceProvider: (Int) -> String,
     onScrub: (Double) -> Unit,
+    shownIndex: Int,
     modifier: Modifier = Modifier,
-    shownIndex: Int? = null,
 ) {
     val colors = AppTheme.colors
     val density = LocalDensity.current
@@ -79,14 +78,12 @@ fun VerseFastScrollOverlay(
     var dragFraction by remember { mutableFloatStateOf(0f) }
     var visible by remember { mutableStateOf(false) }
     var hideJob by remember { mutableStateOf<Job?>(null) }
-    var lastDragIndex by remember { mutableIntStateOf(-1) }
 
     val travel = with(density) {
         ScrubberMath.trackTravel(containerHeight.toPx().toDouble(), thumbSize.toPx().toDouble(), trackInset.toPx().toDouble())
     }
     val inset = with(density) { trackInset.toPx().toDouble() }
     val activeFraction = if (isDragging) dragFraction.toDouble() else scrollFraction.coerceIn(0.0, 1.0)
-    val effectiveIndex = shownIndex ?: ScrubberMath.index(activeFraction, verseCount)
     val thumbY = ScrubberMath.thumbY(activeFraction, travel, inset).toFloat()
     val currentThumbY by rememberUpdatedState(thumbY)
     val currentTravel by rememberUpdatedState(travel)
@@ -101,7 +98,7 @@ fun VerseFastScrollOverlay(
         }
     }
 
-    LaunchedEffect(scrollFraction) { if (!isDragging) flash() }
+    LaunchedEffect(shownIndex) { if (isDragging) HapticEngine.light() else flash() }
 
     val shownAlpha by animateFloatAsState(if (visible || isDragging) 1f else 0f, AppMotion.control(), label = "scrubberAlpha")
     val thumbScale by animateFloatAsState(if (isDragging) 1.12f else 1f, AppMotion.control(), label = "scrubberScale")
@@ -113,7 +110,7 @@ fun VerseFastScrollOverlay(
             .graphicsLayer { alpha = shownAlpha },
     ) {
         AnimatedVisibility(
-            visible = isDragging && effectiveIndex in 0 until verseCount,
+            visible = isDragging && shownIndex in 0 until verseCount,
             enter = fadeIn(AppMotion.control()),
             exit = fadeOut(AppMotion.control()),
             modifier = Modifier
@@ -134,7 +131,7 @@ fun VerseFastScrollOverlay(
                 verticalArrangement = Arrangement.spacedBy(1.dp),
             ) {
                 Text(
-                    titleProvider(effectiveIndex),
+                    titleProvider(shownIndex),
                     style = AppType.body.copy(
                         fontFamily = SerifFamily,
                         fontWeight = FontWeight.Bold,
@@ -147,7 +144,7 @@ fun VerseFastScrollOverlay(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    referenceProvider(effectiveIndex),
+                    referenceProvider(shownIndex),
                     style = AppType.caption.copy(fontWeight = FontWeight.Medium),
                     color = colors.secondaryLabel,
                     textAlign = TextAlign.End,
@@ -184,11 +181,6 @@ fun VerseFastScrollOverlay(
                                 .fractionForDrag(start, translation.toDouble(), inset, currentTravel)
                                 .toFloat()
                             currentOnScrub(dragFraction.toDouble())
-                            val i = ScrubberMath.index(dragFraction.toDouble(), verseCount)
-                            if (i != lastDragIndex) {
-                                HapticEngine.light()
-                                lastDragIndex = i
-                            }
                         }
                         update()
                         drag(down.id) { change ->
@@ -197,7 +189,6 @@ fun VerseFastScrollOverlay(
                             update()
                         }
                         isDragging = false
-                        lastDragIndex = -1
                         flash()
                     }
                 },

@@ -1,8 +1,10 @@
 package joel.scripturememory.ui.home
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
@@ -12,7 +14,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.onClick
@@ -81,11 +82,6 @@ fun HomeScreen() {
     val featured = learning.displayed(ordered)?.let { spot(packs, it.verse, it.isPinned) }
     val current = learning.current(ordered)?.let { spot(packs, it.verse, false) }
 
-    val windowWidth = LocalConfiguration.current.screenWidthDp.toFloat()
-    val windowHeight = LocalConfiguration.current.screenHeightDp.toFloat()
-    val contentWidth = windowWidth - 2 * AppLayout.screenMargin.value
-    val isSideBySide = PackListLayout.homeIsSideBySide(contentWidth, windowHeight)
-
     val dailyReview: @Composable (Modifier) -> Unit = { modifier ->
         Column(modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
@@ -116,22 +112,26 @@ fun HomeScreen() {
         )
     }
 
-    LargeTitleColumn(
-        "Home",
-        maxContentWidth = if (isSideBySide) Dp.Infinity else AppLayout.readableWidth,
-    ) {
-        HomeStreakCard { navigator.push("streak") { StreakScreen() } }
-        if (isSideBySide) {
-            Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(AppLayout.spacing),
-            ) {
-                dailyReview(Modifier.weight(1f))
-                learningSection(Modifier.weight(1f))
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val contentWidth = maxWidth.value - 2 * AppLayout.screenMargin.value
+        val isSideBySide = PackListLayout.homeIsSideBySide(contentWidth, maxHeight.value)
+        LargeTitleColumn(
+            "Home",
+            maxContentWidth = if (isSideBySide) Dp.Infinity else AppLayout.readableWidth,
+        ) {
+            HomeStreakCard { navigator.push("streak") { StreakScreen() } }
+            if (isSideBySide) {
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(AppLayout.spacing),
+                ) {
+                    dailyReview(Modifier.weight(1f))
+                    learningSection(Modifier.weight(1f))
+                }
+            } else {
+                dailyReview(Modifier)
+                learningSection(Modifier)
             }
-        } else {
-            dailyReview(Modifier)
-            learningSection(Modifier)
         }
     }
 

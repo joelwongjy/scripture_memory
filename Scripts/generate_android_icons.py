@@ -13,7 +13,6 @@ ICONS = {
     "bell": "regular/bell",
     "book_fill": "fill/book-fill",
     "book_open_fill": "fill/book-open-text-fill",
-    "book": "regular/book",
     "bookmark_fill": "fill/bookmark-simple-fill",
     "calendar": "regular/calendar-dots",
     "caret_down": "bold/caret-down-bold",

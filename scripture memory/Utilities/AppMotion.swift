@@ -31,6 +31,14 @@ enum AppMotion {
         reduceMotion ? .easeInOut(duration: 0.25) : .snappy
     }
 
+    static var repeated: Animation {
+        reduceMotion ? .easeOut(duration: 0.15) : .smooth(duration: 0.24)
+    }
+
+    static var recoil: Animation {
+        reduceMotion ? .easeOut(duration: 0.15) : .spring(response: 0.32, dampingFraction: 0.62)
+    }
+
     /// How long to wait before treating `movement` as finished: the guards that
     /// re-enable input after an animated jump. Matches the springs' 0.5s.
     static let settle: TimeInterval = 0.5

@@ -153,7 +153,7 @@ internal fun PouchVerseCard(
                         Modifier.weight(1f).alignBy(FirstBaseline),
                         style = CardFont.style(
                             CardFontStyle.PrintBody,
-                            with(density) { min(ceiling(0.038f), 4.4f * u).dp.toSp() },
+                            with(density) { min(ceiling(PackListLayout.printedVerseShare), 4.4f * u).dp.toSp() },
                         ),
                         color = body,
                     )
@@ -170,7 +170,7 @@ internal fun PouchVerseCard(
                     verse.verse,
                     lineSpacing = 0.5f * u,
                     minSize = 2 * u,
-                    maxSize = ceiling(0.038f),
+                    maxSize = ceiling(PackListLayout.printedVerseShare),
                     modifier = Modifier.weight(1f).fillMaxWidth().padding(top = (0.6f * u).dp),
                     kind = CardFontStyle.PrintBody,
                     closingLine = reference,
