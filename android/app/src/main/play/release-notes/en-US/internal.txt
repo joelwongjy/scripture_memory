@@ -1,1 +1,1 @@
-Android phones without fine haptics no longer buzz when you open or close a pack. Also includes the smoother streak calendar and verse scrubber.
+Taps and scrolling on Android phones without fine haptics no longer buzz. Tapping a card while it settles back no longer lifts a second one, the Bible version pill is easier to tap, and the scrubber ticks once per verse.
