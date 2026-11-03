@@ -1,6 +1,7 @@
 package joel.scripturememory.ui.theme
 
 import androidx.compose.ui.unit.dp
+import joel.scripturememory.model.StudyWindow
 
 object AppLayout {
     val screenMargin = 16.dp
@@ -12,7 +13,7 @@ object AppLayout {
     val cardPadding = 20.dp
     val readableWidth = 640.dp
     val studyColumnWidth = 592.dp
-    val shortStudyHeight = 320.dp
+    val shortStudyHeight = StudyWindow.shortHeight.dp
     const val cardAspect = 5f / 3f
     val hairline = 0.5.dp
     val minTapTarget = 48.dp

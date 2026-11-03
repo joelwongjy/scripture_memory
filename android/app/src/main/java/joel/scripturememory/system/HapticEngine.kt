@@ -12,13 +12,12 @@ data class Beat(
     val timeMillis: Int,
     val intensity: Float,
     val sharpness: Float,
-    val durationMillis: Int = 0,
 )
 
 object HapticEngine {
     val packOpen = listOf(
         Beat(0, 0.85f, 0.3f),
-        Beat(340, 0.2f, 0.3f, 200),
+        Beat(340, 0.2f, 0.3f),
         Beat(600, 0.55f, 0.75f),
         Beat(660, 0.42f, 0.8f),
         Beat(720, 0.3f, 0.85f),
@@ -28,7 +27,7 @@ object HapticEngine {
         Beat(0, 0.3f, 0.85f),
         Beat(60, 0.42f, 0.8f),
         Beat(120, 0.55f, 0.75f),
-        Beat(220, 0.2f, 0.3f, 200),
+        Beat(220, 0.2f, 0.3f),
         Beat(660, 0.85f, 0.3f),
     )
 

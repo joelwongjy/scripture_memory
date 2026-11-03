@@ -146,7 +146,7 @@ struct PouchVerseCard<Accessory: View>: View {
 
     private var reference: String { "\(verse.book) \(verse.reference)" }
 
-    private var isPrintedDEP: Bool { verse.packName.hasPrefix("DEP ") }
+    private var isPrintedDEP: Bool { verse.isPrintedDEP }
 
     @ViewBuilder
     private func heading(_ u: CGFloat) -> some View {
@@ -188,7 +188,7 @@ struct PouchVerseCard<Accessory: View>: View {
         }
         HStack(alignment: .firstTextBaseline) {
             Text(reference)
-                .font(CardFont.font(.printBody, size: min(ceiling(share: 0.038), 4.4 * u)))
+                .font(CardFont.font(.printBody, size: min(ceiling(share: PackListLayout.printedVerseShare), 4.4 * u)))
                 .foregroundStyle(PouchInk.body)
             Spacer(minLength: 2 * u)
             if let version = verse.pinnedVersion {
@@ -198,7 +198,7 @@ struct PouchVerseCard<Accessory: View>: View {
             }
         }
         .padding(.top, 1.2 * u)
-        FittedVerseText(text: verse.verse, lineSpacing: 0.5 * u, minSize: 2 * u, maxSize: ceiling(share: 0.038),
+        FittedVerseText(text: verse.verse, lineSpacing: 0.5 * u, minSize: 2 * u, maxSize: ceiling(share: PackListLayout.printedVerseShare),
                         style: .printBody, closingLine: reference)
             .foregroundStyle(PouchInk.body)
             .padding(.top, 0.6 * u)

@@ -82,7 +82,7 @@ struct PouchCardBack: View {
         let u = width / 100
         VStack(spacing: 2.4 * u) {
             Text("\(verse.book) \(verse.reference)")
-                .font(CardFont.font(verse.packName.hasPrefix("DEP ") ? .printBody : .body, size: 6.4 * u))
+                .font(CardFont.font(verse.isPrintedDEP ? .printBody : .body, size: 6.4 * u))
                 .foregroundStyle(PouchInk.body)
                 .multilineTextAlignment(.center)
             Text("Tap to reveal")

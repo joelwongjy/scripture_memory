@@ -90,8 +90,6 @@ import androidx.compose.ui.unit.sp
 private const val hardModeKey = "hardMode"
 private val iconRowInset = AppLayout.panelPadding + 36.dp
 
-private enum class Picker { Cards }
-
 private fun logSetting(setting: String, value: String) {
     Analytics.log(AnalyticsEvent.SettingChanged(setting, value))
 }
@@ -133,7 +131,7 @@ fun SettingsScreen() {
     var showNotificationsDenied by rememberSaveable { mutableStateOf(false) }
     var showLearningSetup by rememberSaveable { mutableStateOf(false) }
     var showTimePicker by rememberSaveable { mutableStateOf(false) }
-    var picker by rememberSaveable { mutableStateOf<Picker?>(null) }
+    var showsCardsPicker by rememberSaveable { mutableStateOf(false) }
 
     fun setReminderEnabled(on: Boolean) {
         defaults.putBool(NotificationManager.Keys.enabled, on)
@@ -306,7 +304,7 @@ fun SettingsScreen() {
                 icon = R.drawable.ic_cards,
                 value = cardAppearance.displayName,
                 trailingIcon = R.drawable.ic_caret_up_down,
-                onClick = { picker = Picker.Cards },
+                onClick = { showsCardsPicker = true },
             )
         }
 
@@ -362,8 +360,8 @@ fun SettingsScreen() {
         }
     }
 
-    when (picker) {
-        Picker.Cards -> PickerSheet(
+    if (showsCardsPicker) {
+        PickerSheet(
             title = "Cards",
             options = CardAppearance.entries,
             selected = cardAppearance,
@@ -374,9 +372,8 @@ fun SettingsScreen() {
                     logSetting("cardAppearance", it.rawValue)
                 }
             },
-            onDismiss = { picker = null },
+            onDismiss = { showsCardsPicker = false },
         )
-        null -> Unit
     }
 
     if (showTimePicker) {

@@ -57,6 +57,8 @@ struct PouchView: View {
     @State private var undoToastState: UndoToastState?
     @AppStorage("pouch.jumpLabelShown.v1") private var jumpLabelShown = false
     @AppStorage(BibleVersion.storageKey) private var bibleVersion: BibleVersion = .niv84
+    @State private var puttingBack = false
+    @State private var closeWidth: CGFloat = 0
     @State private var practiceWidth: CGFloat = 0
     @State private var barWidth: CGFloat = 0
     @State private var titleWidth: CGFloat = 0
@@ -160,6 +162,7 @@ struct PouchView: View {
                     liftedCard(lifted, area: CGRect(origin: CGPoint(x: insets.leading, y: insets.top), size: safeSize))
                 }
                 .gesture(liftedSwipe)
+                .allowsHitTesting(!puttingBack)
             }
         }
         .coordinateSpace(name: Self.screenSpace)
@@ -327,7 +330,7 @@ struct PouchView: View {
                 onOffset: { offset in
                     if !listSettled { settleListSoon() }
                     let most = listContentHeight(layout: layout, cardHeight: height, below: below) - viewport
-                    if most > 0 { listFraction = Double(min(max(offset / most, 0), 1)) }
+                    listFraction = most > 0 ? Double(min(max(offset / most, 0), 1)) : nil
                     guard listScrolled else { return }
                     let shown = cardShown(at: offset, layout: layout, height: height, viewport: viewport, below: below)
                     if shown != index { index = shown }
@@ -382,7 +385,7 @@ struct PouchView: View {
     private func topBar(columns: Int, showsButtons: Bool) -> some View {
         let gap = showsButtons ? AppLayout.spacing / 2 : 0
         let span = PackListLayout.titleSpan(barWidth: barWidth,
-                                            leading: showsButtons ? Self.sideButtonSize : 0,
+                                            leading: showsButtons ? closeWidth : 0,
                                             trailing: showsButtons ? practiceWidth : 0,
                                             title: titleWidth, gap: gap)
         return ZStack(alignment: .leading) {
@@ -392,6 +395,7 @@ struct PouchView: View {
             if showsButtons {
                 HStack {
                     closeButton
+                        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { closeWidth = $0 }
                     Spacer()
                     Button { startPractice(from: index) } label: {
                         Text("Practice")
@@ -456,7 +460,9 @@ struct PouchView: View {
             .accessibilityHidden(true)
             .overlay {
                 Menu { versionPicker } label: {
-                    Color.clear.contentShape(Capsule())
+                    Color.clear
+                        .frame(minHeight: AppLayout.minimumTapSize)
+                        .contentShape(Rectangle())
                 }
                 .menuStyle(.button)
                 .buttonStyle(.plain)
@@ -784,18 +790,15 @@ struct PouchView: View {
         return min(max(layout.firstCard(inRow: row), 0), verses.count - 1)
     }
 
-    private var cardMotion: Animation {
-        AppMotion.reduceMotion ? .easeOut(duration: 0.15) : .smooth(duration: 0.24)
-    }
+    private var cardMotion: Animation { AppMotion.repeated }
 
-    private var cardBounce: Animation {
-        AppMotion.reduceMotion ? .easeOut(duration: 0.15) : .spring(response: 0.32, dampingFraction: 0.62)
-    }
+    private var cardBounce: Animation { AppMotion.recoil }
 
     private func liftCard(_ i: Int, from source: CGRect) {
         guard lifted == nil else { return }
         HapticEngine.light()
         flipCount += 1
+        liftedDrag = .zero
         lifted = LiftedCard(index: i, source: source)
         withAnimation(cardMotion) {
             liftAmount = 1
@@ -829,15 +832,20 @@ struct PouchView: View {
 
     private func putCardBack(motion: Animation) {
         guard lifted != nil, liftAmount == 1 else { return }
+        puttingBack = true
         withAnimation(motion, completionCriteria: .logicallyComplete) {
             liftAmount = 0
             liftedAngle = 0
             liftedDrag = .zero
-        } completion: { lifted = nil }
+        } completion: {
+            lifted = nil
+            puttingBack = false
+        }
     }
 
     private func dropLiftedCard() {
         lifted = nil
+        puttingBack = false
         liftedDrag = .zero
         liftAmount = 0
         liftedAngle = 0

@@ -61,6 +61,11 @@ data class LearningSpot(
 )
 
 @OptIn(ExperimentalFoundationApi::class)
+private val headingInset = 20.dp
+private val headingGap = 6.dp
+private val pinIconSize = 18.dp
+private val pinButtonWidth = 44.dp
+
 @Composable
 fun ContinueLearningCard(
     spot: LearningSpot,
@@ -89,20 +94,21 @@ fun ContinueLearningCard(
             val density = LocalDensity.current
             fun width(text: String, style: TextStyle) =
                 with(density) { measurer.measure(text, style, maxLines = 1).size.width.toDp() }
+            val items = if (spot.isPinned) 4 else 3
             val taken = width(heading, AppType.title3.copy(fontWeight = FontWeight.Bold)) +
                 width(position, AppType.subheadline) +
-                maxOf(width("Change", AppType.callout), 44.dp) +
-                (if (spot.isPinned) 24.dp else 0.dp) + 12.dp
-            val showsPosition = maxWidth - 40.dp >= taken
+                maxOf(width("Change", AppType.callout), pinButtonWidth) +
+                (if (spot.isPinned) pinIconSize else 0.dp) + headingGap * (items - 1)
+            val showsPosition = maxWidth - headingInset * 2 >= taken
             Row(
-                Modifier.fillMaxWidth().padding(horizontal = 20.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                Modifier.fillMaxWidth().padding(horizontal = headingInset),
+                horizontalArrangement = Arrangement.spacedBy(headingGap),
             ) {
                 if (spot.isPinned) {
                     Icon(
                         R.drawable.ic_push_pin_fill,
                         Modifier.align(Alignment.CenterVertically),
-                        size = 18.dp,
+                        size = pinIconSize,
                         tint = colors.label,
                     )
                 }
@@ -129,7 +135,7 @@ fun ContinueLearningCard(
                         .verticalOverhang(12.dp)
                         .semantics { contentDescription = pinLabel }
                         .dimOnPress(onClick = onChangePin)
-                        .defaultMinSize(minWidth = 44.dp)
+                        .defaultMinSize(minWidth = pinButtonWidth)
                         .padding(vertical = 12.dp),
                     contentAlignment = Alignment.CenterEnd,
                 ) {

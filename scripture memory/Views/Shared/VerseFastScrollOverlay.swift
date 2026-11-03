@@ -21,12 +21,11 @@ struct VerseFastScrollOverlay: View {
     /// Called while dragging the thumb with its position through the deck in
     /// [0,1]; the parent scrolls the list to match.
     let onScrub:           (Double) -> Void
-    var shownIndex:        Int? = nil
+    let shownIndex:        Int
 
     @State private var isDragging       = false
     @State private var dragFraction:    Double = 0
     @State private var dragStartThumbY: CGFloat = 0
-    @State private var lastDragIndex    = -1
     @State private var visible          = false
     @State private var hideTask:        Task<Void, Never>? = nil
 
@@ -36,7 +35,6 @@ struct VerseFastScrollOverlay: View {
                                          inset: Double(Self.trackInset)))
     }
     private var activeFraction: Double { isDragging ? dragFraction : min(max(scrollFraction, 0), 1) }
-    private var effectiveIndex: Int { shownIndex ?? ScrubberMath.index(fraction: activeFraction, count: verseCount) }
     private var thumbY: CGFloat {
         CGFloat(ScrubberMath.thumbY(fraction: activeFraction,
                                     travel: Double(travel), inset: Double(Self.trackInset)))
@@ -44,7 +42,7 @@ struct VerseFastScrollOverlay: View {
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
-            if isDragging, (0..<verseCount).contains(effectiveIndex) {
+            if isDragging, (0..<verseCount).contains(shownIndex) {
                 labelPill
                     .offset(x: -(Self.thumbSize + Self.thumbTrailingPad + 12), y: thumbY - 6)
                     .transition(.opacity)
@@ -60,7 +58,7 @@ struct VerseFastScrollOverlay: View {
         .animation(AppMotion.control, value: visible)
         .allowsHitTesting(verseCount >= 2)
         .onAppear { flash() }
-        .onChange(of: scrollFraction) { _, _ in if !isDragging { flash() } }
+        .onChange(of: shownIndex) { _, _ in if isDragging { HapticEngine.light() } else { flash() } }
         .onDisappear { hideTask?.cancel() }
     }
 
@@ -92,17 +90,17 @@ struct VerseFastScrollOverlay: View {
             return b.fontDescriptor.withDesign(.serif).map { UIFont(descriptor: $0, size: 15) } ?? b
         }()
         let refFont = UIFont.systemFont(ofSize: 12, weight: .medium)
-        let tW = (titleProvider(effectiveIndex) as NSString).size(withAttributes: [.font: titleFont]).width
-        let rW = (referenceProvider(effectiveIndex) as NSString).size(withAttributes: [.font: refFont]).width
+        let tW = (titleProvider(shownIndex) as NSString).size(withAttributes: [.font: titleFont]).width
+        let rW = (referenceProvider(shownIndex) as NSString).size(withAttributes: [.font: refFont]).width
         return min(max(tW, rW).rounded(.up) + 2, Self.pillContentMaxWidth)
     }
 
     private var labelPill: some View {
         VStack(alignment: .trailing, spacing: 1) {
-            Text(titleProvider(effectiveIndex))
+            Text(titleProvider(shownIndex))
                 .font(.system(size: 15, weight: .semibold, design: .serif))
                 .foregroundStyle(.primary).lineLimit(1).truncationMode(.tail)
-            Text(referenceProvider(effectiveIndex))
+            Text(referenceProvider(shownIndex))
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(.secondary).lineLimit(1).truncationMode(.tail)
         }
@@ -131,15 +129,9 @@ struct VerseFastScrollOverlay: View {
                     inset: Double(Self.trackInset),
                     travel: Double(travel))
                 onScrub(dragFraction)
-                let idx = ScrubberMath.index(fraction: dragFraction, count: verseCount)
-                if idx != lastDragIndex {
-                    HapticEngine.light()
-                    lastDragIndex = idx
-                }
             }
             .onEnded { _ in
                 withAnimation(AppMotion.control) { isDragging = false }
-                lastDragIndex = -1
                 flash()
             }
     }

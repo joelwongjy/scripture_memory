@@ -150,7 +150,7 @@ private fun PrintedHeading(verse: Verse, u: Float, dark: Boolean, size: (Float) 
     val reference = "${verse.book} ${verse.reference}"
     val small = CardFont.style(CardFontStyle.PrintBody, size(3.2f))
     val density = LocalDensity.current
-    val verseCeiling = PackListLayout.verseTextCeiling(100 * u, 0.038f, AppType.caption.sizeInDp())
+    val verseCeiling = PackListLayout.verseTextCeiling(100 * u, PackListLayout.printedVerseShare, AppType.caption.sizeInDp())
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy((2 * u).dp)) {
         Text(
             VerseNumbering.topic(verse)?.let { "$it) ${verse.title}" } ?: verse.title,

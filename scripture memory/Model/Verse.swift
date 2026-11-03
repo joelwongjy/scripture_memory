@@ -72,4 +72,6 @@ struct Verse: Hashable, Codable, Identifiable {
     var legacyKey: String {
         SRSKey.make(packName: packName, book: book, reference: reference)
     }
+
+    var isPrintedDEP: Bool { packName.hasPrefix("DEP ") }
 }

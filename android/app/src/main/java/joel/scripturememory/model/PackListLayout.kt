@@ -33,6 +33,7 @@ class PackListLayout(width: Float, val spacing: Float) {
         const val threeColumnWidth = 960f
         const val pouchCardShare = 0.86f
         const val verseTextShare = 0.04f
+        const val printedVerseShare = 0.038f
         const val cardPullLimit = 120f
 
         fun columns(width: Float): Int = when {

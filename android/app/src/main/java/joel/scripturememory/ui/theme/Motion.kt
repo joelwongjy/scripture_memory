@@ -11,6 +11,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.compositionLocalOf
+import kotlin.math.PI
 
 object AppMotion {
     var reduceMotion: Boolean = false
@@ -36,6 +37,17 @@ object AppMotion {
 
     fun <T> movement(): FiniteAnimationSpec<T> =
         if (reduceMotion) tween(250, easing = easeInOut) else spring(dampingRatio = 0.85f, stiffness = 158f)
+
+    fun <T> repeated(): FiniteAnimationSpec<T> =
+        if (reduceMotion) tween(150) else springFor(0.24f, 1f)
+
+    fun <T> recoil(): FiniteAnimationSpec<T> =
+        if (reduceMotion) tween(150) else springFor(0.32f, 0.62f)
+
+    private fun <T> springFor(response: Float, damping: Float): FiniteAnimationSpec<T> {
+        val omega = (2 * PI / response).toFloat()
+        return spring(damping, omega * omega)
+    }
 
     fun <T> smooth(durationMillis: Int, delayMillis: Int = 0): FiniteAnimationSpec<T> =
         tween(durationMillis, delayMillis, smoothEasing)

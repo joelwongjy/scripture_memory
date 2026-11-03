@@ -5,6 +5,7 @@ struct PackListLayout: Equatable {
     static let threeColumnWidth: CGFloat = 960
     static let pouchCardShare: CGFloat = 0.86
     static let verseTextShare: CGFloat = 0.04
+    static let printedVerseShare: CGFloat = 0.038
     static let cardPullLimit: CGFloat = 120
 
     let columns: Int
