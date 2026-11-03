@@ -9,6 +9,7 @@ glance = "1.1.1"
 coroutines = "1.10.2"
 serialization = "1.9.0"
 junit = "4.13.2"
+androidxTestRunner = "1.6.2"
 playPublisher = "4.1.1"
 telemetryDeck = "7.3.0"
 
@@ -32,6 +33,7 @@ kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-t
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
 telemetrydeck = { module = "com.telemetrydeck:kotlin-sdk", version.ref = "telemetryDeck" }
 junit = { module = "junit:junit", version.ref = "junit" }
+androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidxTestRunner" }
 
 [plugins]
 play-publisher = { id = "com.github.triplet.play", version.ref = "playPublisher" }

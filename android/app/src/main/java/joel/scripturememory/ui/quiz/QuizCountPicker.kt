@@ -85,6 +85,7 @@ fun QuizCountPicker(
     entry: QuizCountEntry,
 ) {
     val colors = AppTheme.colors
+    val focusManager = LocalFocusManager.current
     val upperBound = maxOf(1, maximum)
     val clampedCount = count.coerceIn(1, upperBound)
 
@@ -94,6 +95,7 @@ fun QuizCountPicker(
         onCountChange(new)
         HapticEngine.light()
     }
+    val commit by rememberUpdatedState<(Int) -> Unit>({ set(it) })
 
     LaunchedEffect(clampedCount, entry.typing) {
         if (!entry.typing) entry.draft = "$clampedCount"
@@ -118,7 +120,7 @@ fun QuizCountPicker(
                         if (state.isFocused) {
                             entry.draft = ""
                         } else {
-                            entry.draft.toIntOrNull()?.let(::set)
+                            entry.draft.toIntOrNull()?.let(commit)
                         }
                     }
                     .semantics {
@@ -133,7 +135,7 @@ fun QuizCountPicker(
                     imeAction = ImeAction.Done,
                     autoCorrectEnabled = false,
                 ),
-                keyboardActions = KeyboardActions(onDone = { entry.draft.toIntOrNull()?.let(::set) }),
+                keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
                 decorationBox = { inner ->
                     Box(contentAlignment = Alignment.Center) {
                         if (entry.draft.isEmpty()) {
