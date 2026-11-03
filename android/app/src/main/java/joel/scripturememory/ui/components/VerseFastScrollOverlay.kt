@@ -68,8 +68,9 @@ fun VerseFastScrollOverlay(
     containerHeight: Dp,
     titleProvider: (Int) -> String,
     referenceProvider: (Int) -> String,
-    onScrubTo: (Int) -> Unit,
+    onScrub: (Double) -> Unit,
     modifier: Modifier = Modifier,
+    shownIndex: Int? = null,
 ) {
     val colors = AppTheme.colors
     val density = LocalDensity.current
@@ -85,11 +86,11 @@ fun VerseFastScrollOverlay(
     }
     val inset = with(density) { trackInset.toPx().toDouble() }
     val activeFraction = if (isDragging) dragFraction.toDouble() else scrollFraction.coerceIn(0.0, 1.0)
-    val effectiveIndex = ScrubberMath.index(activeFraction, verseCount)
+    val effectiveIndex = shownIndex ?: ScrubberMath.index(activeFraction, verseCount)
     val thumbY = ScrubberMath.thumbY(activeFraction, travel, inset).toFloat()
     val currentThumbY by rememberUpdatedState(thumbY)
     val currentTravel by rememberUpdatedState(travel)
-    val currentOnScrub by rememberUpdatedState(onScrubTo)
+    val currentOnScrub by rememberUpdatedState(onScrub)
 
     fun flash() {
         visible = true
@@ -182,9 +183,9 @@ fun VerseFastScrollOverlay(
                             dragFraction = ScrubberMath
                                 .fractionForDrag(start, translation.toDouble(), inset, currentTravel)
                                 .toFloat()
+                            currentOnScrub(dragFraction.toDouble())
                             val i = ScrubberMath.index(dragFraction.toDouble(), verseCount)
                             if (i != lastDragIndex) {
-                                currentOnScrub(i)
                                 HapticEngine.light()
                                 lastDragIndex = i
                             }

@@ -18,8 +18,10 @@ struct VerseFastScrollOverlay: View {
     let containerHeight:   CGFloat
     let titleProvider:     (Int) -> String
     let referenceProvider: (Int) -> String
-    /// Called while dragging the thumb — the parent scrolls the list to `index`.
-    let onScrubTo:         (Int) -> Void
+    /// Called while dragging the thumb with its position through the deck in
+    /// [0,1]; the parent scrolls the list to match.
+    let onScrub:           (Double) -> Void
+    var shownIndex:        Int? = nil
 
     @State private var isDragging       = false
     @State private var dragFraction:    Double = 0
@@ -34,7 +36,7 @@ struct VerseFastScrollOverlay: View {
                                          inset: Double(Self.trackInset)))
     }
     private var activeFraction: Double { isDragging ? dragFraction : min(max(scrollFraction, 0), 1) }
-    private var effectiveIndex: Int { ScrubberMath.index(fraction: activeFraction, count: verseCount) }
+    private var effectiveIndex: Int { shownIndex ?? ScrubberMath.index(fraction: activeFraction, count: verseCount) }
     private var thumbY: CGFloat {
         CGFloat(ScrubberMath.thumbY(fraction: activeFraction,
                                     travel: Double(travel), inset: Double(Self.trackInset)))
@@ -128,9 +130,9 @@ struct VerseFastScrollOverlay: View {
                     translationY: Double(value.translation.height),
                     inset: Double(Self.trackInset),
                     travel: Double(travel))
+                onScrub(dragFraction)
                 let idx = ScrubberMath.index(fraction: dragFraction, count: verseCount)
                 if idx != lastDragIndex {
-                    onScrubTo(idx)
                     HapticEngine.light()
                     lastDragIndex = idx
                 }

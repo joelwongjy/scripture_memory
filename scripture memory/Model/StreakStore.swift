@@ -92,6 +92,8 @@ final class StreakStore: ObservableObject {
         return best
     }
 
+    var firstDay: Date? { days.compactMap(Self.date(fromKey:)).min() }
+
     /// Whether the given calendar day was practised.
     func isDone(_ date: Date) -> Bool { days.contains(Self.dayKey(date)) }
 

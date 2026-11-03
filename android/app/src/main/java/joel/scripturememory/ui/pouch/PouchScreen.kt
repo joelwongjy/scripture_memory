@@ -550,15 +550,16 @@ private fun PouchThumb(c: PouchController, height: Dp, modifier: Modifier = Modi
     val verses = c.verses
     VerseFastScrollOverlay(
         verseCount = verses.size,
-        scrollFraction = c.index.toDouble() / (verses.size - 1),
+        scrollFraction = c.listFraction ?: (c.index.toDouble() / (verses.size - 1)),
         containerHeight = height,
         titleProvider = { verses.getOrNull(it)?.title.orEmpty() },
         referenceProvider = { i -> verses.getOrNull(i)?.let { "${it.book} ${it.reference}" }.orEmpty() },
-        onScrubTo = { i ->
+        onScrub = { fraction ->
             c.listScrolled = true
-            c.scrollTo(i, null)
+            c.scrubTo(fraction)
         },
         modifier = modifier.height(height),
+        shownIndex = c.index,
     )
 }
 
@@ -874,6 +875,7 @@ private fun FannedList(
     LaunchedEffect(listState, geometry) {
         snapshotFlow { listState.firstVisibleItemIndex * geometry.pitch + listState.firstVisibleItemScrollOffset }
             .collect { offset ->
+                c.listFraction = geometry.fraction(offset)
                 if (c.listScrolled) {
                     val shown = geometry.cardShown(offset.toFloat(), c.index)
                     if (shown != c.index) c.index = shown

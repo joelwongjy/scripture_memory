@@ -55,6 +55,10 @@ internal class ListGeometry(
         return min(max(0f, mid - viewport / 2f), most.toFloat()).roundToInt()
     }
 
+    fun scrollAt(fraction: Double): Int = (fraction.coerceIn(0.0, 1.0) * most).roundToInt()
+
+    fun fraction(offset: Int): Double = if (most > 0) (offset.toDouble() / most).coerceIn(0.0, 1.0) else 0.0
+
     fun midY(i: Int, scroll: Int = scrollFor(i)): Float = spacing + layout.row(i) * pitch + cardHeight / 2f - scroll
 
     fun centerX(i: Int): Float = sceneWidth / 2f + layout.centerOffset(i) * density
@@ -105,6 +109,7 @@ internal class PouchController(
 ) {
     var verses by mutableStateOf(verses)
     var index by mutableIntStateOf(start)
+    var listFraction by mutableStateOf<Double?>(null)
     val openness = PouchProgress(if (reduce) 1f else 0f)
     val lift = PouchProgress(if (reduce) 1f else 0f)
     val spread = PouchProgress(if (reduce) 1f else 0f)
@@ -299,6 +304,13 @@ internal class PouchController(
 
     fun releaseSwipe() {
         scope.launch { swipeOffset.animateTo(0f, AppMotion.control()) }
+    }
+
+    fun scrubTo(fraction: Double) {
+        val g = geometry ?: return
+        val list = listState ?: return
+        val target = g.scrollAt(fraction)
+        scope.launch { list.scrollToItem(target / g.pitch, target % g.pitch) }
     }
 
     fun scrollTo(i: Int, spec: AnimationSpec<Float>?) {

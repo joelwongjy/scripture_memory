@@ -1,18 +1,17 @@
 package joel.scripturememory.ui.home
 
-import kotlin.math.abs
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import android.text.format.DateFormat
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.runtime.rememberCoroutineScope
+import java.time.temporal.ChronoUnit
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,7 +27,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,7 +43,6 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import joel.scripturememory.R
@@ -226,30 +223,21 @@ private fun Calendar() {
     val streak = StreakStore.shared
     val days = streak.days
     val thisMonth = YearMonth.from(today())
-    var monthText by rememberSaveable { mutableStateOf(thisMonth.toString()) }
-    val month = YearMonth.parse(monthText)
-    val isCurrentMonth = month >= thisMonth
+    val oldest = streak.firstDay?.let { YearMonth.from(it) }?.takeIf { it < thisMonth } ?: thisMonth
+    val pageCount = (ChronoUnit.MONTHS.between(oldest, thisMonth) + 1).toInt()
+    val pager = rememberPagerState(initialPage = pageCount - 1) { pageCount }
+    val scope = rememberCoroutineScope()
+    val month = thisMonth.minusMonths((pageCount - 1 - pager.currentPage).toLong())
 
-    fun shiftMonth(by: Long) {
-        if (by < 0 || !isCurrentMonth) monthText = month.plusMonths(by).toString()
+    fun turn(by: Int) {
+        val target = (pager.currentPage + by).coerceIn(0, pageCount - 1)
+        scope.launch { pager.animateScrollToPage(target, animationSpec = AppMotion.content()) }
     }
-
-    val swipeDistance = with(LocalDensity.current) { monthSwipeDistance.toPx() }
 
     Column(
         Modifier
             .fillMaxWidth()
             .groupedPanel()
-            .pointerInput(monthText) {
-                var travelled = 0f
-                detectHorizontalDragGestures(
-                    onDragStart = { travelled = 0f },
-                    onHorizontalDrag = { _, amount -> travelled += amount },
-                    onDragEnd = {
-                        if (abs(travelled) >= swipeDistance) shiftMonth(if (travelled < 0) 1 else -1)
-                    },
-                )
-            }
             .padding(vertical = AppLayout.panelPadding),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
@@ -265,35 +253,19 @@ private fun Calendar() {
             ) { shown ->
                 Text(monthTitle(shown), style = AppType.headline, color = AppTheme.colors.label, maxLines = 1)
             }
-            MonthButton(R.drawable.ic_caret_left, "Previous month", enabled = true) {
-                shiftMonth(-1)
+            MonthButton(R.drawable.ic_caret_left, "Previous month", enabled = pager.currentPage > 0) {
+                turn(-1)
             }
-            MonthButton(R.drawable.ic_caret_right, "Next month", enabled = !isCurrentMonth) {
-                shiftMonth(1)
+            MonthButton(R.drawable.ic_caret_right, "Next month", enabled = pager.currentPage < pageCount - 1) {
+                turn(1)
             }
         }
-        AnimatedContent(
-            targetState = month,
-            transitionSpec = {
-                val forward = targetState > initialState
-                val move = AppMotion.content<IntOffset>()
-                val size = SizeTransform(clip = true) { _, _ -> AppMotion.content() }
-                if (AppMotion.reduceMotion) {
-                    fadeIn(AppMotion.content()) togetherWith fadeOut(AppMotion.content()) using size
-                } else {
-                    slideInHorizontally(move) { if (forward) it else -it } togetherWith
-                        slideOutHorizontally(move) { if (forward) -it else it } using size
-                }
-            },
-            contentAlignment = Alignment.TopCenter,
-            label = "monthGrid",
-        ) { shown ->
+        HorizontalPager(pager, Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) { page ->
+            val shown = thisMonth.minusMonths((pageCount - 1 - page).toLong())
             MonthGrid(shown, Modifier.padding(horizontal = AppLayout.panelPadding)) { SRSStore.dayKey(it) in days }
         }
     }
 }
-
-private val monthSwipeDistance = 24.dp
 
 @Composable
 private fun MonthButton(icon: Int, label: String, enabled: Boolean, onClick: () -> Unit) {
@@ -322,7 +294,7 @@ private fun weeks(month: YearMonth): List<List<LocalDate?>> {
     val days = ArrayList<LocalDate?>()
     repeat(leading.toInt()) { days.add(null) }
     (1..month.lengthOfMonth()).forEach { days.add(month.atDay(it)) }
-    while (days.size % 7 != 0) days.add(null)
+    while (days.size < 42) days.add(null)
     return days.chunked(7)
 }
 
