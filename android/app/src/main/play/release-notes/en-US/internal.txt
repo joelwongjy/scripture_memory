@@ -1,1 +1,1 @@
-Android: tapping All in the quiz count now uses every selected verse, and the keyboard's Done key closes the keyboard.
+Putting a lifted card back no longer makes its text jump as it lands, and swiping it away no longer overshoots.
