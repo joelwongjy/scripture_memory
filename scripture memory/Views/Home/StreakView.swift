@@ -5,8 +5,7 @@ import SwiftUI
 /// consecutive days join into one band.
 struct StreakView: View {
     @ObservedObject private var streak = StreakStore.shared
-    @State private var month = Calendar.current.dateInterval(of: .month, for: Date())?.start ?? Date()
-    @State private var monthEdge = Edge.trailing
+    @State private var page: Int? = 0
 
     var body: some View {
         ScrollView {
@@ -88,48 +87,57 @@ struct StreakView: View {
     // MARK: - Calendar
 
     private var calendar: some View {
-        VStack(spacing: 12) {
+        let shown = page ?? 0
+        return VStack(spacing: 12) {
             HStack {
-                Text(month, format: .dateTime.month(.wide).year())
+                Text(month(shown), format: .dateTime.month(.wide).year())
                     .font(.headline)
+                    .contentTransition(.numericText())
                 Spacer()
-                Button { shiftMonth(-1) } label: { Image(systemName: "chevron.left") }
+                Button { turn(to: shown - 1) } label: { Image(systemName: "chevron.left") }
                     .frame(width: 44, height: 44)
+                    .disabled(shown <= oldestPage)
                     .accessibilityLabel("Previous month")
-                Button { shiftMonth(1) } label: { Image(systemName: "chevron.right") }
+                Button { turn(to: shown + 1) } label: { Image(systemName: "chevron.right") }
                     .frame(width: 44, height: 44)
-                    .disabled(isCurrentMonth)
+                    .disabled(shown >= 0)
                     .accessibilityLabel("Next month")
             }
-            MonthGrid(month: month, isDone: streak.isDone)
-                .id(month)
-                .transition(.push(from: monthEdge))
+            ScrollView(.horizontal) {
+                LazyHStack(spacing: 0) {
+                    ForEach(oldestPage...0, id: \.self) { offset in
+                        MonthGrid(month: month(offset), isDone: streak.isDone)
+                            .containerRelativeFrame(.horizontal)
+                    }
+                }
+                .scrollTargetLayout()
+            }
+            .scrollTargetBehavior(.paging)
+            .scrollPosition(id: $page)
+            .scrollIndicators(.hidden)
+            .defaultScrollAnchor(.trailing)
         }
-        .clipped()
         .padding(AppLayout.panelPadding)
         .groupedPanel()
-        .contentShape(Rectangle())
-        .simultaneousGesture(monthSwipe)
     }
 
-    private var monthSwipe: some Gesture {
-        DragGesture(minimumDistance: 24)
-            .onEnded { drag in
-                let width = drag.translation.width
-                guard abs(width) > abs(drag.translation.height) else { return }
-                shiftMonth(width < 0 ? 1 : -1)
-            }
+    private var thisMonth: Date {
+        Calendar.current.dateInterval(of: .month, for: Date())?.start ?? Date()
     }
 
-    private var isCurrentMonth: Bool {
-        Calendar.current.isDate(month, equalTo: Date(), toGranularity: .month)
+    private func month(_ offset: Int) -> Date {
+        Calendar.current.date(byAdding: .month, value: offset, to: thisMonth) ?? thisMonth
     }
 
-    private func shiftMonth(_ by: Int) {
-        guard by < 0 || !isCurrentMonth,
-              let next = Calendar.current.date(byAdding: .month, value: by, to: month) else { return }
-        monthEdge = by > 0 ? .trailing : .leading
-        withAnimation(AppMotion.content) { month = next }
+    private var oldestPage: Int {
+        guard let first = streak.firstDay,
+              let start = Calendar.current.dateInterval(of: .month, for: first)?.start,
+              let months = Calendar.current.dateComponents([.month], from: start, to: thisMonth).month else { return 0 }
+        return -max(months, 0)
+    }
+
+    private func turn(to offset: Int) {
+        withAnimation(AppMotion.content) { page = min(max(offset, oldestPage), 0) }
     }
 
     static let flameGradient = LinearGradient(colors: [.yellow, .orange, .red],
@@ -214,7 +222,7 @@ private struct MonthGrid: View {
         let leading = (cal.component(.weekday, from: first) - cal.firstWeekday + 7) % 7
         var days: [Date?] = Array(repeating: nil, count: leading)
         for d in range { days.append(cal.date(byAdding: .day, value: d - 1, to: first)) }
-        while days.count % 7 != 0 { days.append(nil) }
+        while days.count < 42 { days.append(nil) }
         return stride(from: 0, to: days.count, by: 7).map { Array(days[$0..<$0 + 7]) }
     }
 

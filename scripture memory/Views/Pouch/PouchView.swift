@@ -38,6 +38,8 @@ struct PouchView: View {
     /// The card centred in the list.
     @State private var listIndex: Int?
     @State private var listScrolled = false
+    @State private var listFraction: Double?
+    @State private var scrubFraction: Double?
     /// The list following a horizontal swipe, before it closes or springs back.
     @State private var swipeOffset: CGFloat = 0
     @State private var swipeAxis: Axis?
@@ -324,6 +326,8 @@ struct PouchView: View {
                 onScroll: { listScrolled = true },
                 onOffset: { offset in
                     if !listSettled { settleListSoon() }
+                    let most = listContentHeight(layout: layout, cardHeight: height, below: below) - viewport
+                    if most > 0 { listFraction = Double(min(max(offset / most, 0), 1)) }
                     guard listScrolled else { return }
                     let shown = cardShown(at: offset, layout: layout, height: height, viewport: viewport, below: below)
                     if shown != index { index = shown }
@@ -343,6 +347,10 @@ struct PouchView: View {
             .onChange(of: layout) { _, _ in
                 dropLiftedCard()
                 proxy.scrollTo(index, anchor: .center)
+            }
+            .onChange(of: scrubFraction) { _, fraction in
+                guard let fraction else { return }
+                scrub(proxy, to: fraction, layout: layout, height: height, viewport: viewport, below: below)
             }
         }
         .overlay(alignment: .leading) {
@@ -506,18 +514,18 @@ struct PouchView: View {
             if fanned, verses.count >= 2 {
                 VerseFastScrollOverlay(
                     verseCount: verses.count,
-                    scrollFraction: Double(index) / Double(verses.count - 1),
+                    scrollFraction: listFraction ?? Double(index) / Double(verses.count - 1),
                     containerHeight: area.size.height,
                     titleProvider: { verses.indices.contains($0) ? verses[$0].title : "" },
                     referenceProvider: { i in
                         guard verses.indices.contains(i) else { return "" }
                         return "\(verses[i].book) \(verses[i].reference)"
                     },
-                    onScrubTo: { i in
-                        var t = Transaction()
-                        t.disablesAnimations = true
-                        withTransaction(t) { listIndex = i }
-                    })
+                    onScrub: { fraction in
+                        listScrolled = true
+                        scrubFraction = fraction
+                    },
+                    shownIndex: index)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
                 .transition(.opacity)
             }
@@ -742,6 +750,24 @@ struct PouchView: View {
         let mid = AppLayout.spacing + CGFloat(layout.row(of: i)) * (height + AppLayout.spacing) + height / 2
         let most = max(0, listContentHeight(layout: layout, cardHeight: height, below: below) - viewport)
         return mid - min(max(0, mid - viewport / 2), most)
+    }
+
+    private func scrub(_ proxy: ScrollViewProxy, to fraction: Double, layout: PackListLayout, height: CGFloat,
+                       viewport: CGFloat, below: CGFloat) {
+        let most = max(0, listContentHeight(layout: layout, cardHeight: height, below: below) - viewport)
+        let target = PackListLayout.scrubTarget(fraction: fraction, most: most, viewport: viewport, cardHeight: height,
+                                                spacing: AppLayout.spacing,
+                                                rows: layout.rows(forCount: verses.count))
+        let card = min(layout.firstCard(inRow: target.row), verses.count - 1)
+        var t = Transaction()
+        t.disablesAnimations = true
+        withTransaction(t) {
+            if let anchor = target.anchor {
+                proxy.scrollTo(card, anchor: UnitPoint(x: 0.5, y: anchor))
+            } else {
+                listIndex = card
+            }
+        }
     }
 
     /// The card the counter names at a scroll offset: the one in the middle,

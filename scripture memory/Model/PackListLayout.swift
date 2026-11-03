@@ -42,6 +42,16 @@ struct PackListLayout: Equatable {
         return (x, width)
     }
 
+    static func scrubTarget(fraction: Double, most: CGFloat, viewport: CGFloat, cardHeight: CGFloat,
+                            spacing: CGFloat, rows: Int) -> (row: Int, anchor: CGFloat?) {
+        let offset = CGFloat(min(max(fraction, 0), 1)) * most
+        let pitch = cardHeight + spacing
+        let room = viewport - cardHeight
+        let row = min(max(Int(((offset + room / 2 - spacing) / pitch).rounded()), 0), max(rows - 1, 0))
+        guard room > 0 else { return (row, nil) }
+        return (row, (spacing + CGFloat(row) * pitch - offset) / room)
+    }
+
     static func positionLabel(card: Int, count: Int, columns: Int) -> String {
         let first = card / columns * columns
         let last = min(first + columns, count)

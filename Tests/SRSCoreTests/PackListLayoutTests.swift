@@ -150,6 +150,26 @@ final class PackListLayoutTests: XCTestCase {
         XCTAssertEqual(span.width, 200)
     }
 
+    func testScrubbingToTheTopAnchorsTheFirstRow() {
+        let target = PackListLayout.scrubTarget(fraction: 0, most: 1000, viewport: 600, cardHeight: 300,
+                                                spacing: 16, rows: 20)
+        XCTAssertEqual(target.row, 0)
+        XCTAssertEqual(target.anchor ?? -1, 16.0 / 300, accuracy: 0.0001)
+    }
+
+    func testScrubbingPartWayAnchorsTheRowNearestTheMiddle() {
+        let target = PackListLayout.scrubTarget(fraction: 1, most: 1000, viewport: 600, cardHeight: 300,
+                                                spacing: 16, rows: 20)
+        XCTAssertEqual(target.row, 4)
+        XCTAssertEqual(target.anchor ?? -1, 280.0 / 300, accuracy: 0.0001)
+    }
+
+    func testACardTallerThanTheScreenScrubsByRow() {
+        let target = PackListLayout.scrubTarget(fraction: 0.5, most: 1000, viewport: 200, cardHeight: 300,
+                                                spacing: 16, rows: 20)
+        XCTAssertNil(target.anchor)
+    }
+
     func testCardCentresSitEitherSideOfTheMiddle() {
         let layout = PackListLayout(width: 637, spacing: 16)
         XCTAssertEqual(layout.centerOffset(ofCard: 0), -163.25)

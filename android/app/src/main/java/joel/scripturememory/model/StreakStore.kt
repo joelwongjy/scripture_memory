@@ -67,6 +67,8 @@ class StreakStore(private val storage: ProgressStorage) {
             return best
         }
 
+    val firstDay: LocalDate? get() = days.mapNotNull(::date).minOrNull()
+
     fun isDone(date: Date): Boolean = dayKey(date) in days
 
     fun thisWeek(): List<WeekDay> {
