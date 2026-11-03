@@ -96,13 +96,14 @@ private class PouchSegment(
 
 @Stable
 internal class PouchController(
-    val verses: List<Verse>,
+    verses: List<Verse>,
     start: Int,
     private val reduce: Boolean,
     private val hasShelf: Boolean,
     private val animatesPouch: Boolean,
     private val scope: CoroutineScope,
 ) {
+    var verses by mutableStateOf(verses)
     var index by mutableIntStateOf(start)
     val openness = PouchProgress(if (reduce) 1f else 0f)
     val lift = PouchProgress(if (reduce) 1f else 0f)

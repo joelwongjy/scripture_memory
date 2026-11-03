@@ -102,6 +102,7 @@ import joel.scripturememory.R
 import joel.scripturememory.model.AnalyticsEvent
 import joel.scripturememory.model.AnalyticsScreen
 import joel.scripturememory.model.AppDefaults
+import joel.scripturememory.model.BibleVersion
 import joel.scripturememory.model.FavoritesStore
 import joel.scripturememory.model.LearningStore
 import joel.scripturememory.model.Pack
@@ -162,7 +163,13 @@ fun PouchScreen(
     animatesPouch: Boolean = true,
     onClosed: () -> Unit,
 ) {
-    val verses = pack.verses
+    val bibleVersion = BibleVersion.saved()
+    val hasVersionChoice = pack.name in BibleVersion.niv11PackNames
+    val verses = if (hasVersionChoice) {
+        (bibleVersion.packs.firstOrNull { it.name == pack.name } ?: pack).verses
+    } else {
+        pack.verses
+    }
     val colors = AppTheme.colors
     val scope = rememberCoroutineScope()
     val covers = LocalCovers.current
@@ -183,6 +190,7 @@ fun PouchScreen(
             scope = scope,
         ).also { it.onClosed = { closed() } }
     }
+    SideEffect { c.verses = verses }
     var undoToast by remember { mutableStateOf<UndoToastState?>(null) }
     var practiceOpen by remember { mutableStateOf(false) }
     var sceneOrigin by remember { mutableStateOf(Offset.Zero) }
@@ -237,6 +245,13 @@ fun PouchScreen(
                 },
             )
         }
+    }
+
+    fun chooseVersion(version: BibleVersion) {
+        if (version == bibleVersion) return
+        c.dropLiftedCard()
+        AppDefaults.standard.putString(BibleVersion.storageKey, version.rawValue)
+        Analytics.log(AnalyticsEvent.SettingChanged("bibleVersion", version.rawValue))
     }
 
     fun markComplete(verse: Verse, source: VerseActionSource) {
@@ -297,7 +312,13 @@ fun PouchScreen(
                     top = insets.calculateTopPadding(),
                 ),
         ) {
-            PouchTopBar(pack, c, onPractice = { startPractice(c.index) })
+            PouchTopBar(
+                pack,
+                c,
+                version = bibleVersion.takeIf { hasVersionChoice },
+                onVersion = ::chooseVersion,
+                onPractice = { startPractice(c.index) },
+            )
             BoxWithConstraints(
                 Modifier
                     .weight(1f)
@@ -422,10 +443,17 @@ fun PouchScreen(
 }
 
 @Composable
-private fun PouchTopBar(pack: Pack, c: PouchController, onPractice: () -> Unit) {
+private fun PouchTopBar(
+    pack: Pack,
+    c: PouchController,
+    version: BibleVersion?,
+    onVersion: (BibleVersion) -> Unit,
+    onPractice: () -> Unit,
+) {
     val colors = AppTheme.colors
     val density = LocalDensity.current
     var titleInset by remember { mutableStateOf(98.dp) }
+    var showsVersions by remember { mutableStateOf(false) }
     Box(
         Modifier
             .fillMaxWidth()
@@ -433,26 +461,55 @@ private fun PouchTopBar(pack: Pack, c: PouchController, onPractice: () -> Unit) 
             .padding(horizontal = AppLayout.screenMargin, vertical = 8.dp)
             .heightIn(min = 44.dp),
     ) {
-        val counter = listOfNotNull(pack.seriesCode, PackListLayout.positionLabel(c.index, c.verses.size, c.columns)).joinToString(" · ")
-        Column(
-            Modifier.align(Alignment.Center).padding(horizontal = titleInset),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(1.dp),
-        ) {
-            Text(
-                pack.shortName,
-                style = AppType.headline,
-                color = colors.label,
-                maxLines = 1,
-                autoSize = TextAutoSize.StepBased(AppType.headline.fontSize * 0.85f, AppType.headline.fontSize, 0.25.sp),
-            )
-            Text(
-                counter,
-                style = AppType.caption.copy(fontFeatureSettings = "tnum"),
-                color = colors.secondaryLabel,
-                maxLines = 1,
-                autoSize = TextAutoSize.StepBased(AppType.caption.fontSize * 0.7f, AppType.caption.fontSize, 0.25.sp),
-            )
+        val counter = listOfNotNull(
+            pack.seriesCode,
+            version?.displayName,
+            PackListLayout.positionLabel(c.index, c.verses.size, c.columns),
+        ).joinToString(" · ")
+        Box(Modifier.align(Alignment.Center).padding(horizontal = titleInset)) {
+            Column(
+                if (version == null) {
+                    Modifier
+                } else {
+                    Modifier.pressable(label = "${pack.shortName}, ${version.displayName}") {
+                        if (c.fanned) showsVersions = true
+                    }
+                },
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(1.dp),
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text(
+                        pack.shortName,
+                        Modifier.weight(1f, fill = false),
+                        style = AppType.headline,
+                        color = colors.label,
+                        maxLines = 1,
+                        autoSize = TextAutoSize.StepBased(AppType.headline.fontSize * 0.85f, AppType.headline.fontSize, 0.25.sp),
+                    )
+                    if (version != null) Icon(R.drawable.ic_caret_down, size = 12.dp, tint = colors.secondaryLabel)
+                }
+                Text(
+                    counter,
+                    style = AppType.caption.copy(fontFeatureSettings = "tnum"),
+                    color = colors.secondaryLabel,
+                    maxLines = 1,
+                    autoSize = TextAutoSize.StepBased(AppType.caption.fontSize * 0.7f, AppType.caption.fontSize, 0.25.sp),
+                )
+            }
+            if (showsVersions && version != null) {
+                AppMenu(
+                    actions = BibleVersion.entries.map { option ->
+                        MenuAction(option.displayName, R.drawable.ic_check.takeIf { option == version }) {
+                            onVersion(option)
+                        }
+                    },
+                    onDismiss = { showsVersions = false },
+                )
+            }
         }
         ChromeIconButton(
             R.drawable.ic_x,

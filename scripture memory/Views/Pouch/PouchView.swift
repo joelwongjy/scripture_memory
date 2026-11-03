@@ -54,6 +54,7 @@ struct PouchView: View {
     @State private var flipCount = 0
     @State private var undoToastState: UndoToastState?
     @AppStorage("pouch.jumpLabelShown.v1") private var jumpLabelShown = false
+    @AppStorage(BibleVersion.storageKey) private var bibleVersion: BibleVersion = .niv84
 
     @StateObject private var tilt = TiltMonitor()
     @ObservedObject private var learning = LearningStore.shared
@@ -71,7 +72,12 @@ struct PouchView: View {
     /// How far in from the leading edge a swipe counts as the edge swipe.
     private static let edgeWidth: CGFloat = 28
 
-    private var verses: [Verse] { pack.verses }
+    private var hasVersionChoice: Bool { BibleVersion.niv11PackNames.contains(pack.name) }
+
+    private var verses: [Verse] {
+        guard hasVersionChoice else { return pack.verses }
+        return (bibleVersion.packs.first { $0.name == pack.name } ?? pack).verses
+    }
 
     init(pack: Pack, startIndex: Int, shelf: (() -> CGRect)? = nil, animatesPouch: Bool = true,
          onPutBack: (() -> Void)? = nil) {
@@ -364,19 +370,17 @@ struct PouchView: View {
 
     private func topBar(columns: Int, showsButtons: Bool) -> some View {
         ZStack {
-            VStack(spacing: 1) {
-                Text(pack.shortName)
-                    .font(.headline)
-                    .minimumScaleFactor(0.85)
-                Text([pack.seriesCode, PackListLayout.positionLabel(card: index, count: verses.count, columns: columns)]
-                        .compactMap { $0 }.joined(separator: " · "))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .monospacedDigit()
+            Group {
+                if hasVersionChoice {
+                    Menu { versionPicker } label: { title(columns: columns) }
+                        .menuStyle(.button)
+                        .buttonStyle(.plain)
+                        .accessibilityHint("Chooses the Bible version for this pack")
+                } else {
+                    title(columns: columns)
+                }
             }
-            .lineLimit(1)
             .padding(.horizontal, showsButtons ? 108 : 0)
-            .accessibilityElement(children: .combine)
             if showsButtons {
                 HStack {
                     closeButton
@@ -396,6 +400,46 @@ struct PouchView: View {
         .padding(.vertical, 8)
         .opacity(Double(1 - flight))
         .disabled(!fanned)
+    }
+
+    private func title(columns: Int) -> some View {
+        VStack(spacing: 1) {
+            HStack(spacing: 4) {
+                Text(pack.shortName)
+                    .font(.headline)
+                    .minimumScaleFactor(0.85)
+                if hasVersionChoice {
+                    Image(systemName: "chevron.down")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .foregroundStyle(.primary)
+            Text([pack.seriesCode, hasVersionChoice ? bibleVersion.displayName : nil,
+                  PackListLayout.positionLabel(card: index, count: verses.count, columns: columns)]
+                    .compactMap { $0 }.joined(separator: " · "))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .monospacedDigit()
+        }
+        .lineLimit(1)
+        .accessibilityElement(children: .combine)
+    }
+
+    private var versionPicker: some View {
+        Picker("Bible Version", selection: Binding(get: { bibleVersion }, set: chooseVersion)) {
+            ForEach(BibleVersion.allCases, id: \.self) { version in
+                Text(version.displayName).tag(version)
+            }
+        }
+        .pickerStyle(.inline)
+    }
+
+    private func chooseVersion(_ version: BibleVersion) {
+        guard version != bibleVersion else { return }
+        dropLiftedCard()
+        bibleVersion = version
+        Analytics.log(.settingChanged(setting: "bibleVersion", value: version.rawValue))
     }
 
     private var closeButton: some View {
