@@ -49,6 +49,8 @@ struct SettingsView: View {
                     rowLabel("Bible Version", "book.closed")
                 }
                 .pickerStyle(.menu)
+            } footer: {
+                Text("NIV 2011 applies to TMS 60 only. Other packs stay in NIV 1984.")
             }
 
             Section {

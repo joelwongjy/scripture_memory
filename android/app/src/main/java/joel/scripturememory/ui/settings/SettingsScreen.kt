@@ -168,7 +168,7 @@ fun SettingsScreen() {
     TrackScreen(AnalyticsScreen.settings)
 
     LargeTitleColumn("Settings") {
-        GroupedSection {
+        GroupedSection(footer = "NIV 2011 applies to TMS 60 only. Other packs stay in NIV 1984.") {
             ValueRow(
                 title = "Bible Version",
                 icon = R.drawable.ic_book,
