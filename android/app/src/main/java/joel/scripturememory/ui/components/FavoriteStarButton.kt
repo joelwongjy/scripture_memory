@@ -25,7 +25,12 @@ import joel.scripturememory.ui.theme.AppMotion
 import joel.scripturememory.ui.theme.AppTheme
 
 @Composable
-fun FavoriteStarButton(verse: Verse, modifier: Modifier = Modifier, alignment: Alignment = Alignment.Center) {
+fun FavoriteStarButton(
+    verse: Verse,
+    modifier: Modifier = Modifier,
+    alignment: Alignment = Alignment.Center,
+    enabled: Boolean = true,
+) {
     val colors = AppTheme.colors
     val favorites = FavoritesStore.shared
     val isFavorite = favorites.isFavorite(verse)
@@ -33,7 +38,7 @@ fun FavoriteStarButton(verse: Verse, modifier: Modifier = Modifier, alignment: A
         modifier
             .size(44.dp)
             .semantics { contentDescription = if (isFavorite) "Remove from favourites" else "Add to favourites" }
-            .pressable(pressedScale = 0.86f) {
+            .pressable(enabled = enabled, pressedScale = 0.86f) {
                 HapticEngine.light()
                 Analytics.log(AnalyticsEvent.StarChanged(!isFavorite, VerseActionSource.card))
                 favorites.toggle(verse)

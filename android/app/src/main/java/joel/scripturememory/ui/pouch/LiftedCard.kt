@@ -59,6 +59,7 @@ internal fun LiftedCardView(
     onRelease: (putBack: Boolean) -> Unit,
     onFlip: () -> Unit,
     onPutBack: () -> Unit,
+    accessory: @Composable (alpha: () -> Float) -> Unit,
 ) {
     val density = LocalDensity.current.density
     val still = AppMotion.reduceMotion
@@ -164,7 +165,7 @@ internal fun LiftedCardView(
                         alpha = if (still) (1f + turn) / 2f else if (turn >= 0f) 1f else 0f
                     },
             ) {
-                PaperAppearance { PouchVerseCard(verse, isLearnt, width) }
+                PaperAppearance { PouchVerseCard(verse, isLearnt, width) { accessory { 1f - lift() } } }
             }
             Box(
                 Modifier

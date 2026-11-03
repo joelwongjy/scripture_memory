@@ -173,7 +173,9 @@ struct PouchView: View {
         let showsReference = liftedAngle > 90
         return LiftedCardView(verse: verse, isLearnt: learning.isLearnt(verse), source: card.source,
                               area: area, lift: liftAmount, angle: liftedAngle, drag: liftedDrag,
-                              onFlip: flipLiftedCard)
+                              onFlip: flipLiftedCard) {
+            cardAccessory(verse)
+        }
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(showsReference ? "\(verse.book) \(verse.reference)"
                                                : "\(verse.title), \(verse.book) \(verse.reference). \(verse.verse)")
@@ -558,20 +560,8 @@ struct PouchView: View {
 
     private func listCard(_ i: Int, width: CGFloat, onLift: @escaping () -> Void = {}) -> some View {
         let verse = verses[i]
-        let isCurrent = learning.isCurrent(verse)
         return PouchVerseCard(verse: verse, isLearnt: learning.isLearnt(verse), width: width) {
-            if isCurrent {
-                Button { markComplete(verse, from: .card) } label: {
-                    Label("Complete", systemImage: "checkmark")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(.white)
-                }
-                .buttonStyle(.borderedProminent)
-                .buttonBorderShape(.capsule)
-                .controlSize(.small)
-                .tint(PouchInk.green)
-            }
-            FavoriteStarButton(verse: verse, alignment: .trailing)
+            cardAccessory(verse)
         }
         .paperAppearance()
         .accessibilityAddTraits(.isButton)
@@ -584,6 +574,22 @@ struct PouchView: View {
         .accessibilityAction(named: learning.isLearnt(verse) ? "Mark as not learnt" : "Mark as learnt") {
             toggleLearnt(verse)
         }
+    }
+
+    @ViewBuilder
+    private func cardAccessory(_ verse: Verse) -> some View {
+        if learning.isCurrent(verse) {
+            Button { markComplete(verse, from: .card) } label: {
+                Label("Complete", systemImage: "checkmark")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.white)
+            }
+            .buttonStyle(.borderedProminent)
+            .buttonBorderShape(.capsule)
+            .controlSize(.small)
+            .tint(PouchInk.green)
+        }
+        FavoriteStarButton(verse: verse, alignment: .trailing)
     }
 
     @ViewBuilder
@@ -816,7 +822,7 @@ struct PouchView: View {
                 let flung = hypot(value.predictedEndTranslation.width, value.predictedEndTranslation.height)
                 let moved = hypot(value.translation.width, value.translation.height)
                 if moved > Self.cardSwipeDistance || flung > Self.cardSwipeFlick {
-                    putCardBack(motion: cardBounce)
+                    putCardBack()
                 } else {
                     withAnimation(cardBounce) { liftedDrag = .zero }
                 }
@@ -828,12 +834,10 @@ struct PouchView: View {
         withAnimation(cardMotion) { liftedAngle = liftedAngle > 90 ? 0 : 180 }
     }
 
-    private func putCardBack() { putCardBack(motion: cardMotion) }
-
-    private func putCardBack(motion: Animation) {
+    private func putCardBack() {
         guard lifted != nil, liftAmount == 1 else { return }
         puttingBack = true
-        withAnimation(motion, completionCriteria: .logicallyComplete) {
+        withAnimation(cardMotion, completionCriteria: .logicallyComplete) {
             liftAmount = 0
             liftedAngle = 0
             liftedDrag = .zero

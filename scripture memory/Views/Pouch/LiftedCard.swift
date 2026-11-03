@@ -9,7 +9,7 @@ struct LiftedCard: Equatable {
 /// The lifted card, moving between its slot in the list (`lift` 0) and the
 /// middle of the screen (1). `angle` turns it over: 0 shows the verse, 180 the
 /// reference alone. With Reduce Motion it fades in place and crossfades over.
-struct LiftedCardView: View {
+struct LiftedCardView<Accessory: View>: View {
     let verse: Verse
     let isLearnt: Bool
     let source: CGRect
@@ -19,6 +19,7 @@ struct LiftedCardView: View {
     /// How far a swipe has carried the card from the middle of the screen.
     let drag: CGSize
     let onFlip: () -> Void
+    @ViewBuilder var accessory: () -> Accessory
 
     @Environment(\.dynamicTypeSize) private var dynamicType
 
@@ -30,8 +31,12 @@ struct LiftedCardView: View {
         let moved = still ? 1 : lift
 
         FlippingCard(angle: angle, isFlat: still, front: {
-            PouchVerseCard(verse: verse, isLearnt: isLearnt, width: width)
-                .paperAppearance()
+            PouchVerseCard(verse: verse, isLearnt: isLearnt, width: width) {
+                accessory()
+                    .opacity(1 - Double(lift))
+                    .allowsHitTesting(false)
+            }
+            .paperAppearance()
         }, back: {
             PouchCardBack(verse: verse, width: width)
                 .paperAppearance()
