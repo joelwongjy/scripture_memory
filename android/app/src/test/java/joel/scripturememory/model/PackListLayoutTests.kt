@@ -145,6 +145,21 @@ class PackListLayoutTests {
     }
 
     @Test
+    fun testATitleThatFitsStaysCentred() {
+        assertEquals(130f to 100f, PackListLayout.titleSpan(360f, 44f, 100f, 100f, 8f))
+    }
+
+    @Test
+    fun testAWideTitleMovesAwayFromTheWiderButton() {
+        assertEquals(102f to 150f, PackListLayout.titleSpan(360f, 44f, 100f, 150f, 8f))
+    }
+
+    @Test
+    fun testATitleTooWideForTheBarFillsTheRoomBetweenButtons() {
+        assertEquals(52f to 200f, PackListLayout.titleSpan(360f, 44f, 100f, 300f, 8f))
+    }
+
+    @Test
     fun testCardCentresSitEitherSideOfTheMiddle() {
         val layout = PackListLayout(637f, 16f)
         assertEquals(-163.25f, layout.centerOffset(0))

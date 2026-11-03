@@ -55,6 +55,9 @@ struct PouchView: View {
     @State private var undoToastState: UndoToastState?
     @AppStorage("pouch.jumpLabelShown.v1") private var jumpLabelShown = false
     @AppStorage(BibleVersion.storageKey) private var bibleVersion: BibleVersion = .niv84
+    @State private var practiceWidth: CGFloat = 0
+    @State private var barWidth: CGFloat = 0
+    @State private var titleWidth: CGFloat = 0
 
     @StateObject private var tilt = TiltMonitor()
     @ObservedObject private var learning = LearningStore.shared
@@ -369,18 +372,15 @@ struct PouchView: View {
     // MARK: - Pieces
 
     private func topBar(columns: Int, showsButtons: Bool) -> some View {
-        ZStack {
-            Group {
-                if hasVersionChoice {
-                    Menu { versionPicker } label: { title(columns: columns) }
-                        .menuStyle(.button)
-                        .buttonStyle(.plain)
-                        .accessibilityHint("Chooses the Bible version for this pack")
-                } else {
-                    title(columns: columns)
-                }
-            }
-            .padding(.horizontal, showsButtons ? 108 : 0)
+        let gap = showsButtons ? AppLayout.spacing / 2 : 0
+        let span = PackListLayout.titleSpan(barWidth: barWidth,
+                                            leading: showsButtons ? Self.sideButtonSize : 0,
+                                            trailing: showsButtons ? practiceWidth : 0,
+                                            title: titleWidth, gap: gap)
+        return ZStack(alignment: .leading) {
+            title(columns: columns, wraps: titleWidth > span.width)
+                .frame(width: span.width > 0 ? span.width : nil)
+                .offset(x: span.x)
             if showsButtons {
                 HStack {
                     closeButton
@@ -392,38 +392,69 @@ struct PouchView: View {
                             .padding(.horizontal, 4)
                     }
                     .systemGlassButton()
+                    .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { practiceWidth = $0 }
                 }
             }
         }
-        .frame(height: 44)
+        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { barWidth = $0 }
+        .background {
+            title(columns: columns, wraps: false)
+                .fixedSize()
+                .hidden()
+                .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { titleWidth = $0 }
+        }
         .padding(.horizontal, AppLayout.screenMargin)
         .padding(.vertical, 8)
         .opacity(Double(1 - flight))
         .disabled(!fanned)
     }
 
-    private func title(columns: Int) -> some View {
+    private func title(columns: Int, wraps: Bool) -> some View {
         VStack(spacing: 1) {
-            HStack(spacing: 4) {
-                Text(pack.shortName)
-                    .font(.headline)
-                    .minimumScaleFactor(0.85)
-                if hasVersionChoice {
-                    Image(systemName: "chevron.down")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
+            if hasVersionChoice {
+                if wraps {
+                    VStack(spacing: 2) { packName; versionPill }
+                } else {
+                    HStack(spacing: 6) { packName; versionPill }
                 }
+            } else {
+                packName
             }
-            .foregroundStyle(.primary)
-            Text([pack.seriesCode, hasVersionChoice ? bibleVersion.displayName : nil,
-                  PackListLayout.positionLabel(card: index, count: verses.count, columns: columns)]
+            Text([pack.seriesCode, PackListLayout.positionLabel(card: index, count: verses.count, columns: columns)]
                     .compactMap { $0 }.joined(separator: " · "))
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .monospacedDigit()
         }
         .lineLimit(1)
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: hasVersionChoice ? .contain : .combine)
+    }
+
+    private var packName: some View {
+        Text(pack.shortName)
+            .font(.headline)
+            .minimumScaleFactor(0.85)
+    }
+
+    private var versionPill: some View {
+        Text(bibleVersion.displayName)
+            .font(.subheadline.weight(.semibold))
+            .padding(.horizontal, 8)
+            .padding(.vertical, 2)
+            .background(Color(.tertiarySystemFill), in: Capsule())
+            .fixedSize()
+            .layoutPriority(1)
+            .accessibilityHidden(true)
+            .overlay {
+                Menu { versionPicker } label: {
+                    Color.clear.contentShape(Capsule())
+                }
+                .menuStyle(.button)
+                .buttonStyle(.plain)
+                .accessibilityLabel("Bible Version")
+                .accessibilityValue(bibleVersion.displayName)
+            }
     }
 
     private var versionPicker: some View {

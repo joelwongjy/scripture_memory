@@ -35,6 +35,13 @@ struct PackListLayout: Equatable {
         return travel < 0 ? -pulled : pulled
     }
 
+    static func titleSpan(barWidth: CGFloat, leading: CGFloat, trailing: CGFloat,
+                          title: CGFloat, gap: CGFloat) -> (x: CGFloat, width: CGFloat) {
+        let width = min(title, max(barWidth - leading - trailing - 2 * gap, 0))
+        let x = min(max((barWidth - width) / 2, leading + gap), barWidth - trailing - gap - width)
+        return (x, width)
+    }
+
     static func positionLabel(card: Int, count: Int, columns: Int) -> String {
         let first = card / columns * columns
         let last = min(first + columns, count)
