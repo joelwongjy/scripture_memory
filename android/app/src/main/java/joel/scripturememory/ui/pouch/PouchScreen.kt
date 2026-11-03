@@ -439,7 +439,9 @@ fun PouchScreen(
                 onRelease = c::releaseCardSwipe,
                 onFlip = c::flipLiftedCard,
                 onPutBack = c::putCardBack,
-            )
+            ) { alpha ->
+                CardAccessory(verses[card.index], ::markComplete, enabled = false, alpha = alpha)
+            }
         }
         Box(Modifier.fillMaxSize().padding(bottom = below)) {
             UndoToastHost(undoToast) { undoToast = it }
@@ -813,38 +815,48 @@ private fun ListCard(
     modifier: Modifier = Modifier,
 ) {
     val learning = LearningStore.shared
-    val isCurrent = learning.isCurrent(verse)
-    val density = LocalDensity.current
     PaperAppearance {
         PouchVerseCard(verse, learning.isLearnt(verse), width, modifier) {
-            if (isCurrent) {
-                val green = PouchInk.green(AppTheme.isDark)
-                Row(
-                    Modifier
-                        .pressable { onComplete(verse, VerseActionSource.card) }
-                        .clip(completeShape)
-                        .background(green)
-                        .padding(horizontal = 10.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    Icon(R.drawable.ic_check, size = 12.dp, tint = Color.White)
-                    Text(
-                        "Complete",
-                        style = AppType.caption.copy(
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = with(density) { 12.dp.toSp() },
-                            lineHeight = with(density) { 16.dp.toSp() },
-                        ),
-                        color = Color.White,
-                        maxLines = 1,
-                    )
-                }
-            }
-            Box(Modifier.size(30.dp), contentAlignment = Alignment.CenterEnd) {
-                FavoriteStarButton(verse, Modifier.requiredSize(44.dp).offset(x = (-7).dp), Alignment.CenterEnd)
-            }
+            CardAccessory(verse, onComplete)
         }
+    }
+}
+
+@Composable
+internal fun CardAccessory(
+    verse: Verse,
+    onComplete: (Verse, VerseActionSource) -> Unit,
+    enabled: Boolean = true,
+    alpha: () -> Float = { 1f },
+) {
+    val density = LocalDensity.current
+    if (LearningStore.shared.isCurrent(verse)) {
+        val green = PouchInk.green(AppTheme.isDark)
+        Row(
+            Modifier
+                .graphicsLayer { this.alpha = alpha() }
+                .pressable(enabled = enabled) { onComplete(verse, VerseActionSource.card) }
+                .clip(completeShape)
+                .background(green)
+                .padding(horizontal = 10.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Icon(R.drawable.ic_check, size = 12.dp, tint = Color.White)
+            Text(
+                "Complete",
+                style = AppType.caption.copy(
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = with(density) { 12.dp.toSp() },
+                    lineHeight = with(density) { 16.dp.toSp() },
+                ),
+                color = Color.White,
+                maxLines = 1,
+            )
+        }
+    }
+    Box(Modifier.size(30.dp).graphicsLayer { this.alpha = alpha() }, contentAlignment = Alignment.CenterEnd) {
+        FavoriteStarButton(verse, Modifier.requiredSize(44.dp).offset(x = (-7).dp), Alignment.CenterEnd, enabled)
     }
 }
 

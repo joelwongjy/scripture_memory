@@ -219,16 +219,15 @@ internal class PouchController(
 
     fun releaseCardSwipe(putBack: Boolean) {
         if (putBack) {
-            putCardBack(cardBounce())
+            putCardBack()
             return
         }
         scope.launch { liftedDragX.animateTo(0f, cardBounce()) }
         scope.launch { liftedDragY.animateTo(0f, cardBounce()) }
     }
 
-    fun putCardBack() = putCardBack(cardMotion())
-
-    private fun putCardBack(motion: AnimationSpec<Float>) {
+    fun putCardBack() {
+        val motion = cardMotion()
         if (lifted == null || liftAmount.targetValue != 1f) return
         scope.launch {
             listOf(
