@@ -48,7 +48,7 @@ object HapticEngine {
         if (!v.hasVibrator()) return
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             v.vibrate(VibrationEffect.createPredefined(effect))
-        } else {
+        } else if (v.hasAmplitudeControl()) {
             v.vibrate(VibrationEffect.createOneShot(fallbackMillis, amplitude))
         }
     }
@@ -63,38 +63,26 @@ object HapticEngine {
         stop()
         val v = vibrator ?: return
         if (!v.hasVibrator()) return
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
-            v.areAllPrimitivesSupported(
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R ||
+            !v.areAllPrimitivesSupported(
                 VibrationEffect.Composition.PRIMITIVE_CLICK,
                 VibrationEffect.Composition.PRIMITIVE_LOW_TICK,
             )
         ) {
-            val composition = VibrationEffect.startComposition()
-            var previous = 0
-            for (beat in beats) {
-                val primitive = if (beat.sharpness >= 0.6f) {
-                    VibrationEffect.Composition.PRIMITIVE_CLICK
-                } else {
-                    VibrationEffect.Composition.PRIMITIVE_LOW_TICK
-                }
-                composition.addPrimitive(primitive, beat.intensity, beat.timeMillis - previous)
-                previous = beat.timeMillis
-            }
-            v.vibrate(composition.compose())
             return
         }
-        val timings = mutableListOf<Long>()
-        val amplitudes = mutableListOf<Int>()
-        var cursor = 0L
+        val composition = VibrationEffect.startComposition()
+        var previous = 0
         for (beat in beats) {
-            val length = (if (beat.durationMillis > 0) beat.durationMillis else 12).toLong()
-            timings += (beat.timeMillis - cursor).coerceAtLeast(0)
-            amplitudes += 0
-            timings += length
-            amplitudes += (beat.intensity * 255).toInt().coerceIn(1, 255)
-            cursor = beat.timeMillis + length
+            val primitive = if (beat.sharpness >= 0.6f) {
+                VibrationEffect.Composition.PRIMITIVE_CLICK
+            } else {
+                VibrationEffect.Composition.PRIMITIVE_LOW_TICK
+            }
+            composition.addPrimitive(primitive, beat.intensity, beat.timeMillis - previous)
+            previous = beat.timeMillis
         }
-        v.vibrate(VibrationEffect.createWaveform(timings.toLongArray(), amplitudes.toIntArray(), -1))
+        v.vibrate(composition.compose())
     }
 
     fun stop() {
