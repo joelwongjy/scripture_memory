@@ -54,6 +54,10 @@ struct PouchView: View {
     @State private var flipCount = 0
     @State private var undoToastState: UndoToastState?
     @AppStorage("pouch.jumpLabelShown.v1") private var jumpLabelShown = false
+    @AppStorage(BibleVersion.storageKey) private var bibleVersion: BibleVersion = .niv84
+    @State private var practiceWidth: CGFloat = 0
+    @State private var barWidth: CGFloat = 0
+    @State private var titleWidth: CGFloat = 0
 
     @StateObject private var tilt = TiltMonitor()
     @ObservedObject private var learning = LearningStore.shared
@@ -71,7 +75,12 @@ struct PouchView: View {
     /// How far in from the leading edge a swipe counts as the edge swipe.
     private static let edgeWidth: CGFloat = 28
 
-    private var verses: [Verse] { pack.verses }
+    private var hasVersionChoice: Bool { BibleVersion.niv11PackNames.contains(pack.name) }
+
+    private var verses: [Verse] {
+        guard hasVersionChoice else { return pack.verses }
+        return (bibleVersion.packs.first { $0.name == pack.name } ?? pack).verses
+    }
 
     init(pack: Pack, startIndex: Int, shelf: (() -> CGRect)? = nil, animatesPouch: Bool = true,
          onPutBack: (() -> Void)? = nil) {
@@ -363,20 +372,15 @@ struct PouchView: View {
     // MARK: - Pieces
 
     private func topBar(columns: Int, showsButtons: Bool) -> some View {
-        ZStack {
-            VStack(spacing: 1) {
-                Text(pack.shortName)
-                    .font(.headline)
-                    .minimumScaleFactor(0.85)
-                Text([pack.seriesCode, PackListLayout.positionLabel(card: index, count: verses.count, columns: columns)]
-                        .compactMap { $0 }.joined(separator: " · "))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .monospacedDigit()
-            }
-            .lineLimit(1)
-            .padding(.horizontal, showsButtons ? 108 : 0)
-            .accessibilityElement(children: .combine)
+        let gap = showsButtons ? AppLayout.spacing / 2 : 0
+        let span = PackListLayout.titleSpan(barWidth: barWidth,
+                                            leading: showsButtons ? Self.sideButtonSize : 0,
+                                            trailing: showsButtons ? practiceWidth : 0,
+                                            title: titleWidth, gap: gap)
+        return ZStack(alignment: .leading) {
+            title(columns: columns, wraps: titleWidth > span.width)
+                .frame(width: span.width > 0 ? span.width : nil)
+                .offset(x: span.x)
             if showsButtons {
                 HStack {
                     closeButton
@@ -388,14 +392,85 @@ struct PouchView: View {
                             .padding(.horizontal, 4)
                     }
                     .systemGlassButton()
+                    .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { practiceWidth = $0 }
                 }
             }
         }
-        .frame(height: 44)
+        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { barWidth = $0 }
+        .background {
+            title(columns: columns, wraps: false)
+                .fixedSize()
+                .hidden()
+                .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { titleWidth = $0 }
+        }
         .padding(.horizontal, AppLayout.screenMargin)
         .padding(.vertical, 8)
         .opacity(Double(1 - flight))
         .disabled(!fanned)
+    }
+
+    private func title(columns: Int, wraps: Bool) -> some View {
+        VStack(spacing: 1) {
+            if hasVersionChoice {
+                if wraps {
+                    VStack(spacing: 2) { packName; versionPill }
+                } else {
+                    HStack(spacing: 6) { packName; versionPill }
+                }
+            } else {
+                packName
+            }
+            Text([pack.seriesCode, PackListLayout.positionLabel(card: index, count: verses.count, columns: columns)]
+                    .compactMap { $0 }.joined(separator: " · "))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .monospacedDigit()
+        }
+        .lineLimit(1)
+        .accessibilityElement(children: hasVersionChoice ? .contain : .combine)
+    }
+
+    private var packName: some View {
+        Text(pack.shortName)
+            .font(.headline)
+            .minimumScaleFactor(0.85)
+    }
+
+    private var versionPill: some View {
+        Text(bibleVersion.displayName)
+            .font(.subheadline.weight(.semibold))
+            .padding(.horizontal, 8)
+            .padding(.vertical, 2)
+            .background(Color(.tertiarySystemFill), in: Capsule())
+            .fixedSize()
+            .layoutPriority(1)
+            .accessibilityHidden(true)
+            .overlay {
+                Menu { versionPicker } label: {
+                    Color.clear.contentShape(Capsule())
+                }
+                .menuStyle(.button)
+                .buttonStyle(.plain)
+                .accessibilityLabel("Bible Version")
+                .accessibilityValue(bibleVersion.displayName)
+            }
+    }
+
+    private var versionPicker: some View {
+        Picker("Bible Version", selection: Binding(get: { bibleVersion }, set: chooseVersion)) {
+            ForEach(BibleVersion.allCases, id: \.self) { version in
+                Text(version.displayName).tag(version)
+            }
+        }
+        .pickerStyle(.inline)
+    }
+
+    private func chooseVersion(_ version: BibleVersion) {
+        guard version != bibleVersion else { return }
+        dropLiftedCard()
+        bibleVersion = version
+        Analytics.log(.settingChanged(setting: "bibleVersion", value: version.rawValue))
     }
 
     private var closeButton: some View {

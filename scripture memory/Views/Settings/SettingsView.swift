@@ -41,17 +41,6 @@ struct SettingsView: View {
     var body: some View {
         List {
             Section {
-                Picker(selection: $bibleVersion) {
-                    ForEach(BibleVersion.allCases, id: \.self) { version in
-                        Text(version.displayName).tag(version)
-                    }
-                } label: {
-                    rowLabel("Bible Version", "book.closed")
-                }
-                .pickerStyle(.menu)
-            }
-
-            Section {
                 Picker("Study Mode", selection: $studyMode) {
                     ForEach(StudyMode.allCases, id: \.self) { mode in
                         Text(mode.displayName).tag(mode)
@@ -209,7 +198,6 @@ struct SettingsView: View {
         .analyticsScreen(.settings)
         .onChange(of: studyMode)          { _, v in logSetting("studyMode", v.rawValue) }
         .onChange(of: hardMode)           { _, v in logSetting("hardMode", String(v)) }
-        .onChange(of: bibleVersion)       { _, v in logSetting("bibleVersion", v.rawValue) }
         .onChange(of: newCapAmount)       { _, v in logSettingOnceSettled("newCards", String(v)) }
         .onChange(of: newCapUnit)         { _, v in logSetting("newCardsPer", v.rawValue) }
         .onChange(of: dailyReviewCap)     { _, v in logSettingOnceSettled("reviewsPerDay", String(v)) }

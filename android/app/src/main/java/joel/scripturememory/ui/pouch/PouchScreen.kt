@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -76,7 +77,6 @@ import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onPlaced
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -102,6 +102,8 @@ import joel.scripturememory.R
 import joel.scripturememory.model.AnalyticsEvent
 import joel.scripturememory.model.AnalyticsScreen
 import joel.scripturememory.model.AppDefaults
+import joel.scripturememory.model.BibleVersion
+import joel.scripturememory.ui.study.CapsuleShape
 import joel.scripturememory.model.FavoritesStore
 import joel.scripturememory.model.LearningStore
 import joel.scripturememory.model.Pack
@@ -162,7 +164,13 @@ fun PouchScreen(
     animatesPouch: Boolean = true,
     onClosed: () -> Unit,
 ) {
-    val verses = pack.verses
+    val bibleVersion = BibleVersion.saved()
+    val hasVersionChoice = pack.name in BibleVersion.niv11PackNames
+    val verses = if (hasVersionChoice) {
+        (bibleVersion.packs.firstOrNull { it.name == pack.name } ?: pack).verses
+    } else {
+        pack.verses
+    }
     val colors = AppTheme.colors
     val scope = rememberCoroutineScope()
     val covers = LocalCovers.current
@@ -183,6 +191,7 @@ fun PouchScreen(
             scope = scope,
         ).also { it.onClosed = { closed() } }
     }
+    SideEffect { c.verses = verses }
     var undoToast by remember { mutableStateOf<UndoToastState?>(null) }
     var practiceOpen by remember { mutableStateOf(false) }
     var sceneOrigin by remember { mutableStateOf(Offset.Zero) }
@@ -237,6 +246,13 @@ fun PouchScreen(
                 },
             )
         }
+    }
+
+    fun chooseVersion(version: BibleVersion) {
+        if (version == bibleVersion) return
+        c.dropLiftedCard()
+        AppDefaults.standard.putString(BibleVersion.storageKey, version.rawValue)
+        Analytics.log(AnalyticsEvent.SettingChanged("bibleVersion", version.rawValue))
     }
 
     fun markComplete(verse: Verse, source: VerseActionSource) {
@@ -297,7 +313,13 @@ fun PouchScreen(
                     top = insets.calculateTopPadding(),
                 ),
         ) {
-            PouchTopBar(pack, c, onPractice = { startPractice(c.index) })
+            PouchTopBar(
+                pack,
+                c,
+                version = bibleVersion.takeIf { hasVersionChoice },
+                onVersion = ::chooseVersion,
+                onPractice = { startPractice(c.index) },
+            )
             BoxWithConstraints(
                 Modifier
                     .weight(1f)
@@ -422,53 +444,106 @@ fun PouchScreen(
 }
 
 @Composable
-private fun PouchTopBar(pack: Pack, c: PouchController, onPractice: () -> Unit) {
+private fun PouchTopBar(
+    pack: Pack,
+    c: PouchController,
+    version: BibleVersion?,
+    onVersion: (BibleVersion) -> Unit,
+    onPractice: () -> Unit,
+) {
     val colors = AppTheme.colors
-    val density = LocalDensity.current
-    var titleInset by remember { mutableStateOf(98.dp) }
-    Box(
-        Modifier
+    var showsVersions by remember { mutableStateOf(false) }
+    val counter = listOfNotNull(
+        pack.seriesCode,
+        PackListLayout.positionLabel(c.index, c.verses.size, c.columns),
+    ).joinToString(" · ")
+    Layout(
+        content = {
+            ChromeIconButton(
+                R.drawable.ic_x,
+                "Close",
+                onClick = { if (c.fanned) c.close(PackCloseMethod.closeButton) },
+            )
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(1.dp),
+            ) {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                    itemVerticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        pack.shortName,
+                        style = AppType.headline,
+                        color = colors.label,
+                        maxLines = 1,
+                        autoSize = TextAutoSize.StepBased(AppType.headline.fontSize * 0.85f, AppType.headline.fontSize, 0.25.sp),
+                    )
+                    if (version != null) {
+                        Box(
+                            Modifier
+                                .pressable(label = "Bible Version, ${version.displayName}") {
+                                    if (c.fanned) showsVersions = true
+                                }
+                                .clip(CapsuleShape)
+                                .background(colors.fill)
+                                .padding(horizontal = 8.dp, vertical = 2.dp),
+                        ) {
+                            Text(
+                                version.displayName,
+                                style = AppType.subheadline.copy(fontWeight = FontWeight.SemiBold),
+                                color = colors.label,
+                                maxLines = 1,
+                            )
+                            if (showsVersions) {
+                                AppMenu(
+                                    actions = BibleVersion.entries.map { option ->
+                                        MenuAction(option.displayName, R.drawable.ic_check.takeIf { option == version }) {
+                                            onVersion(option)
+                                        }
+                                    },
+                                    onDismiss = { showsVersions = false },
+                                )
+                            }
+                        }
+                    }
+                }
+                Text(
+                    counter,
+                    style = AppType.caption.copy(fontFeatureSettings = "tnum"),
+                    color = colors.secondaryLabel,
+                    maxLines = 1,
+                    autoSize = TextAutoSize.StepBased(AppType.caption.fontSize * 0.7f, AppType.caption.fontSize, 0.25.sp),
+                )
+            }
+            ChromeTextButton("Practice", onClick = { if (c.fanned) onPractice() })
+        },
+        modifier = Modifier
             .fillMaxWidth()
             .graphicsLayer { alpha = 1f - c.flight.value }
             .padding(horizontal = AppLayout.screenMargin, vertical = 8.dp)
             .heightIn(min = 44.dp),
-    ) {
-        val counter = listOfNotNull(pack.seriesCode, PackListLayout.positionLabel(c.index, c.verses.size, c.columns)).joinToString(" · ")
-        Column(
-            Modifier.align(Alignment.Center).padding(horizontal = titleInset),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(1.dp),
-        ) {
-            Text(
-                pack.shortName,
-                style = AppType.headline,
-                color = colors.label,
-                maxLines = 1,
-                autoSize = TextAutoSize.StepBased(AppType.headline.fontSize * 0.85f, AppType.headline.fontSize, 0.25.sp),
-            )
-            Text(
-                counter,
-                style = AppType.caption.copy(fontFeatureSettings = "tnum"),
-                color = colors.secondaryLabel,
-                maxLines = 1,
-                autoSize = TextAutoSize.StepBased(AppType.caption.fontSize * 0.7f, AppType.caption.fontSize, 0.25.sp),
-            )
+    ) { measurables, constraints ->
+        val loose = constraints.copy(minWidth = 0, minHeight = 0)
+        val close = measurables[0].measure(loose)
+        val practice = measurables[2].measure(loose)
+        val gap = (AppLayout.spacing / 2).roundToPx()
+        val width = constraints.maxWidth
+        val room = (width - close.width - practice.width - 2 * gap).coerceAtLeast(0)
+        val title = measurables[1].measure(loose.copy(maxWidth = room))
+        val (x, _) = PackListLayout.titleSpan(
+            width.toFloat(), close.width.toFloat(), practice.width.toFloat(), title.width.toFloat(), gap.toFloat(),
+        )
+        val height = maxOf(close.height, title.height, practice.height, constraints.minHeight)
+        layout(width, height) {
+            close.place(0, (height - close.height) / 2)
+            title.place(x.roundToInt(), (height - title.height) / 2)
+            practice.place(width - practice.width, (height - practice.height) / 2)
         }
-        ChromeIconButton(
-            R.drawable.ic_x,
-            "Close",
-            Modifier.align(Alignment.CenterStart),
-            onClick = { if (c.fanned) c.close(PackCloseMethod.closeButton) },
-        )
-        ChromeTextButton(
-            "Practice",
-            Modifier
-                .align(Alignment.CenterEnd)
-                .onSizeChanged { titleInset = with(density) { it.width.toDp() } + 1.dp },
-            onClick = { if (c.fanned) onPractice() },
-        )
     }
 }
+
 
 @Composable
 private fun PouchThumb(c: PouchController, height: Dp, modifier: Modifier = Modifier) {

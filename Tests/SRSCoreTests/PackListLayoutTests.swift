@@ -132,6 +132,24 @@ final class PackListLayoutTests: XCTestCase {
         XCTAssertEqual(PackListLayout.positionLabel(card: 24, count: 25, columns: 2), "Card 25 of 25")
     }
 
+    func testATitleThatFitsStaysCentred() {
+        let span = PackListLayout.titleSpan(barWidth: 360, leading: 44, trailing: 100, title: 100, gap: 8)
+        XCTAssertEqual(span.x, 130)
+        XCTAssertEqual(span.width, 100)
+    }
+
+    func testAWideTitleMovesAwayFromTheWiderButton() {
+        let span = PackListLayout.titleSpan(barWidth: 360, leading: 44, trailing: 100, title: 150, gap: 8)
+        XCTAssertEqual(span.x, 102)
+        XCTAssertEqual(span.width, 150)
+    }
+
+    func testATitleTooWideForTheBarFillsTheRoomBetweenButtons() {
+        let span = PackListLayout.titleSpan(barWidth: 360, leading: 44, trailing: 100, title: 300, gap: 8)
+        XCTAssertEqual(span.x, 52)
+        XCTAssertEqual(span.width, 200)
+    }
+
     func testCardCentresSitEitherSideOfTheMiddle() {
         let layout = PackListLayout(width: 637, spacing: 16)
         XCTAssertEqual(layout.centerOffset(ofCard: 0), -163.25)

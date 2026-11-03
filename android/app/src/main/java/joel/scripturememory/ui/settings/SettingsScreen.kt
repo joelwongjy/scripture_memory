@@ -90,7 +90,7 @@ import androidx.compose.ui.unit.sp
 private const val hardModeKey = "hardMode"
 private val iconRowInset = AppLayout.panelPadding + 36.dp
 
-private enum class Picker { Bible, Cards }
+private enum class Picker { Cards }
 
 private fun logSetting(setting: String, value: String) {
     Analytics.log(AnalyticsEvent.SettingChanged(setting, value))
@@ -168,16 +168,6 @@ fun SettingsScreen() {
     TrackScreen(AnalyticsScreen.settings)
 
     LargeTitleColumn("Settings") {
-        GroupedSection {
-            ValueRow(
-                title = "Bible Version",
-                icon = R.drawable.ic_book,
-                value = bibleVersion.displayName,
-                trailingIcon = R.drawable.ic_caret_up_down,
-                onClick = { picker = Picker.Bible },
-            )
-        }
-
         GroupedSection(
             title = "Study",
             footer = if (hardMode) {
@@ -373,19 +363,6 @@ fun SettingsScreen() {
     }
 
     when (picker) {
-        Picker.Bible -> PickerSheet(
-            title = "Bible Version",
-            options = BibleVersion.entries,
-            selected = bibleVersion,
-            label = { it.displayName },
-            onSelect = {
-                if (it != bibleVersion) {
-                    defaults.putString(BibleVersion.storageKey, it.rawValue)
-                    logSetting("bibleVersion", it.rawValue)
-                }
-            },
-            onDismiss = { picker = null },
-        )
         Picker.Cards -> PickerSheet(
             title = "Cards",
             options = CardAppearance.entries,

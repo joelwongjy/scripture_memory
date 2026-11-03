@@ -49,6 +49,12 @@ class PackListLayout(width: Float, val spacing: Float) {
         fun verseTextCeiling(cardWidth: Float, share: Float, readableSize: Float): Float =
             max(cardWidth * share, readableSize)
 
+        fun titleSpan(barWidth: Float, leading: Float, trailing: Float, title: Float, gap: Float): Pair<Float, Float> {
+            val width = min(title, max(barWidth - leading - trailing - 2 * gap, 0f))
+            val x = min(max((barWidth - width) / 2, leading + gap), barWidth - trailing - gap - width)
+            return x to width
+        }
+
         fun positionLabel(card: Int, count: Int, columns: Int): String {
             val first = card / columns * columns
             val last = min(first + columns, count)
