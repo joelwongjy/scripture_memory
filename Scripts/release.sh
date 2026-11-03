@@ -44,7 +44,7 @@ bump() {
   build="$(read_build)"
   IFS=. read -r major minor patch <<<"$version"
   case "$kind" in
-    build) build=$((build + 1)) ;;
+    build) build="$("$ROOT/Scripts/next_build.sh")" ;;
     patch) version="$major.$minor.$((patch + 1))"; build=1 ;;
     minor) version="$major.$((minor + 1)).0"; build=1 ;;
   esac

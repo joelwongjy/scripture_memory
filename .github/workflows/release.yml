@@ -1,0 +1,146 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+  workflow_dispatch:
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  number:
+    name: Reserve build number
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.next.outputs.version }}
+      build: ${{ steps.next.outputs.build }}
+      notes: ${{ steps.next.outputs.notes }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: next
+        run: |
+          if git log -1 --format=%s | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+ \([0-9]+\):'; then
+            echo "::notice::Release commit from Scripts/release.sh; already shipped."
+            exit 0
+          fi
+          version="$(sed -n 's/^version=//p' VERSION)"
+          build="$(Scripts/next_build.sh)"
+          notes="$(git log -1 --format=%b | sed '/^$/d' | head -1)"
+          [ -n "$notes" ] || notes="$(git log -1 --format=%s)"
+          echo "version=$version" >>"$GITHUB_OUTPUT"
+          echo "build=$build" >>"$GITHUB_OUTPUT"
+          echo "notes=${notes:0:400}" >>"$GITHUB_OUTPUT"
+          git tag "v$version-$build"
+          git push origin "v$version-$build"
+          echo "::notice::Releasing $version ($build): $notes"
+
+  ios:
+    name: iOS to TestFlight
+    needs: number
+    if: needs.number.outputs.build != ''
+    runs-on: xcode-27
+    env:
+      VERSION: ${{ needs.number.outputs.version }}
+      BUILD: ${{ needs.number.outputs.build }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select Xcode 27
+        run: sudo xcode-select -s /Applications/Xcode_27.1.app
+      - name: App Store Connect key
+        env:
+          ASC_KEY: ${{ secrets.ASC_KEY }}
+        run: printf '%s' "$ASC_KEY" >"$RUNNER_TEMP/AuthKey.p8"
+      - name: Archive
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          xcodebuild archive \
+            -project "Scripture Memory.xcodeproj" -scheme "Scripture Memory" \
+            -configuration Release -destination "generic/platform=iOS" \
+            -archivePath "$RUNNER_TEMP/ScriptureMemory.xcarchive" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            MARKETING_VERSION="$VERSION" CURRENT_PROJECT_VERSION="$BUILD" -quiet
+      - name: Upload
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          cat >"$RUNNER_TEMP/ExportOptions.plist" <<'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+          <key>method</key><string>app-store-connect</string>
+          <key>destination</key><string>upload</string>
+          <key>teamID</key><string>767L2N7FG8</string>
+          <key>signingStyle</key><string>automatic</string>
+          </dict></plist>
+          PLIST
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/ScriptureMemory.xcarchive" \
+            -exportPath "$RUNNER_TEMP/ipa" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID" >export.log 2>&1 && status=0 || status=$?
+          if grep -qE 'is closed for new build submissions|must contain a higher version' export.log; then
+            echo "::error::$VERSION is already live on the App Store. Raise the version in VERSION (Scripts/release.sh --patch does it) and merge again."
+          fi
+          [ $status -eq 0 ] || tail -30 export.log
+          exit $status
+      - name: Remove key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/AuthKey.p8"
+
+  android:
+    name: Android to Play internal testing
+    needs: number
+    if: needs.number.outputs.build != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "SCRIPTURE_MEMORY_CONFIG=$RUNNER_TEMP/scripture-memory" >>"$GITHUB_ENV"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: 17
+          cache: gradle
+      - name: Version and notes
+        env:
+          VERSION: ${{ needs.number.outputs.version }}
+          BUILD: ${{ needs.number.outputs.build }}
+          NOTES: ${{ needs.number.outputs.notes }}
+        run: |
+          printf 'version=%s\nbuild=%s\n' "$VERSION" "$BUILD" >VERSION
+          mkdir -p android/app/src/main/play/release-notes/en-US
+          printf '%s\n' "$NOTES" >android/app/src/main/play/release-notes/en-US/internal.txt
+      - name: Signing and Play keys
+        env:
+          ANDROID_UPLOAD_KEYSTORE: ${{ secrets.ANDROID_UPLOAD_KEYSTORE }}
+          ANDROID_SIGNING_PROPERTIES: ${{ secrets.ANDROID_SIGNING_PROPERTIES }}
+          PLAY_SERVICE_ACCOUNT: ${{ secrets.PLAY_SERVICE_ACCOUNT }}
+        run: |
+          mkdir -p "$SCRIPTURE_MEMORY_CONFIG"
+          printf '%s' "$ANDROID_UPLOAD_KEYSTORE" | base64 --decode >"$SCRIPTURE_MEMORY_CONFIG/upload.jks"
+          printf '%s' "$ANDROID_SIGNING_PROPERTIES" >"$SCRIPTURE_MEMORY_CONFIG/android-signing.properties"
+          printf '%s' "$PLAY_SERVICE_ACCOUNT" >"$SCRIPTURE_MEMORY_CONFIG/play-service-account.json"
+      - name: Publish
+        working-directory: android
+        run: ./gradlew :app:publishReleaseBundle
+      - name: Remove keys
+        if: always()
+        run: rm -rf "$SCRIPTURE_MEMORY_CONFIG"
