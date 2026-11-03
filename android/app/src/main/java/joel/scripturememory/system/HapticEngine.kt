@@ -43,34 +43,31 @@ object HapticEngine {
         }
     }
 
-    private fun predefined(effect: Int, fallbackMillis: Long, amplitude: Int) {
+    private fun predefined(effect: Int) {
         val v = vibrator ?: return
-        if (!v.hasVibrator()) return
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            v.vibrate(VibrationEffect.createPredefined(effect))
-        } else if (v.hasAmplitudeControl()) {
-            v.vibrate(VibrationEffect.createOneShot(fallbackMillis, amplitude))
-        }
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R || !v.hasVibrator()) return
+        val native = v.areAllEffectsSupported(effect) == Vibrator.VIBRATION_EFFECT_SUPPORT_YES
+        if (!native && !hasPrimitives(v)) return
+        v.vibrate(VibrationEffect.createPredefined(effect))
     }
 
-    fun light() = predefined(EFFECT_TICK, 10, 60)
-    fun soft() = predefined(EFFECT_TEXTURE_TICK, 8, 40)
-    fun medium() = predefined(EFFECT_CLICK, 16, 120)
-    fun success() = predefined(EFFECT_DOUBLE_CLICK, 24, 140)
-    fun error() = predefined(EFFECT_HEAVY_CLICK, 40, 200)
+    private fun hasPrimitives(v: Vibrator): Boolean =
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
+            v.areAllPrimitivesSupported(
+                VibrationEffect.Composition.PRIMITIVE_CLICK,
+                VibrationEffect.Composition.PRIMITIVE_LOW_TICK,
+            )
+
+    fun light() = predefined(EFFECT_TICK)
+    fun soft() = predefined(EFFECT_TEXTURE_TICK)
+    fun medium() = predefined(EFFECT_CLICK)
+    fun success() = predefined(EFFECT_DOUBLE_CLICK)
+    fun error() = predefined(EFFECT_HEAVY_CLICK)
 
     fun play(beats: List<Beat>) {
         stop()
         val v = vibrator ?: return
-        if (!v.hasVibrator()) return
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R ||
-            !v.areAllPrimitivesSupported(
-                VibrationEffect.Composition.PRIMITIVE_CLICK,
-                VibrationEffect.Composition.PRIMITIVE_LOW_TICK,
-            )
-        ) {
-            return
-        }
+        if (!v.hasVibrator() || !hasPrimitives(v)) return
         val composition = VibrationEffect.startComposition()
         var previous = 0
         for (beat in beats) {
