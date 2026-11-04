@@ -97,10 +97,9 @@ enum class BibleVersion(val rawValue: String) {
         }
 
         private val niv11Packs: List<Pack> by lazy {
-            packsNIV11.map { pack ->
-                val niv84 = packsNIV84.firstOrNull { it.name == pack.name }
-                if (pack.name !in niv11PackNames) return@map niv84 ?: pack
-                if (niv84 == null) return@map pack
+            packsNIV84.map { niv84 ->
+                if (niv84.name !in niv11PackNames) return@map niv84
+                val pack = packsNIV11.firstOrNull { it.name == niv84.name } ?: return@map niv84
                 val ids = HashMap<String, Int>()
                 for (v in niv84.verses) {
                     val uid = v.cardUid ?: continue

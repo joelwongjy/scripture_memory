@@ -36,12 +36,14 @@ class SupabaseCatalogClient private constructor(
             "verses(verse_id,card_uid,sort_index,title,verse,book,reference,subpack,version)"
         val rows = get(
             "packs",
-            "select=$select&order=sort_index.asc",
+            "select=$select&order=sort_index.asc" + partialEditionFilter(),
             ListSerializer(PackRow.serializer()),
         )
 
         val editions = LinkedHashMap<String, MutableList<Pack>>()
         for (row in rows.sortedBy { it.sort_index }) {
+            val allowed = VerseCatalog.partialEditions[row.edition]
+            if (allowed != null && row.name !in allowed) continue
             val verses = row.verses
                 .sortedBy { it.sort_index }
                 .map {
@@ -107,6 +109,13 @@ class SupabaseCatalogClient private constructor(
 
     companion object {
         private const val TIMEOUT_MILLIS = 20_000
+
+        fun partialEditionFilter(): String =
+            VerseCatalog.partialEditions.entries.sortedBy { it.key }.joinToString("") { (edition, names) ->
+                val list = names.sorted().joinToString(",") { "\"$it\"" }
+                val value = "(edition.neq.$edition,name.in.($list))"
+                "&or=" + java.net.URLEncoder.encode(value, "UTF-8").replace("+", "%20")
+            }
 
         fun create(
             url: String = SupabaseConfig.url,

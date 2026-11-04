@@ -42,6 +42,10 @@ BUNDLES = {
     "NIV11": RESOURCES / "verseDataNIV11.json",
 }
 
+# Editions shipped only for some packs. NIV 2011 is shown for TMS 60 alone, so
+# no other pack's 2011 text is bundled or published.
+EDITION_PACKS = {"NIV11": {"TMS 60"}}
+
 # The widget extension has its own bundle and can't read the app's resources, so
 # it ships a byte-copy of the NIV84 file. Nothing keeps the two in step, so
 # `patch` re-mirrors it — a drifted widget quietly shows the wrong verse text.
@@ -440,6 +444,12 @@ def cmd_patch(args) -> int:
         print(f"{path.name}: {len(changes)} change(s)")
         for line in changes:
             print(f"  {line}")
+        allowed = EDITION_PACKS.get(version)
+        if allowed is not None:
+            dropped = [p["name"] for p in bundle if p["name"] not in allowed]
+            if dropped:
+                bundle = [p for p in bundle if p["name"] in allowed]
+                changes.append(f"- dropped {len(dropped)} pack(s) not shipped in {version}")
         if changes and not args.dry_run:
             path.write_text(json.dumps(bundle, ensure_ascii=False, indent=2) + "\n")
 

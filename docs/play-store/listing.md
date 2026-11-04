@@ -44,7 +44,7 @@ EVERYTHING ELSE YOU NEED
 PRIVATE BY DESIGN
 No account, no ads and no tracking. Your verses and progress stay on your device. The app sends anonymous usage statistics, never your verses, and you can turn that off in Settings.
 
-Scripture quotations taken from The Holy Bible, New International Version® NIV®. Copyright © 1973, 1978, 1984, 2011 by Biblica, Inc.® Used by permission. All rights reserved worldwide.
+Scripture quotations taken from The Holy Bible, New International Version® NIV®. Copyright © 1973, 1978, 1984, 2011 by Biblica, Inc.® All rights reserved worldwide.
 
 Verse selections are based on The Navigators' Topical Memory System®. This app is independent and is not affiliated with, endorsed by, or sponsored by The Navigators.
 ```

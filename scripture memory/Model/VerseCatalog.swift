@@ -21,9 +21,16 @@ enum VerseCatalog {
     /// Packs for one edition, from the newest catalog available on disk.
     static func packs(edition: String, bundledFile: String) -> [Pack] {
         if let cached = cachedDocument, let packs = cached.editions[edition], !packs.isEmpty {
-            return withPackNames(packs)
+            return withPackNames(shipped(packs, edition: edition))
         }
-        return withPackNames(bundledPacks(bundledFile))
+        return withPackNames(shipped(bundledPacks(bundledFile), edition: edition))
+    }
+
+    static let partialEditions: [String: Set<String>] = ["NIV11": BibleVersion.niv11PackNames]
+
+    static func shipped(_ packs: [Pack], edition: String) -> [Pack] {
+        guard let allowed = partialEditions[edition] else { return packs }
+        return packs.filter { allowed.contains($0.name) }
     }
 
     /// Back-fills `Verse.packName`, which isn't in the JSON (it's implied by
@@ -69,7 +76,7 @@ enum VerseCatalog {
     }
 
     /// Raise when a release needs something older caches don't carry.
-    static let currentSchema = 2
+    static let currentSchema = 3
 
     private static let cacheFilename = "verseCatalog.json"
 
@@ -225,7 +232,10 @@ struct SupabaseCatalogClient {
                          value: "edition,name,color,accent_text,sort_index,"
                               + "verses(verse_id,card_uid,sort_index,title,verse,book,reference,subpack,version)"),
             URLQueryItem(name: "order", value: "sort_index.asc"),
-        ])
+        ] + VerseCatalog.partialEditions.sorted { $0.key < $1.key }.map { edition, names in
+            let list = names.sorted().map { "\"\($0)\"" }.joined(separator: ",")
+            return URLQueryItem(name: "or", value: "(edition.neq.\(edition),name.in.(\(list)))")
+        })
 
         var editions: [String: [Pack]] = [:]
         for row in rows.sorted(by: { $0.sort_index < $1.sort_index }) {
@@ -235,6 +245,7 @@ struct SupabaseCatalogClient {
                              book: $0.book, reference: $0.reference,
                              subpack: $0.subpack, version: $0.version,
                              cardUid: $0.card_uid) }
+            if let allowed = VerseCatalog.partialEditions[row.edition], !allowed.contains(row.name) { continue }
             editions[row.edition, default: []].append(
                 Pack(name: row.name, color: row.color,
                      accentText: row.accent_text, verses: verses))

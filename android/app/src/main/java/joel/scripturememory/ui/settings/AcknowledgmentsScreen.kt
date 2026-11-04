@@ -80,7 +80,7 @@ fun AcknowledgmentsScreen() {
             Column(Modifier.readableColumn().padding(horizontal = AppLayout.screenMargin)) {
                 TextSection(
                     "Scripture",
-                    "Scripture quotations taken from The Holy Bible, New International Version® NIV®. Copyright © 1973, 1978, 1984, 2011 by Biblica, Inc.® Used by permission. All rights reserved worldwide.",
+                    "Scripture quotations taken from The Holy Bible, New International Version® NIV®. Copyright © 1973, 1978, 1984, 2011 by Biblica, Inc.® All rights reserved worldwide.",
                 )
                 Spacer(Modifier.height(24.dp))
                 TextSection(
