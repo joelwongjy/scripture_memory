@@ -19,7 +19,7 @@ object VerseCatalog {
         val editions: Map<String, List<Pack>>,
     )
 
-    const val currentSchema = 2
+    const val currentSchema = 3
 
     private const val cacheFilename = "verseCatalog.json"
 
@@ -48,8 +48,15 @@ object VerseCatalog {
 
     fun packs(edition: String, bundledFile: String): List<Pack> {
         val cached = cachedDocument()?.editions?.get(edition)
-        if (!cached.isNullOrEmpty()) return withPackNames(cached)
-        return withPackNames(bundledPacks(bundledFile))
+        if (!cached.isNullOrEmpty()) return withPackNames(shipped(cached, edition))
+        return withPackNames(shipped(bundledPacks(bundledFile), edition))
+    }
+
+    val partialEditions: Map<String, Set<String>> get() = mapOf("NIV11" to BibleVersion.niv11PackNames)
+
+    fun shipped(packs: List<Pack>, edition: String): List<Pack> {
+        val allowed = partialEditions[edition] ?: return packs
+        return packs.filter { it.name in allowed }
     }
 
     private fun withPackNames(packs: List<Pack>): List<Pack> = packs.map { pack ->

@@ -103,7 +103,7 @@ class VerseCatalogTests {
     fun cacheMissingTheEditionFallsBackToTheBundle() {
         writeCache()
         configure()
-        assertEquals(15, VerseCatalog.packs("NIV11", "verseDataNIV11.json").size)
+        assertEquals(listOf("TMS 60"), VerseCatalog.packs("NIV11", "verseDataNIV11.json").map { it.name })
     }
 
     @Test
@@ -272,7 +272,7 @@ class VerseCatalogTests {
         assertEquals("/rest/v1/catalog_meta" to "select=version&limit=1", seen[0])
         assertEquals("/rest/v1/packs", seen[1].first)
         assertTrue(seen[1].second.startsWith("select=edition,name,color,accent_text,sort_index,verses("))
-        assertTrue(seen[1].second.endsWith("&order=sort_index.asc"))
+        assertTrue(seen[1].second.endsWith("&order=sort_index.asc&or=%28edition.neq.NIV11%2Cname.in.%28%22TMS%2060%22%29%29"))
         assertEquals(listOf("secret-key", "Bearer secret-key"), headers.take(2))
     }
 

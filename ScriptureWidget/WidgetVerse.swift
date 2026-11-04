@@ -55,7 +55,7 @@ enum VerseLibrary {
         let editions: [String: [WidgetPack]]
     }
 
-    private static let currentSchema = 2
+    private static let currentSchema = 3
 
     static let allVerses: [WidgetVerse] = shared() ?? bundled()
 
@@ -72,15 +72,11 @@ enum VerseLibrary {
         // the file happens to contain.
         let preferred = UserDefaults(suiteName: SharedStore.appGroup)?
             .string(forKey: SharedStore.editionKey)
-        var packs = preferred.flatMap { doc.editions[$0] }
-            ?? doc.editions["NIV84"]
-            ?? doc.editions.values.first
-        // Same rule as `BibleVersion.packs` in the app: under NIV 2011 only the
-        // allow-listed packs take the 2011 text; the rest stay on NIV 1984.
-        if preferred == "NIV11", let niv84 = doc.editions["NIV84"] {
+        var packs = doc.editions["NIV84"] ?? doc.editions.values.first
+        if preferred == "NIV11", let niv11 = doc.editions["NIV11"] {
             packs = packs?.map { pack in
-                guard !niv11PackNames.contains(pack.name) else { return pack }
-                return niv84.first { $0.name == pack.name } ?? pack
+                guard niv11PackNames.contains(pack.name) else { return pack }
+                return niv11.first { $0.name == pack.name } ?? pack
             }
         }
         guard let packs, !packs.isEmpty else { return nil }

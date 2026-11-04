@@ -58,4 +58,4 @@ None of these needs the sensitive-permissions form. The bundle also lists `FOREG
 
 ## If Google asks about rights
 
-The app includes NIV text and shows Navigators and DEP artwork. The Acknowledgments say "Used by permission", so keep any permission from Biblica and The Navigators where you can find it. Google can ask for proof if a rights holder complains.
+The app includes NIV text and shows Navigators and DEP artwork. The Acknowledgments carry Biblica's copyright notice. NIV 2011 text is shipped for TMS 60 only. Google can ask for proof if a rights holder complains.

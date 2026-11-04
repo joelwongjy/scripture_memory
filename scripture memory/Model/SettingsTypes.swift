@@ -132,10 +132,9 @@ enum BibleVersion: String, CaseIterable {
     /// them — and rebuilding 15 pack values each time is enough copying to show
     /// up as dropped frames in a system transition. The two bundles are fixed for
     /// the life of the process (see `VerseCatalog`), so this can be a constant.
-    private static let niv11Packs: [Pack] = packsNIV11.map { pack in
-        let niv84 = packsNIV84.first { $0.name == pack.name }
-        guard niv11PackNames.contains(pack.name) else { return niv84 ?? pack }
-        guard let niv84 else { return pack }
+    private static let niv11Packs: [Pack] = packsNIV84.map { niv84 in
+        guard niv11PackNames.contains(niv84.name),
+              let pack = packsNIV11.first(where: { $0.name == niv84.name }) else { return niv84 }
         let ids = Dictionary(niv84.verses.compactMap { v in v.cardUid.map { ($0, v.id) } },
                              uniquingKeysWith: { first, _ in first })
         let verses = pack.verses.map { v in

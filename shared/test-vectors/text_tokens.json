@@ -66,7 +66,7 @@
 ],
 "catalog": [
 {"count":15783,"digest":"5d051e3541182d28","file":"verseData.json"},
-{"count":15834,"digest":"e69545f3d9fd8803","file":"verseDataNIV11.json"}
+{"count":1748,"digest":"78bf95e2ed8bd111","file":"verseDataNIV11.json"}
 ],
 "darwinTokens": [
 {"expected":["a\tb"],"input":"a\tb"},
