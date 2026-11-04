@@ -16,6 +16,9 @@ enum AnalyticsEvent: Equatable {
     case starChanged(starred: Bool, from: VerseActionSource)
     case packsReordered
     case packVisibilityChanged(hidden: Bool)
+    case ownPackCreated(from: OwnPackSource)
+    case ownVerseAdded(source: OwnVerseSource)
+    case ankiImported(verses: Int, withHistory: Int, matched: Int)
 
     case sessionStarted(StudySessionStart)
     case sessionEnded(StudySessionSummary)
@@ -25,6 +28,20 @@ enum AnalyticsEvent: Equatable {
     case searchFoundNothing
 
     case settingChanged(setting: String, value: String)
+
+    static let ownPackLabel = "Own pack"
+
+    func redactingPacks(_ isOwn: (String) -> Bool) -> AnalyticsEvent {
+        switch self {
+        case .packOpened(let pack, let from) where isOwn(pack):
+            return .packOpened(pack: Self.ownPackLabel, from: from)
+        case .sessionStarted(var start):
+            if let pack = start.pack, isOwn(pack) { start.pack = Self.ownPackLabel }
+            return .sessionStarted(start)
+        default:
+            return self
+        }
+    }
 
     var name: String {
         switch self {
@@ -37,6 +54,9 @@ enum AnalyticsEvent: Equatable {
         case .starChanged:           return "Verse.starChanged"
         case .packsReordered:        return "Packs.reordered"
         case .packVisibilityChanged: return "Packs.visibilityChanged"
+        case .ownPackCreated:        return "OwnPack.created"
+        case .ownVerseAdded:         return "OwnPack.verseAdded"
+        case .ankiImported:          return "OwnPack.ankiImported"
         case .sessionStarted(let s): return "\(s.kind.signalPrefix).started"
         case .sessionEnded(let s):   return "\(s.kind.signalPrefix).ended"
         case .searchPerformed:       return "Search.performed"
@@ -67,6 +87,13 @@ enum AnalyticsEvent: Equatable {
             return [:]
         case .packVisibilityChanged(let hidden):
             return ["hidden": String(hidden)]
+        case .ownPackCreated(let from):
+            return ["from": from.rawValue]
+        case .ownVerseAdded(let source):
+            return ["source": source.rawValue]
+        case .ankiImported(let verses, let withHistory, let matched):
+            return ["verses": AnalyticsRange.count(verses), "withHistory": AnalyticsRange.count(withHistory),
+                    "matched": AnalyticsRange.count(matched)]
         case .sessionStarted(let s):
             return s.parameters
         case .sessionEnded(let s):
@@ -90,6 +117,8 @@ enum AnalyticsScreen: String, CaseIterable {
 enum OnboardingStart: String { case beginning, pickedVerse, restoredFromICloud }
 enum WidgetDestination: String { case read, review }
 enum PackSource: String { case shelf, search, homeCard, widget }
+enum OwnPackSource: String { case newPack, ankiImport }
+enum OwnVerseSource: String { case typed, pasted, bundledText }
 enum PackCloseMethod: String { case edgeSwipe, closeButton }
 enum VerseActionSource: String { case card, menu }
 

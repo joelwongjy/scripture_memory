@@ -84,7 +84,9 @@ enum class BibleVersion(val rawValue: String) {
             niv11 -> "NIV 2011"
         }
 
-    val packs: List<Pack> get() = if (this == niv11) niv11Packs else packsNIV84
+    val bundledPacks: List<Pack> get() = if (this == niv11) niv11Packs else packsNIV84
+
+    val packs: List<Pack> get() = bundledPacks + UserPackStore.packs
 
     companion object {
         const val storageKey = "bibleVersion"

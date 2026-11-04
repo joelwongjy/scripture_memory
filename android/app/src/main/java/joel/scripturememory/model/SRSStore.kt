@@ -52,6 +52,25 @@ class SRSStore(private val storage: ProgressStorage) {
         persist()
     }
 
+    fun importStates(incoming: List<SRSCardState>) {
+        if (incoming.isEmpty()) return
+        val updated = states.toMutableMap()
+        for (state in incoming) {
+            val existing = updated[state.key]
+            val existingSeen = existing?.lastReviewed?.timeIntervalSinceReferenceDate ?: Double.NEGATIVE_INFINITY
+            val incomingSeen = state.lastReviewed?.timeIntervalSinceReferenceDate ?: Double.NEGATIVE_INFINITY
+            if (existing == null || incomingSeen > existingSeen) updated[state.key] = state
+        }
+        states = updated
+        persist()
+    }
+
+    fun renamePack(oldName: String, newName: String) {
+        if (oldName !in inactivePackNames) return
+        inactivePackNames = inactivePackNames - oldName + newName
+        persist()
+    }
+
     fun grade(
         verse: Verse,
         grade: SRSGrade,

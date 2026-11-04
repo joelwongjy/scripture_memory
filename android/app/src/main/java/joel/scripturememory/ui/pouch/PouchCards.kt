@@ -179,7 +179,7 @@ internal fun PouchVerseCard(
             } else {
                 Row(Modifier.fillMaxWidth()) {
                     Text(
-                        verse.title,
+                        verse.title.ifEmpty { reference },
                         Modifier.weight(1f).alignBy(FirstBaseline),
                         style = CardFont.style(CardFontStyle.Title, sp(4.6f)),
                         color = PouchInk.title(dark),
@@ -194,12 +194,14 @@ internal fun PouchVerseCard(
                         color = caption,
                     )
                 }
-                Text(
-                    reference,
-                    Modifier.padding(top = (1.4f * u).dp),
-                    style = CardFont.style(CardFontStyle.Body, sp(4.6f)),
-                    color = body,
-                )
+                if (verse.title.isNotEmpty()) {
+                    Text(
+                        reference,
+                        Modifier.padding(top = (1.4f * u).dp),
+                        style = CardFont.style(CardFontStyle.Body, sp(4.6f)),
+                        color = body,
+                    )
+                }
                 FittedVerseText(
                     verse.verse,
                     lineSpacing = 0.8f * u,

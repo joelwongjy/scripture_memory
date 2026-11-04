@@ -103,6 +103,13 @@ class LearningStore(private val storage: ProgressStorage) {
         StreakStore.shared.recordToday()
     }
 
+    fun markLearnt(keys: Set<String>) {
+        val added = (keys - learntKeys).filter { it.isNotEmpty() }
+        if (added.isEmpty()) return
+        learntKeys = learntKeys + added
+        persist()
+    }
+
     fun unmarkLearnt(verse: Verse) {
         if (verse.srsKey !in learntKeys) return
         learntKeys = learntKeys - verse.srsKey

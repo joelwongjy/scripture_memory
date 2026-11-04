@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import joel.scripturememory.system.Analytics
 import joel.scripturememory.system.DeepLink
+import joel.scripturememory.system.OpenedFile
 import joel.scripturememory.ui.AppRoot
 import joel.scripturememory.ui.theme.AppTheme
 import kotlinx.coroutines.channels.Channel
@@ -20,6 +21,7 @@ import kotlinx.coroutines.channels.Channel
 class MainActivity : ComponentActivity() {
 
     private val deepLinks = Channel<DeepLink>(Channel.BUFFERED)
+    private val openedFiles = Channel<OpenedFile>(Channel.BUFFERED)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -28,7 +30,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             AppTheme {
                 SystemBars()
-                AppRoot(deepLinks)
+                AppRoot(deepLinks, openedFiles)
             }
         }
     }
@@ -42,6 +44,7 @@ class MainActivity : ComponentActivity() {
     private fun receive(intent: Intent?) {
         if (intent == null || intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY != 0) return
         DeepLink.from(intent)?.let(deepLinks::trySend)
+        OpenedFile.from(this, intent)?.let(openedFiles::trySend)
     }
 
     @Composable

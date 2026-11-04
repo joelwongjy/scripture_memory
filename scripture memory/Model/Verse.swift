@@ -6,6 +6,9 @@ struct Pack: Hashable, Codable, Identifiable {
     let color:      String
     let accentText: String
     let verses:     [Verse]
+    var userPackID: String? = nil
+
+    var isUserMade: Bool { userPackID != nil }
 }
 
 struct Verse: Hashable, Codable, Identifiable {

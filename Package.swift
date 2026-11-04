@@ -32,6 +32,9 @@ let package = Package(
                 "StudyWindow.swift",
                 "AnalyticsEvent.swift",
                 "AnkiImport.swift",
+                "AnkiVerseImport.swift",
+                "BibleReference.swift",
+                "PastedVerse.swift",
             ]
         ),
         .testTarget(

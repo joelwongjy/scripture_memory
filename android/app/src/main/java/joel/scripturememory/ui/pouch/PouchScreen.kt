@@ -48,6 +48,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -132,7 +133,10 @@ import joel.scripturememory.ui.components.UndoToastHost
 import joel.scripturememory.ui.components.UndoToastState
 import joel.scripturememory.ui.components.VerseFastScrollOverlay
 import joel.scripturememory.ui.components.pressable
+import joel.scripturememory.model.UserPackStore
+import joel.scripturememory.ui.components.PillButton
 import joel.scripturememory.ui.packs.PackCover
+import joel.scripturememory.ui.packs.PackEditorSheet
 import joel.scripturememory.ui.packs.seriesCode
 import joel.scripturememory.ui.packs.shortName
 import joel.scripturememory.ui.study.TestSessionScreen
@@ -160,19 +164,27 @@ private val completeShape = RoundedCornerShape(percent = 50)
 
 @Composable
 fun PouchScreen(
-    pack: Pack,
+    openedPack: Pack,
     startIndex: Int,
     shelf: (() -> Rect)? = null,
     animatesPouch: Boolean = true,
     onClosed: () -> Unit,
 ) {
     val bibleVersion = BibleVersion.saved()
+    val pack = openedPack.userPackID?.let { id ->
+        UserPackStore.packs.firstOrNull { it.userPackID == id }
+            ?: Pack(openedPack.name, openedPack.color, "", emptyList(), userPackID = id)
+    } ?: openedPack
     val hasVersionChoice = pack.name in BibleVersion.niv11PackNames
-    val verses = if (hasVersionChoice) {
+    val liveVerses = if (hasVersionChoice) {
         (bibleVersion.packs.firstOrNull { it.name == pack.name } ?: pack).verses
     } else {
         pack.verses
     }
+    val lastVerses = remember { arrayOf(liveVerses) }
+    if (liveVerses.isNotEmpty()) lastVerses[0] = liveVerses
+    val verses = liveVerses.ifEmpty { lastVerses[0] }
+    val packName by rememberUpdatedState(pack.name)
     val colors = AppTheme.colors
     val scope = rememberCoroutineScope()
     val covers = LocalCovers.current
@@ -193,7 +205,22 @@ fun PouchScreen(
             scope = scope,
         ).also { it.onClosed = { closed() } }
     }
-    SideEffect { c.verses = verses }
+    SideEffect {
+        c.verses = verses
+        if (c.index > verses.lastIndex) c.index = max(verses.lastIndex, 0)
+    }
+    var editingPack by remember { mutableStateOf(false) }
+    var shownCount by remember { mutableIntStateOf(liveVerses.size) }
+    LaunchedEffect(liveVerses.size) {
+        if (liveVerses.size == shownCount) return@LaunchedEffect
+        shownCount = liveVerses.size
+        if (liveVerses.isEmpty()) {
+            c.close(PackCloseMethod.closeButton)
+            return@LaunchedEffect
+        }
+        c.dropLiftedCard()
+        c.index = min(c.index, liveVerses.size - 1)
+    }
     var undoToast by remember { mutableStateOf<UndoToastState?>(null) }
     var practiceOpen by remember { mutableStateOf(false) }
     var sceneOrigin by remember { mutableStateOf(Offset.Zero) }
@@ -272,7 +299,7 @@ fun PouchScreen(
     DisposableEffect(Unit) {
         onDispose {
             tilt.stop()
-            verses.getOrNull(c.index)?.let { PackPositions.save(it, pack.name) }
+            c.verses.getOrNull(c.index)?.let { PackPositions.save(it, packName) }
         }
     }
 
@@ -321,6 +348,14 @@ fun PouchScreen(
                 c,
                 version = bibleVersion.takeIf { hasVersionChoice },
                 onVersion = ::chooseVersion,
+                onEdit = if (pack.isUserMade) {
+                    {
+                        c.dropLiftedCard()
+                        editingPack = true
+                    }
+                } else {
+                    null
+                },
                 onPractice = { startPractice(c.index) },
             )
             BoxWithConstraints(
@@ -447,6 +482,11 @@ fun PouchScreen(
             UndoToastHost(undoToast) { undoToast = it }
         }
     }
+
+    val userPackID = pack.userPackID
+    if (editingPack && userPackID != null) {
+        PackEditorSheet(userPackID, onDismiss = { editingPack = false })
+    }
 }
 
 @Composable
@@ -455,6 +495,7 @@ private fun PouchTopBar(
     c: PouchController,
     version: BibleVersion?,
     onVersion: (BibleVersion) -> Unit,
+    onEdit: (() -> Unit)?,
     onPractice: () -> Unit,
 ) {
     val colors = AppTheme.colors
@@ -486,6 +527,13 @@ private fun PouchTopBar(
                         maxLines = 1,
                         autoSize = TextAutoSize.StepBased(AppType.headline.fontSize * 0.85f, AppType.headline.fontSize, 0.25.sp),
                     )
+                    if (onEdit != null) {
+                        PillButton(
+                            "Edit",
+                            Modifier.semantics { contentDescription = "Edit Pack" },
+                            onClick = { if (c.fanned) onEdit() },
+                        )
+                    }
                     if (version != null) {
                         Box(
                             Modifier

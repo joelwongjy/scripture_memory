@@ -5,11 +5,22 @@ struct PackListView: View {
     @ObservedObject private var packPrefs = PackPreferencesStore.shared
     @ObservedObject private var learning  = LearningStore.shared
     @ObservedObject private var favorites = FavoritesStore.shared
+    @ObservedObject private var userPacks = UserPackStore.shared
+    @State private var knownPackIDs: [String] = UserPackStore.shared.userPacks.map(\.id)
 
     @State private var opened:        OpenedPack?       = nil
     @State private var searchText:    String            = ""
     @State private var showOrganizer: Bool              = false
     @State private var tileFrames                       = TileFrames()
+    @State private var editing:       EditedPack?       = nil
+    @State private var importing:     Bool              = false
+    @State private var createdPackID: String?           = nil
+
+    private struct EditedPack: Identifiable {
+        let packID: String?
+        var addsVerse = false
+        var id: String { packID ?? "new" }
+    }
 
     /// Where each tile sits on screen.
     private final class TileFrames { var byPack: [String: CGRect] = [:] }
@@ -42,6 +53,7 @@ struct PackListView: View {
         // `.searchable` bound to whichever mounted first, so the screen opened
         // already scrolled past its own large title.
         MountAfterFirstFrame {
+            ScrollViewReader { scroller in
             ScrollView {
                 if searchText.isEmpty {
                     packGrid
@@ -56,6 +68,12 @@ struct PackListView: View {
                         }
                     )
                 }
+            }
+            .onChange(of: createdPackID) { _, id in
+                guard let id else { return }
+                withAnimation(.smooth(duration: 0.24)) { scroller.scrollTo(id, anchor: .center) }
+                createdPackID = nil
+            }
             }
         }
         // Start at the top, explicitly.
@@ -77,6 +95,29 @@ struct PackListView: View {
                 Button("Edit") { showOrganizer = true }
                     .accessibilityLabel("Edit packs")
             }
+            ToolbarItem(placement: .topBarTrailing) {
+                Menu {
+                    Button {
+                        editing = EditedPack(packID: nil)
+                    } label: {
+                        Label("New Pack", systemImage: "rectangle.stack.badge.plus")
+                    }
+                    Button {
+                        importing = true
+                    } label: {
+                        Label("Import from Anki", systemImage: "square.and.arrow.down")
+                    }
+                } label: {
+                    Image(systemName: "plus")
+                }
+                .accessibilityLabel("Add Pack")
+            }
+        }
+        .sheet(item: $editing, onDismiss: revealNewPack) { item in
+            PackEditorView(packID: item.packID, addsVerseOnOpen: item.addsVerse)
+        }
+        .sheet(isPresented: $importing, onDismiss: revealNewPack) {
+            AnkiImportView()
         }
         .sheet(isPresented: $showOrganizer) {
             PackOrganizerView(allPacks: bibleVersion.packs)
@@ -98,21 +139,47 @@ struct PackListView: View {
     /// starred anything. It's presented as a pack rather than a separate screen so
     /// everything a pack can do — read, review, shuffle — works on it unchanged.
     private var packGrid: some View {
-        LazyVGrid(columns: columns, spacing: AppLayout.spacing) {
-            if let favorites = favorites.pack(in: visiblePacks) {
+        let packs = visiblePacks
+        let split = packs.firstIndex(where: \.isUserMade)
+            .flatMap { i in packs[i...].allSatisfy(\.isUserMade) ? i : nil }
+        return LazyVGrid(columns: columns, spacing: AppLayout.spacing) {
+            if let favorites = favorites.pack(in: packs) {
                 packTile(favorites)
             }
-            ForEach(visiblePacks) { pack in
+            ForEach(packs[..<(split ?? packs.count)]) { pack in
                 packTile(pack)
+            }
+            if let split {
+                Section {
+                    ForEach(packs[split...]) { pack in
+                        packTile(pack)
+                    }
+                } header: {
+                    Text("Your Packs")
+                        .font(.title3.weight(.semibold))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, AppLayout.spacing)
+                        .accessibilityAddTraits(.isHeader)
+                }
             }
         }
         .padding(.horizontal, AppLayout.screenMargin)
         .padding(.vertical, 12)
     }
 
+    private func revealNewPack() {
+        let known = Set(knownPackIDs)
+        knownPackIDs = userPacks.userPacks.map(\.id)
+        guard let new = userPacks.userPacks.last(where: { !known.contains($0.id) }) else { return }
+        createdPackID = new.name
+    }
+
     private func packTile(_ pack: Pack) -> some View {
         Button {
-            guard !pack.verses.isEmpty else { return }
+            guard !pack.verses.isEmpty else {
+                if let id = pack.userPackID { editing = EditedPack(packID: id, addsVerse: true) }
+                return
+            }
             let index = PackPositions.startIndex(for: pack, currentKey: learning.currentKey)
             Analytics.log(.packOpened(pack: pack.name, from: .shelf))
             guard !AppMotion.reduceMotion,
@@ -127,6 +194,21 @@ struct PackListView: View {
             PackCover(pack: pack, isCurrentPack: pack.name == currentPackName)
         }
         .buttonStyle(CardButtonStyle())
+        .id(pack.id)
+        .contextMenu {
+            if let id = pack.userPackID {
+                Button {
+                    editing = EditedPack(packID: id, addsVerse: true)
+                } label: {
+                    Label("Add Verse", systemImage: "plus")
+                }
+                Button {
+                    editing = EditedPack(packID: id)
+                } label: {
+                    Label("Edit Pack", systemImage: "pencil")
+                }
+            }
+        }
         .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { tileFrames.byPack[pack.id] = $0 }
         .opacity(opened?.origin != nil && opened?.pack.id == pack.id ? 0 : 1)
         .accessibilityElement(children: .ignore)

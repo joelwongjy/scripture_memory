@@ -1,0 +1,166 @@
+{
+  "description" : "BibleReference.parse and PastedVerse.parse.",
+  "pastes" : [
+    {
+      "input" : "“For God so loved the world that he gave his one and only Son, that whoever believes in him shall not perish but have eternal life.”\n\nJohn 3:16 NIV\nhttps://bible.com/bible/111/jhn.3.16.NIV",
+      "reference" : "John 3:16",
+      "text" : "For God so loved the world that he gave his one and only Son, that whoever believes in him shall not perish but have eternal life.",
+      "version" : "NIV"
+    },
+    {
+      "input" : "16 For God so loved the world that he gave his one and only Son,[a] that whoever believes in him shall not perish but have eternal life. 17 For God did not send his Son into the world to condemn the world, but to save the world through him.\nJohn 3:16-17 New International Version (NIV)",
+      "reference" : "John 3:16-17",
+      "text" : "For God so loved the world that he gave his one and only Son, that whoever believes in him shall not perish but have eternal life. For God did not send his Son into the world to condemn the world, but to save the world through him.",
+      "version" : "NIV"
+    },
+    {
+      "input" : "Romans 8:28 ESV\nAnd we know that for those who love God all things work together for good, for those who are called according to his purpose.",
+      "reference" : "Romans 8:28",
+      "text" : "And we know that for those who love God all things work together for good, for those who are called according to his purpose.",
+      "version" : "ESV"
+    },
+    {
+      "input" : "Trust in the LORD with all your heart and lean not on your own understanding; Proverbs 3:5 (NIV)",
+      "reference" : "Proverbs 3:5",
+      "text" : "Trust in the LORD with all your heart and lean not on your own understanding;",
+      "version" : "NIV"
+    },
+    {
+      "input" : "Philippians 4:13 - I can do all this through him who gives me strength.",
+      "reference" : "Philippians 4:13",
+      "text" : "I can do all this through him who gives me strength."
+    },
+    {
+      "input" : "I can do all this through him who gives me strength.",
+      "text" : "I can do all this through him who gives me strength."
+    },
+    {
+      "input" : "",
+      "text" : ""
+    }
+  ],
+  "references" : [
+    {
+      "display" : "John 3:16",
+      "input" : "John 3:16",
+      "usfm" : "JHN.3.16"
+    },
+    {
+      "display" : "John 3:16",
+      "input" : "jn 3 16",
+      "usfm" : "JHN.3.16"
+    },
+    {
+      "display" : "Romans 8:28-29",
+      "input" : "Rom 8:28-29",
+      "usfm" : "ROM.8.28-ROM.8.29"
+    },
+    {
+      "display" : "1 Corinthians 13:4-7",
+      "input" : "1 Cor 13:4-7",
+      "usfm" : "1CO.13.4-1CO.13.7"
+    },
+    {
+      "display" : "1 John 1:9",
+      "input" : "I John 1:9",
+      "usfm" : "1JN.1.9"
+    },
+    {
+      "display" : "1 John 1:9",
+      "input" : "1jn1:9",
+      "usfm" : "1JN.1.9"
+    },
+    {
+      "display" : "Psalm 119:9,11",
+      "input" : "Psalms 119:9,11",
+      "usfm" : "PSA.119.9+PSA.119.11"
+    },
+    {
+      "display" : "Psalm 143:8,10",
+      "input" : "Ps 143:8, 10",
+      "usfm" : "PSA.143.8+PSA.143.10"
+    },
+    {
+      "display" : "Jude 1:3",
+      "input" : "Jude 3",
+      "usfm" : "JUD.1.3"
+    },
+    {
+      "display" : "Philippians 4:6-7",
+      "input" : "Phil 4:6–7",
+      "usfm" : "PHP.4.6-PHP.4.7"
+    },
+    {
+      "display" : "John 3:16-4:2",
+      "input" : "john 3:16-4:2",
+      "usfm" : "JHN.3.16-JHN.4.2"
+    },
+    {
+      "display" : "Genesis 1",
+      "input" : "Genesis 1",
+      "usfm" : "GEN.1"
+    },
+    {
+      "input" : "Hello 3:16"
+    },
+    {
+      "display" : "Matthew 6:33",
+      "input" : "Mt 6:33a",
+      "usfm" : "MAT.6.33"
+    },
+    {
+      "display" : "2 Timothy 3:16-17",
+      "input" : "Second Timothy 3:16-17",
+      "usfm" : "2TI.3.16-2TI.3.17"
+    },
+    {
+      "display" : "Song of Songs 2:4",
+      "input" : "Song 2:4",
+      "usfm" : "SNG.2.4"
+    },
+    {
+      "display" : "Isaiah 41:10",
+      "input" : "Is 41:10",
+      "usfm" : "ISA.41.10"
+    },
+    {
+      "display" : "Revelation 22:21",
+      "input" : "Rev 22:21",
+      "usfm" : "REV.22.21"
+    },
+    {
+      "input" : "Rev 23:1"
+    },
+    {
+      "display" : "Obadiah 1:3",
+      "input" : "Obadiah 1:3",
+      "usfm" : "OBA.1.3"
+    },
+    {
+      "input" : ""
+    },
+    {
+      "input" : "3:16"
+    },
+    {
+      "display" : "2 Timothy 2:15",
+      "input" : "2 Tim. 2:15",
+      "usfm" : "2TI.2.15"
+    },
+    {
+      "display" : "Proverbs 3:5-6",
+      "input" : "Prov 3:5-6",
+      "usfm" : "PRO.3.5-PRO.3.6"
+    },
+    {
+      "display" : "Ephesians 2:8,9",
+      "input" : "Eph 2:8,9",
+      "usfm" : "EPH.2.8+EPH.2.9"
+    },
+    {
+      "display" : "1 Thessalonians 5:16-18",
+      "input" : "1 Thess 5:16-18",
+      "usfm" : "1TH.5.16-1TH.5.18"
+    }
+  ]
+}

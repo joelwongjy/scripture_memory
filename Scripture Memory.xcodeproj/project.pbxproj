@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D1E2F3A4B5C6000000000B0B /* ScriptureShareExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = D1E2F3A4B5C6000000000B01 /* ScriptureShareExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		A1B2C3D4E5F600000000A00B /* ScriptureWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F600000000A001 /* ScriptureWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		B7D1E2F3A4B5C6D7E8F90003 /* TelemetryDeck in Frameworks */ = {isa = PBXBuildFile; productRef = B7D1E2F3A4B5C6D7E8F90002 /* TelemetryDeck */; };
 		C8E2F3A4B5C6D7E8F9A00003 /* libzstd in Frameworks */ = {isa = PBXBuildFile; productRef = C8E2F3A4B5C6D7E8F9A00002 /* libzstd */; };
@@ -20,6 +21,13 @@
 			remoteGlobalIDString = A1B2C3D4E5F600000000A003;
 			remoteInfo = ScriptureWidgetExtension;
 		};
+		D1E2F3A4B5C6000000000B0D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 53709C002DBE80FE000BA559 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D1E2F3A4B5C6000000000B03;
+			remoteInfo = ScriptureShareExtension;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -30,6 +38,7 @@
 			dstSubfolderSpec = 13;
 			files = (
 				A1B2C3D4E5F600000000A00B /* ScriptureWidgetExtension.appex in Embed Foundation Extensions */,
+				D1E2F3A4B5C6000000000B0B /* ScriptureShareExtension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -39,6 +48,7 @@
 /* Begin PBXFileReference section */
 		53709C082DBE80FE000BA559 /* Scripture Memory.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Scripture Memory.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		A1B2C3D4E5F600000000A001 /* ScriptureWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ScriptureWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		D1E2F3A4B5C6000000000B01 /* ScriptureShareExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ScriptureShareExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -48,6 +58,13 @@
 				Info.plist,
 			);
 			target = A1B2C3D4E5F600000000A003 /* ScriptureWidgetExtension */;
+		};
+		D1E2F3A4B5C6000000000B0E /* Exceptions for "ScriptureShare" folder in "ScriptureShareExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = D1E2F3A4B5C6000000000B03 /* ScriptureShareExtension */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -63,6 +80,14 @@
 				A1B2C3D4E5F600000000A00E /* Exceptions for "ScriptureWidget" folder in "ScriptureWidgetExtension" target */,
 			);
 			path = ScriptureWidget;
+			sourceTree = "<group>";
+		};
+		D1E2F3A4B5C6000000000B02 /* ScriptureShare */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				D1E2F3A4B5C6000000000B0E /* Exceptions for "ScriptureShare" folder in "ScriptureShareExtension" target */,
+			);
+			path = ScriptureShare;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -84,6 +109,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		D1E2F3A4B5C6000000000B05 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -92,6 +124,7 @@
 			children = (
 				53709C0A2DBE80FE000BA559 /* scripture memory */,
 				A1B2C3D4E5F600000000A002 /* ScriptureWidget */,
+				D1E2F3A4B5C6000000000B02 /* ScriptureShare */,
 				53709C092DBE80FE000BA559 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -101,6 +134,7 @@
 			children = (
 				53709C082DBE80FE000BA559 /* Scripture Memory.app */,
 				A1B2C3D4E5F600000000A001 /* ScriptureWidgetExtension.appex */,
+				D1E2F3A4B5C6000000000B01 /* ScriptureShareExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -121,6 +155,7 @@
 			);
 			dependencies = (
 				A1B2C3D4E5F600000000A00C /* PBXTargetDependency */,
+				D1E2F3A4B5C6000000000B0C /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				53709C0A2DBE80FE000BA559 /* scripture memory */,
@@ -156,6 +191,28 @@
 			productReference = A1B2C3D4E5F600000000A001 /* ScriptureWidgetExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
+		D1E2F3A4B5C6000000000B03 /* ScriptureShareExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D1E2F3A4B5C6000000000B07 /* Build configuration list for PBXNativeTarget "ScriptureShareExtension" */;
+			buildPhases = (
+				D1E2F3A4B5C6000000000B04 /* Sources */,
+				D1E2F3A4B5C6000000000B05 /* Frameworks */,
+				D1E2F3A4B5C6000000000B06 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				D1E2F3A4B5C6000000000B02 /* ScriptureShare */,
+			);
+			name = ScriptureShareExtension;
+			packageProductDependencies = (
+			);
+			productName = ScriptureShareExtension;
+			productReference = D1E2F3A4B5C6000000000B01 /* ScriptureShareExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -170,6 +227,9 @@
 						CreatedOnToolsVersion = 16.3;
 					};
 					A1B2C3D4E5F600000000A003 = {
+						CreatedOnToolsVersion = 16.3;
+					};
+					D1E2F3A4B5C6000000000B03 = {
 						CreatedOnToolsVersion = 16.3;
 					};
 				};
@@ -194,6 +254,7 @@
 			targets = (
 				53709C072DBE80FE000BA559 /* Scripture Memory */,
 				A1B2C3D4E5F600000000A003 /* ScriptureWidgetExtension */,
+				D1E2F3A4B5C6000000000B03 /* ScriptureShareExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -207,6 +268,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		A1B2C3D4E5F600000000A006 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D1E2F3A4B5C6000000000B06 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -230,6 +298,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		D1E2F3A4B5C6000000000B04 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -237,6 +312,11 @@
 			isa = PBXTargetDependency;
 			target = A1B2C3D4E5F600000000A003 /* ScriptureWidgetExtension */;
 			targetProxy = A1B2C3D4E5F600000000A00D /* PBXContainerItemProxy */;
+		};
+		D1E2F3A4B5C6000000000B0C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D1E2F3A4B5C6000000000B03 /* ScriptureShareExtension */;
+			targetProxy = D1E2F3A4B5C6000000000B0D /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -513,6 +593,66 @@
 			};
 			name = Release;
 		};
+		D1E2F3A4B5C6000000000B08 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = ScriptureShare/ScriptureShare.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 20;
+				DEVELOPMENT_TEAM = 767L2N7FG8;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ScriptureShare/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Scripture Memory";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.3.1;
+				PRODUCT_BUNDLE_IDENTIFIER = "joel.scripture-memory.ScriptureShare";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		D1E2F3A4B5C6000000000B09 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = ScriptureShare/ScriptureShare.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 20;
+				DEVELOPMENT_TEAM = 767L2N7FG8;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ScriptureShare/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Scripture Memory";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.3.1;
+				PRODUCT_BUNDLE_IDENTIFIER = "joel.scripture-memory.ScriptureShare";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -539,6 +679,15 @@
 			buildConfigurations = (
 				A1B2C3D4E5F600000000A008 /* Debug */,
 				A1B2C3D4E5F600000000A009 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		D1E2F3A4B5C6000000000B07 /* Build configuration list for PBXNativeTarget "ScriptureShareExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D1E2F3A4B5C6000000000B08 /* Debug */,
+				D1E2F3A4B5C6000000000B09 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

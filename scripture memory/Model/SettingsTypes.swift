@@ -145,5 +145,7 @@ enum BibleVersion: String, CaseIterable {
         return Pack(name: pack.name, color: pack.color, accentText: pack.accentText, verses: verses)
     }
 
-    var packs: [Pack] { self == .niv11 ? Self.niv11Packs : packsNIV84 }
+    var bundledPacks: [Pack] { self == .niv11 ? Self.niv11Packs : packsNIV84 }
+
+    var packs: [Pack] { bundledPacks + UserPackStore.packs }
 }

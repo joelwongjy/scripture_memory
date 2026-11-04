@@ -9,7 +9,7 @@ import SwiftUI
 /// lift it out and turn it over to its reference, tap it to check the verse,
 /// and tap outside to put it back.
 struct PouchView: View {
-    let pack: Pack
+    let openedPack: Pack
     /// The pack's tile on the shelf, in global coordinates, to fly out of and
     /// back into. Asked again on the way back, as the tile moves if the screen
     /// has rotated since.
@@ -65,6 +65,8 @@ struct PouchView: View {
 
     @StateObject private var tilt = TiltMonitor()
     @ObservedObject private var learning = LearningStore.shared
+    @ObservedObject private var userPacks = UserPackStore.shared
+    @State private var editingPack = false
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var scenePhase
@@ -79,6 +81,12 @@ struct PouchView: View {
     /// How far in from the leading edge a swipe counts as the edge swipe.
     private static let edgeWidth: CGFloat = 28
 
+    private var pack: Pack {
+        guard let id = openedPack.userPackID else { return openedPack }
+        return UserPackStore.packs.first { $0.userPackID == id } ?? Pack(name: openedPack.name, color: openedPack.color,
+                                                                           accentText: "", verses: [], userPackID: id)
+    }
+
     private var hasVersionChoice: Bool { BibleVersion.niv11PackNames.contains(pack.name) }
 
     private var verses: [Verse] {
@@ -90,7 +98,7 @@ struct PouchView: View {
          onPutBack: (() -> Void)? = nil) {
         let reduce = AppMotion.reduceMotion || !animatesPouch
         let start = min(max(startIndex, 0), max(pack.verses.count - 1, 0))
-        self.pack = pack
+        self.openedPack = pack
         self.shelf = shelf
         self.onPutBack = onPutBack
         self.animatesPouch = animatesPouch
@@ -115,6 +123,15 @@ struct PouchView: View {
                             onCardShown: { lastPractised = $0 })
         }
         .onAppear { appeared() }
+        .sheet(isPresented: $editingPack) {
+            if let id = pack.userPackID { PackEditorView(packID: id) }
+        }
+        .onChange(of: verses.count) { _, count in
+            guard count > 0 else { close(.closeButton); return }
+            dropLiftedCard()
+            index = min(index, count - 1)
+            if let listIndex { self.listIndex = min(listIndex, count - 1) }
+        }
         .analyticsScreen(.pack)
         .onChange(of: fanned) { _, out in out ? tilt.stop() : tilt.start() }
         .onChange(of: scenePhase) { _, phase in
@@ -426,7 +443,13 @@ struct PouchView: View {
 
     private func title(columns: Int, wraps: Bool) -> some View {
         VStack(spacing: 1) {
-            if hasVersionChoice {
+            if pack.isUserMade {
+                if wraps {
+                    VStack(spacing: 2) { packName; editPill }
+                } else {
+                    HStack(spacing: 6) { packName; editPill }
+                }
+            } else if hasVersionChoice {
                 if wraps {
                     VStack(spacing: 2) { packName; versionPill }
                 } else {
@@ -442,7 +465,7 @@ struct PouchView: View {
                 .monospacedDigit()
         }
         .lineLimit(1)
-        .accessibilityElement(children: hasVersionChoice ? .contain : .combine)
+        .accessibilityElement(children: hasVersionChoice || pack.isUserMade ? .contain : .combine)
     }
 
     private var packName: some View {
@@ -470,6 +493,29 @@ struct PouchView: View {
                 .buttonStyle(.plain)
                 .accessibilityLabel("Bible Version")
                 .accessibilityValue(bibleVersion.displayName)
+            }
+    }
+
+    private var editPill: some View {
+        Text("Edit")
+            .font(.subheadline.weight(.semibold))
+            .padding(.horizontal, 8)
+            .padding(.vertical, 2)
+            .background(Color(.tertiarySystemFill), in: Capsule())
+            .fixedSize()
+            .layoutPriority(1)
+            .accessibilityHidden(true)
+            .overlay {
+                Button {
+                    dropLiftedCard()
+                    editingPack = true
+                } label: {
+                    Color.clear
+                        .frame(minHeight: AppLayout.minimumTapSize)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Edit Pack")
             }
     }
 

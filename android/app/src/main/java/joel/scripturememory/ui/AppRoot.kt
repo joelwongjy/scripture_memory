@@ -1,6 +1,8 @@
 package joel.scripturememory.ui
 
+import android.content.Context
 import android.net.Uri
+import java.io.File
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -14,8 +16,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
-
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
@@ -23,11 +25,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import joel.scripturememory.R
 import joel.scripturememory.model.AnalyticsEvent
+import joel.scripturememory.model.AnkiImport
+import joel.scripturememory.model.AnkiImporter
 import joel.scripturememory.model.AppDefaults
 import joel.scripturememory.model.BibleVersion
 import joel.scripturememory.model.LearningStore
@@ -44,10 +49,12 @@ import joel.scripturememory.model.TestSession
 import joel.scripturememory.model.TestSessionViewModel
 import joel.scripturememory.model.VerseCatalog
 import joel.scripturememory.model.WidgetDestination
+import joel.scripturememory.model.read
 import joel.scripturememory.system.Analytics
 import joel.scripturememory.system.Background
 import joel.scripturememory.system.DeepLink
 import joel.scripturememory.system.NotificationManager
+import joel.scripturememory.system.OpenedFile
 import joel.scripturememory.ui.components.CoverHost
 import joel.scripturememory.ui.components.CoverTransition
 import joel.scripturememory.ui.components.Covers
@@ -61,6 +68,7 @@ import joel.scripturememory.ui.components.TabBarHeight
 import joel.scripturememory.ui.components.TabItem
 import joel.scripturememory.ui.home.HomeScreen
 import joel.scripturememory.ui.onboarding.LearningSetupScreen
+import joel.scripturememory.ui.packs.AnkiImportSheet
 import joel.scripturememory.ui.packs.PackListScreen
 import joel.scripturememory.ui.pouch.PouchScreen
 import joel.scripturememory.ui.quiz.TestSetupScreen
@@ -69,10 +77,12 @@ import joel.scripturememory.ui.settings.SettingsScreen
 import joel.scripturememory.ui.study.DailyReviewScreen
 import joel.scripturememory.ui.theme.AppTheme
 import joel.scripturememory.widget.WidgetBridge
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 private const val hasOnboardedKey = "hasOnboardedLearning.v1"
 private const val homeTab = 0
@@ -184,7 +194,7 @@ private class AppShell(val covers: Covers, private val selectTab: (Int) -> Unit)
 
 @OptIn(FlowPreview::class)
 @Composable
-fun AppRoot(deepLinks: ReceiveChannel<DeepLink>) {
+fun AppRoot(deepLinks: ReceiveChannel<DeepLink>, openedFiles: ReceiveChannel<OpenedFile>) {
     var selected by rememberSaveable { mutableIntStateOf(homeTab) }
     val shell = remember {
         AppShell(Covers()) { selected = it }.also { it.startOnboardingIfNeeded() }
@@ -194,6 +204,8 @@ fun AppRoot(deepLinks: ReceiveChannel<DeepLink>) {
     val holders = tabs.map { rememberSaveableStateHolder() }
     val navBar = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val hasOnboarded = shell.hasOnboarded
+    val context = LocalContext.current
+    var ankiFile by remember { mutableStateOf<File?>(null) }
 
     LaunchedEffect(hasOnboarded) {
         if (hasOnboarded) StreakStore.shared.recordToday()
@@ -219,6 +231,11 @@ fun AppRoot(deepLinks: ReceiveChannel<DeepLink>) {
             }.debounce(300).collect { WidgetBridge.sync() }
         }
         launch { LearningStore.shared.featuredVerseDidChange.collect { WidgetBridge.sync() } }
+        launch {
+            for (opened in openedFiles) {
+                withContext(Dispatchers.IO) { acceptedAnkiFile(context, opened) }?.let { ankiFile = it }
+            }
+        }
         for (link in deepLinks) shell.handle(link)
     }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
@@ -264,7 +281,22 @@ fun AppRoot(deepLinks: ReceiveChannel<DeepLink>) {
                 CoverHost(covers)
             }
         }
+        ankiFile?.let { file ->
+            key(file) { AnkiImportSheet(file, onDismiss = { ankiFile = null }) }
+        }
     }
+}
+
+private fun acceptedAnkiFile(context: Context, opened: OpenedFile): File? {
+    val file = runCatching { OpenedFile.copyToCache(context, opened.uri, fallbackExtension = "apkg") }.getOrNull()
+        ?: return null
+    if (opened.isNamedAnki) return file
+    val readable = runCatching {
+        val plan = AnkiImporter.plan(AnkiImport.read(file))
+        plan.decks.isNotEmpty() || plan.matches.isNotEmpty()
+    }.getOrDefault(false)
+    if (!readable) file.delete()
+    return file.takeIf { readable }
 }
 
 @Composable

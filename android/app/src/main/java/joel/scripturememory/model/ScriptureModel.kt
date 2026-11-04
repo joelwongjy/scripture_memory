@@ -19,6 +19,7 @@ object ScriptureModel {
         IdentityMigration.runIfNeeded(defaults)
         NewCardCap.migrateIfNeeded(defaults)
 
+        UserPackStore.shared = UserPackStore(ProgressStorage.shared)
         PackPreferencesStore.shared = PackPreferencesStore(ProgressStorage.shared)
         SRSStore.shared = SRSStore(ProgressStorage.shared)
         StreakStore.shared = StreakStore(ProgressStorage.shared)

@@ -30,6 +30,18 @@ class PackPreferencesStore(private val storage: ProgressStorage) {
         storage.set(order, orderKey)
     }
 
+    fun renamePack(oldName: String, newName: String) {
+        val i = order.indexOf(oldName)
+        if (i >= 0) {
+            order = order.toMutableList().also { it[i] = newName }
+            storage.set(order, orderKey)
+        }
+        if (oldName in hidden) {
+            hidden = hidden - oldName + newName
+            storage.set(hidden.toList(), hiddenKey)
+        }
+    }
+
     fun reset() {
         order = emptyList()
         hidden = emptySet()

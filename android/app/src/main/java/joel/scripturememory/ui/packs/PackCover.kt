@@ -52,6 +52,7 @@ import androidx.compose.ui.unit.sp
 import joel.scripturememory.R
 import joel.scripturememory.model.FavoritesStore
 import joel.scripturememory.model.Pack
+import joel.scripturememory.model.UserPack
 import joel.scripturememory.model.VerseNumbering
 import joel.scripturememory.ui.components.Icon
 import joel.scripturememory.ui.components.Text
@@ -222,6 +223,7 @@ private fun CurrentPackBadge(modifier: Modifier = Modifier) {
 @Composable
 private fun CoverContent(pack: Pack) {
     when {
+        pack.isUserMade -> OyoCover(pack)
         pack.isFavorites -> FavoritesCover(pack)
         pack.isDEP -> DepCover(pack)
         pack.isTMS180 -> Tms180Cover(pack)
@@ -483,6 +485,58 @@ private fun TmsCover(pack: Pack) {
                 Text("네비게이토", style = style, color = ink, maxLines = 1)
                 Icon(R.drawable.ic_moon_fill, size = 11.dp, tint = ink)
                 Text("출판사", style = style, color = ink, maxLines = 1)
+            }
+        }
+    }
+}
+
+@Composable
+private fun OyoCover(pack: Pack) {
+    val ink = pack.inkColor.copy(alpha = 0.94f)
+    Box(Modifier.fillMaxSize().background(pack.fieldColor)) {
+        Column(
+            Modifier.fillMaxSize().padding(start = contentInset, end = contentInset, top = 16.dp, bottom = 14.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                "자신만의 성경암송을 위한 빈카드",
+                style = type(13f, FontWeight.Medium, tracking = 0.6f),
+                color = ink,
+                maxLines = 1,
+                autoSize = TextAutoSize.StepBased(7.8.sp, 13.sp, 0.25.sp),
+            )
+            Text(
+                "(${UserPack.subtitle} Card)",
+                Modifier.padding(top = 2.dp),
+                style = type(11f, family = SerifFamily),
+                color = ink,
+                maxLines = 1,
+            )
+            Text(
+                pack.name,
+                Modifier.padding(top = 4.dp),
+                style = type(58f, family = SerifFamily),
+                color = ink,
+                maxLines = 1,
+                autoSize = TextAutoSize.StepBased(18.5.sp, 58.sp, 0.5.sp),
+            )
+            Text("카드", style = type(22f, FontWeight.Bold, tracking = 2f), color = ink, maxLines = 1)
+            Spacer(Modifier.weight(1f))
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                val footer = type(12f, FontWeight.SemiBold)
+                Text("네비게이토", style = footer, color = ink, maxLines = 1)
+                Icon(R.drawable.ic_moon_fill, size = 9.dp, tint = ink)
+                Text("출판사", style = footer, color = ink, maxLines = 1)
+                Spacer(Modifier.weight(1f))
+                Text(
+                    if (pack.verses.size == 1) "1 card" else "${pack.verses.size} cards",
+                    Modifier
+                        .border(0.8.dp, pack.inkColor.copy(alpha = 0.8f), RoundedCornerShape(2.dp))
+                        .padding(horizontal = 5.dp, vertical = 1.dp),
+                    style = type(11f, FontWeight.Medium),
+                    color = ink,
+                    maxLines = 1,
+                )
             }
         }
     }

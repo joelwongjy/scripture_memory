@@ -64,6 +64,14 @@ final class AnalyticsEventTests: XCTestCase {
         XCTAssertNil(quiz.parameters["again"])
     }
 
+    func testOwnPackEventsCarryNoNamesOrText() {
+        XCTAssertEqual(AnalyticsEvent.ownVerseAdded(source: .pasted).parameters, ["source": "pasted"])
+        XCTAssertEqual(AnalyticsEvent.ankiImported(verses: 34, withHistory: 1, matched: 0).parameters,
+                       ["verses": "21-50", "withHistory": "1", "matched": "0"])
+        XCTAssertEqual(AnalyticsEvent.packOpened(pack: "Romans", from: .shelf).redactingPacks { $0 == "Romans" },
+                       .packOpened(pack: AnalyticsEvent.ownPackLabel, from: .shelf))
+    }
+
     func testSearchNeverCarriesTheQuery() {
         let event = AnalyticsEvent.searchResultOpened(rank: 3, matchedOnReference: false)
         XCTAssertEqual(event.parameters, ["rank": "2-5", "matchedOn": "text"])

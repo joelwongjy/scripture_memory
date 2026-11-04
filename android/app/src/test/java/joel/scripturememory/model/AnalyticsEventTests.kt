@@ -78,6 +78,19 @@ class AnalyticsEventTests {
     }
 
     @Test
+    fun testOwnPackEventsCarryNoNamesOrText() {
+        assertEquals(mapOf("source" to "pasted"), AnalyticsEvent.OwnVerseAdded(OwnVerseSource.pasted).parameters)
+        assertEquals(
+            mapOf("verses" to "21-50", "withHistory" to "1", "matched" to "0"),
+            AnalyticsEvent.AnkiImported(verses = 34, withHistory = 1, matched = 0).parameters,
+        )
+        assertEquals(
+            AnalyticsEvent.PackOpened(AnalyticsEvent.ownPackLabel, PackSource.shelf),
+            AnalyticsEvent.PackOpened("Romans", PackSource.shelf).redactingPacks { it == "Romans" },
+        )
+    }
+
+    @Test
     fun testSearchNeverCarriesTheQuery() {
         val event = AnalyticsEvent.SearchResultOpened(3, false)
         assertEquals(mapOf("rank" to "2-5", "matchedOn" to "text"), event.parameters)

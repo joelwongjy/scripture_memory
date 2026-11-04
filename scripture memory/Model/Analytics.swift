@@ -49,7 +49,9 @@ enum Analytics {
 
     static func log(_ event: AnalyticsEvent) {
         guard started else { return }
-        sinks.forEach { $0.send(event) }
+        let own = Set(UserPackStore.packs.map(\.name))
+        let safe = event.redactingPacks { own.contains($0) }
+        sinks.forEach { $0.send(safe) }
     }
 }
 
