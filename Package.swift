@@ -31,6 +31,7 @@ let package = Package(
                 "PackListLayout.swift",
                 "StudyWindow.swift",
                 "AnalyticsEvent.swift",
+                "AnkiImport.swift",
             ]
         ),
         .testTarget(

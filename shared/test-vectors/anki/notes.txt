@@ -1,0 +1,11 @@
+#separator:tab
+#html:true
+#guid column:1
+#notetype column:2
+#deck column:3
+#tags column:7
+a1B2c3	Verse	Verses::Romans	Romans 8:28	"And we know that in all things God works for the good<br>of those who love him"	Assurance	tms assurance
+d4E5f6	Basic	Verses	"He said ""Come""
+and follow"	{{c1::Peter::who}} &amp; Andrew		disciples
+
+g7H8i9	Basic	Verses	Psalm 23:1	The <i>Lord</i> is my shepherd,&nbsp;I lack nothing.		

@@ -12,6 +12,8 @@ junit = "4.13.2"
 androidxTestRunner = "1.6.2"
 playPublisher = "4.1.1"
 telemetryDeck = "7.3.0"
+zstdJni = "1.5.7-24"
+sqliteJdbc = "3.53.4.0"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
@@ -33,6 +35,8 @@ kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-t
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
 telemetrydeck = { module = "com.telemetrydeck:kotlin-sdk", version.ref = "telemetryDeck" }
 junit = { module = "junit:junit", version.ref = "junit" }
+zstd-jni = { module = "com.github.luben:zstd-jni", version.ref = "zstdJni" }
+sqlite-jdbc = { module = "org.xerial:sqlite-jdbc", version.ref = "sqliteJdbc" }
 androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidxTestRunner" }
 
 [plugins]

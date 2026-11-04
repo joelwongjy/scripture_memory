@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		A1B2C3D4E5F600000000A00B /* ScriptureWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F600000000A001 /* ScriptureWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		B7D1E2F3A4B5C6D7E8F90003 /* TelemetryDeck in Frameworks */ = {isa = PBXBuildFile; productRef = B7D1E2F3A4B5C6D7E8F90002 /* TelemetryDeck */; };
+		C8E2F3A4B5C6D7E8F9A00003 /* libzstd in Frameworks */ = {isa = PBXBuildFile; productRef = C8E2F3A4B5C6D7E8F9A00002 /* libzstd */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -72,6 +73,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				B7D1E2F3A4B5C6D7E8F90003 /* TelemetryDeck in Frameworks */,
+				C8E2F3A4B5C6D7E8F9A00003 /* libzstd in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -126,6 +128,7 @@
 			name = "Scripture Memory";
 			packageProductDependencies = (
 				B7D1E2F3A4B5C6D7E8F90002 /* TelemetryDeck */,
+				C8E2F3A4B5C6D7E8F9A00002 /* libzstd */,
 			);
 			productName = "scripture memory";
 			productReference = 53709C082DBE80FE000BA559 /* Scripture Memory.app */;
@@ -182,6 +185,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				B7D1E2F3A4B5C6D7E8F90001 /* XCRemoteSwiftPackageReference "SwiftSDK" */,
+				C8E2F3A4B5C6D7E8F9A00001 /* XCRemoteSwiftPackageReference "zstd" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 53709C092DBE80FE000BA559 /* Products */;
@@ -550,6 +554,14 @@
 				minimumVersion = 2.14.2;
 			};
 		};
+		C8E2F3A4B5C6D7E8F9A00001 /* XCRemoteSwiftPackageReference "zstd" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/facebook/zstd";
+			requirement = {
+				kind = exactVersion;
+				version = 1.5.7;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -557,6 +569,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = B7D1E2F3A4B5C6D7E8F90001 /* XCRemoteSwiftPackageReference "SwiftSDK" */;
 			productName = TelemetryDeck;
+		};
+		C8E2F3A4B5C6D7E8F9A00002 /* libzstd */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C8E2F3A4B5C6D7E8F9A00001 /* XCRemoteSwiftPackageReference "zstd" */;
+			productName = libzstd;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
