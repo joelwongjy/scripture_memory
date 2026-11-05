@@ -212,7 +212,7 @@ struct PackListView: View {
         .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { tileFrames.byPack[pack.id] = $0 }
         .opacity(opened?.origin != nil && opened?.pack.id == pack.id ? 0 : 1)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(pack.name), \(pack.verses.count) cards")
+        .accessibilityLabel(pack.verses.count == 1 ? "\(pack.name), 1 card" : "\(pack.name), \(pack.verses.count) cards")
         .accessibilityAddTraits(.isButton)
     }
 }

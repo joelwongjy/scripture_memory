@@ -5,6 +5,7 @@ struct AnkiImportView: View {
     var initialURL: URL? = nil
 
     @Environment(\.dismiss) private var dismiss
+    @ObservedObject private var inbox = AnkiFileInbox.shared
     @State private var stage: Stage = .intro
     @State private var choosing = false
     @State private var decks: [AnkiImporter.DeckChoice] = []
@@ -36,6 +37,13 @@ struct AnkiImportView: View {
         }
         .task {
             if let initialURL { read(initialURL) }
+        }
+        .onAppear { inbox.openImports += 1 }
+        .onDisappear { inbox.openImports -= 1 }
+        .onReceive(inbox.$url.compactMap { $0 }) { url in
+            inbox.url = nil
+            choosing = false
+            read(url)
         }
         .interactiveDismissDisabled(isReviewing)
     }

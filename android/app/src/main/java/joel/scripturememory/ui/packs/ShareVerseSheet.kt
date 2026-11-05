@@ -8,11 +8,14 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextRange
@@ -65,6 +68,7 @@ fun ShareVerseSheet(
     }
     var choosingTranslation by remember { mutableStateOf(false) }
     var choosingPack by remember { mutableStateOf(false) }
+    val referenceFocus = remember { FocusRequester() }
 
     val reference = BibleReference.parse(referenceText.text)
     val trimmedText = text.text.trimmingWhitespacesAndNewlines()
@@ -91,6 +95,8 @@ fun ShareVerseSheet(
             ),
         )
     }
+
+    LaunchedEffect(Unit) { if (referenceText.text.isEmpty()) referenceFocus.requestFocus() }
 
     AppSheet(onDismiss = onDismiss, fullHeight = true) { sheet ->
         SheetHeader(
@@ -123,6 +129,7 @@ fun ShareVerseSheet(
                         "Reference",
                         value = referenceText,
                         onValueChange = { referenceText = it },
+                        modifier = Modifier.focusRequester(referenceFocus),
                         placeholder = "Romans 8:28",
                         keyboardOptions = KeyboardOptions(
                             capitalization = KeyboardCapitalization.Words,

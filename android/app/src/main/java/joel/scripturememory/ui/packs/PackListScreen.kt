@@ -170,7 +170,7 @@ fun PackListScreen() {
                         .onGloballyPositioned { tileFrames.byPack[pack.id] = Rect(it.positionInRoot(), it.size.toSize()) }
                         .graphicsLayer { alpha = if (openedPack == pack.id) 0f else 1f }
                         .clearAndSetSemantics {
-                            contentDescription = "${pack.name}, ${pack.verses.size} cards"
+                            contentDescription = if (pack.verses.size == 1) "${pack.name}, 1 card" else "${pack.name}, ${pack.verses.size} cards"
                             role = Role.Button
                             onClick {
                                 open(pack)

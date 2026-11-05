@@ -10,6 +10,7 @@ struct ShareVerseView: View {
     @State private var text: String
     @State private var title = ""
     @State private var packID: String
+    @FocusState private var referenceFocused: Bool
 
     private static let newPackID = "new"
 
@@ -44,6 +45,7 @@ struct ShareVerseView: View {
                             .multilineTextAlignment(.trailing)
                             .textInputAutocapitalization(.words)
                             .autocorrectionDisabled()
+                            .focused($referenceFocused)
                     }
                     LabeledContent("Topic") {
                         TextField("Topic", text: $title, prompt: Text("Optional"))
@@ -80,6 +82,7 @@ struct ShareVerseView: View {
                     Text("Appears when you next open Scripture Memory.")
                 }
             }
+            .onAppear { if referenceText.isEmpty { referenceFocused = true } }
             .navigationTitle("Add Verse")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

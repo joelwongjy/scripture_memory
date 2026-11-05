@@ -137,6 +137,8 @@ struct PastedVerse: Equatable {
             .trimmingCharacters(in: .whitespaces)
         if t.count >= 2, t.first == "\"", t.last == "\"", t.dropFirst().dropLast().contains("\"") == false {
             t = String(t.dropFirst().dropLast())
+        } else if t.filter({ $0 == "\"" }).count == 1, t.first == "\"" || t.last == "\"" {
+            t = t.replacingOccurrences(of: "\"", with: "").trimmingCharacters(in: .whitespaces)
         }
         return t
     }

@@ -35,6 +35,9 @@ final class BibleReferenceVectorTests: XCTestCase {
     ]
 
     private static let pasteInputs = [
+        "Do not be anxious about anything, but in every situation, by prayer and petition, with thanksgiving, present your requests to God.\u{201D}\n\nPhilippians 4:6 NIV",
+        "\u{201C}The LORD is my shepherd, I lack nothing.\nPsalm 23:1 NIV",
+        "Jesus answered, \u{201C}I am the way and the truth and the life. No one comes to the Father except through me.\u{201D}\nJohn 14:6 NIV",
         "\u{201C}For God so loved the world that he gave his one and only Son, that whoever believes in him shall not perish but have eternal life.\u{201D}\n\nJohn 3:16 NIV\nhttps://bible.com/bible/111/jhn.3.16.NIV",
         "16 For God so loved the world that he gave his one and only Son,[a] that whoever believes in him shall not perish but have eternal life. 17 For God did not send his Son into the world to condemn the world, but to save the world through him.\nJohn 3:16-17 New International Version (NIV)",
         "Romans 8:28 ESV\nAnd we know that for those who love God all things work together for good, for those who are called according to his purpose.",

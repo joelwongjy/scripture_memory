@@ -172,6 +172,8 @@ data class PastedVerse(
             t = t.replace(runsOfSpace, " ").trimmingWhitespaces()
             if (t.length >= 2 && t.first() == '"' && t.last() == '"' && '"' !in t.substring(1, t.length - 1)) {
                 t = t.substring(1, t.length - 1)
+            } else if (t.count { it == '"' } == 1 && (t.first() == '"' || t.last() == '"')) {
+                t = t.replace("\"", "").trimmingWhitespaces()
             }
             return t
         }

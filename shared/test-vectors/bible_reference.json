@@ -2,6 +2,24 @@
   "description" : "BibleReference.parse and PastedVerse.parse.",
   "pastes" : [
     {
+      "input" : "Do not be anxious about anything, but in every situation, by prayer and petition, with thanksgiving, present your requests to God.”\n\nPhilippians 4:6 NIV",
+      "reference" : "Philippians 4:6",
+      "text" : "Do not be anxious about anything, but in every situation, by prayer and petition, with thanksgiving, present your requests to God.",
+      "version" : "NIV"
+    },
+    {
+      "input" : "“The LORD is my shepherd, I lack nothing.\nPsalm 23:1 NIV",
+      "reference" : "Psalm 23:1",
+      "text" : "The LORD is my shepherd, I lack nothing.",
+      "version" : "NIV"
+    },
+    {
+      "input" : "Jesus answered, “I am the way and the truth and the life. No one comes to the Father except through me.”\nJohn 14:6 NIV",
+      "reference" : "John 14:6",
+      "text" : "Jesus answered, \"I am the way and the truth and the life. No one comes to the Father except through me.\"",
+      "version" : "NIV"
+    },
+    {
       "input" : "“For God so loved the world that he gave his one and only Son, that whoever believes in him shall not perish but have eternal life.”\n\nJohn 3:16 NIV\nhttps://bible.com/bible/111/jhn.3.16.NIV",
       "reference" : "John 3:16",
       "text" : "For God so loved the world that he gave his one and only Son, that whoever believes in him shall not perish but have eternal life.",

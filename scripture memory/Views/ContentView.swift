@@ -160,7 +160,7 @@ struct ContentView: View {
 
     private func handleDeepLink(_ url: URL) {
         if url.isFileURL {
-            ankiFile = OpenedFile(url: url)
+            openAnkiFile(url)
             return
         }
         guard url.scheme == "scripturememory" else { return }
@@ -172,6 +172,24 @@ struct ContentView: View {
             Analytics.log(.openedFromWidget(destination: .review))
             openReview()
         default:       break
+        }
+    }
+
+    private func openAnkiFile(_ url: URL) {
+        if AnkiFileInbox.shared.openImports > 0 {
+            AnkiFileInbox.shared.url = url
+            return
+        }
+        if case .onboarding = cover { return }
+        let root = UIApplication.shared.connectedScenes
+            .compactMap { ($0 as? UIWindowScene)?.keyWindow }.first?.rootViewController
+        guard let root, root.presentedViewController != nil else {
+            ankiFile = OpenedFile(url: url)
+            return
+        }
+        root.dismiss(animated: true) {
+            cover = nil
+            ankiFile = OpenedFile(url: url)
         }
     }
 

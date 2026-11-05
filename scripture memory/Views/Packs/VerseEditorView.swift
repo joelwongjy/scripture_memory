@@ -167,6 +167,7 @@ struct VerseEditorView: View {
                     Label("Open in Bible", systemImage: "book")
                         .lineLimit(1)
                         .frame(maxWidth: .infinity)
+                        .foregroundStyle(bibleAppURL == nil ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.tint))
                 }
                 .buttonStyle(.bordered)
                 .disabled(bibleAppURL == nil)

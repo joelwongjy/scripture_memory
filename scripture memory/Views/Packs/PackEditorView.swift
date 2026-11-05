@@ -52,7 +52,8 @@ struct PackEditorView: View {
                     dismiss()
                 }
             } message: {
-                Text("Deletes \(pack?.verses.count ?? 0) cards and their history on all your devices.")
+                Text(pack?.verses.count == 1 ? "Deletes 1 card and its history on all your devices."
+                                              : "Deletes \(pack?.verses.count ?? 0) cards and their history on all your devices.")
             }
             .onAppear {
                 if pack == nil { nameFocused = true }
@@ -171,6 +172,7 @@ struct PackEditorView: View {
         Analytics.log(.ownPackCreated(from: .newPack))
         packID = created.id
         name = created.name
+        nameFocused = false
         HapticEngine.success()
         verseSheet = VerseSheet(verse: nil)
     }

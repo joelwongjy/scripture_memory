@@ -30,6 +30,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
@@ -95,6 +96,7 @@ fun PackEditorSheet(packID: String? = null, addsVerseOnOpen: Boolean = false, on
     var confirmDelete by remember { mutableStateOf(false) }
     var editingOrder by remember { mutableStateOf(false) }
     val nameFocus = remember { FocusRequester() }
+    val focusManager = LocalFocusManager.current
     val scroll = rememberScrollState()
     val reorder = rememberRowReorder(scroll)
 
@@ -112,6 +114,7 @@ fun PackEditorSheet(packID: String? = null, addsVerseOnOpen: Boolean = false, on
         Analytics.log(AnalyticsEvent.OwnPackCreated(OwnPackSource.newPack))
         currentID = created.id
         name = TextFieldValue(created.name, TextRange(created.name.length))
+        focusManager.clearFocus()
         HapticEngine.success()
         verseSheet = VerseSheet(null)
     }
@@ -256,7 +259,8 @@ fun PackEditorSheet(packID: String? = null, addsVerseOnOpen: Boolean = false, on
         if (confirmDelete && pack != null) {
             AppAlert(
                 title = "Delete ${pack.name}?",
-                message = "Deletes ${pack.verses.size} cards and their history on all your devices.",
+                message = if (pack.verses.size == 1) "Deletes 1 card and its history on all your devices."
+                else "Deletes ${pack.verses.size} cards and their history on all your devices.",
                 actions = listOf(
                     AlertAction("Cancel", isCancel = true),
                     AlertAction("Delete Pack", isDestructive = true) {
