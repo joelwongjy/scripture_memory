@@ -95,6 +95,9 @@ struct PackListView: View {
                 Button("Edit") { showOrganizer = true }
                     .accessibilityLabel("Edit packs")
             }
+            if #available(iOS 26, *) {
+                ToolbarSpacer(.fixed, placement: .topBarTrailing)
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     Button {
