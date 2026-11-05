@@ -89,33 +89,36 @@ fun DailyReviewCard(activePacks: List<Pack>, modifier: Modifier = Modifier, onSt
         else -> ReviewPanelState.CaughtUp
     }
 
-    AnimatedContent(
-        targetState = state,
-        modifier = modifier
-            .fillMaxWidth()
-            .groupedPanel()
-            .padding(horizontal = AppLayout.panelPadding, vertical = AppLayout.panelRowPadding),
-        transitionSpec = {
-            fadeIn(AppMotion.smooth(240, 130)) togetherWith fadeOut(AppMotion.smooth(130)) using
-                SizeTransform(clip = true) { _, _ -> AppMotion.content() }
-        },
-        contentAlignment = Alignment.TopCenter,
-        label = "dailyReviewState",
-    ) { shown ->
-        when (shown) {
-            ReviewPanelState.NoActivePacks -> NoActivePacks()
-            ReviewPanelState.Due -> Due(counts) {
-                val session = TestSession.dailyReview(activePacks, newCap, dailyReviewCap)
-                if (session != null) {
-                    TestSessionViewModel.clearPersistedProgress(SessionKind.srs)
-                    onStart(session)
+    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        AnimatedContent(
+            targetState = state,
+            modifier = Modifier
+                .fillMaxWidth()
+                .groupedPanel()
+                .padding(horizontal = AppLayout.panelPadding, vertical = AppLayout.panelRowPadding),
+            transitionSpec = {
+                fadeIn(AppMotion.smooth(240, 130)) togetherWith fadeOut(AppMotion.smooth(130)) using
+                    SizeTransform(clip = true) { _, _ -> AppMotion.content() }
+            },
+            contentAlignment = Alignment.TopCenter,
+            label = "dailyReviewState",
+        ) { shown ->
+            when (shown) {
+                ReviewPanelState.NoActivePacks -> NoActivePacks()
+                ReviewPanelState.Due -> Due(counts) {
+                    val session = TestSession.dailyReview(activePacks, newCap, dailyReviewCap)
+                    if (session != null) {
+                        TestSessionViewModel.clearPersistedProgress(SessionKind.srs)
+                        onStart(session)
+                    }
                 }
+                ReviewPanelState.CaughtUp -> CaughtUp(
+                    title = if (store.reviewedToday(now) > 0) "Done for today" else "All caught up",
+                    message = caughtUpMessage(counts, activePacks, store, newCap, dailyReviewCap, now),
+                )
             }
-            ReviewPanelState.CaughtUp -> CaughtUp(
-                title = if (store.reviewedToday(now) > 0) "Done for today" else "All caught up",
-                message = caughtUpMessage(counts, activePacks, store, newCap, dailyReviewCap, now),
-            )
         }
+        if (state == ReviewPanelState.Due && !ReviewCountsTip.isDismissed) ReviewCountsTipCard()
     }
 }
 
@@ -147,9 +150,9 @@ private fun Due(counts: DueCounts, onStart: () -> Unit) {
         verticalArrangement = Arrangement.spacedBy(AppLayout.spacing),
     ) {
         Row(Modifier.fillMaxWidth()) {
-            Count("New", counts.newToday, ReviewColor.new, Modifier.weight(1f))
-            Count("Learn", counts.learning, ReviewColor.learn, Modifier.weight(1f))
-            Count("Due", counts.review, ReviewColor.due, Modifier.weight(1f))
+            Count("New", counts.newToday, ReviewColor.new, ReviewCountsTip.newHint, Modifier.weight(1f))
+            Count("Learn", counts.learning, ReviewColor.learn, ReviewCountsTip.learnHint, Modifier.weight(1f))
+            Count("Due", counts.review, ReviewColor.due, ReviewCountsTip.dueHint, Modifier.weight(1f))
         }
         PrimaryButton(
             "Start review",
@@ -160,10 +163,10 @@ private fun Due(counts: DueCounts, onStart: () -> Unit) {
 }
 
 @Composable
-private fun Count(label: String, value: Int, color: Color, modifier: Modifier = Modifier) {
+private fun Count(label: String, value: Int, color: Color, hint: String, modifier: Modifier = Modifier) {
     val colors = AppTheme.colors
     Column(
-        modifier.semantics(mergeDescendants = true) { contentDescription = "$value $label" },
+        modifier.semantics(mergeDescendants = true) { contentDescription = "$value $label. $hint" },
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
