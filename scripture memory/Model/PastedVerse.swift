@@ -21,8 +21,12 @@ struct PastedVerse: Equatable {
         "world english bible": "WEB",
     ]
 
+    private static let invisible = CharacterSet(charactersIn:
+        "\u{200B}\u{200E}\u{200F}\u{202A}\u{202B}\u{202C}\u{202D}\u{202E}\u{2060}\u{2066}\u{2067}\u{2068}\u{2069}\u{FEFF}")
+
     static func parse(_ raw: String) -> PastedVerse {
-        let lines = raw
+        let visible = String(String.UnicodeScalarView(raw.unicodeScalars.filter { !invisible.contains($0) }))
+        let lines = visible
             .replacingOccurrences(of: "\r\n", with: "\n")
             .replacingOccurrences(of: "\r", with: "\n")
             .components(separatedBy: "\n")
@@ -81,6 +85,11 @@ struct PastedVerse: Equatable {
         return (found.reference, tag, rest)
     }
 
+    static func versionCode(_ text: String) -> String? {
+        guard let tag = versionTag(text), !tag.isEmpty else { return nil }
+        return tag
+    }
+
     private static func versionTag(_ text: String) -> String? {
         let trimmed = text.trimmingCharacters(in: .whitespaces.union(CharacterSet(charactersIn: "-–—,·|")))
         guard !trimmed.isEmpty else { return "" }
@@ -125,7 +134,7 @@ struct PastedVerse: Equatable {
             .replacingOccurrences(of: "\u{201C}", with: "\"")
             .replacingOccurrences(of: "\u{201D}", with: "\"")
             .replacingOccurrences(of: "\u{00A0}", with: " ")
-        t = t.replacingOccurrences(of: "\\[[a-zA-Z]{1,2}\\]", with: "", options: .regularExpression)
+        t = t.replacingOccurrences(of: "\\[(?:[a-zA-Z]{1,2}|\\d{1,3})\\]", with: "", options: .regularExpression)
         t = t.replacingOccurrences(of: "\\([A-Z]{1,2}\\)", with: "", options: .regularExpression)
         let numbers = verseNumbers(reference)
         if !numbers.isEmpty {

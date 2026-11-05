@@ -28,7 +28,7 @@ struct AnkiImportPlan: Equatable {
 }
 
 enum AnkiFieldRole: Equatable {
-    case reference, text, title
+    case reference, text, title, version
 }
 
 enum AnkiVerseImport {
@@ -83,6 +83,14 @@ enum AnkiVerseImport {
     private static let referenceNames = ["reference", "ref", "address", "verse reference", "passage"]
     private static let textNames = ["text", "verse", "verse text", "scripture", "back", "answer"]
     private static let titleNames = ["topic", "title", "theme", "heading", "subject", "category"]
+    private static let versionNames = ["version", "translation", "bible version"]
+    private static let knownVersions = Set(PastedVerse.knownVersions.values).union(["NIV84", "NIV11"])
+
+    static func isReference(_ value: String) -> Bool {
+        if BibleReference.parse(value) != nil { return true }
+        let pasted = PastedVerse.parse(value)
+        return pasted.reference != nil && pasted.text.isEmpty
+    }
 
     static func guessRoles(_ notes: [AnkiNote]) -> [AnkiFieldRole?] {
         let count = notes.map(\.fields.count).max() ?? 0
@@ -99,13 +107,20 @@ enum AnkiVerseImport {
         }
 
         var roles = [AnkiFieldRole?](repeating: nil, count: count)
-        let referenceScores = (0..<count).map { share($0) { BibleReference.parse($0) != nil } }
+        let referenceScores = (0..<count).map { share($0, isReference) }
         if let best = referenceScores.indices.max(by: { referenceScores[$0] < referenceScores[$1] }),
            referenceScores[best] >= 0.6 {
             roles[best] = .reference
         } else if let named = names.firstIndex(where: referenceNames.contains), named < count {
             roles[named] = .reference
         }
+
+        let versionIndex = (0..<count).first { i in
+            roles[i] == nil && averageLength(i) > 0
+                && ((i < names.count && versionNames.contains(names[i]))
+                    || share(i) { PastedVerse.versionCode($0).map(knownVersions.contains) == true } >= 0.8)
+        }
+        if let versionIndex { roles[versionIndex] = .version }
 
         let open = (0..<count).filter { roles[$0] == nil }
         let textIndex = open.first { i in i < names.count && textNames.contains(names[i]) && averageLength(i) > 20 }
@@ -114,7 +129,7 @@ enum AnkiVerseImport {
 
         let rest = (0..<count).filter { roles[$0] == nil && averageLength($0) > 0 }
         let titleIndex = rest.first { i in i < names.count && titleNames.contains(names[i]) }
-            ?? rest.first { averageLength($0) <= 60 && share($0) { BibleReference.parse($0) == nil } >= 0.8 }
+            ?? rest.first { averageLength($0) <= 60 && share($0) { !isReference($0) } >= 0.8 }
         if let titleIndex { roles[titleIndex] = .title }
         return roles
     }
@@ -126,7 +141,8 @@ enum AnkiVerseImport {
             return value.isEmpty ? nil : value
         }
         let title = field(.title).map { $0.replacingOccurrences(of: "\n", with: " ") } ?? ""
-        let hint = versionHint(note.deck + " " + note.noteType + " " + note.tags.joined(separator: " "))
+        let hint = field(.version).flatMap(PastedVerse.versionCode)
+            ?? versionHint(note.deck + " " + note.noteType + " " + note.tags.joined(separator: " "))
 
         if let raw = field(.reference), let text = field(.text) {
             let pastedRef = PastedVerse.parse(raw)
@@ -142,7 +158,7 @@ enum AnkiVerseImport {
         let ordered = roles.enumerated().filter { $0.element != .title }.map(\.offset)
             + roles.indices.filter { roles[$0] == .title }
         let combined = (ordered.isEmpty ? Array(note.fields.indices) : ordered)
-            .filter { $0 < note.fields.count && !note.fields[$0].isEmpty && roles[safe: $0] != .title }
+            .filter { $0 < note.fields.count && !note.fields[$0].isEmpty && roles[safe: $0] != .title && roles[safe: $0] != .version }
             .map { note.fields[$0] }
             .joined(separator: "\n")
         let pasted = PastedVerse.parse(combined)
