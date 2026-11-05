@@ -1,4 +1,5 @@
 import SwiftUI
+import TipKit
 
 /// Home's daily review panel: how many cards are due, with Start, or the
 /// caught-up state with when to come back.
@@ -20,8 +21,20 @@ struct DailyReviewCard: View {
 
     private var newCap: NewCardCap { NewCardCap(amount: newCapAmount, unit: newCapUnit) }
 
+    private let countsTip = ReviewCountsTip()
+
     var body: some View {
         let counts = dueCounts()
+        VStack(spacing: 8) {
+            panel(counts)
+            if !activePacks.isEmpty, counts.total > 0 {
+                TipView(countsTip)
+                    .tipBackground(Color(.secondarySystemGroupedBackground))
+            }
+        }
+    }
+
+    private func panel(_ counts: DueCounts) -> some View {
         VStack(spacing: 16) {
             if activePacks.isEmpty {
                 noActivePacks
@@ -60,9 +73,9 @@ struct DailyReviewCard: View {
     private func due(_ counts: DueCounts) -> some View {
         VStack(spacing: 16) {
             HStack(spacing: 0) {
-                count("New",   counts.newToday, color: ReviewColor.new)
-                count("Learn", counts.learning, color: ReviewColor.learn)
-                count("Due",   counts.review,   color: ReviewColor.due)
+                count("New",   counts.newToday, color: ReviewColor.new,   hint: ReviewCountHint.new)
+                count("Learn", counts.learning, color: ReviewColor.learn, hint: ReviewCountHint.learn)
+                count("Due",   counts.review,   color: ReviewColor.due,   hint: ReviewCountHint.due)
             }
             Button(action: start) {
                 Text("Start review")
@@ -78,7 +91,7 @@ struct DailyReviewCard: View {
         .padding(.vertical, 4)
     }
 
-    private func count(_ label: String, _ value: Int, color: Color) -> some View {
+    private func count(_ label: String, _ value: Int, color: Color, hint: String) -> some View {
         VStack(spacing: 2) {
             Text("\(value)")
                 .font(.system(size: 28, weight: .semibold, design: .rounded))
@@ -90,6 +103,7 @@ struct DailyReviewCard: View {
         }
         .frame(maxWidth: .infinity)
         .accessibilityElement(children: .combine)
+        .accessibilityHint(hint)
     }
 
     private func caughtUp(_ counts: DueCounts) -> some View {

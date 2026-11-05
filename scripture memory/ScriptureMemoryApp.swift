@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import TipKit
 
 @main
 struct ScriptureMemoryApp: App {
@@ -23,6 +24,7 @@ struct ScriptureMemoryApp: App {
         NewCardCap.migrateIfNeeded()
         _ = UserPackStore.shared
         Analytics.start()
+        try? Tips.configure()
     }
 
     var body: some Scene {
