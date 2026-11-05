@@ -13,12 +13,16 @@ final class PackPreferencesStore: ObservableObject {
     @Published private(set) var hidden: Set<String>   = []
 
     private let storage: ProgressStorage
+    private var userPackChanges: AnyCancellable?
     private static let orderKey  = "packs.order.v1"
     private static let hiddenKey = "packs.hidden.v1"
 
     private init(storage: ProgressStorage = .shared) {
         self.storage = storage
         load()
+        userPackChanges = UserPackStore.shared.objectWillChange.sink { [weak self] _ in
+            self?.objectWillChange.send()
+        }
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(externalChange(_:)),
@@ -61,6 +65,17 @@ final class PackPreferencesStore: ObservableObject {
         let names = PackArranger.movedOrder(arranged: packs.map(\.name), from: source, to: destination)
         order = names
         storage.set(order, forKey: Self.orderKey)
+    }
+
+    func renamePack(from oldName: String, to newName: String) {
+        if let i = order.firstIndex(of: oldName) {
+            order[i] = newName
+            storage.set(order, forKey: Self.orderKey)
+        }
+        if hidden.remove(oldName) != nil {
+            hidden.insert(newName)
+            storage.set(Array(hidden), forKey: Self.hiddenKey)
+        }
     }
 
     /// Restore the default arrangement: natural pack order, nothing hidden.

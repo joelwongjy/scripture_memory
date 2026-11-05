@@ -21,6 +21,13 @@ object PackPositions {
         defaults.putString(key, ProgressJson.encodeToString(positionsSerializer, updated))
     }
 
+    fun renamePack(oldName: String, newName: String, defaults: KeyValueStore = AppDefaults.standard) {
+        val all = all(defaults)?.toMutableMap() ?: return
+        val saved = all.remove(oldName) ?: return
+        all[newName] = saved
+        defaults.putString(key, ProgressJson.encodeToString(positionsSerializer, all))
+    }
+
     fun startIndex(
         pack: Pack,
         currentKey: String?,

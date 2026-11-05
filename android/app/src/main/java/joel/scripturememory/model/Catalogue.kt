@@ -17,6 +17,7 @@ object Catalogue {
         fun combine(value: Any?) {
             hash = 31 * hash + value.hashCode()
         }
+        combine(UserPackStore.revision)
         for (pack in packs) {
             combine(pack.name)
             combine(pack.verses.size)

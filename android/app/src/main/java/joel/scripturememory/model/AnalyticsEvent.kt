@@ -11,6 +11,9 @@ sealed class AnalyticsEvent {
     data class StarChanged(val starred: Boolean, val from: VerseActionSource) : AnalyticsEvent()
     data object PacksReordered : AnalyticsEvent()
     data class PackVisibilityChanged(val hidden: Boolean) : AnalyticsEvent()
+    data class OwnPackCreated(val from: OwnPackSource) : AnalyticsEvent()
+    data class OwnVerseAdded(val source: OwnVerseSource) : AnalyticsEvent()
+    data class AnkiImported(val verses: Int, val withHistory: Int, val matched: Int) : AnalyticsEvent()
 
     data class SessionStarted(val start: StudySessionStart) : AnalyticsEvent()
     data class SessionEnded(val summary: StudySessionSummary) : AnalyticsEvent()
@@ -20,6 +23,12 @@ sealed class AnalyticsEvent {
     data object SearchFoundNothing : AnalyticsEvent()
 
     data class SettingChanged(val setting: String, val value: String) : AnalyticsEvent()
+
+    fun redactingPacks(isOwn: (String) -> Boolean): AnalyticsEvent = when {
+        this is PackOpened && isOwn(pack) -> PackOpened(ownPackLabel, from)
+        this is SessionStarted && start.pack?.let(isOwn) == true -> SessionStarted(start.copy(pack = ownPackLabel))
+        else -> this
+    }
 
     val name: String
         get() = when (this) {
@@ -32,6 +41,9 @@ sealed class AnalyticsEvent {
             is StarChanged -> "Verse.starChanged"
             PacksReordered -> "Packs.reordered"
             is PackVisibilityChanged -> "Packs.visibilityChanged"
+            is OwnPackCreated -> "OwnPack.created"
+            is OwnVerseAdded -> "OwnPack.verseAdded"
+            is AnkiImported -> "OwnPack.ankiImported"
             is SessionStarted -> "${start.kind.signalPrefix}.started"
             is SessionEnded -> "${summary.kind.signalPrefix}.ended"
             is SearchPerformed -> "Search.performed"
@@ -57,6 +69,13 @@ sealed class AnalyticsEvent {
             is StarChanged -> mapOf("starred" to starred.toString(), "from" to from.rawValue)
             PacksReordered, SearchFoundNothing -> emptyMap()
             is PackVisibilityChanged -> mapOf("hidden" to hidden.toString())
+            is OwnPackCreated -> mapOf("from" to from.rawValue)
+            is OwnVerseAdded -> mapOf("source" to source.rawValue)
+            is AnkiImported -> mapOf(
+                "verses" to AnalyticsRange.count(verses),
+                "withHistory" to AnalyticsRange.count(withHistory),
+                "matched" to AnalyticsRange.count(matched),
+            )
             is SessionStarted -> start.parameters
             is SessionEnded -> summary.parameters
             is SearchPerformed -> mapOf("results" to AnalyticsRange.count(results))
@@ -66,6 +85,10 @@ sealed class AnalyticsEvent {
             )
             is SettingChanged -> mapOf("setting" to setting, "value" to value)
         }
+
+    companion object {
+        const val ownPackLabel = "Own pack"
+    }
 }
 
 enum class AnalyticsScreen {
@@ -90,6 +113,18 @@ enum class WidgetDestination {
 
 enum class PackSource {
     shelf, search, homeCard, widget;
+
+    val rawValue: String get() = name
+}
+
+enum class OwnPackSource {
+    newPack, ankiImport;
+
+    val rawValue: String get() = name
+}
+
+enum class OwnVerseSource {
+    typed, pasted, bundledText;
 
     val rawValue: String get() = name
 }

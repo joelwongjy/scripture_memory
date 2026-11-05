@@ -95,6 +95,7 @@ class SheetController internal constructor(val dismiss: () -> Unit)
 fun AppSheet(
     onDismiss: () -> Unit,
     fullHeight: Boolean = false,
+    dismissDisabled: Boolean = false,
     content: @Composable ColumnScope.(SheetController) -> Unit,
 ) {
     val colors = AppTheme.colors
@@ -113,7 +114,7 @@ fun AppSheet(
 
     LaunchedEffect(Unit) { offset.animateTo(0f, AppMotion.snappy(340)) }
 
-    FullWindowDialog(onBack = ::close) {
+    FullWindowDialog(onBack = { if (!dismissDisabled) close() }) {
         BoxWithConstraints(Modifier.fillMaxSize()) {
             val height = with(LocalDensity.current) { maxHeight.toPx() }
             Box(
@@ -124,7 +125,7 @@ fun AppSheet(
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
-                        onClick = ::close,
+                        onClick = { if (!dismissDisabled) close() },
                     ),
             )
             Column(
@@ -145,6 +146,7 @@ fun AppSheet(
                         .fillMaxWidth()
                         .height(24.dp)
                         .draggable(
+                            enabled = !dismissDisabled,
                             orientation = Orientation.Vertical,
                             state = rememberDraggableState { delta ->
                                 scope.launch {

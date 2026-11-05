@@ -90,6 +90,7 @@ private sealed interface PackListItem {
 }
 
 private fun seriesTitle(pack: Pack): String = when {
+    pack.isUserMade -> "Your Packs"
     pack.name.startsWith("DEP") -> "DEP 242"
     pack.name.startsWith("TMS 180") -> "TMS 180"
     pack.name == "5 Assurances" || pack.name == "TMS 60" -> "Growing in Christ"

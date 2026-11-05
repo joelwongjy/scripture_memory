@@ -1,7 +1,7 @@
 package joel.scripturememory.ui.components
 
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.runtime.Composable
@@ -19,6 +19,7 @@ fun Modifier.pressable(
     label: String? = null,
     pressedScale: Float = 0.97f,
     pressedAlpha: Float = 1f,
+    onLongClick: (() -> Unit)? = null,
     onClick: () -> Unit,
 ): Modifier {
     val source = remember { MutableInteractionSource() }
@@ -31,12 +32,13 @@ fun Modifier.pressable(
             scaleY = scale
             this.alpha = alpha
         }
-        .clickable(
+        .combinedClickable(
             interactionSource = source,
             indication = null,
             enabled = enabled,
             role = role,
             onClickLabel = label,
+            onLongClick = onLongClick,
             onClick = onClick,
         )
 }

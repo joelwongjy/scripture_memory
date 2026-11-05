@@ -87,7 +87,8 @@ struct PackCover: View {
 
     @ViewBuilder
     private var cardContent: some View {
-        if isFavorites                       { favoritesCover    }
+        if pack.isUserMade                   { oyoCover          }
+        else if isFavorites                  { favoritesCover    }
         else if isDEP                        { depCover          }
         else if isTMS180                     { tms180Cover       }
         else if pack.name == "TMS 60"        { tmsCover          }
@@ -476,6 +477,50 @@ struct PackCover: View {
             .padding(.vertical, 7)
             .frame(maxWidth: .infinity)
             .background(Color.green.opacity(0.15))
+        }
+    }
+
+    // MARK: OYO Style
+
+    private var oyoCover: some View {
+        ZStack {
+            fieldColor
+
+            VStack(spacing: 0) {
+                Text("자신만의 성경암송을 위한 빈카드")
+                    .font(.system(size: 13, weight: .medium, design: .rounded))
+                    .tracking(0.6)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                Text("(\(UserPack.subtitle) Card)")
+                    .font(.system(size: 11, weight: .regular, design: .serif))
+                    .padding(.top, 2)
+                Text(pack.name)
+                    .font(.system(size: 58, weight: .regular, design: .serif))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.32)
+                    .padding(.top, 4)
+                Text("카드")
+                    .font(.system(size: 22, weight: .bold, design: .rounded))
+                    .tracking(2)
+                Spacer(minLength: 0)
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text("네비게이토")
+                    Image(systemName: "moon.fill").font(.system(size: 9))
+                    Text("출판사")
+                    Spacer(minLength: 0)
+                    Text(pack.verses.count == 1 ? "1 card" : "\(pack.verses.count) cards")
+                        .font(.system(size: 11, weight: .medium))
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 1)
+                        .overlay(RoundedRectangle(cornerRadius: 2).stroke(inkColor.opacity(0.8), lineWidth: 0.8))
+                }
+                .font(.system(size: 12, weight: .semibold))
+            }
+            .foregroundStyle(inkColor.opacity(0.94))
+            .padding(.horizontal, Self.contentInset)
+            .padding(.top, 16)
+            .padding(.bottom, 14)
         }
     }
 

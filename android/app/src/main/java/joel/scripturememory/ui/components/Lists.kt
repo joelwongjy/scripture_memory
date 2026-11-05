@@ -27,6 +27,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -35,6 +36,7 @@ import joel.scripturememory.ui.theme.AppLayout
 import joel.scripturememory.ui.theme.AppMotion
 import joel.scripturememory.ui.theme.AppTheme
 import joel.scripturememory.ui.theme.AppType
+import joel.scripturememory.ui.theme.sizeInDp
 
 @Composable
 fun GroupedSection(
@@ -184,5 +186,26 @@ fun CircleIconBadge(icon: Int, tint: Color, size: Dp = 30.dp, iconSize: Dp = 18.
         contentAlignment = Alignment.Center,
     ) {
         Icon(icon, size = iconSize, tint = tint)
+    }
+}
+
+@Composable
+fun AddItemRow(title: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val colors = AppTheme.colors
+    val circle = AppType.title2.sizeInDp().dp * 1.15f
+    Row(
+        modifier
+            .fillMaxWidth()
+            .defaultMinSize(minHeight = 52.dp)
+            .semantics(mergeDescendants = true) { role = Role.Button }
+            .pressable(pressedScale = 1f, pressedAlpha = 0.55f, onClick = onClick)
+            .padding(horizontal = AppLayout.panelPadding, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Box(Modifier.size(circle).clip(CircleShape).background(colors.accent), contentAlignment = Alignment.Center) {
+            Icon(R.drawable.ic_plus, size = circle * 0.55f, tint = Color.White)
+        }
+        Text(title, Modifier.weight(1f), style = AppType.body, color = colors.accent)
     }
 }

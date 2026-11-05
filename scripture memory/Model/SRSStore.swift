@@ -116,6 +116,24 @@ final class SRSStore: ObservableObject {
         persist()
     }
 
+    func importStates(_ incoming: [SRSCardState]) {
+        guard !incoming.isEmpty else { return }
+        for state in incoming {
+            let existing = states[state.key]
+            let existingSeen = existing?.lastReviewed ?? .distantPast
+            if existing == nil || (state.lastReviewed ?? .distantPast) > existingSeen {
+                states[state.key] = state
+            }
+        }
+        persist()
+    }
+
+    func renamePack(from oldName: String, to newName: String) {
+        guard inactivePackNames.remove(oldName) != nil else { return }
+        inactivePackNames.insert(newName)
+        persist()
+    }
+
     // MARK: - Mutation
 
     /// Grades a card. Creates initial state if none exists.

@@ -9,8 +9,11 @@ data class Pack(
     val color: String,
     val accentText: String,
     val verses: List<Verse>,
+    val userPackID: String? = null,
 ) {
     val id: String get() = name
+
+    val isUserMade: Boolean get() = userPackID != null
 }
 
 @Serializable

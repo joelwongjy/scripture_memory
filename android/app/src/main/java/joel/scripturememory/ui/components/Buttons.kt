@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -20,8 +21,10 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import joel.scripturememory.ui.theme.AppLayout
 import joel.scripturememory.ui.theme.AppTheme
 import joel.scripturememory.ui.theme.AppType
+import joel.scripturememory.ui.theme.sizeInDp
 
 private val Capsule = RoundedCornerShape(percent = 50)
 
@@ -39,7 +42,7 @@ fun PrimaryButton(
     Row(
         modifier
             .fillMaxWidth()
-            .height(height)
+            .heightIn(min = height)
             .alpha(if (enabled) 1f else 0.4f)
             .pressable(enabled = enabled, onClick = onClick)
             .clip(Capsule)
@@ -66,7 +69,7 @@ fun SecondaryButton(
     Row(
         modifier
             .fillMaxWidth()
-            .height(height)
+            .heightIn(min = height)
             .alpha(if (enabled) 1f else 0.4f)
             .pressable(enabled = enabled, onClick = onClick)
             .clip(Capsule)
@@ -77,6 +80,31 @@ fun SecondaryButton(
     ) {
         if (leadingIcon != null) Icon(leadingIcon, size = 20.dp, tint = tint)
         Text(title, style = AppType.headline, color = tint, maxLines = 1)
+    }
+}
+
+@Composable
+fun BorderedButton(
+    title: String,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    tint: Color = AppTheme.colors.accent,
+    leadingIcon: Int? = null,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier
+            .heightIn(min = AppLayout.minTapTarget)
+            .alpha(if (enabled) 1f else 0.4f)
+            .pressable(enabled = enabled, pressedScale = 0.97f, onClick = onClick)
+            .clip(Capsule)
+            .background(tint.copy(alpha = 0.12f))
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (leadingIcon != null) Icon(leadingIcon, size = AppType.body.sizeInDp().dp, tint = tint)
+        Text(title, style = AppType.body, color = tint, maxLines = 1)
     }
 }
 

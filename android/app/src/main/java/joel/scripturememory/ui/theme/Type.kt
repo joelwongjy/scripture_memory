@@ -65,6 +65,11 @@ private fun style(
 @Composable
 fun TextStyle.sizeInDp(): Float = with(LocalDensity.current) { fontSize.toDp().value }
 
+private const val accessibilityFontScale = 1.5f
+
+@Composable
+fun isAccessibilityTextSize(): Boolean = LocalDensity.current.fontScale >= accessibilityFontScale
+
 @Immutable
 object AppType {
     val largeTitle = style(32.sp, FontWeight.Bold, 38.sp, -0.022f, InterDisplay)

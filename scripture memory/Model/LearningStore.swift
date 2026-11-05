@@ -157,6 +157,13 @@ final class LearningStore: ObservableObject {
         StreakStore.shared.recordToday()
     }
 
+    func markLearnt(keys: Set<String>) {
+        let added = keys.subtracting(learntKeys).filter { !$0.isEmpty }
+        guard !added.isEmpty else { return }
+        learntKeys.formUnion(added)
+        persist()
+    }
+
     /// Undo `markLearnt` — used when a review grade that auto-advanced the cursor is
     /// undone, so the cursor returns to this verse.
     func unmarkLearnt(_ verse: Verse) {

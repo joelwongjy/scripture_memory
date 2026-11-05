@@ -12,6 +12,7 @@ import com.telemetrydeck.sdk.providers.DefaultParameterProvider
 import joel.scripturememory.BuildConfig
 import joel.scripturememory.model.AnalyticsBuild
 import joel.scripturememory.model.AnalyticsEvent
+import joel.scripturememory.model.UserPackStore
 
 interface AnalyticsSink {
     fun start(context: Context)
@@ -65,7 +66,9 @@ object Analytics {
 
     fun log(event: AnalyticsEvent) {
         if (!started) return
-        sinks.forEach { it.send(event) }
+        val own = UserPackStore.packs.map { it.name }.toSet()
+        val safe = event.redactingPacks { it in own }
+        sinks.forEach { it.send(safe) }
     }
 }
 

@@ -151,7 +151,7 @@ struct PouchVerseCard<Accessory: View>: View {
     @ViewBuilder
     private func heading(_ u: CGFloat) -> some View {
         HStack(alignment: .firstTextBaseline) {
-            Text(verse.title)
+            Text(verse.title.isEmpty ? reference : verse.title)
                 .font(CardFont.font(.title, size: 4.6 * u))
                 .foregroundStyle(PouchInk.title)
                 .lineLimit(2)
@@ -161,10 +161,12 @@ struct PouchVerseCard<Accessory: View>: View {
                 .font(.custom("TimesNewRomanPSMT", size: 3.4 * u))
                 .foregroundStyle(PouchInk.caption)
         }
-        Text(reference)
-            .font(CardFont.font(.body, size: 4.6 * u))
-            .foregroundStyle(PouchInk.body)
-            .padding(.top, 1.4 * u)
+        if !verse.title.isEmpty {
+            Text(reference)
+                .font(CardFont.font(.body, size: 4.6 * u))
+                .foregroundStyle(PouchInk.body)
+                .padding(.top, 1.4 * u)
+        }
         FittedVerseText(text: verse.verse, lineSpacing: 0.8 * u, minSize: 2 * u,
                         maxSize: ceiling(share: PackListLayout.verseTextShare))
             .foregroundStyle(PouchInk.body)

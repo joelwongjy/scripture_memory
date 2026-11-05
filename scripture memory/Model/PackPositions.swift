@@ -12,6 +12,13 @@ enum PackPositions {
         defaults.set(all, forKey: key)
     }
 
+    static func renamePack(from oldName: String, to newName: String, defaults: UserDefaults = .standard) {
+        var all = defaults.dictionary(forKey: key) as? [String: String] ?? [:]
+        guard let saved = all.removeValue(forKey: oldName) else { return }
+        all[newName] = saved
+        defaults.set(all, forKey: key)
+    }
+
     /// The card to open `pack` on: where you left it, else the verse you're
     /// learning if it's in this pack, else the first card.
     static func startIndex(for pack: Pack, currentKey: String?, defaults: UserDefaults = .standard) -> Int {

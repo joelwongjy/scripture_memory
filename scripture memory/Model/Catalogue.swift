@@ -32,6 +32,7 @@ enum Catalogue {
     /// identical pack names and sizes.
     static func fingerprint(_ packs: [Pack]) -> Int {
         var hasher = Hasher()
+        hasher.combine(UserPackStore.revision)
         for pack in packs {
             hasher.combine(pack.name)
             hasher.combine(pack.verses.count)

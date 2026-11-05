@@ -1,0 +1,1 @@
+../../scripture memory/Model/VerseTranslation.swift

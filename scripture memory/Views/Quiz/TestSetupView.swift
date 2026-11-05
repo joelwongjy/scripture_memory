@@ -64,6 +64,7 @@ struct TestSetupView: View {
     }
 
     private static func seriesTitle(_ pack: Pack) -> String {
+        if pack.isUserMade { return "Your Packs" }
         if pack.name.hasPrefix("DEP") { return "DEP 242" }
         if pack.name.hasPrefix("TMS 180") { return "TMS 180" }
         if pack.name == "5 Assurances" || pack.name == "TMS 60" { return "Growing in Christ" }

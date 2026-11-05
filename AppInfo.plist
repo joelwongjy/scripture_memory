@@ -27,6 +27,61 @@
     <string>https://jpyktgyajlvzjtpomvyz.supabase.co</string>
     <key>SupabaseAnonKey</key>
     <string>sb_publishable_cZKhdNOAhfy9TZfqszZnig_ayAcWCF1</string>
+    <key>CFBundleDocumentTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>Anki Deck Package</string>
+            <key>CFBundleTypeRole</key>
+            <string>Viewer</string>
+            <key>LSHandlerRank</key>
+            <string>Alternate</string>
+            <key>LSItemContentTypes</key>
+            <array>
+                <string>net.ankiweb.apkg</string>
+                <string>net.ankiweb.colpkg</string>
+            </array>
+        </dict>
+    </array>
+    <key>UTImportedTypeDeclarations</key>
+    <array>
+        <dict>
+            <key>UTTypeIdentifier</key>
+            <string>net.ankiweb.apkg</string>
+            <key>UTTypeDescription</key>
+            <string>Anki Deck Package</string>
+            <key>UTTypeConformsTo</key>
+            <array>
+                <string>public.data</string>
+            </array>
+            <key>UTTypeTagSpecification</key>
+            <dict>
+                <key>public.filename-extension</key>
+                <array>
+                    <string>apkg</string>
+                </array>
+            </dict>
+        </dict>
+        <dict>
+            <key>UTTypeIdentifier</key>
+            <string>net.ankiweb.colpkg</string>
+            <key>UTTypeDescription</key>
+            <string>Anki Collection Package</string>
+            <key>UTTypeConformsTo</key>
+            <array>
+                <string>public.data</string>
+            </array>
+            <key>UTTypeTagSpecification</key>
+            <dict>
+                <key>public.filename-extension</key>
+                <array>
+                    <string>colpkg</string>
+                </array>
+            </dict>
+        </dict>
+    </array>
+    <key>LSSupportsOpeningDocumentsInPlace</key>
+    <false/>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 </dict>
