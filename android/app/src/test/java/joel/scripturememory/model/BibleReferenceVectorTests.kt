@@ -86,4 +86,25 @@ class BibleReferenceVectorTests {
         assertEquals(37.0, state?.interval ?: 0.0, 0.0)
         assertEquals(2.35, state?.ease ?: 0.0, 0.0)
     }
+
+    @Test
+    fun testAnkiPlanReadsVersionFieldsAndReferencesWithVersions() {
+        val notes = listOf(
+            AnkiNote(
+                "Verses", "Bible Verse", listOf("Reference", "Text", "Version", "Notes"),
+                listOf("Psalm 23:1", "The LORD is my shepherd, I lack nothing.", "NIV", "Shepherd"),
+                emptyList(), emptyList(),
+            ),
+            AnkiNote(
+                "Verses", "Basic (and reversed card)", listOf("Front", "Back"),
+                listOf("I can do all this through him who gives me strength.", "Phil 4:13 (ESV)"),
+                emptyList(), emptyList(),
+            ),
+        )
+        val verses = AnkiVerseImport.plan(AnkiImport(notes)).decks.flatMap { it.verses }
+        assertEquals(listOf("Psalm 23:1", "Philippians 4:13"), verses.map { it.reference.display })
+        assertEquals(listOf("NIV", "ESV"), verses.map { it.version })
+        assertEquals(listOf("Shepherd", ""), verses.map { it.title })
+        assertEquals("I can do all this through him who gives me strength.", verses.lastOrNull()?.text)
+    }
 }

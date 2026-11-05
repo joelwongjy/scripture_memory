@@ -27,8 +27,13 @@ data class PastedVerse(
 
         private class Inline(val reference: BibleReference, val version: String?, val remainder: String)
 
+        private val invisible = setOf(
+            '\u200B', '\u200E', '\u200F', '\u202A', '\u202B', '\u202C', '\u202D', '\u202E',
+            '\u2060', '\u2066', '\u2067', '\u2068', '\u2069', '\uFEFF',
+        )
+
         fun parse(raw: String): PastedVerse {
-            val lines = raw
+            val lines = raw.filterNot { it in invisible }
                 .replace("\r\n", "\n")
                 .replace("\r", "\n")
                 .split("\n")
@@ -109,6 +114,8 @@ data class PastedVerse(
             return Inline(found.reference, leading, rest)
         }
 
+        fun versionCode(text: String): String? = versionTag(text)?.ifEmpty { null }
+
         private fun versionTag(text: String): String? {
             val trimmed = text.trimming("-–—,·|")
             if (trimmed.isEmpty()) return ""
@@ -150,7 +157,7 @@ data class PastedVerse(
             return letters == letters.uppercase()
         }
 
-        private val footnoteLetters = Regex("\\[[a-zA-Z]{1,2}\\]")
+        private val footnoteLetters = Regex("\\[(?:[a-zA-Z]{1,2}|\\d{1,3})\\]")
         private val crossReferences = Regex("\\([A-Z]{1,2}\\)")
         private val runsOfSpace = Regex("\\s+")
 

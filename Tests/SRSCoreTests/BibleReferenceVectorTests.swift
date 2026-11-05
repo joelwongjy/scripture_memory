@@ -45,6 +45,8 @@ final class BibleReferenceVectorTests: XCTestCase {
         "Philippians 4:13 - I can do all this through him who gives me strength.",
         "I can do all this through him who gives me strength.",
         "",
+        "\u{201C}Rejoice always, pray continually, give thanks in all circumstances; for this is God\u{2019}s will for you in Christ Jesus.\u{201D} \u{202D}\u{202D}1 Thessalonians\u{202C} \u{202D}5\u{202C}:\u{202D}16\u{202C}-\u{202D}18\u{202C} \u{202D}NIV\u{202C}\u{202C}\nhttps://bible.com/bible/111/1th.5.16-18.NIV",
+        "Romans 8:28 ESV\n[28] And we know that for those who love God all things work together for good, for those who are called according to his purpose.",
     ]
 
     private func referenceCase(_ input: String) -> ReferenceCase {
@@ -99,5 +101,21 @@ final class BibleReferenceVectorTests: XCTestCase {
         XCTAssertEqual(state?.phase, .review)
         XCTAssertEqual(state?.interval, 37)
         XCTAssertEqual(state?.ease, 2.35)
+    }
+
+    func testAnkiPlanReadsVersionFieldsAndReferencesWithVersions() {
+        let notes = [
+            AnkiNote(deck: "Verses", noteType: "Bible Verse", fieldNames: ["Reference", "Text", "Version", "Notes"],
+                     fields: ["Psalm 23:1", "The LORD is my shepherd, I lack nothing.", "NIV", "Shepherd"],
+                     tags: [], cards: []),
+            AnkiNote(deck: "Verses", noteType: "Basic (and reversed card)", fieldNames: ["Front", "Back"],
+                     fields: ["I can do all this through him who gives me strength.", "Phil 4:13 (ESV)"],
+                     tags: [], cards: []),
+        ]
+        let verses = AnkiVerseImport.plan(AnkiImport(notes: notes)).decks.flatMap(\.verses)
+        XCTAssertEqual(verses.map(\.reference.display), ["Psalm 23:1", "Philippians 4:13"])
+        XCTAssertEqual(verses.map(\.version), ["NIV", "ESV"])
+        XCTAssertEqual(verses.map(\.title), ["Shepherd", ""])
+        XCTAssertEqual(verses.last?.text, "I can do all this through him who gives me strength.")
     }
 }

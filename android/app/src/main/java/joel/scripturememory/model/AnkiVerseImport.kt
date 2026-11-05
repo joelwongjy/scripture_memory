@@ -21,7 +21,7 @@ data class AnkiImportPlan(
     data class Match(val cardUid: String, val candidate: AnkiVerseCandidate)
 }
 
-enum class AnkiFieldRole { reference, text, title }
+enum class AnkiFieldRole { reference, text, title, version }
 
 object AnkiVerseImport {
 
@@ -75,6 +75,14 @@ object AnkiVerseImport {
     private val referenceNames = listOf("reference", "ref", "address", "verse reference", "passage")
     private val textNames = listOf("text", "verse", "verse text", "scripture", "back", "answer")
     private val titleNames = listOf("topic", "title", "theme", "heading", "subject", "category")
+    private val versionNames = listOf("version", "translation", "bible version")
+    private val knownVersions = PastedVerse.knownVersions.values.toSet() + setOf("NIV84", "NIV11")
+
+    fun isReference(value: String): Boolean {
+        if (BibleReference.parse(value) != null) return true
+        val pasted = PastedVerse.parse(value)
+        return pasted.reference != null && pasted.text.isEmpty()
+    }
 
     fun guessRoles(notes: List<AnkiNote>): List<AnkiFieldRole?> {
         val count = notes.maxOfOrNull { it.fields.size } ?: 0
@@ -91,7 +99,7 @@ object AnkiVerseImport {
         }
 
         val roles = MutableList<AnkiFieldRole?>(count) { null }
-        val referenceScores = (0 until count).map { i -> share(i) { BibleReference.parse(it) != null } }
+        val referenceScores = (0 until count).map { i -> share(i, ::isReference) }
         val best = referenceScores.indices.maxByOrNull { referenceScores[it] }
         val named = names.indexOfFirst { it in referenceNames }
         if (best != null && referenceScores[best] >= 0.6) {
@@ -100,6 +108,13 @@ object AnkiVerseImport {
             roles[named] = AnkiFieldRole.reference
         }
 
+        val versionIndex = (0 until count).firstOrNull { i ->
+            roles[i] == null && averageLength(i) > 0 &&
+                ((i < names.size && names[i] in versionNames) ||
+                    share(i) { PastedVerse.versionCode(it) in knownVersions } >= 0.8)
+        }
+        if (versionIndex != null) roles[versionIndex] = AnkiFieldRole.version
+
         val open = (0 until count).filter { roles[it] == null }
         val textIndex = open.firstOrNull { i -> i < names.size && names[i] in textNames && averageLength(i) > 20 }
             ?: open.maxByOrNull { averageLength(it) }
@@ -107,7 +122,7 @@ object AnkiVerseImport {
 
         val rest = (0 until count).filter { roles[it] == null && averageLength(it) > 0 }
         val titleIndex = rest.firstOrNull { i -> i < names.size && names[i] in titleNames }
-            ?: rest.firstOrNull { i -> averageLength(i) <= 60 && share(i) { BibleReference.parse(it) == null } >= 0.8 }
+            ?: rest.firstOrNull { i -> averageLength(i) <= 60 && share(i) { !isReference(it) } >= 0.8 }
         if (titleIndex != null) roles[titleIndex] = AnkiFieldRole.title
         return roles
     }
@@ -119,7 +134,8 @@ object AnkiVerseImport {
             return note.fields[i].trimmingWhitespacesAndNewlines().ifEmpty { null }
         }
         val title = field(AnkiFieldRole.title)?.replace("\n", " ").orEmpty()
-        val hint = versionHint(note.deck + " " + note.noteType + " " + note.tags.joinToString(" "))
+        val hint = field(AnkiFieldRole.version)?.let(PastedVerse::versionCode)
+            ?: versionHint(note.deck + " " + note.noteType + " " + note.tags.joinToString(" "))
 
         val raw = field(AnkiFieldRole.reference)
         val text = field(AnkiFieldRole.text)
@@ -141,7 +157,7 @@ object AnkiVerseImport {
         val ordered = roles.indices.filter { roles[it] != AnkiFieldRole.title } +
             roles.indices.filter { roles[it] == AnkiFieldRole.title }
         val combined = (if (ordered.isEmpty()) note.fields.indices.toList() else ordered)
-            .filter { it < note.fields.size && note.fields[it].isNotEmpty() && roles.getOrNull(it) != AnkiFieldRole.title }
+            .filter { it < note.fields.size && note.fields[it].isNotEmpty() && roles.getOrNull(it) != AnkiFieldRole.title && roles.getOrNull(it) != AnkiFieldRole.version }
             .joinToString("\n") { note.fields[it] }
         val pasted = PastedVerse.parse(combined)
         val reference = pasted.reference ?: return null
