@@ -41,14 +41,14 @@ struct ShareVerseView: View {
             Form {
                 Section {
                     LabeledContent("Reference") {
-                        TextField("Reference", text: $referenceText, prompt: Text("Romans 8:28"))
+                        TextField("Reference", text: $referenceText, prompt: Text("Rom 8:28"))
                             .multilineTextAlignment(.trailing)
                             .textInputAutocapitalization(.words)
                             .autocorrectionDisabled()
                             .focused($referenceFocused)
                     }
-                    LabeledContent("Topic") {
-                        TextField("Topic", text: $title, prompt: Text("Optional"))
+                    LabeledContent("Title") {
+                        TextField("Title", text: $title, prompt: Text("Optional"))
                             .multilineTextAlignment(.trailing)
                             .textInputAutocapitalization(.words)
                     }
@@ -64,7 +64,7 @@ struct ShareVerseView: View {
                                 .foregroundStyle(.green)
                         }
                     } else {
-                        Text("Try “Romans 8:28”")
+                        Text("Try “Rom 8:28”")
                     }
                 }
                 Section("Verse") {

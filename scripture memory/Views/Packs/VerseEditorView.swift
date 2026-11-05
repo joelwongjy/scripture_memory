@@ -89,7 +89,7 @@ struct VerseEditorView: View {
     private var detailsSection: some View {
         Section {
             LabeledContent("Reference") {
-                TextField("Reference", text: $referenceText, prompt: Text("Romans 8:28"))
+                TextField("Reference", text: $referenceText, prompt: Text("Rom 8:28"))
                     .multilineTextAlignment(fieldAlignment)
                     .focused($focus, equals: .reference)
                     .textInputAutocapitalization(.words)
@@ -109,8 +109,8 @@ struct VerseEditorView: View {
                     }
                 }
             }
-            LabeledContent("Topic") {
-                TextField("Topic", text: $title, prompt: Text("Optional"))
+            LabeledContent("Title") {
+                TextField("Title", text: $title, prompt: Text("Optional"))
                     .multilineTextAlignment(fieldAlignment)
                     .focused($focus, equals: .title)
                     .textInputAutocapitalization(.words)
@@ -145,7 +145,7 @@ struct VerseEditorView: View {
         } else if !added.isEmpty && referenceText.isEmpty {
             Text("Added \(added.last ?? "")")
         } else if !referenceText.isEmpty {
-            Text("Try “Romans 8:28”")
+            Text("Try “Rom 8:28”")
         }
     }
 

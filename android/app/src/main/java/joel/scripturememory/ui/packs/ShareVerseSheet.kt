@@ -130,7 +130,7 @@ fun ShareVerseSheet(
                         value = referenceText,
                         onValueChange = { referenceText = it },
                         modifier = Modifier.focusRequester(referenceFocus),
-                        placeholder = "Romans 8:28",
+                        placeholder = "Rom 8:28",
                         keyboardOptions = KeyboardOptions(
                             capitalization = KeyboardCapitalization.Words,
                             autoCorrectEnabled = false,
@@ -138,7 +138,7 @@ fun ShareVerseSheet(
                     )
                     RowDivider()
                     LabeledFieldRow(
-                        "Topic",
+                        "Title",
                         value = title,
                         onValueChange = { title = it },
                         placeholder = "Optional",
@@ -157,7 +157,7 @@ fun ShareVerseSheet(
                         StatusLine(reference.display, icon = R.drawable.ic_check_circle_fill, tint = colors.green)
                     }
                 } else {
-                    StatusLine("Try “Romans 8:28”")
+                    StatusLine("Try “Rom 8:28”")
                 }
             }
 

@@ -248,7 +248,7 @@ fun VerseEditorSheet(
                         modifier = Modifier
                             .focusRequester(referenceFocus)
                             .onFocusChanged { referenceFocused = it.isFocused },
-                        placeholder = "Romans 8:28",
+                        placeholder = "Rom 8:28",
                         keyboardOptions = KeyboardOptions(
                             capitalization = KeyboardCapitalization.Words,
                             autoCorrectEnabled = false,
@@ -263,7 +263,7 @@ fun VerseEditorSheet(
                     }
                     RowDivider()
                     LabeledFieldRow(
-                        "Topic",
+                        "Title",
                         value = title,
                         onValueChange = { title = it },
                         modifier = Modifier.focusRequester(titleFocus),
@@ -292,7 +292,7 @@ fun VerseEditorSheet(
                         StatusLine(reference.display, icon = R.drawable.ic_check_circle_fill, tint = colors.green)
                     }
                     added.isNotEmpty() && referenceText.text.isEmpty() -> StatusLine("Added ${added.last()}")
-                    referenceText.text.isNotEmpty() -> StatusLine("Try “Romans 8:28”")
+                    referenceText.text.isNotEmpty() -> StatusLine("Try “Rom 8:28”")
                 }
             }
 
