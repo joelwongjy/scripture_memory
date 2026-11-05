@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import TipKit
 
 @main
 struct ScriptureMemoryApp: App {
@@ -22,6 +23,7 @@ struct ScriptureMemoryApp: App {
         // default only lands on people who never picked one.
         NewCardCap.migrateIfNeeded()
         Analytics.start()
+        try? Tips.configure()
     }
 
     var body: some Scene {
