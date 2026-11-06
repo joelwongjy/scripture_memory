@@ -70,11 +70,11 @@ private struct VersePickList: View {
 
     var body: some View {
         List {
-            ForEach(groups, id: \.section) { group in
+            ForEach(groups, id: \.[0].id) { group in
                 Section {
-                    ForEach(group.verses) { row($0) }
+                    ForEach(group) { row($0) }
                 } header: {
-                    if let heading = CardFooter.sectionHeading(pack: pack.name, section: group.section) {
+                    if let heading = CardFooter.groupHeading(for: group[0]) {
                         Text(heading)
                     }
                 }
@@ -84,11 +84,14 @@ private struct VersePickList: View {
         .navigationBarTitleDisplayMode(.inline)
     }
 
-    private var groups: [(section: String, verses: [Verse])] {
-        var result: [(section: String, verses: [Verse])] = []
+    private var groups: [[Verse]] {
+        var result: [[Verse]] = []
         for verse in pack.verses {
-            if result.last?.section == verse.subpack { result[result.count - 1].verses.append(verse) }
-            else { result.append((verse.subpack, [verse])) }
+            if let last = result.last?.last, CardFooter.groupHeading(for: last) == CardFooter.groupHeading(for: verse) {
+                result[result.count - 1].append(verse)
+            } else {
+                result.append([verse])
+            }
         }
         return result
     }

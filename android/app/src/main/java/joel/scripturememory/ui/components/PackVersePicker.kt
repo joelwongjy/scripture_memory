@@ -101,11 +101,12 @@ private fun VersePickList(
             ),
         ) {
             val groups = pack.verses.fold(mutableListOf<MutableList<Verse>>()) { acc, verse ->
-                if (acc.lastOrNull()?.first()?.subpack == verse.subpack) acc.last().add(verse) else acc.add(mutableListOf(verse))
+                val last = acc.lastOrNull()?.last()
+                if (last != null && CardFooter.groupHeading(last) == CardFooter.groupHeading(verse)) acc.last().add(verse) else acc.add(mutableListOf(verse))
                 acc
             }
             groups.forEachIndexed { groupIndex, group ->
-                val heading = CardFooter.sectionHeading(pack.name, group.first().subpack)
+                val heading = CardFooter.groupHeading(group.first())
                 if (heading != null) {
                     item(key = "section-$groupIndex") {
                         Text(
