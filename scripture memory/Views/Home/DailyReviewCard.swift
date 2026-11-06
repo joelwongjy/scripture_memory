@@ -1,5 +1,4 @@
 import SwiftUI
-import TipKit
 
 /// Home's daily review panel: how many cards are due, with Start, or the
 /// caught-up state with when to come back.
@@ -21,17 +20,8 @@ struct DailyReviewCard: View {
 
     private var newCap: NewCardCap { NewCardCap(amount: newCapAmount, unit: newCapUnit) }
 
-    private let countsTip = ReviewCountsTip()
-
     var body: some View {
-        let counts = dueCounts()
-        VStack(spacing: 8) {
-            panel(counts)
-            if !activePacks.isEmpty, counts.total > 0 {
-                TipView(countsTip)
-                    .tipBackground(Color(.secondarySystemGroupedBackground))
-            }
-        }
+        panel(dueCounts())
     }
 
     private func panel(_ counts: DueCounts) -> some View {
