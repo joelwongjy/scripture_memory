@@ -385,6 +385,7 @@ def cmd_patch(args) -> int:
                     "book": verse["book"],
                     "reference": re.sub(r"\s+$", "", verse["reference"]),
                     "subpack": pack["verses"][min(index, len(pack["verses"]) - 1)]["subpack"],
+                    "part": pack["verses"][min(index, len(pack["verses"]) - 1)].get("part", ""),
                 }
                 pack["verses"].insert(index, record)
                 changes.append(f"+ {pack['name']}: {ref_key(verse)} at #{index + 1}")

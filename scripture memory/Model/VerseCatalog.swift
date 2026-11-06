@@ -76,7 +76,7 @@ enum VerseCatalog {
     }
 
     /// Raise when a release needs something older caches don't carry.
-    static let currentSchema = 3
+    static let currentSchema = 4
 
     private static let cacheFilename = "verseCatalog.json"
 
@@ -230,7 +230,7 @@ struct SupabaseCatalogClient {
         let rows: [PackRow] = try await get("packs", query: [
             URLQueryItem(name: "select",
                          value: "edition,name,color,accent_text,sort_index,"
-                              + "verses(verse_id,card_uid,sort_index,title,verse,book,reference,subpack,version)"),
+                              + "verses(verse_id,card_uid,sort_index,title,verse,book,reference,subpack,part,version)"),
             URLQueryItem(name: "order", value: "sort_index.asc"),
         ] + VerseCatalog.partialEditions.sorted { $0.key < $1.key }.map { edition, names in
             let list = names.sorted().map { "\"\($0)\"" }.joined(separator: ",")
@@ -244,7 +244,7 @@ struct SupabaseCatalogClient {
                 .map { Verse(id: $0.verse_id, title: $0.title, verse: $0.verse,
                              book: $0.book, reference: $0.reference,
                              subpack: $0.subpack, version: $0.version,
-                             cardUid: $0.card_uid) }
+                             cardUid: $0.card_uid, part: $0.part) }
             if let allowed = VerseCatalog.partialEditions[row.edition], !allowed.contains(row.name) { continue }
             editions[row.edition, default: []].append(
                 Pack(name: row.name, color: row.color,
@@ -274,6 +274,7 @@ struct SupabaseCatalogClient {
         let book: String
         let reference: String
         let subpack: String
+        let part: String
         let version: String?
     }
 

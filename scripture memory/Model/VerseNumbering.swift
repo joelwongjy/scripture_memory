@@ -59,10 +59,9 @@ enum VerseNumbering {
             for pack in packs where pack.name.hasPrefix("DEP ") {
                 var topic = 0
                 var previous: String?
-                var part: Int?
+                var part = ""
                 for verse in pack.verses {
-                    let current = PackParts.part(of: verse)
-                    if current != part { topic = 0; previous = nil; part = current }
+                    if verse.part != part { topic = 0; previous = nil; part = verse.part }
                     if verse.title != previous { topic += 1; previous = verse.title }
                     map[verse.srsKey] = topic
                 }

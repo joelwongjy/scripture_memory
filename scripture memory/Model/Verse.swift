@@ -40,12 +40,14 @@ struct Verse: Hashable, Codable, Identifiable {
     /// those fall back to the legacy key via `srsKey`.
     let cardUid: String?
 
+    var part: String = ""
+
     /// Owning pack's name. Not in the JSON (it's implied by nesting) — filled in
     /// by `VerseCatalog` after decode.
     var packName: String = ""
 
     private enum CodingKeys: String, CodingKey {
-        case id, title, verse, book, reference, subpack, version, cardUid
+        case id, title, verse, book, reference, subpack, part, version, cardUid
     }
 
     /// The pinned translation, normalised — `nil` unless this card really does
@@ -77,4 +79,19 @@ struct Verse: Hashable, Codable, Identifiable {
     }
 
     var isPrintedDEP: Bool { packName.hasPrefix("DEP ") }
+}
+
+extension Verse {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(id: try c.decode(Int.self, forKey: .id),
+                  title: try c.decode(String.self, forKey: .title),
+                  verse: try c.decode(String.self, forKey: .verse),
+                  book: try c.decode(String.self, forKey: .book),
+                  reference: try c.decode(String.self, forKey: .reference),
+                  subpack: try c.decode(String.self, forKey: .subpack),
+                  version: try c.decodeIfPresent(String.self, forKey: .version),
+                  cardUid: try c.decodeIfPresent(String.self, forKey: .cardUid),
+                  part: try c.decodeIfPresent(String.self, forKey: .part) ?? "")
+    }
 }

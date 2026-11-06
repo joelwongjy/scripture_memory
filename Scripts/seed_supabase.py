@@ -172,6 +172,7 @@ def cmd_seed(client: Supabase) -> int:
                 "book":       verse["book"],
                 "reference":  verse["reference"],
                 "subpack":    verse.get("subpack", ""),
+                "part":       verse.get("part", ""),
                 "version":    verse.get("version"),
             })
 

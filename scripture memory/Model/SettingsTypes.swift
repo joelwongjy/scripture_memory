@@ -140,7 +140,7 @@ enum BibleVersion: String, CaseIterable {
         let verses = pack.verses.map { v in
             Verse(id: v.cardUid.flatMap { ids[$0] } ?? v.id, title: v.title, verse: v.verse,
                   book: v.book, reference: v.reference, subpack: v.subpack,
-                  version: v.version, cardUid: v.cardUid, packName: v.packName)
+                  version: v.version, cardUid: v.cardUid, part: v.part, packName: v.packName)
         }
         return Pack(name: pack.name, color: pack.color, accentText: pack.accentText, verses: verses)
     }
