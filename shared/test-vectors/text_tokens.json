@@ -65,7 +65,7 @@
 {"book":"Ephesians\t","expected":"P#ephesians|2:8-9","pack":"P","reference":"2:8-9"}
 ],
 "catalog": [
-{"count":15783,"digest":"5d051e3541182d28","file":"verseData.json"},
+{"count":15693,"digest":"f133b97c12c59fdc","file":"verseData.json"},
 {"count":1748,"digest":"78bf95e2ed8bd111","file":"verseDataNIV11.json"}
 ],
 "darwinTokens": [

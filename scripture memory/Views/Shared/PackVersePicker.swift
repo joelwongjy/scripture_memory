@@ -70,20 +70,39 @@ private struct VersePickList: View {
 
     var body: some View {
         List {
-            ForEach(pack.verses) { verse in
-                Button {
-                    HapticEngine.light()
-                    onSelect(verse)
-                    dismiss()
-                } label: {
-                    VerseRowLabel(verse: verse) {
-                        if verse.srsKey == selectedKey { marker.view }
+            ForEach(groups, id: \.section) { group in
+                Section {
+                    ForEach(group.verses) { row($0) }
+                } header: {
+                    if let heading = CardFooter.sectionHeading(pack: pack.name, section: group.section) {
+                        Text(heading)
                     }
                 }
-                .buttonStyle(.plain)
             }
         }
         .navigationTitle(pack.name)
         .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private var groups: [(section: String, verses: [Verse])] {
+        var result: [(section: String, verses: [Verse])] = []
+        for verse in pack.verses {
+            if result.last?.section == verse.subpack { result[result.count - 1].verses.append(verse) }
+            else { result.append((verse.subpack, [verse])) }
+        }
+        return result
+    }
+
+    private func row(_ verse: Verse) -> some View {
+        Button {
+            HapticEngine.light()
+            onSelect(verse)
+            dismiss()
+        } label: {
+            VerseRowLabel(verse: verse) {
+                if verse.srsKey == selectedKey { marker.view }
+            }
+        }
+        .buttonStyle(.plain)
     }
 }

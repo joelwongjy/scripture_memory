@@ -2,8 +2,9 @@ import Foundation
 
 /// Where a verse sits in its printed pack, and the short code that names it.
 ///
-/// The published material numbers every card — TMS 60 by lettered section
-/// (`C-7`), the DEP booklets and the 180 series as one straight run per pack.
+/// The published material numbers every card within its group: TMS 60 by
+/// lettered section (`C-7`), the DEP booklets and the 180 series by numbered
+/// part (`2-3`), and packs without groups as one straight run.
 /// That number is how people actually refer to a verse to each other and how
 /// they find it in the booklet, so any list of verses needs to show it.
 ///
@@ -59,7 +60,9 @@ enum VerseNumbering {
             for pack in packs where pack.name.hasPrefix("DEP ") {
                 var topic = 0
                 var previous: String?
+                var section: String?
                 for verse in pack.verses {
+                    if verse.subpack != section { topic = 0; previous = nil; section = verse.subpack }
                     if verse.title != previous { topic += 1; previous = verse.title }
                     map[verse.srsKey] = topic
                 }
@@ -80,7 +83,7 @@ enum VerseNumbering {
         packCodes[packName] ?? packName
     }
 
-    /// The card's printed number, e.g. `"DEP 1-9"`, `"TMS 60 C-7"`, `"5A-3"`.
+    /// The card's printed number, e.g. `"DEP 1-9"`, `"DEP 2 2-3"`, `"TMS 60 C-7"`, `"5A-3"`.
     /// `nil` for a verse built outside the catalogue (previews, ad-hoc
     /// construction), which has no printed card to name.
     static func code(for verse: Verse) -> String? {

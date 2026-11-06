@@ -3,8 +3,10 @@ package joel.scripturememory.ui.components
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -13,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import joel.scripturememory.R
+import joel.scripturememory.model.CardFooter
 import joel.scripturememory.model.Pack
 import joel.scripturememory.model.Verse
 import joel.scripturememory.system.HapticEngine
@@ -97,21 +100,47 @@ private fun VersePickList(
                 bottom = LocalBottomBarPadding.current + 24.dp,
             ),
         ) {
-            itemsIndexed(pack.verses, key = { _, verse -> verse.srsKey }) { index, verse ->
-                Column(Modifier.readableColumn().groupedRow(index, pack.verses.size)) {
-                    VerseRowLabel(
-                        verse,
-                        Modifier
-                            .fillMaxWidth()
-                            .pressable(pressedScale = 1f, pressedAlpha = 0.55f) {
-                                HapticEngine.light()
-                                onSelect(verse)
-                                navigator.pop()
-                            }
-                            .padding(horizontal = AppLayout.panelPadding, vertical = 10.dp),
-                        trailing = { if (verse.srsKey == selectedKey) marker.Mark() },
-                    )
-                    if (index < pack.verses.lastIndex) RowDivider()
+            val groups = pack.verses.fold(mutableListOf<MutableList<Verse>>()) { acc, verse ->
+                if (acc.lastOrNull()?.first()?.subpack == verse.subpack) acc.last().add(verse) else acc.add(mutableListOf(verse))
+                acc
+            }
+            groups.forEachIndexed { groupIndex, group ->
+                val heading = CardFooter.sectionHeading(pack.name, group.first().subpack)
+                if (heading != null) {
+                    item(key = "section-$groupIndex") {
+                        Text(
+                            heading,
+                            Modifier
+                                .readableColumn()
+                                .padding(
+                                    start = AppLayout.panelPadding,
+                                    end = AppLayout.panelPadding,
+                                    top = if (groupIndex == 0) 0.dp else 20.dp,
+                                    bottom = 8.dp,
+                                ),
+                            style = AppType.footnote,
+                            color = AppTheme.colors.secondaryLabel,
+                        )
+                    }
+                } else if (groupIndex > 0) {
+                    item(key = "gap-$groupIndex") { Spacer(Modifier.height(20.dp)) }
+                }
+                itemsIndexed(group, key = { _, verse -> verse.srsKey }) { index, verse ->
+                    Column(Modifier.readableColumn().groupedRow(index, group.size)) {
+                        VerseRowLabel(
+                            verse,
+                            Modifier
+                                .fillMaxWidth()
+                                .pressable(pressedScale = 1f, pressedAlpha = 0.55f) {
+                                    HapticEngine.light()
+                                    onSelect(verse)
+                                    navigator.pop()
+                                }
+                                .padding(horizontal = AppLayout.panelPadding, vertical = 10.dp),
+                            trailing = { if (verse.srsKey == selectedKey) marker.Mark() },
+                        )
+                        if (index < group.lastIndex) RowDivider()
+                    }
                 }
             }
         }

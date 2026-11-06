@@ -59,6 +59,30 @@ class CatalogueBehaviourTests {
     }
 
     @Test
+    fun numberingRestartsInEachGroup() {
+        val quietTime = named("DEP 2: Quiet Time").verses
+        val firstOfPart2 = quietTime.first { it.subpack == "2" }
+        assertEquals("DEP 2 2-1", VerseNumbering.code(firstOfPart2))
+        assertEquals("2 2-1", VerseNumbering.printedNumber(firstOfPart2))
+        assertEquals(1, VerseNumbering.topic(firstOfPart2))
+        assertEquals("2-1 · What is Quiet Time?", CardFooter.label(firstOfPart2))
+        val holySpirit = named("TMS 180 · Getting to Know God").verses.first { it.subpack == "2" }
+        assertEquals("TMS 180 S1 2-1", VerseNumbering.code(holySpirit))
+        assertEquals("2-1 · Holy Spirit", CardFooter.label(holySpirit))
+        assertEquals("2. What is Quiet Time?", CardFooter.sectionHeading("DEP 2: Quiet Time", "2"))
+        assertEquals("A-12 · Live the New Life", CardFooter.label(named("TMS 60").verses[11]))
+    }
+
+    @Test
+    fun everyGroupHasATitle() {
+        for (pack in packsNIV84) {
+            for (section in pack.verses.map { it.subpack }.filter { it.isNotEmpty() }.distinct()) {
+                assertTrue("${pack.name} $section", CardFooter.sectionHeading(pack.name, section) != null)
+            }
+        }
+    }
+
+    @Test
     fun numberingSurvivesATranslationSwitch() {
         val niv84 = named("TMS 60").verses[3]
         val niv11 = BibleVersion.niv11.packs.first { it.name == "TMS 60" }.verses[3]
@@ -88,8 +112,8 @@ class CatalogueBehaviourTests {
         val c7 = named("TMS 60").verses.filter { it.subpack == "C" }[6]
         assertEquals("C-7 · Rely on God's Resources", CardFooter.label(c7))
         assertEquals("3 · Beginning with Christ", CardFooter.label(named("5 Assurances").verses[2]))
-        val dep = named("DEP 2: Quiet Time").verses[0]
-        assertEquals("DEP 2: Quiet Time", CardFooter.label(dep))
+        assertEquals("1-1 · Why do we have Quiet Time?", CardFooter.label(named("DEP 2: Quiet Time").verses[0]))
+        assertEquals("DEP 1: Assurance of Salvation", CardFooter.label(named("DEP 1: Assurance of Salvation").verses[0]))
         assertEquals("Fallback", CardFooter.label(verse(1, packName = ""), "Fallback"))
     }
 
