@@ -99,12 +99,16 @@ class Supabase:
 
 
 def bundled_catalog() -> list[tuple[str, dict, int]]:
-    """(edition, pack, sort_index) for every bundled pack."""
-    out = []
+    """(edition, pack, sort_index) for every pack to publish."""
+    base = json.loads(EDITIONS["NIV84"].read_text())
+    order = {pack["name"]: index for index, pack in enumerate(base)}
+    out = [("NIV84", pack, index) for index, pack in enumerate(base)]
     for edition, path in EDITIONS.items():
-        packs = json.loads(path.read_text())
-        for index, pack in enumerate(packs):
-            out.append((edition, pack, index))
+        if edition == "NIV84":
+            continue
+        shipped = {pack["name"]: pack for pack in json.loads(path.read_text())}
+        for pack in base:
+            out.append((edition, shipped.get(pack["name"], pack), order[pack["name"]]))
     return out
 
 
