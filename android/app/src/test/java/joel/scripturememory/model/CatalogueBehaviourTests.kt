@@ -59,26 +59,31 @@ class CatalogueBehaviourTests {
     }
 
     @Test
-    fun numberingRestartsInEachGroup() {
+    fun partsRestartTopicsButNotCardNumbers() {
         val quietTime = named("DEP 2: Quiet Time").verses
-        val firstOfPart2 = quietTime.first { it.subpack == "2" }
-        assertEquals("DEP 2 2-1", VerseNumbering.code(firstOfPart2))
-        assertEquals("2 2-1", VerseNumbering.printedNumber(firstOfPart2))
+        val firstOfPart2 = quietTime.first { it.title == "Looking on the Lord" }
+        assertEquals(9, quietTime.indexOf(firstOfPart2) + 1)
+        assertEquals("DEP 2-9", VerseNumbering.code(firstOfPart2))
+        assertEquals("2-9", VerseNumbering.printedNumber(firstOfPart2))
         assertEquals(1, VerseNumbering.topic(firstOfPart2))
-        assertEquals("2-1 · What is Quiet Time?", CardFooter.label(firstOfPart2))
-        val holySpirit = named("TMS 180 · Getting to Know God").verses.first { it.subpack == "2" }
-        assertEquals("TMS 180 S1 2-1", VerseNumbering.code(holySpirit))
-        assertEquals("2-1 · Holy Spirit", CardFooter.label(holySpirit))
-        assertEquals("2. What is Quiet Time?", CardFooter.sectionHeading("DEP 2: Quiet Time", "2"))
-        assertEquals("A-12 · Live the New Life", CardFooter.label(named("TMS 60").verses[11]))
+        assertEquals(2, PackParts.part(firstOfPart2))
+        assertEquals("2. What is Quiet Time?", CardFooter.label(firstOfPart2))
+        assertEquals("2. What is Quiet Time?", CardFooter.groupHeading(firstOfPart2))
+        val holySpirit = named("TMS 180 · Getting to Know God").verses[12]
+        assertEquals("TMS 180 S1-13", VerseNumbering.code(holySpirit))
+        assertEquals("2. Holy Spirit", CardFooter.label(holySpirit))
+        assertEquals("A. Live the New Life", CardFooter.groupHeading(named("TMS 60").verses[0]))
+        assertNull(CardFooter.groupHeading(named("DEP 1: Assurance of Salvation").verses[0]))
     }
 
     @Test
-    fun everyGroupHasATitle() {
-        for (pack in packsNIV84) {
-            for (section in pack.verses.map { it.subpack }.filter { it.isNotEmpty() }.distinct()) {
-                assertTrue("${pack.name} $section", CardFooter.sectionHeading(pack.name, section) != null)
-            }
+    fun everyPartedPackStartsAtItsFirstCard() {
+        val parted = listOf(2, 3, 4, 5, 6, 7).map { n -> packsNIV84.first { it.name.startsWith("DEP $n:") } } +
+            packsNIV84.filter { it.name.startsWith("TMS 180") }
+        for (pack in parted) {
+            assertEquals(pack.name, 1, PackParts.part(pack.verses.first()))
+            assertTrue(pack.name, pack.verses.all { PackParts.part(it) != null })
+            assertTrue(pack.name, (PackParts.part(pack.verses.last()) ?: 0) >= 3)
         }
     }
 
@@ -112,7 +117,7 @@ class CatalogueBehaviourTests {
         val c7 = named("TMS 60").verses.filter { it.subpack == "C" }[6]
         assertEquals("C-7 · Rely on God's Resources", CardFooter.label(c7))
         assertEquals("3 · Beginning with Christ", CardFooter.label(named("5 Assurances").verses[2]))
-        assertEquals("1-1 · Why do we have Quiet Time?", CardFooter.label(named("DEP 2: Quiet Time").verses[0]))
+        assertEquals("1. Why do we have Quiet Time?", CardFooter.label(named("DEP 2: Quiet Time").verses[0]))
         assertEquals("DEP 1: Assurance of Salvation", CardFooter.label(named("DEP 1: Assurance of Salvation").verses[0]))
         assertEquals("Fallback", CardFooter.label(verse(1, packName = ""), "Fallback"))
     }
