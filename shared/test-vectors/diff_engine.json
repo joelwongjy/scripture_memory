@@ -590,7 +590,7 @@
 {"a":"","b":"","expected":true}
 ],
 "catalog": [
-{"count":14181,"digest":"94bea8137843f60","file":"verseData.json"},
+{"count":14094,"digest":"a4b9eec5b6f67ef2","file":"verseData.json"},
 {"count":1614,"digest":"f6a9882dd15cd25a","file":"verseDataNIV11.json"}
 ],
 "darwinCharacterSets": [

@@ -45,7 +45,13 @@ object VerseNumbering {
                 if (!pack.name.startsWith("DEP ")) continue
                 var topic = 0
                 var previous: String? = null
+                var section: String? = null
                 for (verse in pack.verses) {
+                    if (verse.subpack != section) {
+                        topic = 0
+                        previous = null
+                        section = verse.subpack
+                    }
                     if (verse.title != previous) {
                         topic += 1
                         previous = verse.title
