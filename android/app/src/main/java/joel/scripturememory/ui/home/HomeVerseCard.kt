@@ -153,7 +153,7 @@ private fun PrintedHeading(verse: Verse, u: Float, dark: Boolean, size: (Float) 
     val verseCeiling = PackListLayout.verseTextCeiling(100 * u, PackListLayout.printedVerseShare, AppType.caption.sizeInDp())
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy((2 * u).dp)) {
         Text(
-            VerseNumbering.topic(verse)?.let { "$it) ${verse.title}" } ?: verse.title,
+            VerseNumbering.numberedTitle(verse),
             Modifier.weight(1f).alignByBaseline(),
             style = CardFont.style(CardFontStyle.PrintTitle, size(4.4f)),
             color = PouchInk.body(dark),

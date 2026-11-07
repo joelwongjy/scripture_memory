@@ -72,6 +72,11 @@ enum VerseNumbering {
 
     static func topic(of verse: Verse) -> Int? { topics[verse.srsKey] }
 
+    static func numberedTitle(for verse: Verse) -> String {
+        guard let topic = topic(of: verse) else { return verse.title }
+        return verse.packName.hasPrefix("DEP 1:") ? "\(topic). \(verse.title)" : "\(topic)) \(verse.title)"
+    }
+
     static func printedNumber(for verse: Verse) -> String? {
         guard verse.packName.hasPrefix("DEP "), let code = code(for: verse) else { return nil }
         return String(code.dropFirst("DEP ".count))

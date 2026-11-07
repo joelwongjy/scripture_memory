@@ -128,7 +128,7 @@ internal fun PouchVerseCard(
             val reference = "${verse.book} ${verse.reference}"
             if (isPrintedDEP) {
                 Row(Modifier.fillMaxWidth()) {
-                    val title = VerseNumbering.topic(verse)?.let { "$it) ${verse.title}" } ?: verse.title
+                    val title = VerseNumbering.numberedTitle(verse)
                     Text(
                         title,
                         Modifier.weight(1f).alignBy(FirstBaseline),

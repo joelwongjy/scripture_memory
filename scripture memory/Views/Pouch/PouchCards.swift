@@ -176,7 +176,7 @@ struct PouchVerseCard<Accessory: View>: View {
     @ViewBuilder
     private func printedHeading(_ u: CGFloat) -> some View {
         HStack(alignment: .firstTextBaseline) {
-            Text(VerseNumbering.topic(of: verse).map { "\($0)) \(verse.title)" } ?? verse.title)
+            Text(VerseNumbering.numberedTitle(for: verse))
                 .font(CardFont.font(.printTitle, size: 4.4 * u))
                 .foregroundStyle(PouchInk.body)
                 .lineLimit(2)
