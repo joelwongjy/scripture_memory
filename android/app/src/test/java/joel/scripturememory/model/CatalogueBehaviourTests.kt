@@ -56,6 +56,10 @@ class CatalogueBehaviourTests {
         val changes = verses.zipWithNext().count { (a, b) -> a.title != b.title }
         assertEquals(changes + 1, VerseNumbering.topic(verses.last()))
         assertNull(VerseNumbering.topic(named("TMS 60").verses[0]))
+        assertEquals("1. ${verses[0].title}", VerseNumbering.numberedTitle(verses[0]))
+        val quietTime = named("DEP 2: Quiet Time").verses[0]
+        assertEquals("1) ${quietTime.title}", VerseNumbering.numberedTitle(quietTime))
+        assertEquals(named("TMS 60").verses[0].title, VerseNumbering.numberedTitle(named("TMS 60").verses[0]))
     }
 
     @Test
@@ -73,9 +77,9 @@ class CatalogueBehaviourTests {
         assertEquals("TMS 180 S1-13", VerseNumbering.code(holySpirit))
         assertEquals("2. Holy Spirit", CardFooter.label(holySpirit))
         assertEquals("A. Live the New Life", CardFooter.groupHeading(named("TMS 60").verses[0]))
-        assertNull(CardFooter.groupHeading(named("DEP 1: Assurance of Salvation").verses[0]))
+        assertEquals("I. Assurance of Salvation", CardFooter.groupHeading(named("DEP 1: Assurance of Salvation").verses[0]))
         assertEquals("E-1 · Grow in Christlikeness", CardFooter.label(named("TMS 60").verses.first { it.subpack == "E" }))
-        assertEquals("DEP 1: Assurance of Salvation", CardFooter.label(named("DEP 1: Assurance of Salvation").verses[0]))
+        assertEquals("I. Assurance of Salvation", CardFooter.label(named("DEP 1: Assurance of Salvation").verses[0]))
     }
 
     @Test
@@ -121,7 +125,8 @@ class CatalogueBehaviourTests {
         assertEquals("C-7 · Rely on God's Resources", CardFooter.label(c7))
         assertEquals("3 · Beginning with Christ", CardFooter.label(named("5 Assurances").verses[2]))
         assertEquals("1. Why do we have Quiet Time?", CardFooter.label(named("DEP 2: Quiet Time").verses[0]))
-        assertEquals("DEP 1: Assurance of Salvation", CardFooter.label(named("DEP 1: Assurance of Salvation").verses[0]))
+        assertEquals("VIII. World Vision", CardFooter.label(named("DEP 8: World Vision").verses[0]))
+        assertNull(CardFooter.groupHeading(named("5 Assurances").verses[0]))
         assertEquals("Fallback", CardFooter.label(verse(1, packName = ""), "Fallback"))
     }
 

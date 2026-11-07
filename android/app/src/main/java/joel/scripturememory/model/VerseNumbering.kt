@@ -65,6 +65,11 @@ object VerseNumbering {
 
     fun topic(verse: Verse): Int? = topics[verse.srsKey]
 
+    fun numberedTitle(verse: Verse): String {
+        val topic = topic(verse) ?: return verse.title
+        return if (verse.packName.startsWith("DEP 1:")) "$topic. ${verse.title}" else "$topic) ${verse.title}"
+    }
+
     fun printedNumber(verse: Verse): String? {
         if (!verse.packName.startsWith("DEP ")) return null
         val code = code(verse) ?: return null

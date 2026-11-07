@@ -106,7 +106,7 @@ private fun VersePickList(
                 acc
             }
             groups.forEachIndexed { groupIndex, group ->
-                val heading = CardFooter.groupHeading(group.first())
+                val heading = if (groups.size > 1) CardFooter.groupHeading(group.first()) else null
                 if (heading != null) {
                     item(key = "section-$groupIndex") {
                         Text(

@@ -70,11 +70,12 @@ private struct VersePickList: View {
 
     var body: some View {
         List {
+            let groups = groups
             ForEach(groups, id: \.[0].id) { group in
                 Section {
                     ForEach(group) { row($0) }
                 } header: {
-                    if let heading = CardFooter.groupHeading(for: group[0]) {
+                    if groups.count > 1, let heading = CardFooter.groupHeading(for: group[0]) {
                         Text(heading)
                     }
                 }
