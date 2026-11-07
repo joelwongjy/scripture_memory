@@ -118,7 +118,6 @@ fun DailyReviewCard(activePacks: List<Pack>, modifier: Modifier = Modifier, onSt
                 )
             }
         }
-        if (state == ReviewPanelState.Due && !ReviewCountsTip.isDismissed) ReviewCountsTipCard()
     }
 }
 
