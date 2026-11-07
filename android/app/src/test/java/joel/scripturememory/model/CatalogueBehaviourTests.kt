@@ -66,7 +66,7 @@ class CatalogueBehaviourTests {
         assertEquals("DEP 2-9", VerseNumbering.code(firstOfPart2))
         assertEquals("2-9", VerseNumbering.printedNumber(firstOfPart2))
         assertEquals(1, VerseNumbering.topic(firstOfPart2))
-        assertEquals(2, PackParts.part(firstOfPart2))
+        assertEquals("2. What is Quiet Time?", firstOfPart2.part)
         assertEquals("2. What is Quiet Time?", CardFooter.label(firstOfPart2))
         assertEquals("2. What is Quiet Time?", CardFooter.groupHeading(firstOfPart2))
         val holySpirit = named("TMS 180 · Getting to Know God").verses[12]
@@ -74,6 +74,8 @@ class CatalogueBehaviourTests {
         assertEquals("2. Holy Spirit", CardFooter.label(holySpirit))
         assertEquals("A. Live the New Life", CardFooter.groupHeading(named("TMS 60").verses[0]))
         assertNull(CardFooter.groupHeading(named("DEP 1: Assurance of Salvation").verses[0]))
+        assertEquals("E-1 · Grow in Christlikeness", CardFooter.label(named("TMS 60").verses.first { it.subpack == "E" }))
+        assertEquals("DEP 1: Assurance of Salvation", CardFooter.label(named("DEP 1: Assurance of Salvation").verses[0]))
     }
 
     @Test
@@ -81,9 +83,10 @@ class CatalogueBehaviourTests {
         val parted = listOf(2, 3, 4, 5, 6, 7).map { n -> packsNIV84.first { it.name.startsWith("DEP $n:") } } +
             packsNIV84.filter { it.name.startsWith("TMS 180") }
         for (pack in parted) {
-            assertEquals(pack.name, 1, PackParts.part(pack.verses.first()))
-            assertTrue(pack.name, pack.verses.all { PackParts.part(it) != null })
-            assertTrue(pack.name, (PackParts.part(pack.verses.last()) ?: 0) >= 3)
+            val parts = pack.verses.map { it.part }.distinct()
+            assertTrue(pack.name, parts.size >= 3)
+            parts.forEachIndexed { i, part -> assertTrue("${pack.name}: $part", part.startsWith("${i + 1}. ")) }
+            assertEquals(pack.name, parts.size, pack.verses.zipWithNext().count { (a, b) -> a.part != b.part } + 1)
         }
     }
 

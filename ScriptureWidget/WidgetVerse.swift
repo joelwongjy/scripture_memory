@@ -55,7 +55,7 @@ enum VerseLibrary {
         let editions: [String: [WidgetPack]]
     }
 
-    private static let currentSchema = 3
+    private static let currentSchema = 4
 
     static let allVerses: [WidgetVerse] = shared() ?? bundled()
 

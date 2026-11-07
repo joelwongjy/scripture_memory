@@ -19,7 +19,7 @@ object VerseCatalog {
         val editions: Map<String, List<Pack>>,
     )
 
-    const val currentSchema = 3
+    const val currentSchema = 4
 
     private const val cacheFilename = "verseCatalog.json"
 

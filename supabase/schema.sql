@@ -64,6 +64,7 @@ create table if not exists verses (
     -- Lettered section, e.g. TMS 60's 'A'..'E'. Empty for packs that are one
     -- straight run.
     subpack    text    not null default '',
+    part       text    not null default '',
     -- Translation override for a card printed in something other than its
     -- pack's edition (a few DEP cards are KJV). NULL means "the pack's own".
     version    text,
@@ -82,6 +83,7 @@ create table if not exists verses (
 alter table verses add column if not exists card_uid   text;
 alter table packs  add column if not exists updated_at timestamptz not null default now();
 alter table verses add column if not exists updated_at timestamptz not null default now();
+alter table verses add column if not exists part       text        not null default '';
 
 -- Defaults for the two columns you'd otherwise have to invent by hand.
 --
@@ -292,6 +294,7 @@ grant select on catalog_status to anon, authenticated;
 --
 -- Pass `p_verse_by_edition` to give each translation its own text:
 --   '{"NIV84": "...", "NIV11": "..."}'::jsonb
+drop function if exists add_card(text, integer, text, text, text, text, jsonb, text, text);
 create or replace function add_card(
     p_pack_name text,
     p_sort_index integer,
@@ -301,7 +304,8 @@ create or replace function add_card(
     p_verse text default null,
     p_verse_by_edition jsonb default null,
     p_subpack text default '',
-    p_version text default null
+    p_version text default null,
+    p_part text default ''
 ) returns text
 language plpgsql
 as $$
@@ -320,9 +324,9 @@ begin
             raise exception 'no verse text for edition %', pack.edition;
         end if;
         insert into verses (pack_id, card_uid, sort_index, title, verse,
-                            book, reference, subpack, version)
+                            book, reference, subpack, version, part)
         values (pack.id, new_uid, p_sort_index, p_title, body,
-                p_book, p_reference, p_subpack, p_version);
+                p_book, p_reference, p_subpack, p_version, p_part);
     end loop;
 
     if not found then

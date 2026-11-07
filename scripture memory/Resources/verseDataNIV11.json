@@ -11,6 +11,7 @@
         "book": "2 Corinthians",
         "reference": "5:17",
         "subpack": "A",
+        "part": "A. Live the New Life",
         "cardUid": "53b7f282e8db4d0d"
       },
       {
@@ -20,6 +21,7 @@
         "book": "Galatians",
         "reference": "2:20",
         "subpack": "A",
+        "part": "A. Live the New Life",
         "cardUid": "abc5fccfb66e8c14"
       },
       {
@@ -29,6 +31,7 @@
         "book": "Romans",
         "reference": "12:1",
         "subpack": "A",
+        "part": "A. Live the New Life",
         "cardUid": "5887cf7e17ef94b3"
       },
       {
@@ -38,6 +41,7 @@
         "book": "John",
         "reference": "14:21",
         "subpack": "A",
+        "part": "A. Live the New Life",
         "cardUid": "838b46c6d3fe8b41"
       },
       {
@@ -47,6 +51,7 @@
         "book": "2 Timothy",
         "reference": "3:16",
         "subpack": "A",
+        "part": "A. Live the New Life",
         "cardUid": "47991ecef8531919"
       },
       {
@@ -56,6 +61,7 @@
         "book": "Joshua",
         "reference": "1:8",
         "subpack": "A",
+        "part": "A. Live the New Life",
         "cardUid": "d30f59c977460049"
       },
       {
@@ -65,6 +71,7 @@
         "book": "John",
         "reference": "15:7",
         "subpack": "A",
+        "part": "A. Live the New Life",
         "cardUid": "85dea192cd6d36f4"
       },
       {
@@ -74,6 +81,7 @@
         "book": "Philippians",
         "reference": "4:6-7",
         "subpack": "A",
+        "part": "A. Live the New Life",
         "cardUid": "562305394528284f"
       },
       {
@@ -83,6 +91,7 @@
         "book": "Matthew",
         "reference": "18:20",
         "subpack": "A",
+        "part": "A. Live the New Life",
         "cardUid": "46608870776328c5"
       },
       {
@@ -92,6 +101,7 @@
         "book": "Hebrews",
         "reference": "10:24-25",
         "subpack": "A",
+        "part": "A. Live the New Life",
         "cardUid": "eb451a402d0e4159"
       },
       {
@@ -101,6 +111,7 @@
         "book": "Matthew",
         "reference": "4:19",
         "subpack": "A",
+        "part": "A. Live the New Life",
         "cardUid": "8af4b22a031ac015"
       },
       {
@@ -110,6 +121,7 @@
         "book": "Romans",
         "reference": "1:16",
         "subpack": "A",
+        "part": "A. Live the New Life",
         "cardUid": "30dcd7c855eb750e"
       },
       {
@@ -119,6 +131,7 @@
         "book": "Romans",
         "reference": "3:23",
         "subpack": "B",
+        "part": "B. Proclaim Christ",
         "cardUid": "231c64df0c7f4a01"
       },
       {
@@ -128,6 +141,7 @@
         "book": "Isaiah",
         "reference": "53:6",
         "subpack": "B",
+        "part": "B. Proclaim Christ",
         "cardUid": "0dc817b15fe06097"
       },
       {
@@ -137,6 +151,7 @@
         "book": "Romans",
         "reference": "6:23",
         "subpack": "B",
+        "part": "B. Proclaim Christ",
         "cardUid": "7265b7d0775f29a9"
       },
       {
@@ -146,6 +161,7 @@
         "book": "Hebrews",
         "reference": "9:27",
         "subpack": "B",
+        "part": "B. Proclaim Christ",
         "cardUid": "e0988cac53b19e29"
       },
       {
@@ -155,6 +171,7 @@
         "book": "Romans",
         "reference": "5:8",
         "subpack": "B",
+        "part": "B. Proclaim Christ",
         "cardUid": "35bc616433dc90ff"
       },
       {
@@ -164,6 +181,7 @@
         "book": "1 Peter",
         "reference": "3:18",
         "subpack": "B",
+        "part": "B. Proclaim Christ",
         "cardUid": "6e971140dffdb60a"
       },
       {
@@ -173,6 +191,7 @@
         "book": "Ephesians",
         "reference": "2:8-9",
         "subpack": "B",
+        "part": "B. Proclaim Christ",
         "cardUid": "8b983188fd0b6aa4"
       },
       {
@@ -182,6 +201,7 @@
         "book": "Titus",
         "reference": "3:5",
         "subpack": "B",
+        "part": "B. Proclaim Christ",
         "cardUid": "bdd9f73f2124968e"
       },
       {
@@ -191,6 +211,7 @@
         "book": "John",
         "reference": "1:12",
         "subpack": "B",
+        "part": "B. Proclaim Christ",
         "cardUid": "9eddec605ec52aa7"
       },
       {
@@ -200,6 +221,7 @@
         "book": "Revelation",
         "reference": "3:20",
         "subpack": "B",
+        "part": "B. Proclaim Christ",
         "cardUid": "34d348cd32d990a1"
       },
       {
@@ -209,6 +231,7 @@
         "book": "1 John",
         "reference": "5:13",
         "subpack": "B",
+        "part": "B. Proclaim Christ",
         "cardUid": "bf74e67d86182c89"
       },
       {
@@ -218,6 +241,7 @@
         "book": "John",
         "reference": "5:24",
         "subpack": "B",
+        "part": "B. Proclaim Christ",
         "cardUid": "c87a17e2d505bde8"
       },
       {
@@ -227,6 +251,7 @@
         "book": "1 Corinthians",
         "reference": "3:16",
         "subpack": "C",
+        "part": "C. Rely on God's Resources",
         "cardUid": "7f8dd7d587baa579"
       },
       {
@@ -236,6 +261,7 @@
         "book": "1 Corinthians",
         "reference": "2:12",
         "subpack": "C",
+        "part": "C. Rely on God's Resources",
         "cardUid": "5bf5dd6b94a7fb33"
       },
       {
@@ -245,6 +271,7 @@
         "book": "Isaiah",
         "reference": "41:10",
         "subpack": "C",
+        "part": "C. Rely on God's Resources",
         "cardUid": "eb6a7e3bf0a647d7"
       },
       {
@@ -254,6 +281,7 @@
         "book": "Philippians",
         "reference": "4:13",
         "subpack": "C",
+        "part": "C. Rely on God's Resources",
         "cardUid": "37608aa5debc6a44"
       },
       {
@@ -263,6 +291,7 @@
         "book": "Lamentations",
         "reference": "3:22-23",
         "subpack": "C",
+        "part": "C. Rely on God's Resources",
         "cardUid": "eeaed8f34fa04572"
       },
       {
@@ -272,6 +301,7 @@
         "book": "Numbers",
         "reference": "23:19",
         "subpack": "C",
+        "part": "C. Rely on God's Resources",
         "cardUid": "2bc7e82bd320dea4"
       },
       {
@@ -281,6 +311,7 @@
         "book": "Isaiah",
         "reference": "26:3",
         "subpack": "C",
+        "part": "C. Rely on God's Resources",
         "cardUid": "61d5a30a41db651b"
       },
       {
@@ -290,6 +321,7 @@
         "book": "1 Peter",
         "reference": "5:7",
         "subpack": "C",
+        "part": "C. Rely on God's Resources",
         "cardUid": "c9991056657dbe0d"
       },
       {
@@ -299,6 +331,7 @@
         "book": "Romans",
         "reference": "8:32",
         "subpack": "C",
+        "part": "C. Rely on God's Resources",
         "cardUid": "02e10c5e7b88b61b"
       },
       {
@@ -308,6 +341,7 @@
         "book": "Philippians",
         "reference": "4:19",
         "subpack": "C",
+        "part": "C. Rely on God's Resources",
         "cardUid": "6a148ad77d80b512"
       },
       {
@@ -317,6 +351,7 @@
         "book": "Hebrews",
         "reference": "2:18",
         "subpack": "C",
+        "part": "C. Rely on God's Resources",
         "cardUid": "8ffaf0c764684e46"
       },
       {
@@ -326,6 +361,7 @@
         "book": "Psalm",
         "reference": "119:9, 11",
         "subpack": "C",
+        "part": "C. Rely on God's Resources",
         "cardUid": "6d79dd06e97ed827"
       },
       {
@@ -335,6 +371,7 @@
         "book": "Matthew",
         "reference": "6:33",
         "subpack": "D",
+        "part": "D. Be Christ's Disciple",
         "cardUid": "8e04f9616557a02d"
       },
       {
@@ -344,6 +381,7 @@
         "book": "Luke",
         "reference": "9:23",
         "subpack": "D",
+        "part": "D. Be Christ's Disciple",
         "cardUid": "2f0870229caa1861"
       },
       {
@@ -353,6 +391,7 @@
         "book": "1 John",
         "reference": "2:15-16",
         "subpack": "D",
+        "part": "D. Be Christ's Disciple",
         "cardUid": "8c133f82ddf2c9a3"
       },
       {
@@ -362,6 +401,7 @@
         "book": "Romans",
         "reference": "12:2",
         "subpack": "D",
+        "part": "D. Be Christ's Disciple",
         "cardUid": "5ccf3f464bc71678"
       },
       {
@@ -371,6 +411,7 @@
         "book": "1 Corinthians",
         "reference": "15:58",
         "subpack": "D",
+        "part": "D. Be Christ's Disciple",
         "cardUid": "38809a8ee4625c35"
       },
       {
@@ -380,6 +421,7 @@
         "book": "Hebrews",
         "reference": "12:3",
         "subpack": "D",
+        "part": "D. Be Christ's Disciple",
         "cardUid": "0ba0e96ab20782ec"
       },
       {
@@ -389,6 +431,7 @@
         "book": "Mark",
         "reference": "10:45",
         "subpack": "D",
+        "part": "D. Be Christ's Disciple",
         "cardUid": "ed03829732f65aaa"
       },
       {
@@ -398,6 +441,7 @@
         "book": "2 Corinthians",
         "reference": "4:5",
         "subpack": "D",
+        "part": "D. Be Christ's Disciple",
         "cardUid": "8d92ff0adf25db9f"
       },
       {
@@ -407,6 +451,7 @@
         "book": "Proverbs",
         "reference": "3:9-10",
         "subpack": "D",
+        "part": "D. Be Christ's Disciple",
         "cardUid": "81bab1223673735b"
       },
       {
@@ -416,6 +461,7 @@
         "book": "2 Corinthians",
         "reference": "9:6-7",
         "subpack": "D",
+        "part": "D. Be Christ's Disciple",
         "cardUid": "1d99e5849dd8a561"
       },
       {
@@ -425,6 +471,7 @@
         "book": "Acts",
         "reference": "1:8",
         "subpack": "D",
+        "part": "D. Be Christ's Disciple",
         "cardUid": "966a7aedcdf41bf4"
       },
       {
@@ -434,6 +481,7 @@
         "book": "Matthew",
         "reference": "28:19-20",
         "subpack": "D",
+        "part": "D. Be Christ's Disciple",
         "cardUid": "90d9a3fdf0884281"
       },
       {
@@ -443,6 +491,7 @@
         "book": "John",
         "reference": "13:34-35",
         "subpack": "E",
+        "part": "E. Grow in Christlikeness",
         "cardUid": "9174078704200578"
       },
       {
@@ -452,6 +501,7 @@
         "book": "1 John",
         "reference": "3:18",
         "subpack": "E",
+        "part": "E. Grow in Christlikeness",
         "cardUid": "19dc4033735f46e6"
       },
       {
@@ -461,6 +511,7 @@
         "book": "Philippians",
         "reference": "2:3-4",
         "subpack": "E",
+        "part": "E. Grow in Christlikeness",
         "cardUid": "6a408d83f2fd0458"
       },
       {
@@ -470,6 +521,7 @@
         "book": "1 Peter",
         "reference": "5:5-6",
         "subpack": "E",
+        "part": "E. Grow in Christlikeness",
         "cardUid": "389b7246404883b7"
       },
       {
@@ -479,6 +531,7 @@
         "book": "Ephesians",
         "reference": "5:3",
         "subpack": "E",
+        "part": "E. Grow in Christlikeness",
         "cardUid": "d73ed31c598b149d"
       },
       {
@@ -488,6 +541,7 @@
         "book": "1 Peter",
         "reference": "2:11",
         "subpack": "E",
+        "part": "E. Grow in Christlikeness",
         "cardUid": "ae32bc994c08d3da"
       },
       {
@@ -497,6 +551,7 @@
         "book": "Leviticus",
         "reference": "19:11",
         "subpack": "E",
+        "part": "E. Grow in Christlikeness",
         "cardUid": "bd9061d90bf42f4d"
       },
       {
@@ -506,6 +561,7 @@
         "book": "Acts",
         "reference": "24:16",
         "subpack": "E",
+        "part": "E. Grow in Christlikeness",
         "cardUid": "4ad12cf7a062aa2e"
       },
       {
@@ -515,6 +571,7 @@
         "book": "Hebrews",
         "reference": "11:6",
         "subpack": "E",
+        "part": "E. Grow in Christlikeness",
         "cardUid": "3f703d666890bed4"
       },
       {
@@ -524,6 +581,7 @@
         "book": "Romans",
         "reference": "4:20-21",
         "subpack": "E",
+        "part": "E. Grow in Christlikeness",
         "cardUid": "7bae649880268eb2"
       },
       {
@@ -533,6 +591,7 @@
         "book": "Galatians",
         "reference": "6:9-10",
         "subpack": "E",
+        "part": "E. Grow in Christlikeness",
         "cardUid": "051e68aa7a21d9d2"
       },
       {
@@ -542,6 +601,7 @@
         "book": "Matthew",
         "reference": "5:16",
         "subpack": "E",
+        "part": "E. Grow in Christlikeness",
         "cardUid": "08094b02b5ae4429"
       }
     ]

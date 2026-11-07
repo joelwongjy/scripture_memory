@@ -26,6 +26,7 @@ data class Verse(
     val subpack: String,
     val version: String? = null,
     val cardUid: String? = null,
+    val part: String = "",
     @Transient val packName: String = "",
 ) {
     val pinnedVersion: String?

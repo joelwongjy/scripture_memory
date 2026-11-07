@@ -33,7 +33,7 @@ class SupabaseCatalogClient private constructor(
 
     override fun fetchCatalog(version: Int): VerseCatalog.Document {
         val select = "edition,name,color,accent_text,sort_index," +
-            "verses(verse_id,card_uid,sort_index,title,verse,book,reference,subpack,version)"
+            "verses(verse_id,card_uid,sort_index,title,verse,book,reference,subpack,part,version)"
         val rows = get(
             "packs",
             "select=$select&order=sort_index.asc" + partialEditionFilter(),
@@ -56,6 +56,7 @@ class SupabaseCatalogClient private constructor(
                         subpack = it.subpack,
                         version = it.version,
                         cardUid = it.card_uid,
+                        part = it.part,
                     )
                 }
             editions.getOrPut(row.edition) { ArrayList() }
@@ -87,6 +88,7 @@ class SupabaseCatalogClient private constructor(
         val book: String,
         val reference: String,
         val subpack: String,
+        val part: String = "",
         val version: String? = null,
     )
 
