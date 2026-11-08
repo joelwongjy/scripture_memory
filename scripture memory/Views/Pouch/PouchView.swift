@@ -75,8 +75,6 @@ struct PouchView: View {
     private static let sideButtonSize: CGFloat = 44
     /// A side inset that holds a button and its margins: the buttons move into it.
     private static let railWidth = sideButtonSize + 2 * AppLayout.screenMargin
-    private static let cardSwipeDistance: CGFloat = 90
-    private static let cardSwipeFlick: CGFloat = 220
 
     /// How far in from the leading edge a swipe counts as the edge swipe.
     private static let edgeWidth: CGFloat = 28
@@ -171,14 +169,15 @@ struct PouchView: View {
             .accessibilityHidden(lifted != nil)
 
             if let lifted {
+                let area = CGRect(origin: CGPoint(x: insets.leading, y: insets.top), size: safeSize)
                 ZStack {
                     Color.clear
                         .contentShape(Rectangle())
                         .onTapGesture(perform: putCardBack)
                         .accessibilityHidden(true)
-                    liftedCard(lifted, area: CGRect(origin: CGPoint(x: insets.leading, y: insets.top), size: safeSize))
+                    liftedCard(lifted, area: area)
                 }
-                .gesture(liftedSwipe)
+                .gesture(liftedSwipe(in: area, source: lifted.source))
                 .allowsHitTesting(!puttingBack)
             }
         }
@@ -844,8 +843,6 @@ struct PouchView: View {
 
     private var cardMotion: Animation { AppMotion.repeated }
 
-    private var cardBounce: Animation { AppMotion.recoil }
-
     private func liftCard(_ i: Int, from source: CGRect) {
         guard lifted == nil else { return }
         HapticEngine.light()
@@ -858,19 +855,24 @@ struct PouchView: View {
         }
     }
 
-    private var liftedSwipe: some Gesture {
+    private func liftedSwipe(in area: CGRect, source: CGRect) -> some Gesture {
         DragGesture(minimumDistance: 10)
             .onChanged { value in
-                liftedDrag = CGSize(width: PackListLayout.cardPull(value.translation.width),
-                                    height: PackListLayout.cardPull(value.translation.height))
+                liftedDrag = value.translation
             }
             .onEnded { value in
-                let flung = hypot(value.predictedEndTranslation.width, value.predictedEndTranslation.height)
-                let moved = hypot(value.translation.width, value.translation.height)
-                if moved > Self.cardSwipeDistance || flung > Self.cardSwipeFlick {
-                    putCardBack()
+                let seconds = PackListLayout.flickProjectionSeconds
+                let projected = hypot(value.translation.width + value.velocity.width * seconds,
+                                      value.translation.height + value.velocity.height * seconds)
+                let here = CGPoint(x: area.midX + value.translation.width, y: area.midY + value.translation.height)
+                if PackListLayout.putsCardBack(projected: projected, area: area.size) {
+                    let speed = PackListLayout.springVelocity(value.velocity, from: here,
+                                                              to: CGPoint(x: source.midX, y: source.midY))
+                    putCardBack(with: AppMotion.release(initialVelocity: speed))
                 } else {
-                    withAnimation(cardBounce) { liftedDrag = .zero }
+                    let speed = PackListLayout.springVelocity(value.velocity, from: here,
+                                                              to: CGPoint(x: area.midX, y: area.midY))
+                    withAnimation(AppMotion.settle(initialVelocity: speed)) { liftedDrag = .zero }
                 }
             }
     }
@@ -881,9 +883,13 @@ struct PouchView: View {
     }
 
     private func putCardBack() {
+        putCardBack(with: cardMotion)
+    }
+
+    private func putCardBack(with motion: Animation) {
         guard lifted != nil, liftAmount == 1 else { return }
         puttingBack = true
-        withAnimation(cardMotion, completionCriteria: .logicallyComplete) {
+        withAnimation(motion, completionCriteria: .logicallyComplete) {
             liftAmount = 0
             liftedAngle = 0
             liftedDrag = .zero

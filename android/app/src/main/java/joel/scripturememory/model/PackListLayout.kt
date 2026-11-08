@@ -1,6 +1,5 @@
 package joel.scripturememory.model
 
-import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 
@@ -34,7 +33,7 @@ class PackListLayout(width: Float, val spacing: Float) {
         const val pouchCardShare = 0.86f
         const val verseTextShare = 0.04f
         const val printedVerseShare = 0.038f
-        const val cardPullLimit = 120f
+        const val flickProjectionSeconds = 0.998f / (1 - 0.998f) / 1_000
 
         fun columns(width: Float): Int = when {
             width >= threeColumnWidth -> 3
@@ -62,9 +61,17 @@ class PackListLayout(width: Float, val spacing: Float) {
             return if (last > first + 1) "Cards ${first + 1}–$last of $count" else "Card ${first + 1} of $count"
         }
 
-        fun cardPull(travel: Float): Float {
-            val pulled = cardPullLimit * (1 - 1 / (abs(travel) * 0.55f / cardPullLimit + 1))
-            return if (travel < 0) -pulled else pulled
+        fun liftedScale(dragged: Float, cardWidth: Float): Float =
+            if (cardWidth <= 0f) 1f else 1f - 0.25f * min(dragged / cardWidth, 1f)
+
+        fun putsCardBack(projected: Float, areaWidth: Float, areaHeight: Float): Boolean =
+            projected > min(areaWidth, areaHeight) * 0.25f
+
+        fun springVelocity(velocityX: Float, velocityY: Float, dx: Float, dy: Float): Float {
+            val span = kotlin.math.hypot(dx, dy)
+            if (span <= 1f) return 0f
+            val toward = (velocityX * dx + velocityY * dy) / span
+            return (toward / span).coerceIn(0f, 20f)
         }
 
         fun liftedWidth(

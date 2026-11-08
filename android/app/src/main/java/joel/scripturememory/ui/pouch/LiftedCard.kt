@@ -42,9 +42,6 @@ import kotlin.math.hypot
 internal data class LiftedCard(val index: Int, val source: Rect)
 
 private val paperShape = RoundedCornerShape(2.dp)
-private const val swipeDistance = 90f
-private const val swipeFlick = 220f
-private const val swipeFlickSeconds = 0.5f
 
 @Composable
 internal fun LiftedCardView(
@@ -56,7 +53,7 @@ internal fun LiftedCardView(
     angle: () -> Float,
     drag: () -> Offset,
     onDrag: (Offset) -> Unit,
-    onRelease: (putBack: Boolean) -> Unit,
+    onRelease: (putBack: Boolean, speed: Float) -> Unit,
     onFlip: () -> Unit,
     onPutBack: () -> Unit,
     accessory: @Composable (alpha: () -> Float) -> Unit,
@@ -88,24 +85,21 @@ internal fun LiftedCardView(
                     },
                     onDragEnd = {
                         val velocity = tracker.calculateVelocity()
-                        val moved = travel.getDistance() / this.density
-                        val flung = hypot(
-                            travel.x + velocity.x * swipeFlickSeconds,
-                            travel.y + velocity.y * swipeFlickSeconds,
-                        ) / this.density
-                        onRelease(moved > swipeDistance || flung > swipeFlick)
+                        val seconds = PackListLayout.flickProjectionSeconds
+                        val projected = hypot(travel.x + velocity.x * seconds, travel.y + velocity.y * seconds)
+                        val putBack = PackListLayout.putsCardBack(projected, area.width, area.height)
+                        val target = if (putBack) source.center - area.center else Offset.Zero
+                        val speed = PackListLayout.springVelocity(
+                            velocity.x, velocity.y, target.x - travel.x, target.y - travel.y,
+                        )
+                        onRelease(putBack, speed)
                     },
-                    onDragCancel = { onRelease(false) },
+                    onDragCancel = { onRelease(false, 0f) },
                 ) { change, amount ->
                     change.consume()
                     tracker.addPosition(change.uptimeMillis, change.position)
                     travel += amount
-                    onDrag(
-                        Offset(
-                            PackListLayout.cardPull(travel.x / this.density) * this.density,
-                            PackListLayout.cardPull(travel.y / this.density) * this.density,
-                        ),
-                    )
+                    onDrag(travel)
                 }
             },
     ) {
@@ -121,7 +115,7 @@ internal fun LiftedCardView(
                 .graphicsLayer {
                     val moved = if (still) 1f else lift()
                     val pull = drag()
-                    val squeeze = 1f - 0.05f * pull.getDistance() / this.density / PackListLayout.cardPullLimit
+                    val squeeze = PackListLayout.liftedScale(pull.getDistance(), size.width)
                     val s = (1f + (source.width / size.width - 1f) * (1f - moved)) * squeeze
                     scaleX = s
                     scaleY = s
