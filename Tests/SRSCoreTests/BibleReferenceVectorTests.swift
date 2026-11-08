@@ -47,6 +47,7 @@ final class BibleReferenceVectorTests: XCTestCase {
         "",
         "\u{201C}Rejoice always, pray continually, give thanks in all circumstances; for this is God\u{2019}s will for you in Christ Jesus.\u{201D} \u{202D}\u{202D}1 Thessalonians\u{202C} \u{202D}5\u{202C}:\u{202D}16\u{202C}-\u{202D}18\u{202C} \u{202D}NIV\u{202C}\u{202C}\nhttps://bible.com/bible/111/1th.5.16-18.NIV",
         "Romans 8:28 ESV\n[28] And we know that for those who love God all things work together for good, for those who are called according to his purpose.",
+        "\u{201C}And we know that in all things God works for the good of those who love him, who have been called according to his purpose.\u{201D}\nRomans 8:28 NIV\nhttps://bible.com/bible/111/rom.8.28.NIV",
     ]
 
     private func referenceCase(_ input: String) -> ReferenceCase {
@@ -71,6 +72,12 @@ final class BibleReferenceVectorTests: XCTestCase {
         let vectors = try JSONDecoder().decode(Vectors.self, from: Data(contentsOf: Self.file))
         for c in vectors.references { XCTAssertEqual(c, referenceCase(c.input), c.input) }
         for c in vectors.pastes { XCTAssertEqual(c, pasteCase(c.input), c.input) }
+    }
+
+    func testShareIsOnlyFoundWhenThereIsSomethingToStrip() {
+        XCTAssertEqual(PastedVerse.share(in: Self.pasteInputs.last!)?.reference?.display, "Romans 8:28")
+        XCTAssertNil(PastedVerse.share(in: "I can do all this through him who gives me strength."))
+        XCTAssertNil(PastedVerse.share(in: ""))
     }
 
     func testSingleChapterBookTakesTheNumberAsVerse() {

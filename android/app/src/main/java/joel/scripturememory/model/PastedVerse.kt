@@ -32,6 +32,13 @@ data class PastedVerse(
             '\u2060', '\u2066', '\u2067', '\u2068', '\u2069', '\uFEFF',
         )
 
+        fun share(raw: String): PastedVerse? {
+            val pasted = parse(raw)
+            if (pasted.reference == null || pasted.text.isEmpty()) return null
+            if (pasted.text == raw.trimmingWhitespacesAndNewlines()) return null
+            return pasted
+        }
+
         fun parse(raw: String): PastedVerse {
             val lines = raw.filterNot { it in invisible }
                 .replace("\r\n", "\n")

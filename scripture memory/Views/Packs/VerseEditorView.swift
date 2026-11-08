@@ -63,12 +63,22 @@ struct VerseEditorView: View {
             Form {
                 detailsSection
                 verseSection
+                Section {
+                    LabeledContent("Title") {
+                        TextField("Title", text: $title, prompt: Text("Optional"))
+                            .multilineTextAlignment(fieldAlignment)
+                            .focused($focus, equals: .title)
+                            .textInputAutocapitalization(.words)
+                            .submitLabel(.done)
+                    }
+                }
                 if editing != nil {
                     Section {
                         Button("Delete Verse", role: .destructive) { confirmDelete = true }
                     }
                 }
             }
+            .scrollDismissesKeyboard(.interactively)
             .navigationTitle(editing == nil ? "Add Verse" : "Edit Verse")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { toolbar }
@@ -82,6 +92,14 @@ struct VerseEditorView: View {
             }
             .onAppear(perform: start)
             .onChange(of: referenceText) { _, _ in autofill() }
+            .onChange(of: text) { old, new in
+                if new.count == old.count + 1, new.filter({ $0 == "\n" }).count > old.filter({ $0 == "\n" }).count {
+                    text = old
+                    focus = nil
+                } else if new.count > old.count + 1, PastedVerse.share(in: new) != nil {
+                    applyPaste(new)
+                }
+            }
             .onChange(of: translation) { _, _ in autofill() }
         }
     }
@@ -95,7 +113,7 @@ struct VerseEditorView: View {
                     .textInputAutocapitalization(.words)
                     .autocorrectionDisabled()
                     .submitLabel(.next)
-                    .onSubmit { focus = .title }
+                    .onSubmit { focus = trimmedText.isEmpty ? .text : .title }
             }
             if !bookSuggestions.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -108,14 +126,6 @@ struct VerseEditorView: View {
                         }
                     }
                 }
-            }
-            LabeledContent("Title") {
-                TextField("Title", text: $title, prompt: Text("Optional"))
-                    .multilineTextAlignment(fieldAlignment)
-                    .focused($focus, equals: .title)
-                    .textInputAutocapitalization(.words)
-                    .submitLabel(.next)
-                    .onSubmit { focus = .text }
             }
             Picker("Translation", selection: $translation) {
                 ForEach(translationChoices, id: \.self) { code in
@@ -134,7 +144,12 @@ struct VerseEditorView: View {
 
     @ViewBuilder
     private var referenceFooter: some View {
-        if let reference {
+        if olderNIVHasIt, !duplicate {
+            Button("Fill in the app’s \(VerseTranslation.displayName(VerseTranslation.niv84)) text") {
+                translation = VerseTranslation.niv84
+            }
+            .font(.footnote.weight(.semibold))
+        } else if let reference {
             if duplicate {
                 Label("Already in this pack", systemImage: "exclamationmark.triangle.fill")
                     .foregroundStyle(.orange)
@@ -149,6 +164,11 @@ struct VerseEditorView: View {
         }
     }
 
+    private var olderNIVHasIt: Bool {
+        guard let reference, translation == VerseTranslation.niv, trimmedText.isEmpty else { return false }
+        return VerseLookup.bundled(reference, translation: VerseTranslation.niv84) != nil
+    }
+
     private var bibleAppURL: URL? {
         guard let reference else { return nil }
         return VerseTranslation.bibleAppURL(for: reference, translation: translation)
@@ -158,6 +178,7 @@ struct VerseEditorView: View {
         Section {
             TextField("Verse", text: $text, prompt: Text("Type or paste the verse"), axis: .vertical)
                 .focused($focus, equals: .text)
+                .submitLabel(.done)
                 .lineLimit(4...14)
             (dynamicType.isAccessibilitySize ? AnyLayout(VStackLayout(spacing: 12))
                                              : AnyLayout(HStackLayout(spacing: 12))) {
