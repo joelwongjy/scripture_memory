@@ -78,6 +78,7 @@ struct VerseEditorView: View {
                     }
                 }
             }
+            .scrollDismissesKeyboard(.interactively)
             .navigationTitle(editing == nil ? "Add Verse" : "Edit Verse")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { toolbar }
@@ -91,6 +92,14 @@ struct VerseEditorView: View {
             }
             .onAppear(perform: start)
             .onChange(of: referenceText) { _, _ in autofill() }
+            .onChange(of: text) { old, new in
+                if new.count == old.count + 1, new.filter({ $0 == "\n" }).count > old.filter({ $0 == "\n" }).count {
+                    text = old
+                    focus = nil
+                } else if new.count > old.count + 1, PastedVerse.share(in: new) != nil {
+                    applyPaste(new)
+                }
+            }
             .onChange(of: translation) { _, _ in autofill() }
         }
     }
@@ -169,6 +178,7 @@ struct VerseEditorView: View {
         Section {
             TextField("Verse", text: $text, prompt: Text("Type or paste the verse"), axis: .vertical)
                 .focused($focus, equals: .text)
+                .submitLabel(.done)
                 .lineLimit(4...14)
             (dynamicType.isAccessibilitySize ? AnyLayout(VStackLayout(spacing: 12))
                                              : AnyLayout(HStackLayout(spacing: 12))) {

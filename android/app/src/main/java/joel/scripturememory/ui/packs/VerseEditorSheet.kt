@@ -21,6 +21,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
@@ -114,6 +115,7 @@ fun VerseEditorSheet(
     val referenceFocus = remember { FocusRequester() }
     val titleFocus = remember { FocusRequester() }
     val textFocus = remember { FocusRequester() }
+    val focusManager = LocalFocusManager.current
 
     val reference = BibleReference.parse(referenceText.text)
     val trimmedText = text.text.trimmingWhitespacesAndNewlines()
@@ -303,14 +305,24 @@ fun VerseEditorSheet(
             ) {
                 TextFieldRow(
                     value = text,
-                    onValueChange = { text = it },
+                    onValueChange = {
+                        if (it.text.length > text.text.length + 1 && PastedVerse.share(it.text) != null) {
+                            applyPaste(it.text)
+                        } else {
+                            text = it
+                        }
+                    },
                     modifier = Modifier
                         .focusRequester(textFocus)
                         .semantics { contentDescription = "Verse" },
                     placeholder = "Type or paste the verse",
                     singleLine = false,
                     minLines = 4,
-                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+                    keyboardOptions = KeyboardOptions(
+                        capitalization = KeyboardCapitalization.Sentences,
+                        imeAction = ImeAction.Done,
+                    ),
+                    keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
                 )
                 RowDivider()
                 val bibleLabel = reference?.let { "Find ${it.display} in the Bible app" } ?: "Find in the Bible app"
