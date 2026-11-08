@@ -3,8 +3,8 @@ import Combine
 
 /// Persists per-card SRS state and the "new cards introduced today" counter.
 ///
-/// **Storage:** `ProgressStorage` — iCloud key-value store with a local mirror.
-/// Last-writer-wins on external change.
+/// **Storage:** built-in cards in `ProgressStorage` (iCloud key-value store with a
+/// local mirror, last-writer-wins); every other card in `OwnPackFile`.
 @MainActor
 final class SRSStore: ObservableObject {
 
@@ -45,7 +45,17 @@ final class SRSStore: ObservableObject {
             name: ProgressStorage.didChangeExternally,
             object: nil
         )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(ownFileChanged(_:)),
+            name: OwnPackFile.didChange,
+            object: nil
+        )
+        let stored = storage.decode([String: SRSCardState].self, forKey: Self.statesKey) ?? [:]
+        if stored.keys.contains(where: { !Self.bundledKeys.contains($0) }) { persist() }
     }
+
+    private static let bundledKeys: Set<String> = Set((packsNIV84 + packsNIV11).flatMap { $0.verses.compactMap(\.cardUid) })
 
     // MARK: - Public Queries
 
@@ -261,16 +271,17 @@ final class SRSStore: ObservableObject {
 
     private func persist() {
         pruneDailyNew()
-        storage.encode(states, forKey: Self.statesKey)
+        storage.encode(states.filter { Self.bundledKeys.contains($0.key) }, forKey: Self.statesKey)
+        OwnPackFile.shared.saveStates(states.filter { !Self.bundledKeys.contains($0.key) })
         storage.encode(dailyNewByDate, forKey: Self.dailyNewKey)
         storage.encode(Array(inactivePackNames), forKey: Self.inactivePacksKey)
         storage.encode(reviewedByDate, forKey: Self.reviewedKey)
     }
 
     private func load() {
-        if let decoded = storage.decode([String: SRSCardState].self, forKey: Self.statesKey) {
-            states = decoded
-        }
+        var merged = storage.decode([String: SRSCardState].self, forKey: Self.statesKey) ?? [:]
+        for (key, state) in OwnPackFile.shared.document?.states ?? [:] { merged[key] = state }
+        states = merged
         if let decoded = storage.decode([String: [String: Int]].self, forKey: Self.dailyNewKey) {
             dailyNewByDate = decoded
         }
@@ -280,6 +291,10 @@ final class SRSStore: ObservableObject {
         if let decoded = storage.decode([String: Set<String>].self, forKey: Self.reviewedKey) {
             reviewedByDate = decoded
         }
+    }
+
+    @objc private func ownFileChanged(_ note: Notification) {
+        load()
     }
 
     @objc private func externalChange(_ note: Notification) {
