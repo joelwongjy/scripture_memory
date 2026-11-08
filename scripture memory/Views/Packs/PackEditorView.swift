@@ -82,7 +82,7 @@ struct PackEditorView: View {
                     .focused($nameFocused)
                     .textInputAutocapitalization(.words)
                     .submitLabel(.done)
-                    .onSubmit { pack == nil ? create() : commitDetails() }
+                    .onSubmit(commitDetails)
                     .padding(.vertical, 12)
                     .background(Color(.tertiarySystemFill), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                     .accessibilityLabel("Pack Name")

@@ -194,7 +194,10 @@ fun PackEditorSheet(packID: String? = null, addsVerseOnOpen: Boolean = false, on
                                 capitalization = KeyboardCapitalization.Words,
                                 imeAction = ImeAction.Done,
                             ),
-                            keyboardActions = KeyboardActions(onDone = { if (pack == null) create() else commitDetails() }),
+                            keyboardActions = KeyboardActions(onDone = {
+                                commitDetails()
+                                focusManager.clearFocus()
+                            }),
                         )
                         ColorSwatches(
                             colors = UserPack.colors.map { colorFromHex(it) ?: Color.Gray },
