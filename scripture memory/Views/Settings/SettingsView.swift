@@ -80,7 +80,7 @@ struct SettingsView: View {
             } header: {
                 Text("Learning")
             } footer: {
-                Text("Verses before your current verse count as learnt.")
+                Text("Verses before this one count as learnt.")
             }
 
             Section {
@@ -105,7 +105,7 @@ struct SettingsView: View {
             } header: {
                 Text("Daily Review")
             } footer: {
-                Text("Review Earlier Verses brings verses before your starting point into review, a few at a time. Limits apply across all packs.")
+                Text("Limits cover all packs. Earlier verses join review a few at a time.")
             }
 
             Section {
@@ -156,7 +156,7 @@ struct SettingsView: View {
             } header: {
                 Text("Privacy")
             } footer: {
-                Text("Sends which screens and features you use, never your verses or personal details.")
+                Text("Shares which features you use, never your verses.")
             }
             .onChange(of: shareUsage) { _, on in Analytics.setEnabled(on) }
 
@@ -168,11 +168,12 @@ struct SettingsView: View {
                     showResetSRSAlert = true
                 } label: {
                     rowLabel("Reset Review Progress", "arrow.counterclockwise")
+                        .foregroundStyle(.red)
                 }
             } header: {
                 Text("Your Data")
             } footer: {
-                Text("Export saves your own packs and every pack you’ve started, with review history, as an Anki deck. Open it in Anki, or import it into Scripture Memory on another phone.")
+                Text("Saves your packs and review history as an Anki deck.")
             }
             .alert("Reset Review Progress?", isPresented: $showResetSRSAlert) {
                 Button("Cancel", role: .cancel) { }

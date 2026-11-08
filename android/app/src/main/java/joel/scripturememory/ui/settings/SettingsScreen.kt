@@ -202,7 +202,7 @@ fun SettingsScreen() {
             })
         }
 
-        GroupedSection(title = "Learning", footer = "Verses before your current verse count as learnt.") {
+        GroupedSection(title = "Learning", footer = "Verses before this one count as learnt.") {
             ValueRow(
                 title = "Current Verse",
                 icon = R.drawable.ic_bookmark_fill,
@@ -214,7 +214,7 @@ fun SettingsScreen() {
 
         GroupedSection(
             title = "Daily Review",
-            footer = "Review Earlier Verses brings verses before your starting point into review, a few at a time. Limits apply across all packs.",
+            footer = "Limits cover all packs. Earlier verses join review a few at a time.",
         ) {
             CapRow(
                 icon = R.drawable.ic_sparkle,
@@ -314,7 +314,7 @@ fun SettingsScreen() {
 
         GroupedSection(
             title = "Privacy",
-            footer = "Sends which screens and features you use, never your verses or personal details.",
+            footer = "Shares which features you use, never your verses.",
         ) {
             ToggleRow(
                 "Share Anonymous Usage",
@@ -326,8 +326,7 @@ fun SettingsScreen() {
 
         GroupedSection(
             title = "Your Data",
-            footer = "Export saves your own packs and every pack you’ve started, with review history, as an Anki deck. " +
-                "Open it in Anki, or import it into Scripture Memory on another phone.",
+            footer = "Saves your packs and review history as an Anki deck.",
         ) {
             ListRow(
                 "Export to Anki",
