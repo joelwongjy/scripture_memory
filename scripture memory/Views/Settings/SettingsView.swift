@@ -19,6 +19,8 @@ struct SettingsView: View {
     @AppStorage(Analytics.shareUsageKey) private var shareUsage = Analytics.shareUsageDefault
 
     @State private var showResetSRSAlert      = false
+    @State private var exportedFile: ExportedFile?
+    @State private var nothingToExport        = false
     @State private var showNotifDeniedAlert   = false
     @State private var showLearningSetup      = false
     @State private var settlingLogs: [String: Task<Void, Never>] = [:]
@@ -148,6 +150,16 @@ struct SettingsView: View {
             }
 
             Section {
+                Button(action: exportToAnki) {
+                    rowLabel("Export to Anki", "square.and.arrow.up")
+                }
+            } header: {
+                Text("Backup")
+            } footer: {
+                Text("Saves your own packs and every pack you’ve started, with review history, as an Anki deck. Open it in Anki, or import it into Scripture Memory on another phone.")
+            }
+
+            Section {
                 Toggle(isOn: $shareUsage) {
                     rowLabel("Share Anonymous Usage", "chart.bar")
                 }
@@ -209,6 +221,27 @@ struct SettingsView: View {
         // down on its initial layout pass.
         .sheet(isPresented: $showLearningSetup) {
             LearningSetupView()
+        }
+        .sheet(item: $exportedFile) { file in
+            ActivityView(items: [file.url])
+                .presentationDetents([.medium, .large])
+        }
+        .alert("Nothing to Export Yet", isPresented: $nothingToExport) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("Start a pack or make your own, and it will be included.")
+        }
+    }
+
+    private func exportToAnki() {
+        do {
+            if let url = try AnkiExporter.exportFile(for: bibleVersion) {
+                exportedFile = ExportedFile(url: url)
+            } else {
+                nothingToExport = true
+            }
+        } catch {
+            nothingToExport = true
         }
     }
 
@@ -299,4 +332,19 @@ struct SettingsView: View {
 
 #Preview {
     NavigationStack { SettingsView() }
+}
+
+private struct ExportedFile: Identifiable {
+    let url: URL
+    var id: URL { url }
+}
+
+private struct ActivityView: UIViewControllerRepresentable {
+    let items: [Any]
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: items, applicationActivities: nil)
+    }
+
+    func updateUIViewController(_ controller: UIActivityViewController, context: Context) {}
 }

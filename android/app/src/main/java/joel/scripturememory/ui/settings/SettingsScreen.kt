@@ -32,6 +32,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import joel.scripturememory.model.AnkiExporter
+import androidx.core.content.FileProvider
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
@@ -128,6 +130,7 @@ fun SettingsScreen() {
     val reminderMinute = defaults.getInt(NotificationManager.Keys.minute) ?: NotificationManager.defaultMinute
 
     var showResetAlert by rememberSaveable { mutableStateOf(false) }
+    var nothingToExport by rememberSaveable { mutableStateOf(false) }
     var showNotificationsDenied by rememberSaveable { mutableStateOf(false) }
     var showLearningSetup by rememberSaveable { mutableStateOf(false) }
     var showTimePicker by rememberSaveable { mutableStateOf(false) }
@@ -309,6 +312,31 @@ fun SettingsScreen() {
         }
 
         GroupedSection(
+            title = "Backup",
+            footer = "Saves your own packs and every pack you’ve started, with review history, as an Anki deck. " +
+                "Open it in Anki, or import it into Scripture Memory on another phone.",
+        ) {
+            ListRow(
+                "Export to Anki",
+                leading = { RowIcon(R.drawable.ic_export) },
+                titleColor = AppTheme.colors.accent,
+                onClick = {
+                    val file = runCatching { AnkiExporter.exportFile(bibleVersion, context.cacheDir) }.getOrNull()
+                    if (file == null) {
+                        nothingToExport = true
+                    } else {
+                        val uri = FileProvider.getUriForFile(context, "${context.packageName}.files", file)
+                        val send = Intent(Intent.ACTION_SEND)
+                            .setType("application/octet-stream")
+                            .putExtra(Intent.EXTRA_STREAM, uri)
+                            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        context.startActivity(Intent.createChooser(send, null))
+                    }
+                },
+            )
+        }
+
+        GroupedSection(
             title = "Privacy",
             footer = "Sends which screens and features you use, never your verses or personal details.",
         ) {
@@ -416,6 +444,15 @@ fun SettingsScreen() {
                 }),
             ),
             onDismiss = { showNotificationsDenied = false },
+        )
+    }
+
+    if (nothingToExport) {
+        AppAlert(
+            title = "Nothing to Export Yet",
+            message = "Start a pack or make your own, and it will be included.",
+            actions = listOf(AlertAction("OK", isCancel = true)),
+            onDismiss = { nothingToExport = false },
         )
     }
 

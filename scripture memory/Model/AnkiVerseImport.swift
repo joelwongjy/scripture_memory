@@ -33,8 +33,10 @@ enum AnkiFieldRole: Equatable {
 
 enum AnkiVerseImport {
 
+    static let exportRoot = "Scripture Memory"
+
     static func plan(_ source: AnkiImport, bundledKeys: [String: String] = [:],
-                     fallbackName: String = "OYO") -> AnkiImportPlan {
+                     bundledPackNames: Set<String> = [], fallbackName: String = "OYO") -> AnkiImportPlan {
         var roles: [String: [AnkiFieldRole?]] = [:]
         for type in Set(source.notes.map(\.noteType)) {
             roles[type] = guessRoles(source.notes.filter { $0.noteType == type })
@@ -52,7 +54,7 @@ enum AnkiVerseImport {
             }
             candidate.schedule = bestSchedule(note.cards)
             let key = referenceKey(book: candidate.reference.book.name, reference: candidate.reference.reference)
-            if let uid = bundledKeys[key] {
+            if !isExportedOwnPack(note.deck, bundledPackNames: bundledPackNames), let uid = bundledKeys[key] {
                 if !matches.contains(where: { $0.cardUid == uid }) {
                     matches.append(.init(cardUid: uid, candidate: candidate))
                 }
@@ -67,6 +69,10 @@ enum AnkiVerseImport {
             }
         }
         return AnkiImportPlan(decks: decks, matches: matches, skipped: skipped)
+    }
+
+    static func isExportedOwnPack(_ deck: String, bundledPackNames: Set<String>) -> Bool {
+        deck.hasPrefix(exportRoot + "::") && !bundledPackNames.contains(deckDisplayName(deck))
     }
 
     static func referenceKey(book: String, reference: String) -> String {

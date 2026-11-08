@@ -25,9 +25,15 @@ enum class AnkiFieldRole { reference, text, title, version }
 
 object AnkiVerseImport {
 
+    const val exportRoot = "Scripture Memory"
+
+    fun isExportedOwnPack(deck: String, bundledPackNames: Set<String>): Boolean =
+        deck.startsWith("$exportRoot::") && deckDisplayName(deck) !in bundledPackNames
+
     fun plan(
         source: AnkiImport,
         bundledKeys: Map<String, String> = emptyMap(),
+        bundledPackNames: Set<String> = emptySet(),
         fallbackName: String = "OYO",
     ): AnkiImportPlan {
         val roles = source.notes.map { it.noteType }.toSet().associateWith { type ->
@@ -47,7 +53,7 @@ object AnkiVerseImport {
             }
             val candidate = found.copy(schedule = bestSchedule(note.cards))
             val key = referenceKey(candidate.reference.book.name, candidate.reference.reference)
-            val uid = bundledKeys[key]
+            val uid = if (isExportedOwnPack(note.deck, bundledPackNames)) null else bundledKeys[key]
             if (uid != null) {
                 if (matches.none { it.cardUid == uid }) matches += AnkiImportPlan.Match(uid, candidate)
                 continue
