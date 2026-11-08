@@ -8,6 +8,7 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -40,6 +41,14 @@ class BibleReferenceVectorTests {
             assertEquals("$input version", case.optional("version"), pasted.version)
             assertEquals("$input text", case.getValue("text").jsonPrimitive.content, pasted.text)
         }
+    }
+
+    @Test
+    fun testShareIsOnlyFoundWhenThereIsSomethingToStrip() {
+        val share = "\u201CAnd we know that in all things God works for the good of those who love him, who have been called according to his purpose.\u201D\nRomans 8:28 NIV\nhttps://bible.com/bible/111/rom.8.28.NIV"
+        assertEquals("Romans 8:28", PastedVerse.share(share)?.reference?.display)
+        assertNull(PastedVerse.share("I can do all this through him who gives me strength."))
+        assertNull(PastedVerse.share(""))
     }
 
     @Test

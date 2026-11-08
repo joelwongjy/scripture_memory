@@ -87,8 +87,9 @@ fun PackEditorSheet(packID: String? = null, addsVerseOnOpen: Boolean = false, on
     val colors = AppTheme.colors
     val existing = remember { packID?.let { store.pack(it) } }
     var currentID by remember { mutableStateOf(existing?.id) }
+    val suggestedName = remember { if (existing == null) store.availableName(UserPack.defaultName) else UserPack.defaultName }
     var name by remember {
-        val initial = existing?.name ?: store.availableName(UserPack.defaultName)
+        val initial = existing?.name.orEmpty()
         mutableStateOf(TextFieldValue(initial, TextRange(initial.length)))
     }
     var color by remember { mutableStateOf(existing?.color ?: UserPack.colors[0]) }
@@ -110,7 +111,7 @@ fun PackEditorSheet(packID: String? = null, addsVerseOnOpen: Boolean = false, on
     }
 
     fun create() {
-        val created = store.createPack(name.text, color)
+        val created = store.createPack(name.text.trimmingWhitespaces().ifEmpty { suggestedName }, color)
         Analytics.log(AnalyticsEvent.OwnPackCreated(OwnPackSource.newPack))
         currentID = created.id
         name = TextFieldValue(created.name, TextRange(created.name.length))
@@ -164,7 +165,7 @@ fun PackEditorSheet(packID: String? = null, addsVerseOnOpen: Boolean = false, on
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
                         val preview = Pack(
-                            name = name.text.trimmingWhitespaces().ifEmpty { UserPack.defaultName },
+                            name = name.text.trimmingWhitespaces().ifEmpty { suggestedName },
                             color = color,
                             accentText = "",
                             verses = pack?.pack?.verses.orEmpty(),
@@ -186,14 +187,17 @@ fun PackEditorSheet(packID: String? = null, addsVerseOnOpen: Boolean = false, on
                                 .padding(horizontal = 12.dp, vertical = 12.dp)
                                 .focusRequester(nameFocus)
                                 .semantics { contentDescription = "Pack Name" },
-                            placeholder = UserPack.defaultName,
+                            placeholder = suggestedName,
                             textStyle = AppType.title3,
                             textAlign = TextAlign.Center,
                             keyboardOptions = KeyboardOptions(
                                 capitalization = KeyboardCapitalization.Words,
                                 imeAction = ImeAction.Done,
                             ),
-                            keyboardActions = KeyboardActions(onDone = { commitDetails() }),
+                            keyboardActions = KeyboardActions(onDone = {
+                                commitDetails()
+                                focusManager.clearFocus()
+                            }),
                         )
                         ColorSwatches(
                             colors = UserPack.colors.map { colorFromHex(it) ?: Color.Gray },

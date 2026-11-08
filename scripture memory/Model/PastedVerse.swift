@@ -24,6 +24,13 @@ struct PastedVerse: Equatable {
     private static let invisible = CharacterSet(charactersIn:
         "\u{200B}\u{200E}\u{200F}\u{202A}\u{202B}\u{202C}\u{202D}\u{202E}\u{2060}\u{2066}\u{2067}\u{2068}\u{2069}\u{FEFF}")
 
+    static func share(in raw: String) -> PastedVerse? {
+        let pasted = parse(raw)
+        guard pasted.reference != nil, !pasted.text.isEmpty,
+              pasted.text != raw.trimmingCharacters(in: .whitespacesAndNewlines) else { return nil }
+        return pasted
+    }
+
     static func parse(_ raw: String) -> PastedVerse {
         let visible = String(String.UnicodeScalarView(raw.unicodeScalars.filter { !invisible.contains($0) }))
         let lines = visible

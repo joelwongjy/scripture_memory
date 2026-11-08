@@ -12,6 +12,7 @@ struct PackEditorView: View {
     @FocusState private var nameFocused: Bool
 
     private let addsVerseOnOpen: Bool
+    private let suggestedName: String
 
     private struct VerseSheet: Identifiable {
         let verse: UserVerse?
@@ -21,7 +22,8 @@ struct PackEditorView: View {
     init(packID: String? = nil, addsVerseOnOpen: Bool = false) {
         let existing = packID.flatMap { UserPackStore.shared.pack(id: $0) }
         _packID = State(initialValue: existing?.id)
-        _name = State(initialValue: existing?.name ?? UserPackStore.shared.availableName(UserPack.defaultName))
+        _name = State(initialValue: existing?.name ?? "")
+        suggestedName = existing == nil ? UserPackStore.shared.availableName(UserPack.defaultName) : UserPack.defaultName
         _color = State(initialValue: existing?.color ?? UserPack.colors[0])
         self.addsVerseOnOpen = addsVerseOnOpen
     }
@@ -63,7 +65,7 @@ struct PackEditorView: View {
     }
 
     private var preview: Pack {
-        Pack(name: name.trimmingCharacters(in: .whitespaces).isEmpty ? UserPack.defaultName : name,
+        Pack(name: name.trimmingCharacters(in: .whitespaces).isEmpty ? suggestedName : name,
              color: color, accentText: "", verses: pack?.pack.verses ?? [], userPackID: packID ?? "preview")
     }
 
@@ -74,7 +76,7 @@ struct PackEditorView: View {
                     .containerRelativeFrame(.horizontal) { width, _ in width * 0.62 }
                     .accessibilityHidden(true)
                     .animation(.smooth(duration: 0.24), value: color)
-                TextField("Name", text: $name, prompt: Text(UserPack.defaultName))
+                TextField("Name", text: $name, prompt: Text(suggestedName))
                     .font(.title3.weight(.semibold))
                     .multilineTextAlignment(.center)
                     .focused($nameFocused)
@@ -168,7 +170,8 @@ struct PackEditorView: View {
     }
 
     private func create() {
-        let created = store.createPack(name: name, color: color)
+        let typed = name.trimmingCharacters(in: .whitespaces)
+        let created = store.createPack(name: typed.isEmpty ? suggestedName : typed, color: color)
         Analytics.log(.ownPackCreated(from: .newPack))
         packID = created.id
         name = created.name
