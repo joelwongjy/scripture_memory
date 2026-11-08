@@ -512,14 +512,20 @@ private fun OyoCover(pack: Pack) {
                 color = ink,
                 maxLines = 1,
             )
-            Text(
-                pack.name,
-                Modifier.padding(top = 4.dp),
-                style = type(58f, family = SerifFamily),
-                color = ink,
-                maxLines = 1,
-                autoSize = TextAutoSize.StepBased(18.5.sp, 58.sp, 0.5.sp),
-            )
+            val titleStyle = type(58f, family = SerifFamily)
+            Box(Modifier.fillMaxWidth().padding(top = 4.dp), contentAlignment = Alignment.Center) {
+                Text(" ", Modifier.alpha(0f), style = titleStyle, maxLines = 1)
+                Box(Modifier.matchParentSize(), contentAlignment = Alignment.Center) {
+                    Text(
+                        pack.name,
+                        style = titleStyle,
+                        color = ink,
+                        textAlign = TextAlign.Center,
+                        maxLines = 2,
+                        autoSize = TextAutoSize.StepBased(18.5.sp, 58.sp, 0.5.sp),
+                    )
+                }
+            }
             Text("카드", style = type(22f, FontWeight.Bold, tracking = 2f), color = ink, maxLines = 1)
             Spacer(Modifier.weight(1f))
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {

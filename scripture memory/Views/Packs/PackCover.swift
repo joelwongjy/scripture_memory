@@ -482,6 +482,8 @@ struct PackCover: View {
 
     // MARK: OYO Style
 
+    private static let oyoTitleFont = Font.system(size: 58, weight: .regular, design: .serif)
+
     private var oyoCover: some View {
         ZStack {
             fieldColor
@@ -495,10 +497,17 @@ struct PackCover: View {
                 Text("(\(UserPack.subtitle) Card)")
                     .font(.system(size: 11, weight: .regular, design: .serif))
                     .padding(.top, 2)
-                Text(pack.name)
-                    .font(.system(size: 58, weight: .regular, design: .serif))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.32)
+                Text(" ")
+                    .font(Self.oyoTitleFont)
+                    .frame(maxWidth: .infinity)
+                    .hidden()
+                    .overlay {
+                        Text(pack.name)
+                            .font(Self.oyoTitleFont)
+                            .lineLimit(2)
+                            .multilineTextAlignment(.center)
+                            .minimumScaleFactor(0.32)
+                    }
                     .padding(.top, 4)
                 Text("카드")
                     .font(.system(size: 22, weight: .bold, design: .rounded))
