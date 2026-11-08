@@ -1,1 +1,1 @@
-Make your own packs, add verses by pasting or sharing from your Bible app, and import Anki decks with their review history.
+Make your own packs and import or export Anki decks with review history. DEP cards now show their booklet and part like the printed ones, Settings is tidier, and a lifted card swipes back the way iOS does.
