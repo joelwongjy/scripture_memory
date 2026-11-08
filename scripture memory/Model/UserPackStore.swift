@@ -30,8 +30,8 @@ final class UserPackStore: ObservableObject {
         load()
         NotificationCenter.default.addObserver(
             self,
-            selector: #selector(externalChange(_:)),
-            name: ProgressStorage.didChangeExternally,
+            selector: #selector(fileChanged(_:)),
+            name: OwnPackFile.didChange,
             object: nil
         )
         NotificationCenter.default.addObserver(
@@ -71,19 +71,20 @@ final class UserPackStore: ObservableObject {
         return drafts.count
     }
 
-    @objc private func externalChange(_ note: Notification) {
-        guard note.affectsAny(of: [Self.storageKey, Self.legacyKey]) else { return }
+    @objc private func fileChanged(_ note: Notification) {
         load()
     }
 
     private func load() {
-        let current = storage.decodeCompressed([UserPack].self, forKey: Self.storageKey)
-        let legacy = current == nil ? storage.decode([UserPack].self, forKey: Self.legacyKey) : nil
-        let decoded = current ?? legacy ?? []
-        if let legacy {
-            storage.encodeCompressed(legacy, forKey: Self.storageKey)
+        let file = OwnPackFile.shared
+        if file.document == nil,
+           let legacy = storage.decodeCompressed([UserPack].self, forKey: Self.storageKey)
+            ?? storage.decode([UserPack].self, forKey: Self.legacyKey) {
+            file.adopt(OwnPackDocument(savedAt: .distantPast, packs: legacy, states: [:], removedPackIDs: []))
+            storage.removeObject(forKey: Self.storageKey)
             storage.removeObject(forKey: Self.legacyKey)
         }
+        let decoded = file.document?.packs ?? []
         guard decoded != userPacks || Self.revision == 0 else { return }
         publish(decoded)
     }
@@ -100,7 +101,7 @@ final class UserPackStore: ObservableObject {
 
     private func commit(_ packs: [UserPack]) {
         publish(packs)
-        storage.encodeCompressed(packs, forKey: Self.storageKey)
+        OwnPackFile.shared.savePacks(packs)
     }
 
     func pack(id: String) -> UserPack? { userPacks.first { $0.id == id } }
