@@ -12,7 +12,7 @@ enum NewCapUnit: String, CaseIterable {
     case day
     case week
 
-    var settingTitle: String { self == .day ? "New Cards per Day" : "New Cards per Week" }
+    var settingTitle: String { self == .day ? "New Verses per Day" : "New Verses per Week" }
     var pickerLabel:  String { self == .day ? "Day"              : "Week" }
 }
 

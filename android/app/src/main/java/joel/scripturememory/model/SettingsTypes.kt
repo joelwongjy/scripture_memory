@@ -6,7 +6,7 @@ enum class NewCapUnit {
 
     val rawValue: String get() = name
 
-    val settingTitle: String get() = if (this == day) "New Cards per Day" else "New Cards per Week"
+    val settingTitle: String get() = if (this == day) "New Verses per Day" else "New Verses per Week"
     val pickerLabel: String get() = if (this == day) "Day" else "Week"
 
     companion object {
