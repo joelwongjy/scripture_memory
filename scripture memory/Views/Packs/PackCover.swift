@@ -510,8 +510,8 @@ struct PackCover: View {
                     }
                     .padding(.top, 4)
                 Text("카드")
-                    .font(.system(size: 22, weight: .bold, design: .rounded))
-                    .tracking(2)
+                    .font(.system(size: 34, weight: .semibold))
+                    .tracking(10)
                 Spacer(minLength: 0)
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text("네비게이토")
