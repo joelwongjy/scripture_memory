@@ -120,16 +120,27 @@ struct PouchVerseCard<Accessory: View>: View {
                 heading(u)
             }
             HStack(spacing: 1.6 * u) {
-                Text(footer.first ?? "").fontWeight(isPrintedDEP ? .bold : nil)
-                if footer.count > 1 { Text(footer[1]) }
-                Spacer(minLength: 0)
-                if isLearnt {
-                    Label("Learnt", systemImage: "checkmark")
-                        .labelStyle(.titleAndIcon)
-                        .font(.system(size: 2.9 * u, weight: .bold))
-                        .foregroundStyle(PouchInk.green)
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 1.6 * u) {
+                        Text(footer.first ?? "").fontWeight(isPrintedDEP ? .bold : nil)
+                        if footer.count > 1 { Text(footer[1]) }
+                    }
+                    if footer.count > 1 { Text(footer[1]) }
+                    Text(footer.first ?? "").fontWeight(isPrintedDEP ? .bold : nil)
                 }
-                accessory()
+                .lineLimit(1)
+                Spacer(minLength: 0)
+                Group {
+                    if isLearnt {
+                        Label("Learnt", systemImage: "checkmark")
+                            .labelStyle(.titleAndIcon)
+                            .font(.system(size: 2.9 * u, weight: .bold))
+                            .foregroundStyle(PouchInk.green)
+                    }
+                    accessory()
+                }
+                .fixedSize()
+                .layoutPriority(1)
             }
             .font(.system(size: 2.9 * u))
             .foregroundStyle(PouchInk.caption)

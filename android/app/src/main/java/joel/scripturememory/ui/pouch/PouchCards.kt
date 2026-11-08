@@ -16,6 +16,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -221,12 +223,7 @@ internal fun PouchVerseCard(
                     fontSize = sp(2.9f),
                     platformStyle = PlatformTextStyle(includeFontPadding = false),
                 )
-                Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy((1.6f * u).dp)) {
-                    Text(footer.first(), style = if (isPrintedDEP) style.copy(fontWeight = FontWeight.Bold) else style, color = caption, maxLines = 1)
-                    if (footer.size > 1) {
-                        Text(footer[1], Modifier.weight(1f, fill = false), style = style, color = caption, maxLines = 1)
-                    }
-                }
+                CardFooterCaption(footer, isPrintedDEP, style, caption, (1.6f * u).dp, Modifier.weight(1f))
                 if (isLearnt) {
                     val green = PouchInk.green(dark)
                     Row(
@@ -316,5 +313,37 @@ private fun BackPageStat(value: String, label: String, u: Float, green: Color) {
     Column {
         Text(value, style = base.copy(fontSize = sp(9f), fontWeight = FontWeight.SemiBold), color = green)
         Text(label, style = base.copy(fontSize = sp(3.2f)), color = PouchInk.caption(AppTheme.isDark))
+    }
+}
+
+@Composable
+internal fun CardFooterCaption(
+    footer: List<String>,
+    boldFirst: Boolean,
+    style: TextStyle,
+    color: Color,
+    gap: Dp,
+    modifier: Modifier = Modifier,
+) {
+    val measurer = rememberTextMeasurer()
+    val first = footer.firstOrNull().orEmpty()
+    val second = footer.getOrNull(1)
+    val firstStyle = if (boldFirst) style.copy(fontWeight = FontWeight.Bold) else style
+    val gapPx = with(LocalDensity.current) { gap.roundToPx() }
+    BoxWithConstraints(modifier) {
+        fun width(text: String, textStyle: TextStyle) =
+            measurer.measure(text, textStyle, maxLines = 1, softWrap = false).size.width
+        val room = constraints.maxWidth
+        Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
+            when {
+                second == null -> Text(first, style = firstStyle, color = color, maxLines = 1)
+                width(first, firstStyle) + gapPx + width(second, style) <= room -> {
+                    Text(first, style = firstStyle, color = color, maxLines = 1)
+                    Text(second, style = style, color = color, maxLines = 1)
+                }
+                width(second, style) <= room -> Text(second, style = style, color = color, maxLines = 1)
+                else -> Text(first, style = firstStyle, color = color, maxLines = 1)
+            }
+        }
     }
 }
