@@ -45,7 +45,7 @@ struct LiftedCardView<Accessory: View>: View {
         .onTapGesture(perform: onFlip)
         .shadow(color: .black.opacity(0.28 * Double(lift)), radius: 22, y: 12)
         .scaleEffect((1 + (source.width / width - 1) * (1 - moved))
-                     * (1 - 0.05 * hypot(drag.width, drag.height) / PackListLayout.cardPullLimit))
+                     * PackListLayout.liftedScale(dragged: hypot(drag.width, drag.height), cardWidth: width))
         .position(x: source.midX + (area.midX - source.midX) * moved,
                   y: source.midY + (area.midY - source.midY) * moved)
         .offset(drag)

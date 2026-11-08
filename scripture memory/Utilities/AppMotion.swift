@@ -35,6 +35,17 @@ enum AppMotion {
         reduceMotion ? .easeOut(duration: 0.15) : .smooth(duration: 0.24)
     }
 
+    static func release(initialVelocity: Double) -> Animation {
+        reduceMotion ? .easeOut(duration: 0.15)
+                     : .interpolatingSpring(duration: 0.42, bounce: initialVelocity > 0 ? 0.18 : 0,
+                                            initialVelocity: initialVelocity)
+    }
+
+    static func settle(initialVelocity: Double) -> Animation {
+        reduceMotion ? .easeOut(duration: 0.15)
+                     : .interpolatingSpring(duration: 0.35, bounce: 0.12, initialVelocity: initialVelocity)
+    }
+
     static var recoil: Animation {
         reduceMotion ? .easeOut(duration: 0.15) : .spring(response: 0.32, dampingFraction: 0.62)
     }

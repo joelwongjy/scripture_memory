@@ -113,19 +113,29 @@ class PackListLayoutTests {
     }
 
     @Test
-    fun testACardFollowsTheFingerAtFirstThenResists() {
-        assertEquals(0f, PackListLayout.cardPull(0f))
-        assertEquals(5.3f, PackListLayout.cardPull(10f), 0.1f)
-        assertTrue(
-            PackListLayout.cardPull(400f) - PackListLayout.cardPull(200f) <
-                PackListLayout.cardPull(200f) - PackListLayout.cardPull(0f),
-        )
-        assertTrue(PackListLayout.cardPull(10_000f) < PackListLayout.cardPullLimit)
+    fun testALiftedCardShrinksAsItIsDraggedAndStopsAtThreeQuarters() {
+        assertEquals(1f, PackListLayout.liftedScale(0f, 340f))
+        assertEquals(0.875f, PackListLayout.liftedScale(170f, 340f), 0.001f)
+        assertEquals(0.75f, PackListLayout.liftedScale(5_000f, 340f))
     }
 
     @Test
-    fun testACardResistsTheSameBothWays() {
-        assertEquals(-PackListLayout.cardPull(90f), PackListLayout.cardPull(-90f))
+    fun testAFlickProjectsAboutHalfASecondAhead() {
+        assertEquals(0.499f, PackListLayout.flickProjectionSeconds, 0.001f)
+    }
+
+    @Test
+    fun testACardGoesBackPastAQuarterOfTheShorterSide() {
+        assertFalse(PackListLayout.putsCardBack(90f, 390f, 760f))
+        assertTrue(PackListLayout.putsCardBack(110f, 390f, 760f))
+    }
+
+    @Test
+    fun testSpringVelocityCountsOnlyMotionTowardTheTarget() {
+        assertEquals(2f, PackListLayout.springVelocity(0f, 400f, 0f, 200f), 0.001f)
+        assertEquals(0f, PackListLayout.springVelocity(0f, -400f, 0f, 200f))
+        assertEquals(0f, PackListLayout.springVelocity(400f, 0f, 0f, 200f), 0.001f)
+        assertEquals(0f, PackListLayout.springVelocity(0f, 400f, 0f, 0f))
     }
 
     @Test

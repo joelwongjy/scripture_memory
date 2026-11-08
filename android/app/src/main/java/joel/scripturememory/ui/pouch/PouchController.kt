@@ -193,8 +193,6 @@ internal class PouchController(
 
     private fun cardMotion(): AnimationSpec<Float> = AppMotion.repeated()
 
-    private fun cardBounce(): AnimationSpec<Float> = AppMotion.recoil()
-
     fun liftCard(i: Int, source: Rect) {
         if (lifted != null) return
         HapticEngine.light()
@@ -217,24 +215,26 @@ internal class PouchController(
         }
     }
 
-    fun releaseCardSwipe(putBack: Boolean) {
+    fun releaseCardSwipe(putBack: Boolean, speed: Float) {
         if (putBack) {
-            putCardBack()
+            putCardBack(AppMotion.release(withMomentum = speed > 0f), speed)
             return
         }
-        scope.launch { liftedDragX.animateTo(0f, cardBounce()) }
-        scope.launch { liftedDragY.animateTo(0f, cardBounce()) }
+        val settle = AppMotion.settle<Float>()
+        scope.launch { liftedDragX.animateTo(0f, settle, -liftedDragX.value * speed) }
+        scope.launch { liftedDragY.animateTo(0f, settle, -liftedDragY.value * speed) }
     }
 
-    fun putCardBack() {
-        val motion = cardMotion()
+    fun putCardBack() = putCardBack(cardMotion(), 0f)
+
+    private fun putCardBack(motion: AnimationSpec<Float>, speed: Float) {
         if (lifted == null || liftAmount.targetValue != 1f) return
         scope.launch {
             listOf(
-                launch { liftAmount.animateTo(0f, motion) },
-                launch { liftedAngle.animateTo(0f, motion) },
-                launch { liftedDragX.animateTo(0f, motion) },
-                launch { liftedDragY.animateTo(0f, motion) },
+                launch { liftAmount.animateTo(0f, motion, -speed) },
+                launch { liftedAngle.animateTo(0f, motion, -liftedAngle.value * speed) },
+                launch { liftedDragX.animateTo(0f, motion, -liftedDragX.value * speed) },
+                launch { liftedDragY.animateTo(0f, motion, -liftedDragY.value * speed) },
             ).forEach { it.join() }
             lifted = null
         }

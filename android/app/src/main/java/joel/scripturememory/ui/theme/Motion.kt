@@ -44,6 +44,12 @@ object AppMotion {
     fun <T> recoil(): FiniteAnimationSpec<T> =
         if (reduceMotion) tween(150) else springFor(0.32f, 0.62f)
 
+    fun <T> release(withMomentum: Boolean): FiniteAnimationSpec<T> =
+        if (reduceMotion) tween(150) else springFor(0.42f, if (withMomentum) 0.82f else 1f)
+
+    fun <T> settle(): FiniteAnimationSpec<T> =
+        if (reduceMotion) tween(150) else springFor(0.35f, 0.88f)
+
     private fun <T> springFor(response: Float, damping: Float): FiniteAnimationSpec<T> {
         val omega = (2 * PI / response).toFloat()
         return spring(damping, omega * omega)

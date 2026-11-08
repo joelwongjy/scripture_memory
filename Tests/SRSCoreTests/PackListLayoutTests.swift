@@ -107,16 +107,28 @@ final class PackListLayoutTests: XCTestCase {
         XCTAssertFalse(PackListLayout.homeIsSideBySide(contentWidth: 350, height: 300))
     }
 
-    func testACardFollowsTheFingerAtFirstThenResists() {
-        XCTAssertEqual(PackListLayout.cardPull(0), 0)
-        XCTAssertEqual(PackListLayout.cardPull(10), 5.3, accuracy: 0.1)
-        XCTAssertLessThan(PackListLayout.cardPull(400) - PackListLayout.cardPull(200),
-                          PackListLayout.cardPull(200) - PackListLayout.cardPull(0))
-        XCTAssertLessThan(PackListLayout.cardPull(10_000), PackListLayout.cardPullLimit)
+    func testALiftedCardShrinksAsItIsDraggedAndStopsAtThreeQuarters() {
+        XCTAssertEqual(PackListLayout.liftedScale(dragged: 0, cardWidth: 340), 1)
+        XCTAssertEqual(PackListLayout.liftedScale(dragged: 170, cardWidth: 340), 0.875, accuracy: 0.001)
+        XCTAssertEqual(PackListLayout.liftedScale(dragged: 5_000, cardWidth: 340), 0.75)
     }
 
-    func testACardResistsTheSameBothWays() {
-        XCTAssertEqual(PackListLayout.cardPull(-90), -PackListLayout.cardPull(90))
+    func testAFlickProjectsAboutHalfASecondAhead() {
+        XCTAssertEqual(PackListLayout.flickProjectionSeconds, 0.499, accuracy: 0.001)
+    }
+
+    func testACardGoesBackPastAQuarterOfTheShorterSide() {
+        let phone = CGSize(width: 390, height: 760)
+        XCTAssertFalse(PackListLayout.putsCardBack(projected: 90, area: phone))
+        XCTAssertTrue(PackListLayout.putsCardBack(projected: 110, area: phone))
+    }
+
+    func testSpringVelocityCountsOnlyMotionTowardTheTarget() {
+        let start = CGPoint(x: 0, y: 0), end = CGPoint(x: 0, y: 200)
+        XCTAssertEqual(PackListLayout.springVelocity(CGSize(width: 0, height: 400), from: start, to: end), 2, accuracy: 0.001)
+        XCTAssertEqual(PackListLayout.springVelocity(CGSize(width: 0, height: -400), from: start, to: end), 0)
+        XCTAssertEqual(PackListLayout.springVelocity(CGSize(width: 400, height: 0), from: start, to: end), 0, accuracy: 0.001)
+        XCTAssertEqual(PackListLayout.springVelocity(CGSize(width: 0, height: 400), from: start, to: start), 0)
     }
 
     func testOneColumnCountsOneCard() {

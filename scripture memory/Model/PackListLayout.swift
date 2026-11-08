@@ -6,7 +6,7 @@ struct PackListLayout: Equatable {
     static let pouchCardShare: CGFloat = 0.86
     static let verseTextShare: CGFloat = 0.04
     static let printedVerseShare: CGFloat = 0.038
-    static let cardPullLimit: CGFloat = 120
+    static let flickProjectionSeconds: CGFloat = 0.998 / (1 - 0.998) / 1_000
 
     let columns: Int
     let cardWidth: CGFloat
@@ -30,10 +30,21 @@ struct PackListLayout: Equatable {
         max(cardWidth * share, readableSize)
     }
 
-    static func cardPull(_ travel: CGFloat) -> CGFloat {
-        let limit = cardPullLimit
-        let pulled = limit * (1 - 1 / (abs(travel) * 0.55 / limit + 1))
-        return travel < 0 ? -pulled : pulled
+    static func liftedScale(dragged distance: CGFloat, cardWidth: CGFloat) -> CGFloat {
+        guard cardWidth > 0 else { return 1 }
+        return 1 - 0.25 * min(distance / cardWidth, 1)
+    }
+
+    static func putsCardBack(projected distance: CGFloat, area: CGSize) -> Bool {
+        distance > min(area.width, area.height) * 0.25
+    }
+
+    static func springVelocity(_ velocity: CGSize, from start: CGPoint, to end: CGPoint) -> Double {
+        let dx = end.x - start.x, dy = end.y - start.y
+        let span = hypot(dx, dy)
+        guard span > 1 else { return 0 }
+        let toward = (velocity.width * dx + velocity.height * dy) / span
+        return Double(min(max(toward / span, 0), 20))
     }
 
     static func titleSpan(barWidth: CGFloat, leading: CGFloat, trailing: CGFloat,
