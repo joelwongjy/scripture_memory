@@ -31,6 +31,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import joel.scripturememory.model.AnkiExporter
 import androidx.core.content.FileProvider
@@ -312,8 +313,20 @@ fun SettingsScreen() {
         }
 
         GroupedSection(
-            title = "Backup",
-            footer = "Saves your own packs and every pack you’ve started, with review history, as an Anki deck. " +
+            title = "Privacy",
+            footer = "Sends which screens and features you use, never your verses or personal details.",
+        ) {
+            ToggleRow(
+                "Share Anonymous Usage",
+                Analytics.isEnabled,
+                onCheckedChange = Analytics::setEnabled,
+                leading = { RowIcon(R.drawable.ic_chart_bar) },
+            )
+        }
+
+        GroupedSection(
+            title = "Your Data",
+            footer = "Export saves your own packs and every pack you’ve started, with review history, as an Anki deck. " +
                 "Open it in Anki, or import it into Scripture Memory on another phone.",
         ) {
             ListRow(
@@ -334,30 +347,13 @@ fun SettingsScreen() {
                     }
                 },
             )
-        }
-
-        GroupedSection(
-            title = "Privacy",
-            footer = "Sends which screens and features you use, never your verses or personal details.",
-        ) {
-            ToggleRow(
-                "Share Anonymous Usage",
-                Analytics.isEnabled,
-                onCheckedChange = Analytics::setEnabled,
-                leading = { RowIcon(R.drawable.ic_chart_bar) },
+            RowDivider()
+            ListRow(
+                "Reset Review Progress",
+                leading = { RowIcon(R.drawable.ic_arrow_counter_clockwise, AppTheme.colors.red) },
+                titleColor = AppTheme.colors.red,
+                onClick = { showResetAlert = true },
             )
-        }
-
-        GroupedSection(footer = "Clears all review scheduling. This can't be undone.") {
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .defaultMinSize(minHeight = 52.dp)
-                    .dimOnPress { showResetAlert = true },
-                contentAlignment = Alignment.Center,
-            ) {
-                Text("Reset Review Progress", style = AppType.body, color = AppTheme.colors.red)
-            }
         }
 
         Column {
@@ -459,7 +455,7 @@ fun SettingsScreen() {
     if (showResetAlert) {
         AppAlert(
             title = "Reset Review Progress?",
-            message = "Every card's review schedule will be cleared.",
+            message = "Every card’s review schedule will be cleared. This can’t be undone.",
             actions = listOf(
                 AlertAction("Cancel", isCancel = true),
                 AlertAction("Reset", isDestructive = true, onClick = { SRSStore.shared.resetAll() }),
@@ -484,9 +480,9 @@ private fun reminderTimeLabel(context: android.content.Context, hour: Int, minut
 }
 
 @Composable
-private fun RowIcon(icon: Int) {
+private fun RowIcon(icon: Int, tint: Color = AppTheme.colors.accent) {
     Box(Modifier.width(24.dp), contentAlignment = Alignment.Center) {
-        Icon(icon, size = 22.dp, tint = AppTheme.colors.accent)
+        Icon(icon, size = 22.dp, tint = tint)
     }
 }
 

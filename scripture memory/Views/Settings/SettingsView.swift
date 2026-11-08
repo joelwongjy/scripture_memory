@@ -150,16 +150,6 @@ struct SettingsView: View {
             }
 
             Section {
-                Button(action: exportToAnki) {
-                    rowLabel("Export to Anki", "square.and.arrow.up")
-                }
-            } header: {
-                Text("Backup")
-            } footer: {
-                Text("Saves your own packs and every pack you’ve started, with review history, as an Anki deck. Open it in Anki, or import it into Scripture Memory on another phone.")
-            }
-
-            Section {
                 Toggle(isOn: $shareUsage) {
                     rowLabel("Share Anonymous Usage", "chart.bar")
                 }
@@ -171,14 +161,18 @@ struct SettingsView: View {
             .onChange(of: shareUsage) { _, on in Analytics.setEnabled(on) }
 
             Section {
+                Button(action: exportToAnki) {
+                    rowLabel("Export to Anki", "square.and.arrow.up")
+                }
                 Button(role: .destructive) {
                     showResetSRSAlert = true
                 } label: {
-                    Text("Reset Review Progress")
-                        .frame(maxWidth: .infinity, alignment: .center)
+                    rowLabel("Reset Review Progress", "arrow.counterclockwise")
                 }
+            } header: {
+                Text("Your Data")
             } footer: {
-                Text("Clears all review scheduling. This can't be undone.")
+                Text("Export saves your own packs and every pack you’ve started, with review history, as an Anki deck. Open it in Anki, or import it into Scripture Memory on another phone.")
             }
             .alert("Reset Review Progress?", isPresented: $showResetSRSAlert) {
                 Button("Cancel", role: .cancel) { }
@@ -186,7 +180,7 @@ struct SettingsView: View {
                     SRSStore.shared.resetAll()
                 }
             } message: {
-                Text("Every card's review schedule will be cleared.")
+                Text("Every card’s review schedule will be cleared. This can’t be undone.")
             }
 
             Section {
