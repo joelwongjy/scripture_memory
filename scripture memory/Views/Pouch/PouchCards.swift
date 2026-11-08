@@ -120,7 +120,7 @@ struct PouchVerseCard<Accessory: View>: View {
                 heading(u)
             }
             HStack(spacing: 1.6 * u) {
-                Text(footer.first ?? "")
+                Text(footer.first ?? "").fontWeight(isPrintedDEP ? .bold : nil)
                 if footer.count > 1 { Text(footer[1]) }
                 Spacer(minLength: 0)
                 if isLearnt {
