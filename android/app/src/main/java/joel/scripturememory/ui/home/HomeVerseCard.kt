@@ -84,7 +84,12 @@ internal fun HomeVerseCard(
             horizontalArrangement = Arrangement.spacedBy((1.6f * u).dp),
         ) {
             Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy((1.6f * u).dp)) {
-                Text(footer.firstOrNull().orEmpty(), style = footerStyle, color = caption, maxLines = 1)
+                Text(
+                    footer.firstOrNull().orEmpty(),
+                    style = if (verse.packName.startsWith("DEP ")) footerStyle.bold() else footerStyle,
+                    color = caption,
+                    maxLines = 1,
+                )
                 if (footer.size > 1) Text(footer[1], style = footerStyle, color = caption, maxLines = 1)
             }
             if (isLearnt) {

@@ -222,7 +222,7 @@ internal fun PouchVerseCard(
                     platformStyle = PlatformTextStyle(includeFontPadding = false),
                 )
                 Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy((1.6f * u).dp)) {
-                    Text(footer.first(), style = style, color = caption, maxLines = 1)
+                    Text(footer.first(), style = if (isPrintedDEP) style.copy(fontWeight = FontWeight.Bold) else style, color = caption, maxLines = 1)
                     if (footer.size > 1) {
                         Text(footer[1], Modifier.weight(1f, fill = false), style = style, color = caption, maxLines = 1)
                     }

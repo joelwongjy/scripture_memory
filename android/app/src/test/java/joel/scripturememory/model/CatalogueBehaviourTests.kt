@@ -71,13 +71,13 @@ class CatalogueBehaviourTests {
         assertEquals("2-9", VerseNumbering.printedNumber(firstOfPart2))
         assertEquals(1, VerseNumbering.topic(firstOfPart2))
         assertEquals("2. What is Quiet Time?", firstOfPart2.part)
-        assertEquals("2. What is Quiet Time?", CardFooter.label(firstOfPart2))
+        assertEquals("II. Quiet Time · 2. What is Quiet Time?", CardFooter.label(firstOfPart2))
         assertEquals("2. What is Quiet Time?", CardFooter.groupHeading(firstOfPart2))
         val holySpirit = named("TMS 180 · Getting to Know God").verses[12]
         assertEquals("TMS 180 S1-13", VerseNumbering.code(holySpirit))
         assertEquals("2. Holy Spirit", CardFooter.label(holySpirit))
         assertEquals("A. Live the New Life", CardFooter.groupHeading(named("TMS 60").verses[0]))
-        assertEquals("I. Assurance of Salvation", CardFooter.groupHeading(named("DEP 1: Assurance of Salvation").verses[0]))
+        assertNull(CardFooter.groupHeading(named("DEP 1: Assurance of Salvation").verses[0]))
         assertEquals("E-1 · Grow in Christlikeness", CardFooter.label(named("TMS 60").verses.first { it.subpack == "E" }))
         assertEquals("I. Assurance of Salvation", CardFooter.label(named("DEP 1: Assurance of Salvation").verses[0]))
     }
@@ -124,7 +124,7 @@ class CatalogueBehaviourTests {
         val c7 = named("TMS 60").verses.filter { it.subpack == "C" }[6]
         assertEquals("C-7 · Rely on God's Resources", CardFooter.label(c7))
         assertEquals("3 · Beginning with Christ", CardFooter.label(named("5 Assurances").verses[2]))
-        assertEquals("1. Why do we have Quiet Time?", CardFooter.label(named("DEP 2: Quiet Time").verses[0]))
+        assertEquals("II. Quiet Time · 1. Why do we have Quiet Time?", CardFooter.label(named("DEP 2: Quiet Time").verses[0]))
         assertEquals("VIII. World Vision", CardFooter.label(named("DEP 8: World Vision").verses[0]))
         assertNull(CardFooter.groupHeading(named("5 Assurances").verses[0]))
         assertEquals("Fallback", CardFooter.label(verse(1, packName = ""), "Fallback"))
