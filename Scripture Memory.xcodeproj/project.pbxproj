@@ -444,7 +444,7 @@
 				CODE_SIGN_ENTITLEMENTS = "scripture memory/scripture_memory.entitlements";
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 12;
 				DEVELOPMENT_TEAM = 767L2N7FG8;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -493,7 +493,7 @@
 				CODE_SIGN_ENTITLEMENTS = "scripture memory/scripture_memory.entitlements";
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 12;
 				DEVELOPMENT_TEAM = 767L2N7FG8;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -538,7 +538,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = ScriptureWidget/ScriptureWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 12;
 				DEVELOPMENT_TEAM = 767L2N7FG8;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ScriptureWidget/Info.plist;
@@ -568,7 +568,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = ScriptureWidget/ScriptureWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 12;
 				DEVELOPMENT_TEAM = 767L2N7FG8;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ScriptureWidget/Info.plist;
@@ -598,7 +598,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = ScriptureShare/ScriptureShare.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 12;
 				DEVELOPMENT_TEAM = 767L2N7FG8;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ScriptureShare/Info.plist;
@@ -628,7 +628,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = ScriptureShare/ScriptureShare.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 12;
 				DEVELOPMENT_TEAM = 767L2N7FG8;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ScriptureShare/Info.plist;
