@@ -526,7 +526,13 @@ private fun OyoCover(pack: Pack) {
                     )
                 }
             }
-            Text("카드", style = type(34f, FontWeight.SemiBold, tracking = 10f), color = ink, maxLines = 1)
+            Text(
+                "카드",
+                Modifier.padding(start = with(LocalDensity.current) { 10.sp.toDp() }),
+                style = type(34f, FontWeight.SemiBold, tracking = 10f),
+                color = ink,
+                maxLines = 1,
+            )
             Spacer(Modifier.weight(1f))
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 val footer = type(12f, FontWeight.SemiBold)
