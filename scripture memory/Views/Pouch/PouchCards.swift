@@ -132,10 +132,10 @@ struct PouchVerseCard<Accessory: View>: View {
                 Spacer(minLength: 0)
                 Group {
                     if isLearnt {
-                        Label("Learnt", systemImage: "checkmark")
-                            .labelStyle(.titleAndIcon)
-                            .font(.system(size: 2.9 * u, weight: .bold))
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 3.2 * u, weight: .bold))
                             .foregroundStyle(PouchInk.green)
+                            .accessibilityLabel("Learnt")
                     }
                     accessory()
                 }

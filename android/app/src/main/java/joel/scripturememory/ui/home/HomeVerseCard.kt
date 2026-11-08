@@ -88,12 +88,7 @@ internal fun HomeVerseCard(
                 footer, verse.packName.startsWith("DEP "), footerStyle, caption, (1.6f * u).dp, Modifier.weight(1f),
             )
             if (isLearnt) {
-                val green = PouchInk.green(dark)
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(R.drawable.ic_check, size = (3.2f * u).dp, tint = green)
-                    Spacer(Modifier.width((0.8f * u).dp))
-                    Text("Learnt", style = footerStyle.bold(), color = green, maxLines = 1)
-                }
+                Icon(R.drawable.ic_check, size = (3.2f * u).dp, tint = PouchInk.green(dark), contentDescription = "Learnt")
             }
             val accent = paperAccent()
             Row(verticalAlignment = Alignment.CenterVertically) {

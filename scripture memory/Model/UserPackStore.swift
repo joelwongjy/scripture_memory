@@ -11,7 +11,8 @@ final class UserPackStore: ObservableObject {
     @Published private(set) var userPacks: [UserPack] = []
 
     private let storage: ProgressStorage
-    private static let storageKey = "userPacks.v1"
+    private static let storageKey = "userPacks.v2"
+    private static let legacyKey = "userPacks.v1"
 
     private struct Snapshot {
         var packs: [Pack] = []
@@ -71,12 +72,18 @@ final class UserPackStore: ObservableObject {
     }
 
     @objc private func externalChange(_ note: Notification) {
-        guard note.affectsAny(of: [Self.storageKey]) else { return }
+        guard note.affectsAny(of: [Self.storageKey, Self.legacyKey]) else { return }
         load()
     }
 
     private func load() {
-        let decoded = storage.decode([UserPack].self, forKey: Self.storageKey) ?? []
+        let current = storage.decodeCompressed([UserPack].self, forKey: Self.storageKey)
+        let legacy = current == nil ? storage.decode([UserPack].self, forKey: Self.legacyKey) : nil
+        let decoded = current ?? legacy ?? []
+        if let legacy {
+            storage.encodeCompressed(legacy, forKey: Self.storageKey)
+            storage.removeObject(forKey: Self.legacyKey)
+        }
         guard decoded != userPacks || Self.revision == 0 else { return }
         publish(decoded)
     }
@@ -93,7 +100,7 @@ final class UserPackStore: ObservableObject {
 
     private func commit(_ packs: [UserPack]) {
         publish(packs)
-        storage.encode(packs, forKey: Self.storageKey)
+        storage.encodeCompressed(packs, forKey: Self.storageKey)
     }
 
     func pack(id: String) -> UserPack? { userPacks.first { $0.id == id } }

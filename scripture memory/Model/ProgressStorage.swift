@@ -94,6 +94,18 @@ final class ProgressStorage {
         write(data, forKey: key)
     }
 
+    func encodeCompressed<T: Encodable>(_ value: T, forKey key: String) {
+        guard let data = try? JSONEncoder().encode(value),
+              let packed = try? (data as NSData).compressed(using: .zlib) else { return }
+        write(packed as Data, forKey: key)
+    }
+
+    func decodeCompressed<T: Decodable>(_ type: T.Type, forKey key: String) -> T? {
+        guard let packed = data(forKey: key),
+              let data = try? (packed as NSData).decompressed(using: .zlib) else { return nil }
+        return try? JSONDecoder().decode(type, from: data as Data)
+    }
+
     func removeObject(forKey key: String) {
         write(nil, forKey: key)
     }

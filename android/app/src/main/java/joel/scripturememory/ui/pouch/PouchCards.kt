@@ -225,14 +225,7 @@ internal fun PouchVerseCard(
                 )
                 CardFooterCaption(footer, isPrintedDEP, style, caption, (1.6f * u).dp, Modifier.weight(1f))
                 if (isLearnt) {
-                    val green = PouchInk.green(dark)
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy((1.1f * u).dp),
-                    ) {
-                        Icon(R.drawable.ic_check, size = (3f * u).dp, tint = green)
-                        Text("Learnt", style = style.copy(fontWeight = FontWeight.Bold), color = green, maxLines = 1)
-                    }
+                    Icon(R.drawable.ic_check, size = (3.2f * u).dp, tint = PouchInk.green(dark), contentDescription = "Learnt")
                 }
                 accessory()
             }
