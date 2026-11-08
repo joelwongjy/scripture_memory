@@ -80,6 +80,22 @@ final class BibleReferenceVectorTests: XCTestCase {
         XCTAssertNil(PastedVerse.share(in: ""))
     }
 
+    func testOwnPacksFromAnExportStayOwn() {
+        let fields = ["Reference", "Title", "Verse", "Version"]
+        let notes = [
+            AnkiNote(deck: "Scripture Memory::DEP 2: Quiet Time", noteType: "Scripture Memory", fieldNames: fields,
+                     fields: ["Hebrews 12:2", "Looking on the Lord", "Let us fix our eyes on Jesus.", "NIV84"], tags: [], cards: []),
+            AnkiNote(deck: "Scripture Memory::Mine", noteType: "Scripture Memory", fieldNames: fields,
+                     fields: ["Romans 8:28", "", "And we know that in all things God works for the good.", "ESV"], tags: [], cards: []),
+        ]
+        let keys = [AnkiVerseImport.referenceKey(book: "Hebrews", reference: "12:2"): "heb",
+                    AnkiVerseImport.referenceKey(book: "Romans", reference: "8:28"): "rom"]
+        let plan = AnkiVerseImport.plan(AnkiImport(notes: notes), bundledKeys: keys, bundledPackNames: ["DEP 2: Quiet Time"])
+        XCTAssertEqual(plan.matches.map(\.cardUid), ["heb"])
+        XCTAssertEqual(plan.decks.map(\.name), ["Mine"])
+        XCTAssertEqual(plan.decks.first?.verses.first?.version, "ESV")
+    }
+
     func testSingleChapterBookTakesTheNumberAsVerse() {
         XCTAssertEqual(BibleReference.parse("Jude 3")?.display, "Jude 1:3")
     }
