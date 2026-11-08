@@ -482,6 +482,8 @@ struct PackCover: View {
 
     // MARK: OYO Style
 
+    private static let kadeuTracking: CGFloat = 10
+
     private static let oyoTitleFont = Font.system(size: 58, weight: .regular, design: .serif)
 
     private var oyoCover: some View {
@@ -510,8 +512,9 @@ struct PackCover: View {
                     }
                     .padding(.top, 4)
                 Text("카드")
-                    .font(.system(size: 22, weight: .bold, design: .rounded))
-                    .tracking(2)
+                    .font(.system(size: 34, weight: .semibold))
+                    .tracking(Self.kadeuTracking)
+                    .padding(.leading, Self.kadeuTracking)
                 Spacer(minLength: 0)
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text("네비게이토")
