@@ -23,7 +23,7 @@ object AnkiImporter {
     }
 
     fun plan(source: AnkiImport): AnkiImportPlan =
-        AnkiVerseImport.plan(source, bundledKeys(), UserPack.defaultName)
+        AnkiVerseImport.plan(source, bundledKeys(), packsNIV84.map { it.name }.toSet(), UserPack.defaultName)
 
     fun apply(
         plan: AnkiImportPlan,

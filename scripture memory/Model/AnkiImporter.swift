@@ -23,7 +23,8 @@ enum AnkiImporter {
     }
 
     static func plan(for source: AnkiImport) -> AnkiImportPlan {
-        AnkiVerseImport.plan(source, bundledKeys: bundledKeys(), fallbackName: UserPack.defaultName)
+        AnkiVerseImport.plan(source, bundledKeys: bundledKeys(), bundledPackNames: Set(packsNIV84.map(\.name)),
+                             fallbackName: UserPack.defaultName)
     }
 
     struct DeckChoice: Equatable {
