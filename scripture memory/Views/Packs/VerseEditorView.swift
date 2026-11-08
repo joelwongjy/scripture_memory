@@ -63,6 +63,15 @@ struct VerseEditorView: View {
             Form {
                 detailsSection
                 verseSection
+                Section {
+                    LabeledContent("Title") {
+                        TextField("Title", text: $title, prompt: Text("Optional"))
+                            .multilineTextAlignment(fieldAlignment)
+                            .focused($focus, equals: .title)
+                            .textInputAutocapitalization(.words)
+                            .submitLabel(.done)
+                    }
+                }
                 if editing != nil {
                     Section {
                         Button("Delete Verse", role: .destructive) { confirmDelete = true }
@@ -95,7 +104,7 @@ struct VerseEditorView: View {
                     .textInputAutocapitalization(.words)
                     .autocorrectionDisabled()
                     .submitLabel(.next)
-                    .onSubmit { focus = .title }
+                    .onSubmit { focus = trimmedText.isEmpty ? .text : .title }
             }
             if !bookSuggestions.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -108,14 +117,6 @@ struct VerseEditorView: View {
                         }
                     }
                 }
-            }
-            LabeledContent("Title") {
-                TextField("Title", text: $title, prompt: Text("Optional"))
-                    .multilineTextAlignment(fieldAlignment)
-                    .focused($focus, equals: .title)
-                    .textInputAutocapitalization(.words)
-                    .submitLabel(.next)
-                    .onSubmit { focus = .text }
             }
             Picker("Translation", selection: $translation) {
                 ForEach(translationChoices, id: \.self) { code in
@@ -134,7 +135,12 @@ struct VerseEditorView: View {
 
     @ViewBuilder
     private var referenceFooter: some View {
-        if let reference {
+        if olderNIVHasIt, !duplicate {
+            Button("Fill in the app’s \(VerseTranslation.displayName(VerseTranslation.niv84)) text") {
+                translation = VerseTranslation.niv84
+            }
+            .font(.footnote.weight(.semibold))
+        } else if let reference {
             if duplicate {
                 Label("Already in this pack", systemImage: "exclamationmark.triangle.fill")
                     .foregroundStyle(.orange)
@@ -147,6 +153,11 @@ struct VerseEditorView: View {
         } else if !referenceText.isEmpty {
             Text("Try “Rom 8:28”")
         }
+    }
+
+    private var olderNIVHasIt: Bool {
+        guard let reference, translation == VerseTranslation.niv, trimmedText.isEmpty else { return false }
+        return VerseLookup.bundled(reference, translation: VerseTranslation.niv84) != nil
     }
 
     private var bibleAppURL: URL? {

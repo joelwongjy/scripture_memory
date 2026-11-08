@@ -123,6 +123,8 @@ fun VerseEditorSheet(
     val translationChoices = if (translation in VerseTranslation.choices) VerseTranslation.choices
     else VerseTranslation.choices + translation
 
+    val olderNIVHasIt = reference != null && translation == VerseTranslation.niv && trimmedText.isEmpty() &&
+        VerseLookup.bundled(reference, VerseTranslation.niv84) != null
     val duplicate = reference != null && store.pack(packID)?.verses?.any {
         val wanted = SRSKey.normalizedReference(reference.reference)
         it.id != editing?.id && it.book == reference.book.name && SRSKey.normalizedReference(it.reference) == wanted
@@ -254,26 +256,15 @@ fun VerseEditorSheet(
                             autoCorrectEnabled = false,
                             imeAction = ImeAction.Next,
                         ),
-                        keyboardActions = KeyboardActions(onNext = { titleFocus.requestFocus() }),
+                        keyboardActions = KeyboardActions(
+                            onNext = { if (trimmedText.isEmpty()) textFocus.requestFocus() else titleFocus.requestFocus() },
+                        ),
                     )
                     if (bookSuggestions.isNotEmpty()) {
                         PillRow(bookSuggestions.map { it.name }, onClick = { i ->
                             referenceText = field(bookSuggestions[i].name + " ")
                         })
                     }
-                    RowDivider()
-                    LabeledFieldRow(
-                        "Title",
-                        value = title,
-                        onValueChange = { title = it },
-                        modifier = Modifier.focusRequester(titleFocus),
-                        placeholder = "Optional",
-                        keyboardOptions = KeyboardOptions(
-                            capitalization = KeyboardCapitalization.Words,
-                            imeAction = ImeAction.Next,
-                        ),
-                        keyboardActions = KeyboardActions(onNext = { textFocus.requestFocus() }),
-                    )
                     RowDivider()
                     ListRow(
                         "Translation",
@@ -283,6 +274,12 @@ fun VerseEditorSheet(
                     )
                 }
                 when {
+                    olderNIVHasIt && !duplicate -> TextButton(
+                        "Fill in the app’s ${VerseTranslation.displayName(VerseTranslation.niv84)} text",
+                        Modifier.padding(start = AppLayout.panelPadding, end = AppLayout.panelPadding, top = 8.dp),
+                        style = AppType.footnote.copy(fontWeight = FontWeight.SemiBold),
+                        onClick = { translation = VerseTranslation.niv84 },
+                    )
                     reference != null && duplicate -> StatusLine(
                         "Already in this pack",
                         icon = R.drawable.ic_warning_fill,
@@ -349,6 +346,20 @@ fun VerseEditorSheet(
                         pasteButton(Modifier.weight(1f))
                     }
                 }
+            }
+
+            GroupedSection {
+                LabeledFieldRow(
+                    "Title",
+                    value = title,
+                    onValueChange = { title = it },
+                    modifier = Modifier.focusRequester(titleFocus),
+                    placeholder = "Optional",
+                    keyboardOptions = KeyboardOptions(
+                        capitalization = KeyboardCapitalization.Words,
+                        imeAction = ImeAction.Done,
+                    ),
+                )
             }
 
             if (editing != null) {
