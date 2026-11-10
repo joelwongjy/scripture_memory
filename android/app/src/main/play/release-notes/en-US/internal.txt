@@ -1,1 +1,1 @@
-Make your own packs and import or export Anki decks with review history. DEP cards now show their booklet and part like the printed ones, Settings is tidier, and a lifted card swipes back the way iOS does.
+Add Verse is paste-first: it opens ready to paste, and pasting from your Bible app fills the reference and keeps only the verse. Titles now show an example.
