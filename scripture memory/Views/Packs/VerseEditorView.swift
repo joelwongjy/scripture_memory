@@ -236,7 +236,6 @@ struct VerseEditorView: View {
             pastedText = draft.text
         } else {
             translation = lastTranslation
-            focus = .reference
         }
     }
 
@@ -294,6 +293,6 @@ struct VerseEditorView: View {
         title = ""
         autofilled = nil
         pastedText = nil
-        focus = .reference
+        focus = nil
     }
 }

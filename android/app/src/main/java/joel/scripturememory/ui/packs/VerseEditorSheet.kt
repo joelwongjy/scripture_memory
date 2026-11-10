@@ -209,11 +209,10 @@ fun VerseEditorSheet(
         title = field("")
         autofilled = null
         pastedText = null
-        referenceFocus.requestFocus()
+        focusManager.clearFocus()
     }
 
     LaunchedEffect(referenceText.text, translation) { autofill() }
-    LaunchedEffect(Unit) { if (editing == null && draft == null) referenceFocus.requestFocus() }
 
     AppSheet(onDismiss = onDismiss, fullHeight = true) { sheet ->
         SheetHeader(
