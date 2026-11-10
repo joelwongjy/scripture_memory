@@ -97,7 +97,7 @@ struct VerseEditorView: View {
                     text = old
                     focus = nil
                 } else if new.count > old.count + 1, PastedVerse.share(in: new) != nil {
-                    applyPaste(new)
+                    DispatchQueue.main.async { applyPaste(new) }
                 }
             }
             .onChange(of: translation) { _, _ in autofill() }
