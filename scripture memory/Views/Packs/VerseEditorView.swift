@@ -65,12 +65,14 @@ struct VerseEditorView: View {
                 verseSection
                 Section {
                     LabeledContent("Title") {
-                        TextField("Title", text: $title, prompt: Text("Optional"))
+                        TextField("Title", text: $title, prompt: Text("Christ the Center"))
                             .multilineTextAlignment(fieldAlignment)
                             .focused($focus, equals: .title)
                             .textInputAutocapitalization(.words)
                             .submitLabel(.done)
                     }
+                } footer: {
+                    Text("Optional. Shown on the front of the card.")
                 }
                 if editing != nil {
                     Section {
@@ -97,7 +99,7 @@ struct VerseEditorView: View {
                     text = old
                     focus = nil
                 } else if new.count > old.count + 1, PastedVerse.share(in: new) != nil {
-                    applyPaste(new)
+                    DispatchQueue.main.async { applyPaste(new) }
                 }
             }
             .onChange(of: translation) { _, _ in autofill() }
@@ -236,7 +238,6 @@ struct VerseEditorView: View {
             pastedText = draft.text
         } else {
             translation = lastTranslation
-            focus = .reference
         }
     }
 
@@ -294,6 +295,6 @@ struct VerseEditorView: View {
         title = ""
         autofilled = nil
         pastedText = nil
-        focus = .reference
+        focus = nil
     }
 }
