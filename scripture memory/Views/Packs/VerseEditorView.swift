@@ -65,12 +65,14 @@ struct VerseEditorView: View {
                 verseSection
                 Section {
                     LabeledContent("Title") {
-                        TextField("Title", text: $title, prompt: Text("Optional"))
+                        TextField("Title", text: $title, prompt: Text("Christ the Center"))
                             .multilineTextAlignment(fieldAlignment)
                             .focused($focus, equals: .title)
                             .textInputAutocapitalization(.words)
                             .submitLabel(.done)
                     }
+                } footer: {
+                    Text("Optional. Shown on the front of the card.")
                 }
                 if editing != nil {
                     Section {

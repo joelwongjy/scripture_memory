@@ -359,13 +359,13 @@ fun VerseEditorSheet(
                 }
             }
 
-            GroupedSection {
+            GroupedSection(footer = "Optional. Shown on the front of the card.") {
                 LabeledFieldRow(
                     "Title",
                     value = title,
                     onValueChange = { title = it },
                     modifier = Modifier.focusRequester(titleFocus),
-                    placeholder = "Optional",
+                    placeholder = "Christ the Center",
                     keyboardOptions = KeyboardOptions(
                         capitalization = KeyboardCapitalization.Words,
                         imeAction = ImeAction.Done,
