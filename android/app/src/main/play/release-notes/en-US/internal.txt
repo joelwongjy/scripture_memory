@@ -1,1 +1,1 @@
-Add Verse is paste-first: it opens ready to paste, and pasting from your Bible app fills the reference and keeps only the verse. Titles now show an example.
+After setup, your starting verse opens straight away. Quiz is ready to start with the verses you've learnt so far, and the little-used Practice This Card option is gone.
