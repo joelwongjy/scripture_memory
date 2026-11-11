@@ -113,6 +113,7 @@ import joel.scripturememory.model.Pack
 import joel.scripturememory.model.PackCloseMethod
 import joel.scripturememory.model.PackListLayout
 import joel.scripturememory.model.PackPositions
+import joel.scripturememory.model.PracticeEntry
 import joel.scripturememory.model.TestSession
 import joel.scripturememory.model.Verse
 import joel.scripturememory.model.VerseActionSource
@@ -241,7 +242,7 @@ fun PouchScreen(
     }
 
     fun startPractice(i: Int) {
-        val session = TestSession.practice(verses, i) ?: return
+        val session = TestSession.practice(verses, i, PracticeEntry.titleButton) ?: return
         practiceOpen = true
         covers.present("practice-${session.id}") { dismiss ->
             TestSessionScreen(
@@ -255,24 +256,6 @@ fun PouchScreen(
                     dismiss()
                 },
                 onCardShown = { lastPractised = it },
-            )
-        }
-    }
-
-    fun practiseCard(verse: Verse) {
-        val session = TestSession.practice(verse)
-        practiceOpen = true
-        covers.present("practice-${session.id}") { dismiss ->
-            TestSessionScreen(
-                session,
-                onSessionEnded = {
-                    practiceOpen = false
-                    dismiss()
-                },
-                onClose = {
-                    practiceOpen = false
-                    dismiss()
-                },
             )
         }
     }
@@ -400,7 +383,6 @@ fun PouchScreen(
                         height = cardHeightDp,
                         below = below,
                         screenOrigin = { screenOrigin },
-                        onPractice = ::practiseCard,
                         onComplete = ::markComplete,
                     )
                 }
@@ -918,7 +900,6 @@ private fun FannedList(
     height: Dp,
     below: Dp,
     screenOrigin: () -> Offset,
-    onPractice: (Verse) -> Unit,
     onComplete: (Verse, VerseActionSource) -> Unit,
 ) {
     val verses = c.verses
@@ -986,7 +967,6 @@ private fun FannedList(
                                 height,
                                 isLifted = c.lifted?.index == i,
                                 onLift = { c.liftCard(i, it.translate(-screenOrigin())) },
-                                onPractice = { onPractice(verses[i]) },
                                 onComplete = onComplete,
                             )
                         } else {
@@ -1007,7 +987,6 @@ private fun FannedCard(
     height: Dp,
     isLifted: Boolean,
     onLift: (Rect) -> Unit,
-    onPractice: () -> Unit,
     onComplete: (Verse, VerseActionSource) -> Unit,
 ) {
     val learning = LearningStore.shared
@@ -1057,10 +1036,6 @@ private fun FannedCard(
                     true
                 }
                 customActions = listOf(
-                    CustomAccessibilityAction("Practice This Card") {
-                        onPractice()
-                        true
-                    },
                     CustomAccessibilityAction(if (isFavorite) "Unstar" else "Star") {
                         toggleStar()
                         true
@@ -1085,7 +1060,6 @@ private fun FannedCard(
         if (showsMenu) {
             AppMenu(
                 actions = listOf(
-                    MenuAction("Practice This Card", R.drawable.ic_keyboard, onClick = onPractice),
                     MenuAction(
                         if (isFavorite) "Unstar" else "Star",
                         if (isFavorite) R.drawable.ic_star_fill else R.drawable.ic_star,

@@ -37,6 +37,8 @@ struct TestSetupView: View {
     @State private var activeSession:     TestSession? = nil
     @State private var savedSession:      TestSession? = nil
     @State private var showOverwriteAlert = false
+    @State private var preselected: Set<Int>?
+    @State private var startedThisVisit = false
 
     private static let savedSessionKey = "lastTestSessionVerseIds"
     private static let quizCountKey    = "reviewSetupQuizCount"
@@ -136,6 +138,12 @@ struct TestSetupView: View {
         .onAppear {
             loadPersistedQuizCount()
             loadSavedSession()
+            startedThisVisit = false
+            preselectIfEmpty()
+        }
+        .onDisappear(perform: logLeftWithoutStarting)
+        .onChange(of: activeSession?.id) { _, id in
+            if id != nil { startedThisVisit = true }
         }
         .onChange(of: selectedVerseIds) { _, _ in
             reconcileQuizCountWithSelection()
@@ -422,6 +430,19 @@ struct TestSetupView: View {
         persistSession(session)
         savedSession  = session
         activeSession = session
+    }
+
+    private func preselectIfEmpty() {
+        guard preselected == nil, selectedVerseIds.isEmpty, savedSession == nil else { return }
+        let ids = Set(versesUpToCurrent().map(\.id))
+        selectedVerseIds = ids
+        preselected = ids
+    }
+
+    private func logLeftWithoutStarting() {
+        guard !startedThisVisit, activeSession == nil else { return }
+        Analytics.log(.quizSetupLeft(selected: selectedVerseIds.count,
+                                     preselected: preselected == selectedVerseIds))
     }
 
     private func clearSession() {

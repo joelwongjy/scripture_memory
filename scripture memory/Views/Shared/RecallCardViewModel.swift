@@ -31,6 +31,7 @@ class RecallCardViewModel: ObservableObject {
     @Published var submitResults:       [Int: SubmitResult] = [:]
 
     @Published var inputText  = ""
+    private(set) var misses = 0
     @Published var titleInput = ""
     @Published var verseInput = ""
 
@@ -117,6 +118,7 @@ class RecallCardViewModel: ObservableObject {
             advance(verse: verse, sectionWords: words, revealed: revealed)
             return true
         }
+        misses += 1
         return false
     }
 
@@ -135,6 +137,7 @@ class RecallCardViewModel: ObservableObject {
             return true
         }
         inputText = ""
+        misses += 1
         return false
     }
 

@@ -18,6 +18,8 @@ sealed class AnalyticsEvent {
     data class SessionStarted(val start: StudySessionStart) : AnalyticsEvent()
     data class SessionEnded(val summary: StudySessionSummary) : AnalyticsEvent()
 
+    data class QuizSetupLeft(val selected: Int, val preselected: Boolean) : AnalyticsEvent()
+
     data class SearchPerformed(val results: Int) : AnalyticsEvent()
     data class SearchResultOpened(val rank: Int, val matchedOnReference: Boolean) : AnalyticsEvent()
     data object SearchFoundNothing : AnalyticsEvent()
@@ -46,6 +48,7 @@ sealed class AnalyticsEvent {
             is AnkiImported -> "OwnPack.ankiImported"
             is SessionStarted -> "${start.kind.signalPrefix}.started"
             is SessionEnded -> "${summary.kind.signalPrefix}.ended"
+            is QuizSetupLeft -> "Quiz.setupLeft"
             is SearchPerformed -> "Search.performed"
             is SearchResultOpened -> "Search.resultOpened"
             SearchFoundNothing -> "Search.foundNothing"
@@ -78,6 +81,10 @@ sealed class AnalyticsEvent {
             )
             is SessionStarted -> start.parameters
             is SessionEnded -> summary.parameters
+            is QuizSetupLeft -> mapOf(
+                "selected" to AnalyticsRange.count(selected),
+                "preselected" to preselected.toString(),
+            )
             is SearchPerformed -> mapOf("results" to AnalyticsRange.count(results))
             is SearchResultOpened -> mapOf(
                 "rank" to AnalyticsRange.count(rank),
@@ -112,7 +119,7 @@ enum class WidgetDestination {
 }
 
 enum class PackSource {
-    shelf, search, homeCard, widget;
+    shelf, search, homeCard, widget, onboarding;
 
     val rawValue: String get() = name
 }
@@ -137,6 +144,12 @@ enum class PackCloseMethod {
 
 enum class VerseActionSource {
     card, menu;
+
+    val rawValue: String get() = name
+}
+
+enum class PracticeEntry {
+    titleButton, sideButton;
 
     val rawValue: String get() = name
 }
@@ -166,6 +179,7 @@ data class StudySessionStart(
     val knownCards: Int = 0,
     val reviewedToday: Int = 0,
     val pack: String? = null,
+    val entry: PracticeEntry? = null,
 ) {
     val parameters: Map<String, String>
         get() = buildMap {
@@ -180,6 +194,7 @@ data class StudySessionStart(
                 put("reviewedToday", AnalyticsRange.count(reviewedToday))
             }
             pack?.let { put("pack", it) }
+            entry?.let { put("from", it.rawValue) }
         }
 }
 
@@ -197,6 +212,7 @@ data class StudySessionSummary(
     val undos: Int = 0,
     val mistakes: Int = 0,
     val usedVoice: Boolean = false,
+    val misses: Int? = null,
 ) {
     val parameters: Map<String, String>
         get() = buildMap {
@@ -206,6 +222,7 @@ data class StudySessionSummary(
             put("time", AnalyticsRange.duration(seconds))
             put("peeks", AnalyticsRange.count(peeks))
             put("usedVoice", usedVoice.toString())
+            misses?.let { put("misses", AnalyticsRange.count(it)) }
             when (kind) {
                 StudySessionKind.review, StudySessionKind.extraRound -> {
                     put("again", AnalyticsRange.count(again))

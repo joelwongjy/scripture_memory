@@ -415,7 +415,7 @@ struct PouchView: View {
                     closeButton
                         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { closeWidth = $0 }
                     Spacer()
-                    Button { startPractice(from: index) } label: {
+                    Button { startPractice(from: index, entry: .titleButton) } label: {
                         Text("Practice")
                             .fontWeight(.medium)
                             .frame(height: 30)
@@ -548,7 +548,7 @@ struct PouchView: View {
     private var sideButtons: some View {
         VStack(spacing: 12) {
             closeButton
-            Button { startPractice(from: index) } label: {
+            Button { startPractice(from: index, entry: .sideButton) } label: {
                 Image(systemName: "keyboard")
                     .font(.body.weight(.medium))
                     .frame(width: 30, height: 30)
@@ -612,7 +612,6 @@ struct PouchView: View {
         .accessibilityAddTraits(.isButton)
         .accessibilityHint("Lifts the card and turns it over")
         .accessibilityAction { onLift() }
-        .accessibilityAction(named: "Practice This Card") { practice = .practice(card: verse) }
         .accessibilityAction(named: FavoritesStore.shared.isFavorite(verse) ? "Unstar" : "Star") {
             toggleStar(verse)
         }
@@ -641,9 +640,6 @@ struct PouchView: View {
     private func cardMenu(_ i: Int) -> some View {
         let verse = verses[i]
         let isFavorite = FavoritesStore.shared.isFavorite(verse)
-        Button { practice = .practice(card: verse) } label: {
-            Label("Practice This Card", systemImage: "keyboard")
-        }
         Button {
             HapticEngine.light()
             toggleStar(verse)
@@ -916,8 +912,8 @@ struct PouchView: View {
         withAnimation(AppMotion.movement) { listIndex = i }
     }
 
-    private func startPractice(from i: Int) {
-        practice = TestSession.practice(verses, from: i)
+    private func startPractice(from i: Int, entry: PracticeEntry) {
+        practice = TestSession.practice(verses, from: i, entry: entry)
     }
 
     private func markComplete(_ verse: Verse, from source: VerseActionSource) {

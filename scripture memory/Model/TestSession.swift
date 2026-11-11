@@ -16,16 +16,13 @@ struct TestSession: Identifiable {
     var round = 1
     /// The card it opens on.
     var startIndex = 0
+    var entry: PracticeEntry?
 }
 
 extension TestSession {
-    static func practice(card verse: Verse) -> TestSession {
-        TestSession(verses: [verse], kind: .pack)
-    }
-
-    static func practice(_ verses: [Verse], from start: Int) -> TestSession? {
+    static func practice(_ verses: [Verse], from start: Int, entry: PracticeEntry) -> TestSession? {
         guard verses.indices.contains(start) else { return nil }
-        return TestSession(verses: verses, kind: .pack, startIndex: start)
+        return TestSession(verses: verses, kind: .pack, startIndex: start, entry: entry)
     }
 
     /// Today's review across `activePacks`, or `nil` when nothing is due.

@@ -439,6 +439,7 @@ internal class TestSessionState(
                     knownCards = knownCards,
                     reviewedToday = if (isReview) SRSStore.shared.reviewedToday() else 0,
                     pack = if (session.kind == SessionKind.pack) vm.verses.firstOrNull()?.packName else null,
+                    entry = session.entry,
                 ),
             ),
         )
@@ -464,6 +465,7 @@ internal class TestSessionState(
                     undos = undoCount,
                     mistakes = -vm.sessionScore,
                     usedVoice = usedVoice,
+                    misses = if (studyMode == StudyMode.submit) null else vm.misses,
                 ),
             ),
         )
