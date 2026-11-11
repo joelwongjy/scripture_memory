@@ -9,14 +9,13 @@ data class TestSession(
     val kind: SessionKind = SessionKind.custom,
     val round: Int = 1,
     val startIndex: Int = 0,
+    val entry: PracticeEntry? = null,
     val id: UUID = UUID.randomUUID(),
 ) {
     companion object {
-        fun practice(card: Verse): TestSession = TestSession(listOf(card), SessionKind.pack)
-
-        fun practice(verses: List<Verse>, start: Int): TestSession? {
+        fun practice(verses: List<Verse>, start: Int, entry: PracticeEntry): TestSession? {
             if (start !in verses.indices) return null
-            return TestSession(verses, SessionKind.pack, startIndex = start)
+            return TestSession(verses, SessionKind.pack, startIndex = start, entry = entry)
         }
 
         fun dailyReview(

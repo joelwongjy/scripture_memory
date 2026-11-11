@@ -26,6 +26,7 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -41,6 +42,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.max
+import joel.scripturememory.model.AnalyticsEvent
 import joel.scripturememory.model.AnalyticsScreen
 import joel.scripturememory.model.AppDefaults
 import joel.scripturememory.model.BibleVersion
@@ -54,20 +56,21 @@ import joel.scripturememory.model.TestSession
 import joel.scripturememory.model.TestSessionViewModel
 import joel.scripturememory.model.Verse
 import joel.scripturememory.model.Wording
+import joel.scripturememory.system.Analytics
 import joel.scripturememory.system.HapticEngine
 import joel.scripturememory.ui.components.AlertAction
 import joel.scripturememory.ui.components.AppAlert
 import joel.scripturememory.ui.components.BottomActionBar
 import joel.scripturememory.ui.components.ChromeTextButton
-import joel.scripturememory.ui.components.ReadableList
+import joel.scripturememory.ui.components.Divider
 import joel.scripturememory.ui.components.ListRow
 import joel.scripturememory.ui.components.LocalBottomBarPadding
 import joel.scripturememory.ui.components.LocalCovers
 import joel.scripturememory.ui.components.PrimaryButton
+import joel.scripturememory.ui.components.ReadableList
 import joel.scripturememory.ui.components.TrackScreen
 import joel.scripturememory.ui.components.groupedRow
 import joel.scripturememory.ui.components.readableColumn
-import joel.scripturememory.ui.components.Divider
 import joel.scripturememory.ui.study.TestSessionScreen
 import joel.scripturememory.ui.theme.AppMotion
 import joel.scripturememory.ui.theme.AppTheme
@@ -137,6 +140,8 @@ fun TestSetupScreen() {
     var showOverwriteAlert by remember { mutableStateOf(false) }
     val entry = remember { QuizCountEntry() }
     var barHeight by remember { mutableIntStateOf(0) }
+    var preselected by remember { mutableStateOf<Set<Int>?>(null) }
+    var started by remember { mutableStateOf(false) }
 
     val selectedCount = selectedVerseIds.size
     val clampedCount = quizCount.coerceAtMost(selectedCount).coerceAtLeast(1)
@@ -147,6 +152,7 @@ fun TestSetupScreen() {
     }
 
     fun present(session: TestSession) {
+        started = true
         covers.present("quiz-${session.id}") { _ ->
             TestSessionScreen(session, onSessionEnded = ::clearSession)
         }
@@ -210,6 +216,18 @@ fun TestSetupScreen() {
     LaunchedEffect(Unit) {
         AppDefaults.standard.getInt(quizCountKey)?.takeIf { it >= 1 }?.let { quizCount = it }
         loadSavedSession()
+        if (preselected == null && selectedVerseIds.isEmpty() && savedSession == null) {
+            val ids = versesUpToCurrent().map { it.id }.toSet()
+            selectedVerseIds = ids
+            preselected = ids
+        }
+    }
+    DisposableEffect(Unit) {
+        onDispose {
+            if (!started) {
+                Analytics.log(AnalyticsEvent.QuizSetupLeft(selectedVerseIds.size, preselected == selectedVerseIds))
+            }
+        }
     }
     LaunchedEffect(selectedVerseIds) {
         if (selectedVerseIds.isNotEmpty()) quizCount = clampedCount

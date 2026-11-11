@@ -23,6 +23,8 @@ enum AnalyticsEvent: Equatable {
     case sessionStarted(StudySessionStart)
     case sessionEnded(StudySessionSummary)
 
+    case quizSetupLeft(selected: Int, preselected: Bool)
+
     case searchPerformed(results: Int)
     case searchResultOpened(rank: Int, matchedOnReference: Bool)
     case searchFoundNothing
@@ -59,6 +61,7 @@ enum AnalyticsEvent: Equatable {
         case .ankiImported:          return "OwnPack.ankiImported"
         case .sessionStarted(let s): return "\(s.kind.signalPrefix).started"
         case .sessionEnded(let s):   return "\(s.kind.signalPrefix).ended"
+        case .quizSetupLeft:         return "Quiz.setupLeft"
         case .searchPerformed:       return "Search.performed"
         case .searchResultOpened:    return "Search.resultOpened"
         case .searchFoundNothing:    return "Search.foundNothing"
@@ -98,6 +101,8 @@ enum AnalyticsEvent: Equatable {
             return s.parameters
         case .sessionEnded(let s):
             return s.parameters
+        case .quizSetupLeft(let selected, let preselected):
+            return ["selected": AnalyticsRange.count(selected), "preselected": String(preselected)]
         case .searchPerformed(let results):
             return ["results": AnalyticsRange.count(results)]
         case .searchResultOpened(let rank, let onReference):
@@ -116,11 +121,12 @@ enum AnalyticsScreen: String, CaseIterable {
 
 enum OnboardingStart: String { case beginning, pickedVerse, restoredFromICloud }
 enum WidgetDestination: String { case read, review }
-enum PackSource: String { case shelf, search, homeCard, widget }
+enum PackSource: String { case shelf, search, homeCard, widget, onboarding }
 enum OwnPackSource: String { case newPack, ankiImport }
 enum OwnVerseSource: String { case typed, pasted, bundledText }
 enum PackCloseMethod: String { case edgeSwipe, closeButton }
 enum VerseActionSource: String { case card, menu }
+enum PracticeEntry: String { case titleButton, sideButton }
 
 enum StudySessionKind: String {
     case review, extraRound, quiz, practice
@@ -146,6 +152,7 @@ struct StudySessionStart: Equatable {
     var knownCards = 0
     var reviewedToday = 0
     var pack: String?
+    var entry: PracticeEntry?
 
     var parameters: [String: String] {
         var p = ["cards": AnalyticsRange.count(cards), "studyMode": studyMode, "hardMode": String(hardMode)]
@@ -157,6 +164,7 @@ struct StudySessionStart: Equatable {
             p["reviewedToday"] = AnalyticsRange.count(reviewedToday)
         }
         if let pack { p["pack"] = pack }
+        if let entry { p["from"] = entry.rawValue }
         return p
     }
 }
@@ -172,6 +180,7 @@ struct StudySessionSummary: Equatable {
     var undos = 0
     var mistakes = 0
     var usedVoice = false
+    var misses: Int?
 
     var parameters: [String: String] {
         var p = [
@@ -182,6 +191,7 @@ struct StudySessionSummary: Equatable {
             "peeks": AnalyticsRange.count(peeks),
             "usedVoice": String(usedVoice),
         ]
+        if let misses { p["misses"] = AnalyticsRange.count(misses) }
         switch kind {
         case .review, .extraRound:
             p["again"] = AnalyticsRange.count(again)

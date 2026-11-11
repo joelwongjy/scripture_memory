@@ -27,6 +27,8 @@ open class RecallCardViewModel(verses: List<Verse>, initialIndex: Int = 0) {
     var submitResults: Map<Int, SubmitResult> by mutableStateOf(emptyMap())
 
     var inputText: String by mutableStateOf("")
+    var misses = 0
+        private set
     var titleInput: String by mutableStateOf("")
     var verseInput: String by mutableStateOf("")
 
@@ -95,6 +97,7 @@ open class RecallCardViewModel(verses: List<Verse>, initialIndex: Int = 0) {
             advance(verse, words, revealed)
             return true
         }
+        misses += 1
         return false
     }
 
@@ -115,6 +118,7 @@ open class RecallCardViewModel(verses: List<Verse>, initialIndex: Int = 0) {
             return true
         }
         inputText = ""
+        misses += 1
         return false
     }
 

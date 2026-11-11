@@ -17,6 +17,7 @@ struct ContentView: View {
     @State private var cover: ActiveCover?
     @State private var searchText = ""
     @State private var ankiFile: OpenedFile?
+    @State private var startingVerse: ActiveCover?
 
     private enum ActiveCover: Identifiable {
         case onboarding(showsWelcome: Bool)
@@ -33,12 +34,12 @@ struct ContentView: View {
 
     var body: some View {
         tabs
-        .fullScreenCover(item: $cover) { c in
+        .fullScreenCover(item: $cover, onDismiss: openStartingVerse) { c in
             switch c {
             case .onboarding(let showsWelcome):
                 LearningSetupView(isOnboarding: true,
                                   showsWelcome: showsWelcome,
-                                  onComplete: { hasOnboarded = true })
+                                  onComplete: finishOnboarding)
             case .read(let pack, let index):
                 PouchView(pack: pack, startIndex: index)
             case .review(let session):
@@ -92,6 +93,22 @@ struct ContentView: View {
         .sheet(item: $ankiFile) { file in
             AnkiImportView(initialURL: file.url)
         }
+    }
+
+    private func finishOnboarding() {
+        hasOnboarded = true
+        guard let verse = learning.currentVerse,
+              let pack = packPrefs.visible(from: bibleVersion.packs)
+                .first(where: { $0.verses.contains { $0.srsKey == verse.srsKey } }),
+              let index = pack.verses.firstIndex(where: { $0.srsKey == verse.srsKey }) else { return }
+        startingVerse = .read(pack: pack, index: index)
+    }
+
+    private func openStartingVerse() {
+        guard let next = startingVerse, cover == nil else { return }
+        startingVerse = nil
+        if case .read(let pack, _) = next { Analytics.log(.packOpened(pack: pack.name, from: .onboarding)) }
+        cover = next
     }
 
     private struct OpenedFile: Identifiable {

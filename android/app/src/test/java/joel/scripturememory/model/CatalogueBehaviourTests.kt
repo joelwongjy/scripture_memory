@@ -221,11 +221,11 @@ class CatalogueBehaviourTests {
     @Test
     fun practiceHoldsTheWholePackAndStartsOnTheChosenCard() {
         val verses = listOf(verse(1), verse(2), verse(3))
-        assertEquals(listOf(1, 2, 3), TestSession.practice(verses, 1)?.verses?.map { it.id })
-        assertEquals(1, TestSession.practice(verses, 1)?.startIndex)
-        assertEquals(SessionKind.pack, TestSession.practice(verses, 1)?.kind)
-        assertNull(TestSession.practice(verses, 3))
-        assertNull(TestSession.practice(verses, -1))
+        assertEquals(listOf(1, 2, 3), TestSession.practice(verses, 1, PracticeEntry.titleButton)?.verses?.map { it.id })
+        assertEquals(1, TestSession.practice(verses, 1, PracticeEntry.titleButton)?.startIndex)
+        assertEquals(SessionKind.pack, TestSession.practice(verses, 1, PracticeEntry.titleButton)?.kind)
+        assertNull(TestSession.practice(verses, 3, PracticeEntry.titleButton))
+        assertNull(TestSession.practice(verses, -1, PracticeEntry.titleButton))
     }
 
     @Test

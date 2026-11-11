@@ -108,4 +108,25 @@ final class AnalyticsEventTests: XCTestCase {
         timer.resume(now: start.addingTimeInterval(4_005))
         XCTAssertEqual(timer.elapsed(now: start.addingTimeInterval(4_010)), 30)
     }
+
+    func testPracticeSaysWhichButtonOpenedIt() {
+        var start = StudySessionStart(kind: .practice, cards: 8, studyMode: "firstLetter", hardMode: false,
+                                      pack: "TMS 60", entry: .sideButton)
+        XCTAssertEqual(start.parameters["from"], "sideButton")
+        start.entry = nil
+        XCTAssertNil(start.parameters["from"])
+    }
+
+    func testTypingMissesAreSentOnlyWhenCounted() {
+        var end = StudySessionSummary(kind: .practice, finished: false, cards: 5, cardsDone: 1, seconds: 40)
+        XCTAssertNil(end.parameters["misses"])
+        end.misses = 7
+        XCTAssertEqual(end.parameters["misses"], "6-10")
+    }
+
+    func testLeavingQuizSetupSaysWhatWasSelected() {
+        let event = AnalyticsEvent.quizSetupLeft(selected: 12, preselected: true)
+        XCTAssertEqual(event.name, "Quiz.setupLeft")
+        XCTAssertEqual(event.parameters, ["selected": "11-20", "preselected": "true"])
+    }
 }

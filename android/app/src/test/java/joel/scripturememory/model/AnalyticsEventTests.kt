@@ -153,4 +153,26 @@ class AnalyticsEventTests {
         assertEquals("2-5", event.parameters["flips"])
         assertEquals("0", AnalyticsEvent.PackClosed(PackCloseMethod.closeButton, 12.0, 0).parameters["flips"])
     }
+
+    @Test
+    fun practiceSaysWhichButtonOpenedIt() {
+        val start = StudySessionStart(StudySessionKind.practice, 8, "firstLetter", false, pack = "TMS 60",
+                                      entry = PracticeEntry.titleButton)
+        assertEquals("titleButton", start.parameters["from"])
+        assertNull(start.copy(entry = null).parameters["from"])
+    }
+
+    @Test
+    fun typingMissesAreSentOnlyWhenCounted() {
+        val end = StudySessionSummary(StudySessionKind.practice, false, 5, 1, 40.0, misses = 7)
+        assertEquals("6-10", end.parameters["misses"])
+        assertNull(end.copy(misses = null).parameters["misses"])
+    }
+
+    @Test
+    fun leavingQuizSetupSaysWhatWasSelected() {
+        val event = AnalyticsEvent.QuizSetupLeft(selected = 12, preselected = true)
+        assertEquals("Quiz.setupLeft", event.name)
+        assertEquals(mapOf("selected" to "11-20", "preselected" to "true"), event.parameters)
+    }
 }

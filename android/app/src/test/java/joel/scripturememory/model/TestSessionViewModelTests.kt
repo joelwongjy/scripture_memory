@@ -49,6 +49,17 @@ class TestSessionViewModelTests {
     }
 
     @Test
+    fun wrongLettersAndWordsCountAsMissesWithoutScoring() {
+        val m = session()
+        m.processFirstLetterInput("x")
+        m.processFirstLetterInput("o")
+        assertEquals(1, m.misses)
+        m.processFullWordInput("delta ")
+        assertEquals(2, m.misses)
+        assertEquals(0, m.mistakes(1))
+    }
+
+    @Test
     fun mistakesStopAtFivePerVerse() {
         setMode(StudyMode.submit)
         val m = session()
@@ -431,7 +442,7 @@ class TestSessionViewModelTests {
 
     @Test
     fun testPracticeHoldsTheWholePackAndOpensOnTheChosenCard() {
-        val session = TestSession.practice(verses, 1)!!
+        val session = TestSession.practice(verses, 1, PracticeEntry.titleButton)!!
         assertEquals(verses, session.verses)
         assertEquals(1, session.startIndex)
         assertEquals(v2, TestSessionViewModel(session.verses, session.kind, session.startIndex).currentVerse)
@@ -439,7 +450,7 @@ class TestSessionViewModelTests {
 
     @Test
     fun testPracticeSavesNoProgress() {
-        val session = TestSession.practice(verses, 1)!!
+        val session = TestSession.practice(verses, 1, PracticeEntry.titleButton)!!
         TestSessionViewModel(session.verses, session.kind, session.startIndex).saveProgress()
         assertEquals(0, TestSessionViewModel(session.verses, session.kind).currentIndex)
     }

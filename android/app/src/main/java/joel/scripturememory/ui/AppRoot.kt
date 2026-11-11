@@ -128,10 +128,9 @@ private class AppShell(val covers: Covers, private val selectTab: (Int) -> Unit)
                 onComplete = {
                     defaults.putBool(hasOnboardedKey, true)
                     dismiss()
-                    waitingLink?.let {
-                        waitingLink = null
-                        handle(it)
-                    }
+                    val link = waitingLink
+                    waitingLink = null
+                    if (link != null) handle(link) else openStartingVerse()
                 },
             )
         }
@@ -175,6 +174,16 @@ private class AppShell(val covers: Covers, private val selectTab: (Int) -> Unit)
         Analytics.log(AnalyticsEvent.PackOpened(pack.name, PackSource.widget))
         present("read-${pack.id}-$index") { dismiss ->
             PouchScreen(pack, index, animatesPouch = false, onClosed = dismiss)
+        }
+    }
+
+    private fun openStartingVerse() {
+        val verse = LearningStore.shared.currentVerse ?: return
+        val pack = visiblePacks.firstOrNull { p -> p.verses.any { it.srsKey == verse.srsKey } } ?: return
+        val index = pack.verses.indexOfFirst { it.srsKey == verse.srsKey }
+        Analytics.log(AnalyticsEvent.PackOpened(pack.name, PackSource.onboarding))
+        present("read-${pack.id}-$index") { dismiss ->
+            PouchScreen(pack, index, onClosed = dismiss)
         }
     }
 

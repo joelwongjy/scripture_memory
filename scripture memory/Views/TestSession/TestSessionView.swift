@@ -41,6 +41,7 @@ struct TestSessionView: View {
     let onCardShown:    ((Verse) -> Void)?
     let sessionKind:    SessionKind
     let round:          Int
+    let entry:          PracticeEntry?
 
     // MARK: - Init
 
@@ -54,6 +55,7 @@ struct TestSessionView: View {
         self.onCardShown    = onCardShown
         self.sessionKind    = session.kind
         self.round          = session.round
+        self.entry          = session.entry
     }
 
     private var isReview: Bool { sessionKind == .srs }
@@ -717,7 +719,10 @@ struct TestSessionView: View {
                 }
             }
         }
-        if sessionKind == .pack { start.pack = vm.verses.first?.packName }
+        if sessionKind == .pack {
+            start.pack = vm.verses.first?.packName
+            start.entry = entry
+        }
         Analytics.log(.sessionStarted(start))
     }
 
@@ -737,6 +742,7 @@ struct TestSessionView: View {
         summary.undos = undoCount
         summary.mistakes = -vm.sessionScore
         summary.usedVoice = usedVoice
+        if studyMode != .submit { summary.misses = vm.misses }
         Analytics.log(.sessionEnded(summary))
     }
 
