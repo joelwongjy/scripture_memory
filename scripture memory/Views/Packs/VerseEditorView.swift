@@ -18,6 +18,7 @@ struct VerseEditorView: View {
     @State private var added: [String] = []
     @State private var pastedText: String?
     @State private var confirmDelete = false
+    @State private var confirmDiscard = false
     @FocusState private var focus: Field?
     @Environment(\.dynamicTypeSize) private var dynamicType
 
@@ -36,6 +37,15 @@ struct VerseEditorView: View {
     private var trimmedText: String { text.trimmingCharacters(in: .whitespacesAndNewlines) }
 
     private var canSave: Bool { reference != nil && !trimmedText.isEmpty }
+
+    private var hasChanges: Bool {
+        if let editing {
+            return referenceText != "\(editing.book) \(editing.reference)" || text != editing.text
+                || title != editing.title || translation != (editing.version ?? VerseTranslation.niv)
+        }
+        return !referenceText.trimmingCharacters(in: .whitespaces).isEmpty || !trimmedText.isEmpty
+            || !title.trimmingCharacters(in: .whitespaces).isEmpty
+    }
 
     private var translationChoices: [String] {
         VerseTranslation.choices.contains(translation) ? VerseTranslation.choices
@@ -93,6 +103,7 @@ struct VerseEditorView: View {
                 Text("Its review history is deleted too.")
             }
             .onAppear(perform: start)
+            .dismissGuard(hasChanges) { confirmDiscard = true }
             .onChange(of: referenceText) { _, _ in autofill() }
             .onChange(of: text) { old, new in
                 if new.count == old.count + 1, new.filter({ $0 == "\n" }).count > old.filter({ $0 == "\n" }).count {
@@ -100,6 +111,9 @@ struct VerseEditorView: View {
                     focus = nil
                 } else if new.count > old.count + 1, PastedVerse.share(in: new) != nil {
                     DispatchQueue.main.async { applyPaste(new) }
+                } else if editing == nil, old.isEmpty, new.count >= 40, new != autofilled?.text {
+                    pastedText = new
+                    focus = nil
                 }
             }
             .onChange(of: translation) { _, _ in autofill() }
@@ -114,8 +128,8 @@ struct VerseEditorView: View {
                     .focused($focus, equals: .reference)
                     .textInputAutocapitalization(.words)
                     .autocorrectionDisabled()
-                    .submitLabel(.next)
-                    .onSubmit { focus = trimmedText.isEmpty ? .text : .title }
+                    .submitLabel(.done)
+                    .onSubmit { focus = nil }
             }
             if !bookSuggestions.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -217,7 +231,13 @@ struct VerseEditorView: View {
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
         ToolbarItem(placement: .cancellationAction) {
-            Button(editing == nil && !added.isEmpty ? "Done" : "Cancel") { dismiss() }
+            Button(editing == nil && !added.isEmpty && !hasChanges ? "Done" : "Cancel") {
+                if hasChanges { confirmDiscard = true } else { dismiss() }
+            }
+            .confirmationDialog(editing == nil ? "Discard this verse?" : "Discard your changes?", isPresented: $confirmDiscard) {
+                Button(editing == nil ? "Discard Verse" : "Discard Changes", role: .destructive) { dismiss() }
+                Button("Keep Editing", role: .cancel) {}
+            }
         }
         ToolbarItem(placement: .confirmationAction) {
             Button(editing == nil ? "Add" : "Save", action: save)
@@ -268,6 +288,7 @@ struct VerseEditorView: View {
             pastedText = pasted.text
             autofilled = nil
         }
+        focus = nil
         HapticEngine.light()
     }
 

@@ -96,6 +96,7 @@ fun AppSheet(
     onDismiss: () -> Unit,
     fullHeight: Boolean = false,
     dismissDisabled: Boolean = false,
+    onDismissAttempt: (() -> Unit)? = null,
     content: @Composable ColumnScope.(SheetController) -> Unit,
 ) {
     val colors = AppTheme.colors
@@ -112,9 +113,20 @@ fun AppSheet(
         }
     }
 
+    fun requestClose() {
+        if (dismissDisabled) return
+        val attempt = onDismissAttempt
+        if (attempt == null) {
+            close()
+        } else {
+            scope.launch { offset.animateTo(0f, AppMotion.control()) }
+            attempt()
+        }
+    }
+
     LaunchedEffect(Unit) { offset.animateTo(0f, AppMotion.snappy(340)) }
 
-    FullWindowDialog(onBack = { if (!dismissDisabled) close() }) {
+    FullWindowDialog(onBack = ::requestClose) {
         BoxWithConstraints(Modifier.fillMaxSize()) {
             val height = with(LocalDensity.current) { maxHeight.toPx() }
             Box(
@@ -125,7 +137,7 @@ fun AppSheet(
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
-                        onClick = { if (!dismissDisabled) close() },
+                        onClick = ::requestClose,
                     ),
             )
             Column(
@@ -154,7 +166,7 @@ fun AppSheet(
                                 }
                             },
                             onDragStopped = { velocity ->
-                                if (offset.value > 0.18f || velocity > 1400f) close()
+                                if (offset.value > 0.18f || velocity > 1400f) requestClose()
                                 else scope.launch { offset.animateTo(0f, AppMotion.control()) }
                             },
                         ),
