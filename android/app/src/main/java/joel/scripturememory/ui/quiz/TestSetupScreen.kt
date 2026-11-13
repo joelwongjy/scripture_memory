@@ -200,6 +200,13 @@ fun TestSetupScreen() {
         return visiblePacks.firstOrNull { pack -> pack.verses.any { it.srsKey == current.srsKey } }
     }
 
+    fun currentPackUpToCurrent(): List<Verse> {
+        val current = learning.currentVerse ?: return emptyList()
+        val pack = currentPack() ?: return emptyList()
+        val i = pack.verses.indexOfFirst { it.srsKey == current.srsKey }
+        return if (i < 0) emptyList() else pack.verses.take(i + 1)
+    }
+
     fun versesUpToCurrent(): List<Verse> {
         val current = learning.currentVerse ?: return catalogue
         val i = catalogue.indexOfFirst { it.srsKey == current.srsKey }
@@ -222,7 +229,7 @@ fun TestSetupScreen() {
         AppDefaults.standard.getInt(quizCountKey)?.takeIf { it >= 1 }?.let { quizCount = it }
         loadSavedSession()
         if (preselected == null && selectedVerseIds.isEmpty() && savedSession == null) {
-            val ids = (currentPack()?.verses ?: versesUpToCurrent()).map { it.id }.toSet()
+            val ids = currentPackUpToCurrent().ifEmpty { versesUpToCurrent() }.map { it.id }.toSet()
             selectedVerseIds = ids
             preselected = ids
         }
@@ -303,7 +310,7 @@ fun TestSetupScreen() {
                         val upToCurrent = versesUpToCurrent()
                         val starred = favorites.verses(visiblePacks)
                         val shortcuts = buildList {
-                            currentPack()?.let { add(Triple("Current pack", it.name, it.verses)) }
+                            currentPack()?.let { add(Triple("Current pack", it.name, currentPackUpToCurrent())) }
                             if (upToCurrent.isNotEmpty()) {
                                 val detail = learning.currentVerse?.let { "${it.book} ${it.reference}" }
                                     ?: Wording.verses(upToCurrent.size)

@@ -40,30 +40,19 @@ struct ShareVerseView: View {
         NavigationStack {
             Form {
                 Section {
-                    LabeledContent("Reference") {
-                        TextField("Reference", text: $referenceText, prompt: Text("Rom 8:28"))
-                            .multilineTextAlignment(.trailing)
-                            .textInputAutocapitalization(.words)
-                            .autocorrectionDisabled()
-                            .focused($referenceFocused)
-                    }
-                    LabeledContent("Title") {
-                        TextField("Title", text: $title, prompt: Text("Optional"))
-                            .multilineTextAlignment(.trailing)
-                            .textInputAutocapitalization(.words)
-                    }
+                    TextField("Reference", text: $referenceText, prompt: Text("Reference, like Rom 8:28"))
+                        .textInputAutocapitalization(.words)
+                        .autocorrectionDisabled()
+                        .focused($referenceFocused)
+                    TextField("Title", text: $title, prompt: Text("Title (optional)"))
+                        .textInputAutocapitalization(.words)
                     Picker("Translation", selection: $translation) {
                         ForEach(translationChoices, id: \.self) { code in
                             Text(VerseTranslation.displayName(code)).tag(code)
                         }
                     }
                 } footer: {
-                    if let reference {
-                        if referenceText.trimmingCharacters(in: .whitespaces) != reference.display {
-                            Label(reference.display, systemImage: "checkmark.circle.fill")
-                                .foregroundStyle(.green)
-                        }
-                    } else {
+                    if reference == nil {
                         Text("Try “Rom 8:28”")
                     }
                 }
