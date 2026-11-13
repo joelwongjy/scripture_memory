@@ -16,12 +16,14 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
@@ -110,16 +112,21 @@ fun VerseEditorSheet(
     var added by remember { mutableStateOf(listOf<String>()) }
     var pastedText by remember { mutableStateOf(if (editing == null) draft?.text else null) }
     var confirmDelete by remember { mutableStateOf(false) }
+    var confirmDiscard by remember { mutableStateOf(false) }
     var choosingTranslation by remember { mutableStateOf(false) }
     var referenceFocused by remember { mutableStateOf(false) }
     val referenceFocus = remember { FocusRequester() }
-    val titleFocus = remember { FocusRequester() }
-    val textFocus = remember { FocusRequester() }
-    val focusManager = LocalFocusManager.current
+    val keyboard = remember { KeyboardCloser() }
 
     val reference = BibleReference.parse(referenceText.text)
     val trimmedText = text.text.trimmingWhitespacesAndNewlines()
     val canSave = reference != null && trimmedText.isNotEmpty()
+    val hasChanges = if (editing != null) {
+        referenceText.text != "${editing.book} ${editing.reference}" || text.text != editing.text ||
+            title.text != editing.title || translation != (editing.version ?: VerseTranslation.niv)
+    } else {
+        referenceText.text.isNotBlank() || trimmedText.isNotEmpty() || title.text.isNotBlank()
+    }
     val typedIsCanonical = reference != null && referenceText.text.trimmingWhitespaces() == reference.display
     val bibleAppURL = reference?.let { VerseTranslation.bibleAppURL(it, translation) }
     val translationChoices = if (translation in VerseTranslation.choices) VerseTranslation.choices
@@ -167,6 +174,7 @@ fun VerseEditorSheet(
             pastedText = pasted.text
             autofilled = null
         }
+        keyboard.close()
         HapticEngine.light()
     }
 
@@ -209,19 +217,31 @@ fun VerseEditorSheet(
         title = field("")
         autofilled = null
         pastedText = null
-        focusManager.clearFocus()
+        keyboard.close()
     }
 
     LaunchedEffect(referenceText.text, translation) { autofill() }
 
-    AppSheet(onDismiss = onDismiss, fullHeight = true) { sheet ->
+    AppSheet(
+        onDismiss = onDismiss,
+        fullHeight = true,
+        onDismissAttempt = if (hasChanges) ({ confirmDiscard = true }) else null,
+    ) { sheet ->
+        val focusManager = LocalFocusManager.current
+        val softKeyboard = LocalSoftwareKeyboardController.current
+        SideEffect {
+            keyboard.close = {
+                focusManager.clearFocus()
+                softKeyboard?.hide()
+            }
+        }
         SheetHeader(
             if (editing == null) "Add Verse" else "Edit Verse",
             leading = {
                 TextButton(
-                    if (editing == null && added.isNotEmpty()) "Done" else "Cancel",
+                    if (editing == null && added.isNotEmpty() && !hasChanges) "Done" else "Cancel",
                     style = AppType.body,
-                    onClick = sheet.dismiss,
+                    onClick = { if (hasChanges) confirmDiscard = true else sheet.dismiss() },
                 )
             },
             trailing = {
@@ -255,11 +275,9 @@ fun VerseEditorSheet(
                         keyboardOptions = KeyboardOptions(
                             capitalization = KeyboardCapitalization.Words,
                             autoCorrectEnabled = false,
-                            imeAction = ImeAction.Next,
+                            imeAction = ImeAction.Done,
                         ),
-                        keyboardActions = KeyboardActions(
-                            onNext = { if (trimmedText.isEmpty()) textFocus.requestFocus() else titleFocus.requestFocus() },
-                        ),
+                        keyboardActions = KeyboardActions(onDone = { keyboard.close() }),
                     )
                     if (bookSuggestions.isNotEmpty()) {
                         PillRow(bookSuggestions.map { it.name }, onClick = { i ->
@@ -308,12 +326,16 @@ fun VerseEditorSheet(
                         if (it.text.length > text.text.length + 1 && PastedVerse.share(it.text) != null) {
                             applyPaste(it.text)
                         } else {
+                            val pastedIntoEmpty = editing == null && text.text.isEmpty() &&
+                                it.text.length >= 40 && it.text != autofilled?.text
                             text = it
+                            if (pastedIntoEmpty) {
+                                pastedText = it.text
+                                keyboard.close()
+                            }
                         }
                     },
-                    modifier = Modifier
-                        .focusRequester(textFocus)
-                        .semantics { contentDescription = "Verse" },
+                    modifier = Modifier.semantics { contentDescription = "Verse" },
                     placeholder = "Type or paste the verse",
                     singleLine = false,
                     minLines = 4,
@@ -321,7 +343,7 @@ fun VerseEditorSheet(
                         capitalization = KeyboardCapitalization.Sentences,
                         imeAction = ImeAction.Done,
                     ),
-                    keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                    keyboardActions = KeyboardActions(onDone = { keyboard.close() }),
                 )
                 RowDivider()
                 val bibleLabel = reference?.let { "Find ${it.display} in the Bible app" } ?: "Find in the Bible app"
@@ -364,7 +386,6 @@ fun VerseEditorSheet(
                     "Title",
                     value = title,
                     onValueChange = { title = it },
-                    modifier = Modifier.focusRequester(titleFocus),
                     placeholder = "Christ the Center",
                     keyboardOptions = KeyboardOptions(
                         capitalization = KeyboardCapitalization.Words,
@@ -378,6 +399,19 @@ fun VerseEditorSheet(
                     ListRow("Delete Verse", titleColor = colors.red, onClick = { confirmDelete = true })
                 }
             }
+        }
+
+        if (confirmDiscard) {
+            AppAlert(
+                title = if (editing == null) "Discard this verse?" else "Discard your changes?",
+                actions = listOf(
+                    AlertAction("Keep Editing", isCancel = true),
+                    AlertAction(if (editing == null) "Discard Verse" else "Discard Changes", isDestructive = true) {
+                        sheet.dismiss()
+                    },
+                ),
+                onDismiss = { confirmDiscard = false },
+            )
         }
 
         if (confirmDelete && editing != null) {
@@ -406,6 +440,10 @@ fun VerseEditorSheet(
             onDismiss = { choosingTranslation = false },
         )
     }
+}
+
+private class KeyboardCloser {
+    var close: () -> Unit = {}
 }
 
 private fun openBibleApp(context: Context, url: String) {
