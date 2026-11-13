@@ -1,6 +1,6 @@
 ---
 name: ship
-description: Merge a pull request and ship Scripture Memory to testers. Xcode Cloud builds iOS for TestFlight on every push to main; Android is built with Scripts/release.sh and put on the Play internal testing track through a secret gist and the built-in browser. Use when Joel says "merge and ship", "merge and build", "ship it", "update the test build", or "put it on Play".
+description: Merge a pull request and ship Scripture Memory to testers. Xcode Cloud builds iOS for TestFlight on every push to main; Android is built with Scripts/release.sh and put on the Play closed testing track ("Closed testing - Alpha") through a secret gist and the built-in browser. Use when Joel says "merge and ship", "merge and build", "ship it", "update the test build", or "put it on Play".
 ---
 
 # Ship
@@ -46,7 +46,9 @@ Scripts/release.sh android --notes "<one or two plain sentences for testers>"
 
 The script tests, bumps `VERSION`, builds the Android bundle, then commits, tags and pushes. It prints `No …/play-service-account.json yet, so nothing was uploaded`: that is expected. Android goes up in step 3. Run it in the background; it takes 5 to 10 minutes.
 
-## 3. Android to Play (secret gist)
+## 3. Android to Play closed testing (secret gist)
+
+Testers are on **Closed testing - Alpha**, not internal testing. A build left on internal testing never reaches them.
 
 Use the **built-in browser**, where Joel is signed in to Play Console. Chrome has a different Google account. The browser can't read local files or localhost, but it can fetch from gist.githubusercontent.com. `$SCRATCH` below is any folder outside the repo, such as your scratchpad.
 
@@ -58,7 +60,7 @@ gh gist create "$SCRATCH/aab.b64" -d tmp           # secret by default
 gh api gists/<id> -q '(.public|tostring)+" "+(.files[].raw_url)'   # expect false + the raw URL
 ```
 
-1. Open `https://play.google.com/console/u/0/developers/6734316999589731692/app/4974717114520289222/tracks/internal-testing` and click **Create new release**.
+1. Open `https://play.google.com/console/u/0/developers/6734316999589731692/app/4974717114520289222/tracks/4700391525175179575` (Closed testing - Alpha) and click **Create new release**.
 2. Attach the bundle with JavaScript on that page:
 
    ```js
@@ -79,7 +81,7 @@ gh api gists/<id> -q '(.public|tostring)+" "+(.files[].raw_url)'   # expect fals
 4. Wait about 30 seconds for the new versionCode (`major×1000000 + minor×10000 + patch×100 + build`) to appear on the page.
 5. Release notes: focus the textarea, select it all with `t.setSelectionRange(0, t.value.length)` (cmd+a misses the placeholder), press Backspace, then type `<en-US>\n…\n</en-US>`. Read the value back with JavaScript.
 6. **Next**, then expand the warnings. "Native code without debug symbols" is the usual one and is fine; anything else, stop and tell Joel.
-7. **Save and publish**, then **Save and publish** again in the dialog. The track should read "Latest release: <versionCode>" and "Available to internal testers".
+7. **Save**, then **Go to overview** in the dialog. On Publishing overview, click **Submit N changes for review**, then **Send changes for review**. Managed publishing is off, so the build reaches closed testers by itself once Google's review passes (usually within a day, up to 7 days). The overview should list "Closed testing - Alpha · <versionCode>" under "Changes in review".
 
 Typed URLs to other Play Console pages can bounce to Home; click through the app instead.
 
@@ -90,7 +92,7 @@ Typed URLs to other Play Console pages can bounce to Home; click through the app
 
 ## 5. Report
 
-Say what shipped where: the Xcode Cloud run's result for iOS (its build appears in TestFlight once Apple finishes processing), and the versionCode Play shows as "Available to internal testers". Mention anything skipped, such as a gist or branch deletion that needs his yes.
+Say what shipped where: the Xcode Cloud run's result for iOS (its build appears in TestFlight once Apple finishes processing), and the versionCode sent for review on Closed testing - Alpha. Mention anything skipped, such as a gist or branch deletion that needs his yes.
 
 ## When it goes wrong
 

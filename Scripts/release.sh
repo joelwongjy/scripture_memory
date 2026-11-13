@@ -108,11 +108,11 @@ release_android() {
   if [[ -n "$NOTES" ]]; then
     local dir="$ROOT/android/app/src/main/play/release-notes/en-US"
     mkdir -p "$dir"
-    printf '%s\n' "$NOTES" >"$dir/internal.txt"
+    printf '%s\n' "$NOTES" >"$dir/alpha.txt"
   fi
   if [[ -f "$CONFIG/play-service-account.json" ]]; then
     (cd "$ROOT/android" && ./gradlew :app:publishReleaseBundle)
-    echo "Android: uploaded $(read_version) ($(read_build)) to the Play internal track."
+    echo "Android: uploaded $(read_version) ($(read_build)) to the Play closed testing track (alpha)."
   else
     (cd "$ROOT/android" && ./gradlew :app:bundleRelease)
     echo "Android: built android/app/build/outputs/bundle/release/app-release.aab."

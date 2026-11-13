@@ -101,6 +101,6 @@ dependencies {
 
 play {
     serviceAccountCredentials.set(configDir.resolve("play-service-account.json"))
-    track.set("internal")
+    track.set("alpha")
     defaultToAppBundles.set(true)
 }

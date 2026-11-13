@@ -6,7 +6,7 @@ One command ships both apps:
 Scripts/release.sh all --notes "What changed"
 ```
 
-It runs the Swift and Kotlin tests, moves `VERSION` to the next build, uploads to TestFlight and the Play internal track, commits, tags and pushes. Use `ios` or `android` in place of `all` to ship one app. Add `--patch` or `--minor` for a new version; the default is a new build of the current one. `--dry-run` prints what would happen.
+It runs the Swift and Kotlin tests, moves `VERSION` to the next build, uploads to TestFlight and Play, commits, tags and pushes. Use `ios` or `android` in place of `all` to ship one app. Add `--patch` or `--minor` for a new version; the default is a new build of the current one. `--dry-run` prints what would happen.
 
 ## Version numbers
 
@@ -50,7 +50,7 @@ To finish Android publishing:
    Scripts/release.sh android --notes "First build"
    ```
 
-   Then upload `android/app/build/outputs/bundle/release/app-release.aab` to the internal testing track.
+   Then upload `android/app/build/outputs/bundle/release/app-release.aab` to the closed testing track (Closed testing - Alpha).
 3. In Google Cloud, create a service account, download its JSON key and save it as `~/.config/scripture-memory/play-service-account.json`.
 4. In Play Console under Users and permissions, invite the service account's email and grant it release access.
 
