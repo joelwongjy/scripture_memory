@@ -1,6 +1,6 @@
 package joel.scripturememory.model
 
-data class VerseLookupResult(val text: String, val title: String)
+data class VerseLookupResult(val text: String, val title: String, val pack: String)
 
 fun VerseTranslation.bundledPacks(code: String): List<Pack>? = when (code.uppercase()) {
     niv -> packsNIV11
@@ -18,7 +18,7 @@ object VerseLookup {
                 if (verse.pinnedVersion != null) continue
                 if (SRSKey.normalizedReference(verse.reference) != wanted) continue
                 if (BibleBooks.book(verse.book) != reference.book) continue
-                return VerseLookupResult(verse.verse, verse.title)
+                return VerseLookupResult(verse.verse, verse.title, pack.name)
             }
         }
         return null

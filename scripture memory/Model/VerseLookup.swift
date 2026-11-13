@@ -3,6 +3,7 @@ import Foundation
 struct VerseLookupResult: Equatable {
     let text: String
     let title: String
+    let pack: String
 }
 
 extension VerseTranslation {
@@ -25,7 +26,7 @@ enum VerseLookup {
             for verse in pack.verses where verse.pinnedVersion == nil {
                 guard SRSKey.normalizedReference(verse.reference) == wanted,
                       BibleBooks.book(named: verse.book) == reference.book else { continue }
-                return VerseLookupResult(text: verse.verse, title: verse.title)
+                return VerseLookupResult(text: verse.verse, title: verse.title, pack: pack.name)
             }
         }
         return nil

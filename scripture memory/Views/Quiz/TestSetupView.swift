@@ -215,6 +215,10 @@ struct TestSetupView: View {
     /// menu, since they're used while choosing verses.
     @ViewBuilder
     private var shortcutRows: some View {
+        if let pack = currentPack {
+            shortcutRow(title: "Current pack", detail: pack.name) { select(pack.verses) }
+        }
+
         let upToCurrent = versesUpToCurrent()
         if !upToCurrent.isEmpty {
             shortcutRow(
@@ -359,6 +363,11 @@ struct TestSetupView: View {
         return Array(all[...i])
     }
 
+    private var currentPack: Pack? {
+        guard let current = learning.currentVerse else { return nil }
+        return visiblePacks.first { pack in pack.verses.contains { $0.srsKey == current.srsKey } }
+    }
+
     /// Selects everything up to and including this verse, across the whole
     /// catalogue rather than just this pack. A bare glyph rather than a labelled button: on a list this long a label
     /// would be thirty copies of the same sentence.
@@ -434,7 +443,7 @@ struct TestSetupView: View {
 
     private func preselectIfEmpty() {
         guard preselected == nil, selectedVerseIds.isEmpty, savedSession == nil else { return }
-        let ids = Set(versesUpToCurrent().map(\.id))
+        let ids = Set((currentPack?.verses ?? versesUpToCurrent()).map(\.id))
         selectedVerseIds = ids
         preselected = ids
     }
