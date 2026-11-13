@@ -1,1 +1,1 @@
-Add Verse is easier: Done and Paste put the keyboard away so Open in Bible stays in reach, and closing with an unsaved verse asks before discarding it.
+Tap outside to close the keyboard, see spaces as you type, and get a confirmation with Undo after adding a verse. Built-in verses tell you which pack they're in, and Quiz starts on your current pack.
