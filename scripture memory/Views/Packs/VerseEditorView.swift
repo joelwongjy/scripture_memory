@@ -19,10 +19,9 @@ struct VerseEditorView: View {
     @State private var pastedText: String?
     @State private var confirmDelete = false
     @State private var confirmDiscard = false
+    @State private var addedToast: UndoToastState?
     @FocusState private var focus: Field?
     @Environment(\.dynamicTypeSize) private var dynamicType
-
-    private var fieldAlignment: TextAlignment { dynamicType.isAccessibilitySize ? .leading : .trailing }
 
     private enum Field { case reference, text, title }
 
@@ -76,7 +75,9 @@ struct VerseEditorView: View {
                 Section {
                     LabeledContent("Title") {
                         TextField("Title", text: $title, prompt: Text("Christ the Center"))
-                            .multilineTextAlignment(fieldAlignment)
+                            .fixedSize(horizontal: !dynamicType.isAccessibilitySize, vertical: false)
+                            .frame(maxWidth: .infinity, alignment: dynamicType.isAccessibilitySize ? .leading : .trailing)
+                            .clipped()
                             .focused($focus, equals: .title)
                             .textInputAutocapitalization(.words)
                             .submitLabel(.done)
@@ -91,6 +92,8 @@ struct VerseEditorView: View {
                 }
             }
             .scrollDismissesKeyboard(.interactively)
+            .dismissesKeyboardOnTap()
+            .undoToast($addedToast)
             .navigationTitle(editing == nil ? "Add Verse" : "Edit Verse")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { toolbar }
@@ -124,7 +127,9 @@ struct VerseEditorView: View {
         Section {
             LabeledContent("Reference") {
                 TextField("Reference", text: $referenceText, prompt: Text("Rom 8:28"))
-                    .multilineTextAlignment(fieldAlignment)
+                    .fixedSize(horizontal: !dynamicType.isAccessibilitySize, vertical: false)
+                    .frame(maxWidth: .infinity, alignment: dynamicType.isAccessibilitySize ? .leading : .trailing)
+                    .clipped()
                     .focused($focus, equals: .reference)
                     .textInputAutocapitalization(.words)
                     .autocorrectionDisabled()
@@ -160,9 +165,12 @@ struct VerseEditorView: View {
 
     @ViewBuilder
     private var referenceFooter: some View {
-        if olderNIVHasIt, !duplicate {
-            Button("Fill in the app’s \(VerseTranslation.displayName(VerseTranslation.niv84)) text") {
+        if let builtIn = olderNIVText, !duplicate {
+            Button {
                 translation = VerseTranslation.niv84
+            } label: {
+                Text("This verse is already in \(builtIn.pack). Tap to fill it in.")
+                    .multilineTextAlignment(.leading)
             }
             .font(.footnote.weight(.semibold))
         } else if let reference {
@@ -173,16 +181,14 @@ struct VerseEditorView: View {
                 Label(reference.display, systemImage: "checkmark.circle.fill")
                     .foregroundStyle(.green)
             }
-        } else if !added.isEmpty && referenceText.isEmpty {
-            Text("Added \(added.last ?? "")")
         } else if !referenceText.isEmpty {
             Text("Try “Rom 8:28”")
         }
     }
 
-    private var olderNIVHasIt: Bool {
-        guard let reference, translation == VerseTranslation.niv, trimmedText.isEmpty else { return false }
-        return VerseLookup.bundled(reference, translation: VerseTranslation.niv84) != nil
+    private var olderNIVText: VerseLookupResult? {
+        guard let reference, translation == VerseTranslation.niv, trimmedText.isEmpty else { return nil }
+        return VerseLookup.bundled(reference, translation: VerseTranslation.niv84)
     }
 
     private var bibleAppURL: URL? {
@@ -311,6 +317,10 @@ struct VerseEditorView: View {
                                      : pastedText == text ? .pasted : .typed))
         HapticEngine.success()
         added.append(reference.display)
+        let packName = store.pack(id: packID)?.name ?? "this pack"
+        addedToast = UndoToastState(message: "Added \(reference.display) to \(packName)") { [store, packID] in
+            store.deleteVerses([verse.id], in: packID)
+        }
         referenceText = ""
         text = ""
         title = ""

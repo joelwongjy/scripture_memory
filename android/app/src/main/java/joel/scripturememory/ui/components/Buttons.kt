@@ -166,6 +166,7 @@ fun TextButton(
     enabled: Boolean = true,
     tint: Color = AppTheme.colors.accent,
     style: androidx.compose.ui.text.TextStyle = AppType.callout,
+    maxLines: Int = 1,
     onClick: () -> Unit,
 ) {
     Box(
@@ -175,7 +176,7 @@ fun TextButton(
             .padding(vertical = 8.dp, horizontal = 4.dp),
         contentAlignment = Alignment.Center,
     ) {
-        Text(title, style = style, color = tint, maxLines = 1)
+        Text(title, style = style, color = tint, maxLines = maxLines)
     }
 }
 

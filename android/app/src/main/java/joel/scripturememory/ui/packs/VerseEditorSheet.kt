@@ -6,7 +6,10 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -22,6 +25,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.focus.FocusRequester
@@ -73,6 +77,8 @@ import joel.scripturememory.ui.components.StatusLine
 import joel.scripturememory.ui.components.Text
 import joel.scripturememory.ui.components.TextButton
 import joel.scripturememory.ui.components.TextFieldRow
+import joel.scripturememory.ui.components.UndoToastHost
+import joel.scripturememory.ui.components.UndoToastState
 import joel.scripturememory.ui.theme.AppLayout
 import joel.scripturememory.ui.theme.AppTheme
 import joel.scripturememory.ui.theme.AppType
@@ -113,6 +119,7 @@ fun VerseEditorSheet(
     var pastedText by remember { mutableStateOf(if (editing == null) draft?.text else null) }
     var confirmDelete by remember { mutableStateOf(false) }
     var confirmDiscard by remember { mutableStateOf(false) }
+    var addedToast by remember { mutableStateOf<UndoToastState?>(null) }
     var choosingTranslation by remember { mutableStateOf(false) }
     var referenceFocused by remember { mutableStateOf(false) }
     val referenceFocus = remember { FocusRequester() }
@@ -132,8 +139,11 @@ fun VerseEditorSheet(
     val translationChoices = if (translation in VerseTranslation.choices) VerseTranslation.choices
     else VerseTranslation.choices + translation
 
-    val olderNIVHasIt = reference != null && translation == VerseTranslation.niv && trimmedText.isEmpty() &&
-        VerseLookup.bundled(reference, VerseTranslation.niv84) != null
+    val olderNIVText = if (reference != null && translation == VerseTranslation.niv && trimmedText.isEmpty()) {
+        VerseLookup.bundled(reference, VerseTranslation.niv84)
+    } else {
+        null
+    }
     val duplicate = reference != null && store.pack(packID)?.verses?.any {
         val wanted = SRSKey.normalizedReference(reference.reference)
         it.id != editing?.id && it.book == reference.book.name && SRSKey.normalizedReference(it.reference) == wanted
@@ -212,6 +222,10 @@ fun VerseEditorSheet(
         Analytics.log(AnalyticsEvent.OwnVerseAdded(source))
         HapticEngine.success()
         added = added + ref.display
+        val packName = store.pack(packID)?.name ?: "this pack"
+        addedToast = UndoToastState("Added ${ref.display} to $packName") {
+            store.deleteVerses(setOf(verse.id), packID)
+        }
         referenceText = field("")
         text = field("")
         title = field("")
@@ -253,10 +267,11 @@ fun VerseEditorSheet(
                 )
             },
         )
+        Box(Modifier.weight(1f).fillMaxWidth()) {
         Column(
             Modifier
-                .weight(1f)
-                .fillMaxWidth()
+                .fillMaxSize()
+                .pointerInput(Unit) { detectTapGestures { keyboard.close() } }
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = AppLayout.screenMargin)
                 .padding(top = 8.dp, bottom = 24.dp),
@@ -293,10 +308,11 @@ fun VerseEditorSheet(
                     )
                 }
                 when {
-                    olderNIVHasIt && !duplicate -> TextButton(
-                        "Fill in the app’s ${VerseTranslation.displayName(VerseTranslation.niv84)} text",
+                    olderNIVText != null && !duplicate -> TextButton(
+                        "This verse is already in ${olderNIVText.pack}. Tap to fill it in.",
                         Modifier.padding(start = AppLayout.panelPadding, end = AppLayout.panelPadding, top = 8.dp),
                         style = AppType.footnote.copy(fontWeight = FontWeight.SemiBold),
+                        maxLines = 3,
                         onClick = { translation = VerseTranslation.niv84 },
                     )
                     reference != null && duplicate -> StatusLine(
@@ -307,7 +323,6 @@ fun VerseEditorSheet(
                     reference != null -> if (!typedIsCanonical) {
                         StatusLine(reference.display, icon = R.drawable.ic_check_circle_fill, tint = colors.green)
                     }
-                    added.isNotEmpty() && referenceText.text.isEmpty() -> StatusLine("Added ${added.last()}")
                     referenceText.text.isNotEmpty() -> StatusLine("Try “Rom 8:28”")
                 }
             }
@@ -399,6 +414,8 @@ fun VerseEditorSheet(
                     ListRow("Delete Verse", titleColor = colors.red, onClick = { confirmDelete = true })
                 }
             }
+        }
+        UndoToastHost(addedToast) { addedToast = it }
         }
 
         if (confirmDiscard) {

@@ -195,6 +195,11 @@ fun TestSetupScreen() {
         return if (i < 0) emptyList() else catalogue.take(i + 1)
     }
 
+    fun currentPack(): Pack? {
+        val current = learning.currentVerse ?: return null
+        return visiblePacks.firstOrNull { pack -> pack.verses.any { it.srsKey == current.srsKey } }
+    }
+
     fun versesUpToCurrent(): List<Verse> {
         val current = learning.currentVerse ?: return catalogue
         val i = catalogue.indexOfFirst { it.srsKey == current.srsKey }
@@ -217,7 +222,7 @@ fun TestSetupScreen() {
         AppDefaults.standard.getInt(quizCountKey)?.takeIf { it >= 1 }?.let { quizCount = it }
         loadSavedSession()
         if (preselected == null && selectedVerseIds.isEmpty() && savedSession == null) {
-            val ids = versesUpToCurrent().map { it.id }.toSet()
+            val ids = (currentPack()?.verses ?: versesUpToCurrent()).map { it.id }.toSet()
             selectedVerseIds = ids
             preselected = ids
         }
@@ -297,30 +302,24 @@ fun TestSetupScreen() {
                         SectionHeader("Quick Pick")
                         val upToCurrent = versesUpToCurrent()
                         val starred = favorites.verses(visiblePacks)
-                        val hasBoth = upToCurrent.isNotEmpty() && starred.isNotEmpty()
-                        if (upToCurrent.isNotEmpty()) {
-                            Box(Modifier.groupedRow(0, if (hasBoth) 2 else 1)) {
-                                ListRow(
-                                    title = "Up to current verse",
-                                    titleColor = AppTheme.colors.accent,
-                                    value = learning.currentVerse?.let { "${it.book} ${it.reference}" }
-                                        ?: Wording.verses(upToCurrent.size),
-                                    onClick = {
-                                        select(upToCurrent)
-                                        HapticEngine.light()
-                                    },
-                                )
+                        val shortcuts = buildList {
+                            currentPack()?.let { add(Triple("Current pack", it.name, it.verses)) }
+                            if (upToCurrent.isNotEmpty()) {
+                                val detail = learning.currentVerse?.let { "${it.book} ${it.reference}" }
+                                    ?: Wording.verses(upToCurrent.size)
+                                add(Triple("Up to current verse", detail, upToCurrent))
                             }
+                            if (starred.isNotEmpty()) add(Triple("Favourites", "${starred.size}", starred))
                         }
-                        if (starred.isNotEmpty()) {
-                            Column(Modifier.groupedRow(if (hasBoth) 1 else 0, if (hasBoth) 2 else 1)) {
-                                if (hasBoth) Divider(Modifier.padding(start = 16.dp, end = 16.dp))
+                        shortcuts.forEachIndexed { index, (title, detail, verses) ->
+                            Column(Modifier.groupedRow(index, shortcuts.size)) {
+                                if (index > 0) Divider(Modifier.padding(start = 16.dp, end = 16.dp))
                                 ListRow(
-                                    title = "Favourites",
+                                    title = title,
                                     titleColor = AppTheme.colors.accent,
-                                    value = "${starred.size}",
+                                    value = detail,
                                     onClick = {
-                                        select(starred)
+                                        select(verses)
                                         HapticEngine.light()
                                     },
                                 )
