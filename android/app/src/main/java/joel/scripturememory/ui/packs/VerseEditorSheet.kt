@@ -6,6 +6,11 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.snap
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -58,7 +63,6 @@ import joel.scripturememory.model.UserVerse
 import joel.scripturememory.model.VerseLookup
 import joel.scripturememory.model.VerseLookupResult
 import joel.scripturememory.model.VerseTranslation
-import joel.scripturememory.model.trimmingWhitespaces
 import joel.scripturememory.model.trimmingWhitespacesAndNewlines
 import joel.scripturememory.system.Analytics
 import joel.scripturememory.system.HapticEngine
@@ -66,7 +70,6 @@ import joel.scripturememory.ui.components.AlertAction
 import joel.scripturememory.ui.components.AppAlert
 import joel.scripturememory.ui.components.AppSheet
 import joel.scripturememory.ui.components.GroupedSection
-import joel.scripturememory.ui.components.LabeledFieldRow
 import joel.scripturememory.ui.components.ListRow
 import joel.scripturememory.ui.components.PickerSheet
 import joel.scripturememory.ui.components.PillRow
@@ -80,6 +83,7 @@ import joel.scripturememory.ui.components.TextFieldRow
 import joel.scripturememory.ui.components.UndoToastHost
 import joel.scripturememory.ui.components.UndoToastState
 import joel.scripturememory.ui.theme.AppLayout
+import joel.scripturememory.ui.theme.AppMotion
 import joel.scripturememory.ui.theme.AppTheme
 import joel.scripturememory.ui.theme.AppType
 import joel.scripturememory.ui.theme.isAccessibilityTextSize
@@ -134,7 +138,6 @@ fun VerseEditorSheet(
     } else {
         referenceText.text.isNotBlank() || trimmedText.isNotEmpty() || title.text.isNotBlank()
     }
-    val typedIsCanonical = reference != null && referenceText.text.trimmingWhitespaces() == reference.display
     val bibleAppURL = reference?.let { VerseTranslation.bibleAppURL(it, translation) }
     val translationChoices = if (translation in VerseTranslation.choices) VerseTranslation.choices
     else VerseTranslation.choices + translation
@@ -250,7 +253,11 @@ fun VerseEditorSheet(
             }
         }
         SheetHeader(
-            if (editing == null) "Add Verse" else "Edit Verse",
+            when {
+                editing != null -> "Edit Verse"
+                added.isEmpty() -> "Add Verse"
+                else -> "Add Another Verse"
+            },
             leading = {
                 TextButton(
                     if (editing == null && added.isNotEmpty() && !hasChanges) "Done" else "Cancel",
@@ -268,154 +275,157 @@ fun VerseEditorSheet(
             },
         )
         Box(Modifier.weight(1f).fillMaxWidth()) {
-        Column(
-            Modifier
-                .fillMaxSize()
-                .pointerInput(Unit) { detectTapGestures { keyboard.close() } }
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = AppLayout.screenMargin)
-                .padding(top = 8.dp, bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(AppLayout.spacing * 1.5f),
-        ) {
-            Column {
-                GroupedSection {
-                    LabeledFieldRow(
-                        "Reference",
-                        value = referenceText,
-                        onValueChange = { referenceText = it },
-                        modifier = Modifier
-                            .focusRequester(referenceFocus)
-                            .onFocusChanged { referenceFocused = it.isFocused },
-                        placeholder = "Rom 8:28",
-                        keyboardOptions = KeyboardOptions(
-                            capitalization = KeyboardCapitalization.Words,
-                            autoCorrectEnabled = false,
-                            imeAction = ImeAction.Done,
-                        ),
-                        keyboardActions = KeyboardActions(onDone = { keyboard.close() }),
-                    )
-                    if (bookSuggestions.isNotEmpty()) {
-                        PillRow(bookSuggestions.map { it.name }, onClick = { i ->
-                            referenceText = field(bookSuggestions[i].name + " ")
-                        })
+            AnimatedContent(
+                targetState = added.size,
+                transitionSpec = { slideInHorizontally(AppMotion.content()) { it } togetherWith fadeOut(snap()) },
+                label = "verseForm",
+            ) { _ ->
+                Column(
+                    Modifier
+                        .fillMaxSize()
+                        .pointerInput(Unit) { detectTapGestures { keyboard.close() } }
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = AppLayout.screenMargin)
+                        .padding(top = 8.dp, bottom = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(AppLayout.spacing * 1.5f),
+                ) {
+                    Column {
+                        GroupedSection {
+                            TextFieldRow(
+                                value = referenceText,
+                                onValueChange = { referenceText = it },
+                                modifier = Modifier
+                                    .focusRequester(referenceFocus)
+                                    .onFocusChanged { referenceFocused = it.isFocused }
+                                    .semantics { contentDescription = "Reference" },
+                                placeholder = "Reference, like Rom 8:28",
+                                keyboardOptions = KeyboardOptions(
+                                    capitalization = KeyboardCapitalization.Words,
+                                    autoCorrectEnabled = false,
+                                    imeAction = ImeAction.Done,
+                                ),
+                                keyboardActions = KeyboardActions(onDone = { keyboard.close() }),
+                            )
+                            if (bookSuggestions.isNotEmpty()) {
+                                PillRow(bookSuggestions.map { it.name }, onClick = { i ->
+                                    referenceText = field(bookSuggestions[i].name + " ")
+                                })
+                            }
+                            RowDivider()
+                            ListRow(
+                                "Translation",
+                                value = VerseTranslation.displayName(translation),
+                                showsChevron = true,
+                                onClick = { choosingTranslation = true },
+                            )
+                        }
+                        when {
+                            olderNIVText != null && !duplicate -> TextButton(
+                                "This verse is already in ${olderNIVText.pack}. Tap to fill it in.",
+                                Modifier.padding(start = AppLayout.panelPadding, end = AppLayout.panelPadding, top = 8.dp),
+                                style = AppType.footnote.copy(fontWeight = FontWeight.SemiBold),
+                                maxLines = 3,
+                                onClick = { translation = VerseTranslation.niv84 },
+                            )
+                            reference != null && duplicate -> StatusLine(
+                                "Already in this pack",
+                                icon = R.drawable.ic_warning_fill,
+                                tint = colors.orange,
+                            )
+                            reference == null && referenceText.text.isNotEmpty() -> StatusLine("Try “Rom 8:28”")
+                        }
                     }
-                    RowDivider()
-                    ListRow(
-                        "Translation",
-                        value = VerseTranslation.displayName(translation),
-                        showsChevron = true,
-                        onClick = { choosingTranslation = true },
-                    )
-                }
-                when {
-                    olderNIVText != null && !duplicate -> TextButton(
-                        "This verse is already in ${olderNIVText.pack}. Tap to fill it in.",
-                        Modifier.padding(start = AppLayout.panelPadding, end = AppLayout.panelPadding, top = 8.dp),
-                        style = AppType.footnote.copy(fontWeight = FontWeight.SemiBold),
-                        maxLines = 3,
-                        onClick = { translation = VerseTranslation.niv84 },
-                    )
-                    reference != null && duplicate -> StatusLine(
-                        "Already in this pack",
-                        icon = R.drawable.ic_warning_fill,
-                        tint = colors.orange,
-                    )
-                    reference != null -> if (!typedIsCanonical) {
-                        StatusLine(reference.display, icon = R.drawable.ic_check_circle_fill, tint = colors.green)
-                    }
-                    referenceText.text.isNotEmpty() -> StatusLine("Try “Rom 8:28”")
-                }
-            }
 
-            GroupedSection(
-                title = "Verse",
-                footer = if (autofilled != null && autofilled?.text == text.text) {
-                    "From the app’s ${VerseTranslation.displayName(translation)} text"
-                } else {
-                    "Copy it in your Bible app, then tap Paste."
-                },
-            ) {
-                TextFieldRow(
-                    value = text,
-                    onValueChange = {
-                        if (it.text.length > text.text.length + 1 && PastedVerse.share(it.text) != null) {
-                            applyPaste(it.text)
+                    GroupedSection(
+                        title = "Verse",
+                        footer = if (autofilled != null && autofilled?.text == text.text) {
+                            "From the app’s ${VerseTranslation.displayName(translation)} text"
                         } else {
-                            val pastedIntoEmpty = editing == null && text.text.isEmpty() &&
-                                it.text.length >= 40 && it.text != autofilled?.text
-                            text = it
-                            if (pastedIntoEmpty) {
-                                pastedText = it.text
-                                keyboard.close()
+                            "Copy it in your Bible app, then tap Paste."
+                        },
+                    ) {
+                        TextFieldRow(
+                            value = text,
+                            onValueChange = {
+                                if (it.text.length > text.text.length + 1 && PastedVerse.share(it.text) != null) {
+                                    applyPaste(it.text)
+                                } else {
+                                    val pastedIntoEmpty = editing == null && text.text.isEmpty() &&
+                                        it.text.length >= 40 && it.text != autofilled?.text
+                                    text = it
+                                    if (pastedIntoEmpty) {
+                                        pastedText = it.text
+                                        keyboard.close()
+                                    }
+                                }
+                            },
+                            modifier = Modifier.semantics { contentDescription = "Verse" },
+                            placeholder = "Type or paste the verse",
+                            singleLine = false,
+                            minLines = 4,
+                            keyboardOptions = KeyboardOptions(
+                                capitalization = KeyboardCapitalization.Sentences,
+                                imeAction = ImeAction.Done,
+                            ),
+                            keyboardActions = KeyboardActions(onDone = { keyboard.close() }),
+                        )
+                        RowDivider()
+                        val bibleLabel = reference?.let { "Find ${it.display} in the Bible app" } ?: "Find in the Bible app"
+                        val openInBible = @Composable { modifier: Modifier ->
+                            BorderedButton(
+                                "Open in Bible",
+                                modifier.clearAndSetSemantics {
+                                    contentDescription = bibleLabel
+                                    role = Role.Button
+                                    if (bibleAppURL == null) disabled()
+                                    onClick {
+                                        bibleAppURL?.let { openBibleApp(context, it) }
+                                        true
+                                    }
+                                },
+                                enabled = bibleAppURL != null,
+                                leadingIcon = R.drawable.ic_book_open_fill,
+                                onClick = { bibleAppURL?.let { openBibleApp(context, it) } },
+                            )
+                        }
+                        val pasteButton = @Composable { modifier: Modifier ->
+                            BorderedButton("Paste", modifier, leadingIcon = R.drawable.ic_clipboard, onClick = ::paste)
+                        }
+                        val buttonsPadding = Modifier.fillMaxWidth().padding(horizontal = AppLayout.panelPadding, vertical = 10.dp)
+                        if (isAccessibilityTextSize()) {
+                            Column(buttonsPadding, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                openInBible(Modifier.fillMaxWidth())
+                                pasteButton(Modifier.fillMaxWidth())
+                            }
+                        } else {
+                            Row(buttonsPadding, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                openInBible(Modifier.weight(1f))
+                                pasteButton(Modifier.weight(1f))
                             }
                         }
-                    },
-                    modifier = Modifier.semantics { contentDescription = "Verse" },
-                    placeholder = "Type or paste the verse",
-                    singleLine = false,
-                    minLines = 4,
-                    keyboardOptions = KeyboardOptions(
-                        capitalization = KeyboardCapitalization.Sentences,
-                        imeAction = ImeAction.Done,
-                    ),
-                    keyboardActions = KeyboardActions(onDone = { keyboard.close() }),
-                )
-                RowDivider()
-                val bibleLabel = reference?.let { "Find ${it.display} in the Bible app" } ?: "Find in the Bible app"
-                val openInBible = @Composable { modifier: Modifier ->
-                    BorderedButton(
-                        "Open in Bible",
-                        modifier.clearAndSetSemantics {
-                            contentDescription = bibleLabel
-                            role = Role.Button
-                            if (bibleAppURL == null) disabled()
-                            onClick {
-                                bibleAppURL?.let { openBibleApp(context, it) }
-                                true
-                            }
-                        },
-                        enabled = bibleAppURL != null,
-                        leadingIcon = R.drawable.ic_book_open_fill,
-                        onClick = { bibleAppURL?.let { openBibleApp(context, it) } },
-                    )
-                }
-                val pasteButton = @Composable { modifier: Modifier ->
-                    BorderedButton("Paste", modifier, leadingIcon = R.drawable.ic_clipboard, onClick = ::paste)
-                }
-                val buttonsPadding = Modifier.fillMaxWidth().padding(horizontal = AppLayout.panelPadding, vertical = 10.dp)
-                if (isAccessibilityTextSize()) {
-                    Column(buttonsPadding, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        openInBible(Modifier.fillMaxWidth())
-                        pasteButton(Modifier.fillMaxWidth())
                     }
-                } else {
-                    Row(buttonsPadding, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        openInBible(Modifier.weight(1f))
-                        pasteButton(Modifier.weight(1f))
+
+                    GroupedSection(footer = "Optional. Shown on the front of the card.") {
+                        TextFieldRow(
+                            value = title,
+                            onValueChange = { title = it },
+                            modifier = Modifier.semantics { contentDescription = "Title" },
+                            placeholder = "Title, like Christ the Center",
+                            keyboardOptions = KeyboardOptions(
+                                capitalization = KeyboardCapitalization.Words,
+                                imeAction = ImeAction.Done,
+                            ),
+                        )
+                    }
+
+                    if (editing != null) {
+                        GroupedSection {
+                            ListRow("Delete Verse", titleColor = colors.red, onClick = { confirmDelete = true })
+                        }
                     }
                 }
             }
-
-            GroupedSection(footer = "Optional. Shown on the front of the card.") {
-                LabeledFieldRow(
-                    "Title",
-                    value = title,
-                    onValueChange = { title = it },
-                    placeholder = "Christ the Center",
-                    keyboardOptions = KeyboardOptions(
-                        capitalization = KeyboardCapitalization.Words,
-                        imeAction = ImeAction.Done,
-                    ),
-                )
-            }
-
-            if (editing != null) {
-                GroupedSection {
-                    ListRow("Delete Verse", titleColor = colors.red, onClick = { confirmDelete = true })
-                }
-            }
-        }
-        UndoToastHost(addedToast) { addedToast = it }
+            UndoToastHost(addedToast) { addedToast = it }
         }
 
         if (confirmDiscard) {
