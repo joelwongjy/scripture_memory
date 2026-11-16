@@ -1,5 +1,5 @@
 {
-  "description" : "BibleReference.parse and PastedVerse.parse.",
+  "description" : "BibleReference.parse, BibleReference.problem and PastedVerse.parse.",
   "pastes" : [
     {
       "input" : "Do not be anxious about anything, but in every situation, by prayer and petition, with thanksgiving, present your requests to God.”\n\nPhilippians 4:6 NIV",
@@ -73,6 +73,264 @@
       "reference" : "Romans 8:28",
       "text" : "And we know that in all things God works for the good of those who love him, who have been called according to his purpose.",
       "version" : "NIV"
+    }
+  ],
+  "problems" : [
+    {
+      "book" : "Eth",
+      "input" : "Eth 2:8-9",
+      "problem" : "unknownBook",
+      "replaced" : [
+        "Esther 2:8-9",
+        "Ephesians 2:8-9"
+      ],
+      "suggestions" : [
+        "Esther",
+        "Ephesians"
+      ]
+    },
+    {
+      "book" : "Eth",
+      "input" : "Eth",
+      "problem" : "unknownBook",
+      "replaced" : [
+        "Esther ",
+        "Ephesians "
+      ],
+      "suggestions" : [
+        "Esther",
+        "Ephesians"
+      ]
+    },
+    {
+      "book" : "Et",
+      "input" : "Et",
+      "problem" : "unknownBook",
+      "replaced" : [
+        "Exodus ",
+        "Ezra ",
+        "Esther "
+      ],
+      "suggestions" : [
+        "Exodus",
+        "Ezra",
+        "Esther"
+      ]
+    },
+    {
+      "input" : "Eph 2:8-9",
+      "replaced" : [
+
+      ],
+      "suggestions" : [
+
+      ]
+    },
+    {
+      "input" : "Eph",
+      "replaced" : [
+
+      ],
+      "suggestions" : [
+
+      ]
+    },
+    {
+      "input" : "Jo",
+      "replaced" : [
+
+      ],
+      "suggestions" : [
+
+      ]
+    },
+    {
+      "book" : "Ephesians",
+      "input" : "Ephesians 7:1",
+      "problem" : "noSuchChapter",
+      "replaced" : [
+
+      ],
+      "suggestions" : [
+
+      ]
+    },
+    {
+      "book" : "Revelation",
+      "input" : "Rev 23:1",
+      "problem" : "noSuchChapter",
+      "replaced" : [
+
+      ],
+      "suggestions" : [
+
+      ]
+    },
+    {
+      "input" : "Jude 3",
+      "replaced" : [
+
+      ],
+      "suggestions" : [
+
+      ]
+    },
+    {
+      "book" : "Mathew",
+      "input" : "Mathew 6:33",
+      "problem" : "unknownBook",
+      "replaced" : [
+        "Matthew 6:33"
+      ],
+      "suggestions" : [
+        "Matthew"
+      ]
+    },
+    {
+      "book" : "Phillipians",
+      "input" : "Phillipians 4:13",
+      "problem" : "unknownBook",
+      "replaced" : [
+        "Philippians 4:13"
+      ],
+      "suggestions" : [
+        "Philippians"
+      ]
+    },
+    {
+      "book" : "Ephesains",
+      "input" : "Ephesains 2:8",
+      "problem" : "unknownBook",
+      "replaced" : [
+        "Ephesians 2:8"
+      ],
+      "suggestions" : [
+        "Ephesians"
+      ]
+    },
+    {
+      "book" : "4 John",
+      "input" : "4 John 1:9",
+      "problem" : "unknownBook",
+      "replaced" : [
+        "John 1:9",
+        "1 John 1:9",
+        "2 John 1:9"
+      ],
+      "suggestions" : [
+        "John",
+        "1 John",
+        "2 John"
+      ]
+    },
+    {
+      "book" : "Xyz",
+      "input" : "Xyz 3:16",
+      "problem" : "unknownBook",
+      "replaced" : [
+
+      ],
+      "suggestions" : [
+
+      ]
+    },
+    {
+      "input" : "3:16",
+      "replaced" : [
+
+      ],
+      "suggestions" : [
+
+      ]
+    },
+    {
+      "input" : "",
+      "replaced" : [
+
+      ],
+      "suggestions" : [
+
+      ]
+    },
+    {
+      "input" : "Romans",
+      "replaced" : [
+
+      ],
+      "suggestions" : [
+
+      ]
+    },
+    {
+      "input" : "Rom 8:28 extra",
+      "replaced" : [
+
+      ],
+      "suggestions" : [
+
+      ]
+    },
+    {
+      "input" : "1 Co",
+      "replaced" : [
+
+      ],
+      "suggestions" : [
+
+      ]
+    },
+    {
+      "input" : "Song of S",
+      "replaced" : [
+
+      ],
+      "suggestions" : [
+
+      ]
+    },
+    {
+      "book" : "Genesis",
+      "input" : "Gen 51",
+      "problem" : "noSuchChapter",
+      "replaced" : [
+
+      ],
+      "suggestions" : [
+
+      ]
+    },
+    {
+      "book" : "Psalm",
+      "input" : "Psalm 151:1",
+      "problem" : "noSuchChapter",
+      "replaced" : [
+
+      ],
+      "suggestions" : [
+
+      ]
+    },
+    {
+      "book" : "Jhon",
+      "input" : "Jhon 3:16",
+      "problem" : "unknownBook",
+      "replaced" : [
+        "John 3:16"
+      ],
+      "suggestions" : [
+        "John"
+      ]
+    },
+    {
+      "book" : "Revalation",
+      "input" : "Revalation 3:20",
+      "problem" : "unknownBook",
+      "replaced" : [
+        "Revelation 3:20"
+      ],
+      "suggestions" : [
+        "Revelation"
+      ]
     }
   ],
   "references" : [

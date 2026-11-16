@@ -21,11 +21,26 @@ final class BibleReferenceVectorTests: XCTestCase {
         let text: String
     }
 
+    private struct ProblemCase: Codable, Equatable {
+        let input: String
+        let problem: String?
+        let book: String?
+        let suggestions: [String]
+        let replaced: [String]
+    }
+
     private struct Vectors: Codable {
         let description: String
         let references: [ReferenceCase]
         let pastes: [PasteCase]
+        let problems: [ProblemCase]
     }
+
+    private static let problemInputs = [
+        "Eth 2:8-9", "Eth", "Et", "Eph 2:8-9", "Eph", "Jo", "Ephesians 7:1", "Rev 23:1", "Jude 3", "Mathew 6:33",
+        "Phillipians 4:13", "Ephesains 2:8", "4 John 1:9", "Xyz 3:16", "3:16", "", "Romans", "Rom 8:28 extra",
+        "1 Co", "Song of S", "Gen 51", "Psalm 151:1", "Jhon 3:16", "Revalation 3:20",
+    ]
 
     private static let referenceInputs = [
         "John 3:16", "jn 3 16", "Rom 8:28-29", "1 Cor 13:4-7", "I John 1:9", "1jn1:9", "Psalms 119:9,11",
@@ -55,6 +70,18 @@ final class BibleReferenceVectorTests: XCTestCase {
         return ReferenceCase(input: input, display: r?.display, usfm: r?.usfm)
     }
 
+    private func problemCase(_ input: String) -> ProblemCase {
+        switch BibleReference.problem(in: input) {
+        case .unknownBook(let typed, let near):
+            return ProblemCase(input: input, problem: "unknownBook", book: typed, suggestions: near.map(\.name),
+                               replaced: near.map { BibleReference.replacingBook(in: input, with: $0) })
+        case .noSuchChapter(let book):
+            return ProblemCase(input: input, problem: "noSuchChapter", book: book.name, suggestions: [], replaced: [])
+        case nil:
+            return ProblemCase(input: input, problem: nil, book: nil, suggestions: [], replaced: [])
+        }
+    }
+
     private func pasteCase(_ input: String) -> PasteCase {
         let p = PastedVerse.parse(input)
         return PasteCase(input: input, reference: p.reference?.display, version: p.version, text: p.text)
@@ -62,9 +89,10 @@ final class BibleReferenceVectorTests: XCTestCase {
 
     func testVectors() throws {
         if ProcessInfo.processInfo.environment["REGENERATE_VECTORS"] == "1" {
-            let vectors = Vectors(description: "BibleReference.parse and PastedVerse.parse.",
+            let vectors = Vectors(description: "BibleReference.parse, BibleReference.problem and PastedVerse.parse.",
                                   references: Self.referenceInputs.map(referenceCase),
-                                  pastes: Self.pasteInputs.map(pasteCase))
+                                  pastes: Self.pasteInputs.map(pasteCase),
+                                  problems: Self.problemInputs.map(problemCase))
             let encoder = JSONEncoder()
             encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
             try encoder.encode(vectors).write(to: Self.file)
@@ -72,6 +100,7 @@ final class BibleReferenceVectorTests: XCTestCase {
         let vectors = try JSONDecoder().decode(Vectors.self, from: Data(contentsOf: Self.file))
         for c in vectors.references { XCTAssertEqual(c, referenceCase(c.input), c.input) }
         for c in vectors.pastes { XCTAssertEqual(c, pasteCase(c.input), c.input) }
+        for c in vectors.problems { XCTAssertEqual(c, problemCase(c.input), c.input) }
     }
 
     func testShareIsOnlyFoundWhenThereIsSomethingToStrip() {

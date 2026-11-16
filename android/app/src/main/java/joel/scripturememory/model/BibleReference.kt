@@ -108,6 +108,40 @@ object BibleBooks {
 
     fun bookForUsfm(usfm: String): BibleBook? = all.firstOrNull { it.usfm == usfm.uppercase() }
 
+    fun nearest(text: String, limit: Int = 3): List<BibleBook> {
+        val k = key(text)
+        if (k.isEmpty()) return emptyList()
+        val scored = all.map { book ->
+            val name = key(book.name)
+            val whole = (listOf(name) + book.aliases.map(::key).filter { it.length >= 4 }).map { distance(k, it) }
+            val numbered = name.firstOrNull()?.isDigit() == true && k.firstOrNull()?.isDigit() != true
+            val start = if (numbered) emptyList() else listOf(distance(k, name.take(k.length)))
+            book to (whole + start).min()
+        }
+        val best = scored.minOf { it.second }
+        if (best > maxOf(1, k.length / 3)) return emptyList()
+        return scored.filter { it.second == best }.map { it.first }.take(limit)
+    }
+
+    private fun distance(a: String, b: String): Int {
+        if (a.isEmpty()) return b.length
+        var before = IntArray(b.length + 1) { it }
+        var row = before.copyOf()
+        for (i in 1..a.length) {
+            val next = IntArray(b.length + 1)
+            next[0] = i
+            for (j in 1..b.length) {
+                next[j] = minOf(row[j] + 1, next[j - 1] + 1, row[j - 1] + if (a[i - 1] == b[j - 1]) 0 else 1)
+                if (i > 1 && j > 1 && a[i - 1] == b[j - 2] && a[i - 2] == b[j - 1]) {
+                    next[j] = minOf(next[j], before[j - 2] + 1)
+                }
+            }
+            before = row
+            row = next
+        }
+        return row[b.length]
+    }
+
     fun matching(prefix: String, limit: Int = 4): List<BibleBook> {
         val k = key(prefix)
         if (k.isEmpty()) return emptyList()
@@ -157,6 +191,34 @@ data class BibleReference(
         }
 
         fun find(text: String): Found? = firstMatch(normalized(text), anchored = false)
+
+        private val parts = Regex("^\\s*(\\d?[^\\d]*)(\\d+)?(.*)$", RegexOption.DOT_MATCHES_ALL)
+
+        private data class Parts(val book: String, val chapter: String, val rest: String)
+
+        private fun split(text: String): Parts? {
+            val m = parts.find(text) ?: return null
+            val book = m.groupValues[1].trim { isFoundationWhitespace(it) || it == '.' }
+            if (book.none { it.isLetter() }) return null
+            return Parts(book, m.groupValues[2], m.groupValues[3])
+        }
+
+        fun problem(text: String): ReferenceProblem? {
+            if (parse(text) != null) return null
+            val parts = split(normalized(text)) ?: return null
+            BibleBooks.book(parts.book)?.let { book ->
+                val chapter = parts.chapter.toIntOrNull() ?: return null
+                return if (book.chapters > 1 && chapter > book.chapters) ReferenceProblem.NoSuchChapter(book) else null
+            }
+            if (parts.chapter.isEmpty() && BibleBooks.matching(parts.book).isNotEmpty()) return null
+            return ReferenceProblem.UnknownBook(parts.book, BibleBooks.nearest(parts.book))
+        }
+
+        fun replacingBook(text: String, book: BibleBook): String {
+            val parts = split(normalized(text))
+            if (parts == null || parts.chapter.isEmpty()) return book.name + " "
+            return book.name + " " + (parts.chapter + parts.rest).trimmingWhitespaces()
+        }
 
         private fun normalized(text: String): String =
             text.replace('–', '-').replace('—', '-').replace(' ', ' ')
@@ -214,3 +276,14 @@ data class BibleReference(
 }
 
 internal fun String.swiftSplit(separator: Char): List<String> = split(separator).filter { it.isNotEmpty() }
+
+sealed interface ReferenceProblem {
+    data class UnknownBook(val typed: String, val suggestions: List<BibleBook>) : ReferenceProblem
+    data class NoSuchChapter(val book: BibleBook) : ReferenceProblem
+
+    val message: String
+        get() = when (this) {
+            is UnknownBook -> "There’s no book called “$typed”."
+            is NoSuchChapter -> "${book.name} stops at chapter ${book.chapters}."
+        }
+}

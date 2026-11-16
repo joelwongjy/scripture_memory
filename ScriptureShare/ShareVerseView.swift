@@ -29,6 +29,8 @@ struct ShareVerseView: View {
 
     private var reference: BibleReference? { BibleReference.parse(referenceText) }
 
+    private var referenceProblem: ReferenceProblem? { BibleReference.problem(in: referenceText) }
+
     private var trimmedText: String { text.trimmingCharacters(in: .whitespacesAndNewlines) }
 
     private var translationChoices: [String] {
@@ -44,6 +46,20 @@ struct ShareVerseView: View {
                         .textInputAutocapitalization(.words)
                         .autocorrectionDisabled()
                         .focused($referenceFocused)
+                    if case .unknownBook(_, let near) = referenceProblem, !near.isEmpty {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 8) {
+                                ForEach(near, id: \.usfm) { book in
+                                    Button(book.name) {
+                                        referenceText = BibleReference.replacingBook(in: referenceText, with: book)
+                                    }
+                                    .buttonStyle(.bordered)
+                                    .buttonBorderShape(.capsule)
+                                    .controlSize(.small)
+                                }
+                            }
+                        }
+                    }
                     TextField("Title", text: $title, prompt: Text("Title (optional)"))
                         .textInputAutocapitalization(.words)
                     Picker("Translation", selection: $translation) {
@@ -52,7 +68,10 @@ struct ShareVerseView: View {
                         }
                     }
                 } footer: {
-                    if reference == nil {
+                    if let referenceProblem {
+                        Label(referenceProblem.message, systemImage: "exclamationmark.circle.fill")
+                            .foregroundStyle(.red)
+                    } else if reference == nil {
                         Text("Try “Rom 8:28”")
                     }
                 }

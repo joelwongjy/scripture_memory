@@ -60,7 +60,10 @@ struct VerseEditorView: View {
         }
     }
 
+    private var referenceProblem: ReferenceProblem? { BibleReference.problem(in: referenceText) }
+
     private var bookSuggestions: [BibleBook] {
+        if case .unknownBook(_, let near) = referenceProblem { return near }
         guard reference == nil, focus == .reference,
               !referenceText.contains(where: \.isNumber) || referenceText.first?.isNumber == true,
               referenceText.filter(\.isNumber).count <= 1 else { return [] }
@@ -135,7 +138,7 @@ struct VerseEditorView: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
                         ForEach(bookSuggestions, id: \.usfm) { book in
-                            Button(book.name) { referenceText = book.name + " " }
+                            Button(book.name) { referenceText = BibleReference.replacingBook(in: referenceText, with: book) }
                                 .buttonStyle(.bordered)
                                 .buttonBorderShape(.capsule)
                                 .controlSize(.small)
@@ -168,6 +171,9 @@ struct VerseEditorView: View {
                 Label("Already in this pack", systemImage: "exclamationmark.triangle.fill")
                     .foregroundStyle(.orange)
             }
+        } else if let problem = referenceProblem {
+            Label(problem.message, systemImage: "exclamationmark.circle.fill")
+                .foregroundStyle(.red)
         } else if !referenceText.isEmpty {
             Text("Try “Rom 8:28”")
         }

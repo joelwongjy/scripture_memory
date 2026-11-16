@@ -54,6 +54,7 @@ import joel.scripturememory.R
 import joel.scripturememory.model.AnalyticsEvent
 import joel.scripturememory.model.AppDefaults
 import joel.scripturememory.model.BibleBooks
+import joel.scripturememory.model.ReferenceProblem
 import joel.scripturememory.model.BibleReference
 import joel.scripturememory.model.OwnVerseSource
 import joel.scripturememory.model.PastedVerse
@@ -152,7 +153,10 @@ fun VerseEditorSheet(
         it.id != editing?.id && it.book == reference.book.name && SRSKey.normalizedReference(it.reference) == wanted
     } == true
 
+    val referenceProblem = BibleReference.problem(referenceText.text)
+
     val bookSuggestions = run {
+        if (referenceProblem is ReferenceProblem.UnknownBook) return@run referenceProblem.suggestions
         val raw = referenceText.text
         val shows = reference == null && referenceFocused &&
             (raw.none { it.isDigit() } || raw.firstOrNull()?.isDigit() == true) &&
@@ -308,7 +312,7 @@ fun VerseEditorSheet(
                             )
                             if (bookSuggestions.isNotEmpty()) {
                                 PillRow(bookSuggestions.map { it.name }, onClick = { i ->
-                                    referenceText = field(bookSuggestions[i].name + " ")
+                                    referenceText = field(BibleReference.replacingBook(referenceText.text, bookSuggestions[i]))
                                 })
                             }
                             RowDivider()
@@ -331,6 +335,11 @@ fun VerseEditorSheet(
                                 "Already in this pack",
                                 icon = R.drawable.ic_warning_fill,
                                 tint = colors.orange,
+                            )
+                            referenceProblem != null -> StatusLine(
+                                referenceProblem.message,
+                                icon = R.drawable.ic_warning_circle_fill,
+                                tint = colors.red,
                             )
                             reference == null && referenceText.text.isNotEmpty() -> StatusLine("Try “Rom 8:28”")
                         }

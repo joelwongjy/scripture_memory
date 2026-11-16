@@ -23,8 +23,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
+import joel.scripturememory.R
 import joel.scripturememory.model.BibleReference
 import joel.scripturememory.model.PastedVerse
+import joel.scripturememory.model.ReferenceProblem
 import joel.scripturememory.model.SharedVerseDefaults
 import joel.scripturememory.model.SharedVerseDraft
 import joel.scripturememory.model.UserPack
@@ -34,12 +36,14 @@ import joel.scripturememory.ui.components.AppSheet
 import joel.scripturememory.ui.components.GroupedSection
 import joel.scripturememory.ui.components.ListRow
 import joel.scripturememory.ui.components.PickerSheet
+import joel.scripturememory.ui.components.PillRow
 import joel.scripturememory.ui.components.RowDivider
 import joel.scripturememory.ui.components.SheetHeader
 import joel.scripturememory.ui.components.StatusLine
 import joel.scripturememory.ui.components.TextButton
 import joel.scripturememory.ui.components.TextFieldRow
 import joel.scripturememory.ui.theme.AppLayout
+import joel.scripturememory.ui.theme.AppTheme
 import joel.scripturememory.ui.theme.AppType
 
 private const val newPackID = "new"
@@ -66,6 +70,7 @@ fun ShareVerseSheet(
     val referenceFocus = remember { FocusRequester() }
 
     val reference = BibleReference.parse(referenceText.text)
+    val referenceProblem = BibleReference.problem(referenceText.text)
     val trimmedText = text.text.trimmingWhitespacesAndNewlines()
     val translationChoices = if (translation in VerseTranslation.choices) VerseTranslation.choices
     else VerseTranslation.choices + translation
@@ -132,6 +137,12 @@ fun ShareVerseSheet(
                             autoCorrectEnabled = false,
                         ),
                     )
+                    val near = (referenceProblem as? ReferenceProblem.UnknownBook)?.suggestions.orEmpty()
+                    if (near.isNotEmpty()) {
+                        PillRow(near.map { it.name }, onClick = { i ->
+                            referenceText = field(BibleReference.replacingBook(referenceText.text, near[i]))
+                        })
+                    }
                     RowDivider()
                     TextFieldRow(
                         value = title,
@@ -148,7 +159,9 @@ fun ShareVerseSheet(
                         onClick = { choosingTranslation = true },
                     )
                 }
-                if (reference == null) {
+                if (referenceProblem != null) {
+                    StatusLine(referenceProblem.message, icon = R.drawable.ic_warning_circle_fill, tint = AppTheme.colors.red)
+                } else if (reference == null) {
                     StatusLine("Try “Rom 8:28”")
                 }
             }

@@ -5,7 +5,7 @@ import java.text.Normalizer
 import java.util.Locale
 import kotlin.math.abs
 
-private fun isFoundationWhitespace(c: Char): Boolean = when (c.code) {
+internal fun isFoundationWhitespace(c: Char): Boolean = when (c.code) {
     0x09, 0x20, 0xA0, 0x1680, 0x202F, 0x205F, 0x3000 -> true
     in 0x2000..0x200B -> true
     else -> false
