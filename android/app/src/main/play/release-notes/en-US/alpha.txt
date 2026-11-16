@@ -1,1 +1,1 @@
-Tap outside to close the keyboard, see spaces as you type, and get a confirmation with Undo after adding a verse. Built-in verses tell you which pack they're in, and Quiz starts on your current pack.
+Add Verse tells you when a book or chapter doesn't exist and suggests the right book, and a fresh form slides in after each verse you add. Quiz picks your current pack up to the verse you're learning and asks 5 verses at a time.
