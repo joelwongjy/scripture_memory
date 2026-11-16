@@ -26,17 +26,17 @@ import androidx.compose.ui.unit.dp
 import joel.scripturememory.R
 import joel.scripturememory.model.BibleReference
 import joel.scripturememory.model.PastedVerse
+import joel.scripturememory.model.ReferenceProblem
 import joel.scripturememory.model.SharedVerseDefaults
 import joel.scripturememory.model.SharedVerseDraft
 import joel.scripturememory.model.UserPack
 import joel.scripturememory.model.VerseTranslation
-import joel.scripturememory.model.trimmingWhitespaces
 import joel.scripturememory.model.trimmingWhitespacesAndNewlines
 import joel.scripturememory.ui.components.AppSheet
 import joel.scripturememory.ui.components.GroupedSection
-import joel.scripturememory.ui.components.LabeledFieldRow
 import joel.scripturememory.ui.components.ListRow
 import joel.scripturememory.ui.components.PickerSheet
+import joel.scripturememory.ui.components.PillRow
 import joel.scripturememory.ui.components.RowDivider
 import joel.scripturememory.ui.components.SheetHeader
 import joel.scripturememory.ui.components.StatusLine
@@ -55,7 +55,6 @@ fun ShareVerseSheet(
     onAdd: (SharedVerseDraft) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val colors = AppTheme.colors
     var referenceText by remember { mutableStateOf(field(pasted.reference?.display.orEmpty())) }
     var translation by remember {
         mutableStateOf(pasted.version ?: SharedVerseDefaults.lastTranslation ?: VerseTranslation.niv)
@@ -71,6 +70,7 @@ fun ShareVerseSheet(
     val referenceFocus = remember { FocusRequester() }
 
     val reference = BibleReference.parse(referenceText.text)
+    val referenceProblem = BibleReference.problem(referenceText.text)
     val trimmedText = text.text.trimmingWhitespacesAndNewlines()
     val translationChoices = if (translation in VerseTranslation.choices) VerseTranslation.choices
     else VerseTranslation.choices + translation
@@ -125,23 +125,30 @@ fun ShareVerseSheet(
         ) {
             Column {
                 GroupedSection {
-                    LabeledFieldRow(
-                        "Reference",
+                    TextFieldRow(
                         value = referenceText,
                         onValueChange = { referenceText = it },
-                        modifier = Modifier.focusRequester(referenceFocus),
-                        placeholder = "Rom 8:28",
+                        modifier = Modifier
+                            .focusRequester(referenceFocus)
+                            .semantics { contentDescription = "Reference" },
+                        placeholder = "Reference, like Rom 8:28",
                         keyboardOptions = KeyboardOptions(
                             capitalization = KeyboardCapitalization.Words,
                             autoCorrectEnabled = false,
                         ),
                     )
+                    val near = (referenceProblem as? ReferenceProblem.UnknownBook)?.suggestions.orEmpty()
+                    if (near.isNotEmpty()) {
+                        PillRow(near.map { it.name }, onClick = { i ->
+                            referenceText = field(BibleReference.replacingBook(referenceText.text, near[i]))
+                        })
+                    }
                     RowDivider()
-                    LabeledFieldRow(
-                        "Title",
+                    TextFieldRow(
                         value = title,
                         onValueChange = { title = it },
-                        placeholder = "Optional",
+                        modifier = Modifier.semantics { contentDescription = "Title" },
+                        placeholder = "Title (optional)",
                         keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
                     )
                     RowDivider()
@@ -152,11 +159,9 @@ fun ShareVerseSheet(
                         onClick = { choosingTranslation = true },
                     )
                 }
-                if (reference != null) {
-                    if (referenceText.text.trimmingWhitespaces() != reference.display) {
-                        StatusLine(reference.display, icon = R.drawable.ic_check_circle_fill, tint = colors.green)
-                    }
-                } else {
+                if (referenceProblem != null) {
+                    StatusLine(referenceProblem.message, icon = R.drawable.ic_warning_circle_fill, tint = AppTheme.colors.red)
+                } else if (reference == null) {
                     StatusLine("Try “Rom 8:28”")
                 }
             }

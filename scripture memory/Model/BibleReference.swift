@@ -211,3 +211,81 @@ struct BibleReference: Equatable {
         return nil
     }
 }
+
+enum ReferenceProblem: Equatable {
+    case unknownBook(String, suggestions: [BibleBook])
+    case noSuchChapter(BibleBook)
+}
+
+extension BibleReference {
+    private static let parts = try! NSRegularExpression(pattern: "^\\s*(\\d?[^\\d]*)(\\d+)?(.*)$",
+                                                        options: [.dotMatchesLineSeparators])
+
+    private static func split(_ text: String) -> (book: String, chapter: String, rest: String)? {
+        let ns = text as NSString
+        guard let m = parts.firstMatch(in: text, range: NSRange(location: 0, length: ns.length)) else { return nil }
+        func group(_ i: Int) -> String { m.range(at: i).location == NSNotFound ? "" : ns.substring(with: m.range(at: i)) }
+        let book = group(1).trimmingCharacters(in: CharacterSet.whitespaces.union(CharacterSet(charactersIn: ".")))
+        guard book.contains(where: \.isLetter) else { return nil }
+        return (book, group(2), group(3))
+    }
+
+    static func problem(in text: String) -> ReferenceProblem? {
+        guard parse(text) == nil, let parts = split(normalized(text)) else { return nil }
+        if let book = BibleBooks.book(named: parts.book) {
+            guard let chapter = Int(parts.chapter), book.chapters > 1, chapter > book.chapters else { return nil }
+            return .noSuchChapter(book)
+        }
+        if parts.chapter.isEmpty, !BibleBooks.matching(prefix: parts.book).isEmpty { return nil }
+        return .unknownBook(parts.book, suggestions: BibleBooks.nearest(to: parts.book))
+    }
+
+    static func replacingBook(in text: String, with book: BibleBook) -> String {
+        guard let parts = split(normalized(text)), !parts.chapter.isEmpty else { return book.name + " " }
+        return book.name + " " + (parts.chapter + parts.rest).trimmingCharacters(in: .whitespaces)
+    }
+}
+
+extension BibleBooks {
+    static func nearest(to text: String, limit: Int = 3) -> [BibleBook] {
+        let k = key(text)
+        guard !k.isEmpty else { return [] }
+        let scored = all.map { book -> (BibleBook, Int) in
+            let name = key(book.name)
+            let whole = ([name] + book.aliases.map(key).filter { $0.count >= 4 }).map { distance(k, $0) }
+            let numbered = name.first?.isNumber == true && k.first?.isNumber != true
+            let start = numbered ? [] : [distance(k, String(name.prefix(k.count)))]
+            return (book, (whole + start).min() ?? .max)
+        }
+        guard let best = scored.map(\.1).min(), best <= max(1, k.count / 3) else { return [] }
+        return Array(scored.filter { $0.1 == best }.map(\.0).prefix(limit))
+    }
+
+    private static func distance(_ a: String, _ b: String) -> Int {
+        let a = Array(a), b = Array(b)
+        guard !a.isEmpty else { return b.count }
+        var before = Array(0...b.count)
+        var row = before
+        for i in 1...a.count {
+            var next = [i] + Array(repeating: 0, count: b.count)
+            for j in 1...max(b.count, 1) where !b.isEmpty {
+                next[j] = min(row[j] + 1, next[j - 1] + 1, row[j - 1] + (a[i - 1] == b[j - 1] ? 0 : 1))
+                if i > 1, j > 1, a[i - 1] == b[j - 2], a[i - 2] == b[j - 1] {
+                    next[j] = min(next[j], before[j - 2] + 1)
+                }
+            }
+            before = row
+            row = next
+        }
+        return row[b.count]
+    }
+}
+
+extension ReferenceProblem {
+    var message: String {
+        switch self {
+        case .unknownBook(let typed, _): return "There’s no book called “\(typed)”."
+        case .noSuchChapter(let book): return "\(book.name) stops at chapter \(book.chapters)."
+        }
+    }
+}

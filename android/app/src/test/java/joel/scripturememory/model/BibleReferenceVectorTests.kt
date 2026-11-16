@@ -34,6 +34,26 @@ class BibleReferenceVectorTests {
             assertEquals("$input display", case.optional("display"), reference?.display)
             assertEquals("$input usfm", case.optional("usfm"), reference?.usfm)
         }
+        for (case in vectors.cases("problems")) {
+            val input = case.getValue("input").jsonPrimitive.content
+            val problem = BibleReference.problem(input)
+            val kind = when (problem) {
+                is ReferenceProblem.UnknownBook -> "unknownBook"
+                is ReferenceProblem.NoSuchChapter -> "noSuchChapter"
+                null -> null
+            }
+            val book = when (problem) {
+                is ReferenceProblem.UnknownBook -> problem.typed
+                is ReferenceProblem.NoSuchChapter -> problem.book.name
+                null -> null
+            }
+            val near = (problem as? ReferenceProblem.UnknownBook)?.suggestions.orEmpty()
+            assertEquals("$input problem", case.optional("problem"), kind)
+            assertEquals("$input book", case.optional("book"), book)
+            assertEquals("$input suggestions", case.getValue("suggestions").jsonArray.map { it.jsonPrimitive.content }, near.map { it.name })
+            assertEquals("$input replaced", case.getValue("replaced").jsonArray.map { it.jsonPrimitive.content },
+                near.map { BibleReference.replacingBook(input, it) })
+        }
         for (case in vectors.cases("pastes")) {
             val input = case.getValue("input").jsonPrimitive.content
             val pasted = PastedVerse.parse(input)

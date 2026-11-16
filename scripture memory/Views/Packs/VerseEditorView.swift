@@ -60,7 +60,10 @@ struct VerseEditorView: View {
         }
     }
 
+    private var referenceProblem: ReferenceProblem? { BibleReference.problem(in: referenceText) }
+
     private var bookSuggestions: [BibleBook] {
+        if case .unknownBook(_, let near) = referenceProblem { return near }
         guard reference == nil, focus == .reference,
               !referenceText.contains(where: \.isNumber) || referenceText.first?.isNumber == true,
               referenceText.filter(\.isNumber).count <= 1 else { return [] }
@@ -69,32 +72,32 @@ struct VerseEditorView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                detailsSection
-                verseSection
-                Section {
-                    LabeledContent("Title") {
-                        TextField("Title", text: $title, prompt: Text("Christ the Center"))
-                            .fixedSize(horizontal: !dynamicType.isAccessibilitySize, vertical: false)
-                            .frame(maxWidth: .infinity, alignment: dynamicType.isAccessibilitySize ? .leading : .trailing)
-                            .clipped()
+            ZStack {
+                Form {
+                    detailsSection
+                    verseSection
+                    Section {
+                        TextField("Title", text: $title, prompt: Text("Title, like Christ the Center"))
                             .focused($focus, equals: .title)
                             .textInputAutocapitalization(.words)
                             .submitLabel(.done)
+                    } footer: {
+                        Text("Optional. Shown on the front of the card.")
                     }
-                } footer: {
-                    Text("Optional. Shown on the front of the card.")
-                }
-                if editing != nil {
-                    Section {
-                        Button("Delete Verse", role: .destructive) { confirmDelete = true }
+                    if editing != nil {
+                        Section {
+                            Button("Delete Verse", role: .destructive) { confirmDelete = true }
+                        }
                     }
                 }
+                .scrollDismissesKeyboard(.interactively)
+                .id(added.count)
+                .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .identity))
             }
-            .scrollDismissesKeyboard(.interactively)
+            .background(Color(.systemGroupedBackground))
             .dismissesKeyboardOnTap()
             .undoToast($addedToast)
-            .navigationTitle(editing == nil ? "Add Verse" : "Edit Verse")
+            .navigationTitle(editing != nil ? "Edit Verse" : added.isEmpty ? "Add Verse" : "Add Another Verse")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { toolbar }
             .confirmationDialog("Delete Verse?", isPresented: $confirmDelete, titleVisibility: .visible) {
@@ -125,22 +128,17 @@ struct VerseEditorView: View {
 
     private var detailsSection: some View {
         Section {
-            LabeledContent("Reference") {
-                TextField("Reference", text: $referenceText, prompt: Text("Rom 8:28"))
-                    .fixedSize(horizontal: !dynamicType.isAccessibilitySize, vertical: false)
-                    .frame(maxWidth: .infinity, alignment: dynamicType.isAccessibilitySize ? .leading : .trailing)
-                    .clipped()
-                    .focused($focus, equals: .reference)
-                    .textInputAutocapitalization(.words)
-                    .autocorrectionDisabled()
-                    .submitLabel(.done)
-                    .onSubmit { focus = nil }
-            }
+            TextField("Reference", text: $referenceText, prompt: Text("Reference, like Rom 8:28"))
+                .focused($focus, equals: .reference)
+                .textInputAutocapitalization(.words)
+                .autocorrectionDisabled()
+                .submitLabel(.done)
+                .onSubmit { focus = nil }
             if !bookSuggestions.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
                         ForEach(bookSuggestions, id: \.usfm) { book in
-                            Button(book.name) { referenceText = book.name + " " }
+                            Button(book.name) { referenceText = BibleReference.replacingBook(in: referenceText, with: book) }
                                 .buttonStyle(.bordered)
                                 .buttonBorderShape(.capsule)
                                 .controlSize(.small)
@@ -158,11 +156,6 @@ struct VerseEditorView: View {
         }
     }
 
-    private var typedIsCanonical: Bool {
-        guard let reference else { return false }
-        return referenceText.trimmingCharacters(in: .whitespaces) == reference.display
-    }
-
     @ViewBuilder
     private var referenceFooter: some View {
         if let builtIn = olderNIVText, !duplicate {
@@ -173,14 +166,14 @@ struct VerseEditorView: View {
                     .multilineTextAlignment(.leading)
             }
             .font(.footnote.weight(.semibold))
-        } else if let reference {
+        } else if reference != nil {
             if duplicate {
                 Label("Already in this pack", systemImage: "exclamationmark.triangle.fill")
                     .foregroundStyle(.orange)
-            } else if !typedIsCanonical {
-                Label(reference.display, systemImage: "checkmark.circle.fill")
-                    .foregroundStyle(.green)
             }
+        } else if let problem = referenceProblem {
+            Label(problem.message, systemImage: "exclamationmark.circle.fill")
+                .foregroundStyle(.red)
         } else if !referenceText.isEmpty {
             Text("Try “Rom 8:28”")
         }
@@ -316,16 +309,18 @@ struct VerseEditorView: View {
         Analytics.log(.ownVerseAdded(source: autofilled?.text == text ? .bundledText
                                      : pastedText == text ? .pasted : .typed))
         HapticEngine.success()
-        added.append(reference.display)
         let packName = store.pack(id: packID)?.name ?? "this pack"
         addedToast = UndoToastState(message: "Added \(reference.display) to \(packName)") { [store, packID] in
             store.deleteVerses([verse.id], in: packID)
         }
-        referenceText = ""
-        text = ""
-        title = ""
-        autofilled = nil
-        pastedText = nil
         focus = nil
+        withAnimation(AppMotion.content) {
+            added.append(reference.display)
+            referenceText = ""
+            text = ""
+            title = ""
+            autofilled = nil
+            pastedText = nil
+        }
     }
 }

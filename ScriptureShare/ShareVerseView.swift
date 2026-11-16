@@ -29,6 +29,8 @@ struct ShareVerseView: View {
 
     private var reference: BibleReference? { BibleReference.parse(referenceText) }
 
+    private var referenceProblem: ReferenceProblem? { BibleReference.problem(in: referenceText) }
+
     private var trimmedText: String { text.trimmingCharacters(in: .whitespacesAndNewlines) }
 
     private var translationChoices: [String] {
@@ -40,30 +42,36 @@ struct ShareVerseView: View {
         NavigationStack {
             Form {
                 Section {
-                    LabeledContent("Reference") {
-                        TextField("Reference", text: $referenceText, prompt: Text("Rom 8:28"))
-                            .multilineTextAlignment(.trailing)
-                            .textInputAutocapitalization(.words)
-                            .autocorrectionDisabled()
-                            .focused($referenceFocused)
+                    TextField("Reference", text: $referenceText, prompt: Text("Reference, like Rom 8:28"))
+                        .textInputAutocapitalization(.words)
+                        .autocorrectionDisabled()
+                        .focused($referenceFocused)
+                    if case .unknownBook(_, let near) = referenceProblem, !near.isEmpty {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 8) {
+                                ForEach(near, id: \.usfm) { book in
+                                    Button(book.name) {
+                                        referenceText = BibleReference.replacingBook(in: referenceText, with: book)
+                                    }
+                                    .buttonStyle(.bordered)
+                                    .buttonBorderShape(.capsule)
+                                    .controlSize(.small)
+                                }
+                            }
+                        }
                     }
-                    LabeledContent("Title") {
-                        TextField("Title", text: $title, prompt: Text("Optional"))
-                            .multilineTextAlignment(.trailing)
-                            .textInputAutocapitalization(.words)
-                    }
+                    TextField("Title", text: $title, prompt: Text("Title (optional)"))
+                        .textInputAutocapitalization(.words)
                     Picker("Translation", selection: $translation) {
                         ForEach(translationChoices, id: \.self) { code in
                             Text(VerseTranslation.displayName(code)).tag(code)
                         }
                     }
                 } footer: {
-                    if let reference {
-                        if referenceText.trimmingCharacters(in: .whitespaces) != reference.display {
-                            Label(reference.display, systemImage: "checkmark.circle.fill")
-                                .foregroundStyle(.green)
-                        }
-                    } else {
+                    if let referenceProblem {
+                        Label(referenceProblem.message, systemImage: "exclamationmark.circle.fill")
+                            .foregroundStyle(.red)
+                    } else if reference == nil {
                         Text("Try “Rom 8:28”")
                     }
                 }
