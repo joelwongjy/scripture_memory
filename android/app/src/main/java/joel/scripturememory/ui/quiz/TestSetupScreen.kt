@@ -77,7 +77,7 @@ import joel.scripturememory.ui.theme.AppTheme
 import joel.scripturememory.ui.theme.AppType
 
 private const val savedSessionKey = "lastTestSessionVerseIds"
-private const val quizCountKey = "reviewSetupQuizCount"
+private const val quizCountKey = "quizSetupCount"
 private val compactBarHeight = 480.dp
 
 private sealed interface PackListItem {
@@ -135,7 +135,7 @@ fun TestSetupScreen() {
     val dragFrames = remember { DragSelectFrames() }
     var dragSelects by remember { mutableStateOf(true) }
     val dragVisited = remember { HashSet<Int>() }
-    var quizCount by remember { mutableIntStateOf(15) }
+    var quizCount by remember { mutableIntStateOf(5) }
     var savedSession by remember { mutableStateOf<TestSession?>(null) }
     var showOverwriteAlert by remember { mutableStateOf(false) }
     val entry = remember { QuizCountEntry() }
@@ -240,9 +240,6 @@ fun TestSetupScreen() {
                 Analytics.log(AnalyticsEvent.QuizSetupLeft(selectedVerseIds.size, preselected == selectedVerseIds))
             }
         }
-    }
-    LaunchedEffect(selectedVerseIds) {
-        if (selectedVerseIds.isNotEmpty()) quizCount = clampedCount
     }
     LaunchedEffect(quizCount) {
         AppDefaults.standard.putInt(quizCountKey, quizCount)

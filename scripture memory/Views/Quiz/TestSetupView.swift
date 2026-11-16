@@ -33,7 +33,7 @@ struct TestSetupView: View {
     @State private var dragSelects = true
     /// Rows already handled by this drag — re-entering one mustn't flip it back.
     @State private var dragVisited: Set<Int> = []
-    @State private var quizCount:         Int         = 15
+    @State private var quizCount:         Int         = 5
     @State private var activeSession:     TestSession? = nil
     @State private var savedSession:      TestSession? = nil
     @State private var showOverwriteAlert = false
@@ -41,7 +41,7 @@ struct TestSetupView: View {
     @State private var startedThisVisit = false
 
     private static let savedSessionKey = "lastTestSessionVerseIds"
-    private static let quizCountKey    = "reviewSetupQuizCount"
+    private static let quizCountKey    = "quizSetupCount"
 
     private var selectedCount: Int { selectedVerseIds.count }
     private var clampedCount:  Int { max(1, min(quizCount, selectedCount)) }
@@ -144,9 +144,6 @@ struct TestSetupView: View {
         .onDisappear(perform: logLeftWithoutStarting)
         .onChange(of: activeSession?.id) { _, id in
             if id != nil { startedThisVisit = true }
-        }
-        .onChange(of: selectedVerseIds) { _, _ in
-            reconcileQuizCountWithSelection()
         }
         .onChange(of: quizCount) { _, _ in
             UserDefaults.standard.set(quizCount, forKey: Self.quizCountKey)
@@ -495,12 +492,6 @@ struct TestSetupView: View {
         if let saved = UserDefaults.standard.object(forKey: Self.quizCountKey) as? Int, saved >= 1 {
             quizCount = saved
         }
-        reconcileQuizCountWithSelection()
-    }
-
-    private func reconcileQuizCountWithSelection() {
-        guard !selectedVerseIds.isEmpty else { return }
-        quizCount = clampedCount
     }
 }
 
